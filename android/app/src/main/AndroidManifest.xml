@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="user_centric_mobile_app"
+        android:label="CSC234 User Centric Mobile App"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
