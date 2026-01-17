@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "433750563013",
+    "firebase_url": "https://csc234-user-centric-mobile-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "csc234-user-centric-mobile-app",
+    "storage_bucket": "csc234-user-centric-mobile-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:433750563013:android:c6aa458944c606faa538ac",
+        "android_client_info": {
+          "package_name": "com.cssit.usercentricapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "433750563013-v71cgbqggb100qvjkiu2sqn8a83veoj1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTnAdALXiDfJcKTvgLl-ZcdSNxJSDB308"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "433750563013-4fg0ne46b76ob18uu0tm83ado8r3kmcv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "433750563013-odl8b3p19mbpjfbhn1oa1c5qckl4ss0b.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.cssit.usercentricapp.userCentricMobileApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
