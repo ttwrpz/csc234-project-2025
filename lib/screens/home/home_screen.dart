@@ -4,9 +4,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/mood_provider.dart';
 import '../../providers/garden_provider.dart';
 import '../../providers/settings_provider.dart';
-import '../../config/theme.dart';
 import '../../utils/date_helpers.dart';
 import '../../utils/responsive.dart';
+import '../../widgets/connectivity_banner.dart';
 import '../../widgets/streak_badge.dart';
 import '../../models/mood_type.dart';
 import 'garden_view.dart';
@@ -54,9 +54,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (useRail) {
       return Scaffold(
-        body: Row(
-          children: [
-            NavigationRail(
+        body: ConnectivityBanner(
+          child: Row(
+            children: [
+              NavigationRail(
               selectedIndex: _currentIndex,
               onDestinationSelected: (i) => setState(() => _currentIndex = i),
               labelType: NavigationRailLabelType.all,
@@ -87,9 +88,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            const VerticalDivider(thickness: 1, width: 1),
-            Expanded(child: content),
-          ],
+              const VerticalDivider(thickness: 1, width: 1),
+              Expanded(child: content),
+            ],
+          ),
         ),
         floatingActionButton: _currentIndex == 0
             ? FloatingActionButton(
@@ -101,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      body: content,
+      body: ConnectivityBanner(child: content),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
@@ -184,9 +186,7 @@ class _GardenTab extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     DateHelpers.formatShort(DateTime.now()),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 16),
 
@@ -198,9 +198,9 @@ class _GardenTab extends StatelessWidget {
                   Container(
                     height: gardenHeight,
                     decoration: BoxDecoration(
-                      color: AppColors.card,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.divider),
+                      border: Border.all(color: Theme.of(context).dividerColor),
                     ),
                     child: moodProvider.isLoading
                         ? const Center(child: CircularProgressIndicator())
@@ -262,9 +262,9 @@ class _WeeklySummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -292,15 +292,17 @@ class _WeeklySummary extends StatelessWidget {
                 height: 32,
                 decoration: BoxDecoration(
                   color: hasMood
-                      ? (mood?.color ?? AppColors.primary).withValues(
-                          alpha: 0.2,
-                        )
+                      ? (mood?.color ?? Theme.of(context).colorScheme.primary)
+                          .withValues(alpha: 0.2)
                       : isToday
-                      ? AppColors.divider
+                      ? Theme.of(context).dividerColor
                       : Colors.transparent,
                   shape: BoxShape.circle,
                   border: isToday
-                      ? Border.all(color: AppColors.primary, width: 2)
+                      ? Border.all(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 2,
+                        )
                       : null,
                 ),
                 child: Center(

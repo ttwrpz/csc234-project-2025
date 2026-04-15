@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/mood_entry.dart';
 import '../models/mood_type.dart';
 import '../utils/date_helpers.dart';
+import 'sync_indicator.dart';
 
 class MoodCard extends StatelessWidget {
   final MoodEntry entry;
@@ -26,18 +27,21 @@ class MoodCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Mood emoji
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: (mood?.color ?? Colors.grey).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    mood?.emoji ?? '\u{2753}',
-                    style: const TextStyle(fontSize: 24),
+              // Mood emoji with Hero
+              Hero(
+                tag: 'mood_emoji_${entry.id}',
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: (mood?.color ?? Colors.grey).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      mood?.emoji ?? '\u{2753}',
+                      style: const TextStyle(fontSize: 24),
+                    ),
                   ),
                 ),
               ),
@@ -90,6 +94,8 @@ class MoodCard extends StatelessWidget {
                   color: Theme.of(context).textTheme.bodySmall?.color,
                 ),
               ],
+              const SizedBox(width: 6),
+              SyncIndicator(isSynced: entry.isSynced),
             ],
           ),
         ),

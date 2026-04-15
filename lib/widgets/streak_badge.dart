@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../config/theme.dart';
 
 class StreakBadge extends StatelessWidget {
   final int streak;
@@ -8,15 +7,16 @@ class StreakBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = Theme.of(context).colorScheme.tertiary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: streak > 0
-            ? AppColors.accent.withValues(alpha: 0.15)
-            : AppColors.card,
+            ? accentColor.withValues(alpha: 0.15)
+            : Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: streak > 0 ? AppColors.accent : AppColors.divider,
+          color: streak > 0 ? accentColor : Theme.of(context).dividerColor,
         ),
       ),
       child: Row(
@@ -31,8 +31,8 @@ class StreakBadge extends StatelessWidget {
             '$streak day${streak == 1 ? '' : 's'}',
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   color: streak > 0
-                      ? AppColors.accent
-                      : AppColors.textSecondary,
+                      ? accentColor
+                      : Theme.of(context).textTheme.bodySmall?.color,
                 ),
           ),
         ],

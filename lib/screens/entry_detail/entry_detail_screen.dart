@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import '../../config/constants.dart';
-import '../../config/theme.dart';
 import '../../models/mood_entry.dart';
 import '../../models/mood_type.dart';
 import '../../providers/mood_provider.dart';
@@ -155,7 +154,7 @@ class _EntryDetailScreenState extends State<EntryDetailScreen> {
               tooltip: 'Edit',
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline, color: AppColors.error),
+              icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
               onPressed: _delete,
               tooltip: 'Delete',
             ),
@@ -185,9 +184,12 @@ class _EntryDetailScreenState extends State<EntryDetailScreen> {
         Center(
           child: Column(
             children: [
-              Text(
-                mood?.emoji ?? '\u{2753}',
-                style: const TextStyle(fontSize: 64),
+              Hero(
+                tag: 'mood_emoji_${widget.entry.id}',
+                child: Text(
+                  mood?.emoji ?? '\u{2753}',
+                  style: const TextStyle(fontSize: 64),
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -203,9 +205,7 @@ class _EntryDetailScreenState extends State<EntryDetailScreen> {
         Center(
           child: Text(
             DateHelpers.formatFull(widget.entry.createdAt),
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+            style: Theme.of(context).textTheme.bodySmall,
             textAlign: TextAlign.center,
           ),
         ),
@@ -217,7 +217,7 @@ class _EntryDetailScreenState extends State<EntryDetailScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.card,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
@@ -259,7 +259,7 @@ class _EntryDetailScreenState extends State<EntryDetailScreen> {
       return Container(
         height: 200,
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
         ),
         child: const Center(child: CircularProgressIndicator()),

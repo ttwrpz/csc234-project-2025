@@ -16,39 +16,52 @@ class MoodBloomApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
     return MaterialApp(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: settings.darkMode ? ThemeMode.dark : ThemeMode.light,
       home: const _AppStartup(),
       onGenerateRoute: _onGenerateRoute,
     );
   }
 
   Route<dynamic>? _onGenerateRoute(RouteSettings settings) {
+    Widget page;
     switch (settings.name) {
       case AppRoutes.onboarding:
-        return MaterialPageRoute(
-          builder: (_) => const OnboardingScreen(),
-        );
+        page = const OnboardingScreen();
+        break;
       case AppRoutes.auth:
-        return MaterialPageRoute(
-          builder: (_) => const AuthScreen(),
-        );
+        page = const AuthScreen();
+        break;
       case AppRoutes.home:
-        return MaterialPageRoute(
-          builder: (_) => const HomeScreen(),
-        );
+        page = const HomeScreen();
+        break;
       case AppRoutes.entryDetail:
         final entry = settings.arguments as MoodEntry;
-        return MaterialPageRoute(
-          builder: (_) => EntryDetailScreen(entry: entry),
-        );
+        page = EntryDetailScreen(entry: entry);
+        break;
       default:
-        return MaterialPageRoute(
-          builder: (_) => const AuthScreen(),
-        );
+        page = const AuthScreen();
     }
+
+    return PageRouteBuilder(
+      settings: settings,
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ),
+          child: child,
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 300),
+    );
   }
 }
 
@@ -96,7 +109,6 @@ class _AppStartupState extends State<_AppStartup> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

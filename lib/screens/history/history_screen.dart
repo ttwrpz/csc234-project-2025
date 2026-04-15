@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../config/routes.dart';
-import '../../config/theme.dart';
 import '../../models/mood_entry.dart';
 import '../../models/mood_type.dart';
 import '../../providers/auth_provider.dart';
@@ -58,9 +58,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         label: const Text('All'),
                         selected: _filters.isEmpty,
                         onSelected: (_) => setState(() => _filters.clear()),
-                        selectedColor: AppColors.primaryLight.withValues(
-                          alpha: 0.3,
-                        ),
+                        selectedColor: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer
+                            .withValues(alpha: 0.3),
                       ),
                     ),
                     ...MoodType.values.map((mood) {
@@ -113,7 +114,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     AuthProvider auth,
   ) {
     if (moodProvider.isLoading && entries.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return _buildShimmerList(context);
     }
 
     if (entries.isEmpty) {
@@ -138,6 +139,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
 
     return RefreshIndicator(
+      color: Theme.of(context).colorScheme.primary,
       onRefresh: () async {
         if (auth.user != null) {
           await moodProvider.refreshEntries(auth.user!.uid);
@@ -158,5 +160,63 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   void _openDetail(MoodEntry entry) {
     Navigator.of(context).pushNamed(AppRoutes.entryDetail, arguments: entry);
+  }
+
+  Widget _buildShimmerList(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Shimmer.fromColors(
+      baseColor: isDark ? const Color(0xFF2D2D44) : const Color(0xFFE0E0E0),
+      highlightColor:
+          isDark ? const Color(0xFF3A3A50) : const Color(0xFFF5F5F5),
+      child: ListView.builder(
+        padding: const EdgeInsets.only(bottom: 80),
+        itemCount: 6,
+        itemBuilder: (context, index) {
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 100,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 }

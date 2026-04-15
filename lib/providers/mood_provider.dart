@@ -19,6 +19,8 @@ class MoodProvider extends ChangeNotifier {
   bool _isLoading = false;
   final bool _hasMore = true;
   String? _error;
+  int _pendingSyncCount = 0;
+  DateTime? _lastSyncTime;
 
   MoodProvider({
     required FirestoreService firestoreService,
@@ -34,6 +36,8 @@ class MoodProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get hasMore => _hasMore;
   String? get error => _error;
+  int get pendingSyncCount => _pendingSyncCount;
+  DateTime? get lastSyncTime => _lastSyncTime;
 
   int get streakCount {
     final dates = _entries.map((e) => e.createdAt).toList();
@@ -94,12 +98,23 @@ class MoodProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+      _updatePendingSyncCount(userId);
     }
   }
 
   Future<void> refreshEntries(String userId) async {
     await _syncManager.syncEntries(userId);
+    _lastSyncTime = DateTime.now();
     await loadEntries(userId);
+    await _updatePendingSyncCount(userId);
+  }
+
+  Future<void> _updatePendingSyncCount(String userId) async {
+    try {
+      final unsynced = await _localDbService.getUnsyncedEntries(userId);
+      _pendingSyncCount = unsynced.length;
+      notifyListeners();
+    } catch (_) {}
   }
 
   Future<bool> saveMoodEntry({

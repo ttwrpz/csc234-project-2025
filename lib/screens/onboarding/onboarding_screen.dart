@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../config/theme.dart';
 import '../../config/routes.dart';
 import '../../providers/settings_provider.dart';
 
@@ -93,7 +92,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           width: 200,
                           height: 200,
                           decoration: BoxDecoration(
-                            color: AppColors.primaryLight.withValues(alpha: 0.15),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primaryContainer
+                                .withValues(alpha: 0.15),
                             shape: BoxShape.circle,
                           ),
                           child: Center(
@@ -113,10 +115,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         const SizedBox(height: 16),
                         Text(
                           page.subtitle,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(color: AppColors.textSecondary),
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Theme.of(context).textTheme.bodySmall?.color,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -142,8 +143,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         height: 8,
                         decoration: BoxDecoration(
                           color: _currentPage == index
-                              ? AppColors.primary
-                              : AppColors.divider,
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).dividerColor,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),

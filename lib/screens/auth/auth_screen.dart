@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../config/theme.dart';
 import '../../config/routes.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/validators.dart';
@@ -125,10 +124,9 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: 8),
                     Text(
                       _isLogin ? 'Welcome back!' : 'Create your account',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyLarge
-                          ?.copyWith(color: AppColors.textSecondary),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 16,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
@@ -141,13 +139,17 @@ class _AuthScreenState extends State<AuthScreen> {
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.error.withValues(alpha: 0.1),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .error
+                                .withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.error_outline,
-                                  color: AppColors.error, size: 20),
+                              Icon(Icons.error_outline,
+                                  color: Theme.of(context).colorScheme.error,
+                                  size: 20),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -155,7 +157,11 @@ class _AuthScreenState extends State<AuthScreen> {
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodySmall
-                                      ?.copyWith(color: AppColors.error),
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .error,
+                                      ),
                                 ),
                               ),
                             ],
@@ -223,21 +229,22 @@ class _AuthScreenState extends State<AuthScreen> {
                           }
                           final strength =
                               Validators.getPasswordStrength(value.text);
+                          final theme = Theme.of(context);
                           Color color;
                           switch (strength) {
                             case PasswordStrength.weak:
-                              color = AppColors.error;
+                              color = theme.colorScheme.error;
                             case PasswordStrength.medium:
-                              color = AppColors.accent;
+                              color = theme.colorScheme.tertiary;
                             case PasswordStrength.strong:
-                              color = AppColors.success;
+                              color = theme.colorScheme.primary;
                           }
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               LinearProgressIndicator(
                                 value: strength.value,
-                                backgroundColor: AppColors.divider,
+                                backgroundColor: theme.dividerColor,
                                 valueColor:
                                     AlwaysStoppedAnimation<Color>(color),
                                 borderRadius: BorderRadius.circular(4),
@@ -319,10 +326,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
                             'OR',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(color: AppColors.textSecondary),
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
                         const Expanded(child: Divider()),

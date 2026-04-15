@@ -1,8 +1,12 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../models/mood_type.dart';
 import '../../providers/garden_provider.dart';
-import '../../widgets/garden_element.dart';
+import '../../providers/settings_provider.dart';
+import '../../widgets/garden_plant.dart';
+import '../../widgets/garden_bug.dart';
+import '../../widgets/garden_ground.dart';
 
 class GardenView extends StatefulWidget {
   const GardenView({super.key});
@@ -33,6 +37,8 @@ class _GardenViewState extends State<GardenView>
   @override
   Widget build(BuildContext context) {
     final garden = context.watch<GardenProvider>();
+    final settings = context.watch<SettingsProvider>();
+    final isDark = settings.darkMode;
 
     // Sort by Y position for depth (items lower = rendered later = in front)
     final sortedElements = List.of(garden.elements)
@@ -44,23 +50,8 @@ class _GardenViewState extends State<GardenView>
         builder: (context, constraints) {
           return Stack(
             children: [
-              // Sky-to-ground gradient
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    stops: [0.0, 0.3, 0.5, 0.75, 1.0],
-                    colors: [
-                      Color(0xFFD6E8F8), // Soft sky blue
-                      Color(0xFFE0EFE0), // Sky-ground transition
-                      Color(0xFFD4E8C4), // Light meadow
-                      Color(0xFFB8D9A0), // Mid green
-                      Color(0xFF94C47A), // Rich ground
-                    ],
-                  ),
-                ),
-              ),
+              // Sky-to-ground gradient background
+              GardenBackground(isDarkMode: isDark),
 
               // Drifting clouds
               AnimatedBuilder(
@@ -76,7 +67,7 @@ class _GardenViewState extends State<GardenView>
                         baseY: 0.05,
                         size: 22,
                         speed: 0.3,
-                        alpha: 0.7,
+                        alpha: isDark ? 0.3 : 0.7,
                       ),
                       _buildCloud(
                         constraints,
@@ -85,7 +76,7 @@ class _GardenViewState extends State<GardenView>
                         baseY: 0.12,
                         size: 28,
                         speed: 0.2,
-                        alpha: 0.5,
+                        alpha: isDark ? 0.2 : 0.5,
                       ),
                       _buildCloud(
                         constraints,
@@ -94,14 +85,14 @@ class _GardenViewState extends State<GardenView>
                         baseY: 0.04,
                         size: 20,
                         speed: 0.25,
-                        alpha: 0.6,
+                        alpha: isDark ? 0.25 : 0.6,
                       ),
                     ],
                   );
                 },
               ),
 
-              // Sun with warm glow
+              // Sun/moon with glow
               Positioned(
                 top: 10,
                 right: 14,
@@ -112,35 +103,55 @@ class _GardenViewState extends State<GardenView>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFFE082).withValues(alpha: 0.4),
+                        color: isDark
+                            ? const Color(0xFFB0C4DE).withValues(alpha: 0.3)
+                            : const Color(0xFFFFE082).withValues(alpha: 0.4),
                         blurRadius: 24,
                         spreadRadius: 8,
                       ),
                     ],
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
-                      '\u{2600}\u{FE0F}',
-                      style: TextStyle(fontSize: 28),
+                      isDark ? '\u{1F319}' : '\u{2600}\u{FE0F}',
+                      style: const TextStyle(fontSize: 28),
                     ),
                   ),
                 ),
               ),
+
+              // Soil strip at bottom
+              GardenSoil(isDarkMode: isDark),
 
               // Ground grass detail
               ..._buildGrassDetails(constraints),
 
               // Garden elements (depth-sorted)
               ...sortedElements.map((element) {
+                final isNegative =
+                    element.moodType.category == MoodCategory.negative;
+                final isNeutral =
+                    element.moodType.category == MoodCategory.neutral;
+
+                Widget child;
+                if (isNegative) {
+                  child = GardenBugWidget(
+                    element: element,
+                    animationSpeed: settings.animationSpeed,
+                  );
+                } else if (isNeutral) {
+                  child = _NeutralLeafWidget(element: element);
+                } else {
+                  child = GardenPlantWidget(element: element);
+                }
+
                 return Positioned(
                   key: ValueKey(element.id),
-                  left:
-                      element.position.dx * constraints.maxWidth -
+                  left: element.position.dx * constraints.maxWidth -
                       element.size / 2,
-                  top:
-                      element.position.dy * constraints.maxHeight -
+                  top: element.position.dy * constraints.maxHeight -
                       element.size / 2,
-                  child: GardenElementWidget(element: element),
+                  child: child,
                 );
               }),
             ],
@@ -176,8 +187,7 @@ class _GardenViewState extends State<GardenView>
       final r = Random(i * 7 + 3);
       return Positioned(
         bottom: r.nextDouble() * constraints.maxHeight * 0.06,
-        left:
-            (i / 8) * constraints.maxWidth +
+        left: (i / 8) * constraints.maxWidth +
             r.nextDouble() * (constraints.maxWidth / 8),
         child: Opacity(
           opacity: 0.35 + r.nextDouble() * 0.25,
@@ -188,5 +198,67 @@ class _GardenViewState extends State<GardenView>
         ),
       );
     });
+  }
+}
+
+class _NeutralLeafWidget extends StatefulWidget {
+  final GardenElement element;
+
+  const _NeutralLeafWidget({required this.element});
+
+  @override
+  State<_NeutralLeafWidget> createState() => _NeutralLeafWidgetState();
+}
+
+class _NeutralLeafWidgetState extends State<_NeutralLeafWidget>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final double _phase;
+
+  @override
+  void initState() {
+    super.initState();
+    _phase = (widget.element.id.hashCode.abs() % 1000) / 1000.0;
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 2500 + (_phase * 1500).round()),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = widget.element.size;
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = (_controller.value + _phase) % 1.0;
+        final floatY = sin(t * 2 * pi) * 3;
+        final rotate = sin(t * 2 * pi) * 0.08;
+        return Transform.translate(
+          offset: Offset(0, floatY),
+          child: Transform.rotate(angle: rotate, child: child),
+        );
+      },
+      child: Container(
+        width: size * 0.8,
+        height: size * 0.8,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFF8E8E93).withValues(alpha: 0.25),
+        ),
+        child: Center(
+          child: Text(
+            widget.element.moodType.gardenEmoji,
+            style: TextStyle(fontSize: size * 0.45),
+          ),
+        ),
+      ),
+    );
   }
 }

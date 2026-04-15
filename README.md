@@ -9,12 +9,15 @@ Built for **CSC231** (Agile Software Engineering) and **CSC234** (User-Centric M
 ## Features
 
 - **Mood Logging** - Select from 10 emotions with text notes and photo/video attachments
-- **Virtual Garden** - Visual garden that grows based on your mood entries (last 30 days)
-- **History & Calendar** - Browse past entries in list or calendar view with mood filters
+- **Virtual Garden** - Styled plant and bug containers with growth animations and depth-sorted rendering
+- **History & Calendar** - Browse past entries in list or calendar view with mood filters and shimmer loading
 - **Streak Tracking** - Track consecutive days of mood logging
-- **Offline Support** - SQLite cache on Android, syncs to Firestore when online
-- **Authentication** - Email/password and Google Sign-In via Firebase
+- **Offline Support** - SQLite cache on Android, syncs to Firestore when online, with connectivity banner
+- **Authentication** - Email/password and Google Sign-In via Firebase with user-friendly error messages
 - **Cross-Platform** - Runs on Android and Web
+- **Dark Mode** - Full dark theme with custom dark color palette
+- **Sync Status** - Cloud/local sync indicators on mood cards and settings sync panel
+- **Animated Transitions** - Hero animations, fade-through page transitions, success animation overlay
 
 ---
 
@@ -23,12 +26,12 @@ Built for **CSC231** (Agile Software Engineering) and **CSC234** (User-Centric M
 | Screen | Description |
 |--------|-------------|
 | Onboarding | 3-page intro carousel (shown once) |
-| Login/Register | Email + Google auth with validation |
-| Home (Garden) | Garden view, greeting, streak, weekly summary |
-| Log Mood | Mood selector, text input, photo/video attachment |
-| History | List + calendar views with mood filters |
-| Entry Detail | Full entry view with edit/delete |
-| Settings | Profile, animation speed, notifications, logout, delete account |
+| Login/Register | Email + Google auth with validation and friendly error messages |
+| Home (Garden) | Styled garden view, greeting, streak, weekly summary, connectivity banner |
+| Log Mood | Mood selector, text input, photo/video attachment, success animation |
+| History | List + calendar views with mood filters, shimmer loading, sync icons |
+| Entry Detail | Full entry view with Hero animation, edit/delete |
+| Settings | Profile, dark mode, animation speed, notifications, sync status, logout, delete account |
 
 ---
 
@@ -76,9 +79,9 @@ Ensure Email/Password and Google Sign-In are enabled in the Firebase Console und
 ```
 lib/
 ├── main.dart                 # Entry point, provider setup
-├── app.dart                  # MaterialApp, routes, startup logic
+├── app.dart                  # MaterialApp, routes, theme mode, startup logic
 ├── config/
-│   ├── theme.dart            # Color palette, typography, component themes
+│   ├── theme.dart            # Light + dark theme, color palettes, typography
 │   ├── routes.dart           # Named route constants
 │   └── constants.dart        # App-wide constants
 ├── models/
@@ -93,15 +96,29 @@ lib/
 │   └── preferences_service.dart # SharedPreferences wrapper
 ├── providers/
 │   ├── auth_provider.dart    # Auth state + user profile
-│   ├── mood_provider.dart    # Mood entries, save/edit/delete, streak
+│   ├── mood_provider.dart    # Mood entries, save/edit/delete, streak, sync status
 │   ├── garden_provider.dart  # Garden elements from mood data
 │   └── settings_provider.dart# Animation speed, notifications, dark mode
 ├── screens/                  # All app screens
-├── widgets/                  # Reusable widgets (MoodChip, MoodCard, etc.)
+├── widgets/
+│   ├── mood_chip.dart        # Animated mood selector chip
+│   ├── mood_card.dart        # Entry list card with Hero and sync indicator
+│   ├── garden_element.dart   # Base animated garden element
+│   ├── garden_plant.dart     # Styled plant container with growth animation
+│   ├── garden_bug.dart       # Bug container with fade animation
+│   ├── garden_ground.dart    # Sky/ground gradient background
+│   ├── connectivity_banner.dart # Offline status banner
+│   ├── sync_indicator.dart   # Cloud/local sync icon
+│   ├── success_animation.dart# Post-save bloom animation overlay
+│   ├── attachment_preview.dart# Photo/video preview
+│   ├── confirmation_dialog.dart # Reusable confirmation dialog
+│   └── streak_badge.dart     # Streak counter display
 └── utils/
+    ├── error_handler.dart    # Centralized Firebase error message mapping
     ├── date_helpers.dart     # Date formatting, streak calculation
     ├── validators.dart       # Email/password validation
-    └── sync_manager.dart     # Offline sync logic
+    ├── sync_manager.dart     # Offline sync logic
+    └── responsive.dart       # Responsive layout utilities
 ```
 
 **State Management:** Provider (ChangeNotifier pattern)
@@ -114,6 +131,7 @@ lib/
 **Offline Strategy:**
 - Mood entries save to local SQLite first, then sync to Firestore
 - Unsynced entries push to Firestore when connectivity is restored
+- Connectivity banner shows offline status in real-time
 - Settings stored in SharedPreferences (no cloud sync)
 
 ---
@@ -125,6 +143,16 @@ lib/
 flutter test
 ```
 
+### Run integration tests on Android
+```bash
+flutter test integration_test/app_test.dart
+```
+
+### Run integration tests on Chrome
+```bash
+flutter test integration_test/app_test.dart -d chrome
+```
+
 ### Test files
 | Test | What it covers |
 |------|---------------|
@@ -132,23 +160,19 @@ flutter test
 | `test/models/mood_type_test.dart` | Enum values, categories, fromString |
 | `test/utils/validators_test.dart` | Email, password, display name validation |
 | `test/utils/date_helpers_test.dart` | Date formatting, streak calculation, week days |
+| `test/utils/error_handler_test.dart` | Firebase auth, storage, Firestore error code mappings |
+| `test/providers/settings_provider_test.dart` | Dark mode toggle, animation speed, persistence |
 | `test/widgets/mood_chip_test.dart` | Render, selection state, tap callback |
 | `test/widgets/mood_card_test.dart` | Mood display, text preview, attachment icons |
 | `test/widgets/confirmation_dialog_test.dart` | Title/message display, confirm/cancel returns |
-
-### Integration tests (requires device/emulator)
-```bash
-# Android
-flutter test integration_test/
-
-# Web
-flutter test integration_test/ -d chrome
-```
+| `test/widgets/garden_element_test.dart` | Plant/bug rendering, opacity fading, garden generation |
+| `integration_test/app_test.dart` | Settings persistence, mood CRUD, garden provider |
 
 ---
 
 ## Design System
 
+### Light Theme
 | Token | Color | Hex |
 |-------|-------|-----|
 | Primary | Forest Green | `#4A7C59` |
@@ -158,17 +182,41 @@ flutter test integration_test/ -d chrome
 | Background | Warm Off-White | `#FAF8F5` |
 | Card | Light Cream | `#F5F0EB` |
 
+### Dark Theme
+| Token | Color | Hex |
+|-------|-------|-----|
+| Primary | Sage Green | `#6B9F7A` |
+| Secondary | Soft Rose | `#D4A0AB` |
+| Accent | Warm Gold | `#E8B954` |
+| Background | Dark Navy | `#1A1A2E` |
+| Surface | Dark Card | `#242438` |
+| Card | Slightly Lighter | `#2D2D44` |
+
 **Typography:** Nunito (headings), Inter (body) via Google Fonts
+
+---
+
+## Beta v0.2 Changes
+
+- **Dark Mode** - Full dark theme wired to settings toggle with custom dark palette
+- **Garden Upgrade** - Styled Container widgets for plants/bugs with growth and fade animations
+- **Error Handler** - Centralized user-friendly error messages for Firebase auth, storage, Firestore
+- **Connectivity Banner** - Real-time offline status banner using connectivity_plus
+- **Sync Status** - Cloud/local icons on mood cards, pending count and "Sync Now" in settings
+- **Hero Animations** - Mood emoji animates between History and Entry Detail screens
+- **Page Transitions** - Fade-through transitions for screen navigation
+- **Success Animation** - Particle + checkmark overlay when saving a mood
+- **Shimmer Loading** - Placeholder cards in History while loading
+- **Pull-to-Refresh** - Themed refresh indicator with primary color
 
 ---
 
 ## Known Limitations
 
-- Garden view uses emoji-based elements (MVP) — art assets planned for later sprints
-- Video recording from camera not supported on Web (gallery pick only)
-- Push notifications setting persists but actual notification delivery is not implemented
-- Dark mode toggle exists in settings but dark theme is not yet implemented
-- Integration tests require a running Firebase emulator or test project
+- Push notifications setting persists but actual notification delivery is not yet implemented (planned for v1.0)
+- Garden plant assets use styled containers — custom illustrated SVG assets planned for v1.0
+- Video recording from camera not supported on Web (browser limitation — gallery pick works)
+- Offline sync is eventual-consistency; conflict resolution uses last-write-wins
 
 ---
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import '../../config/theme.dart';
 import '../../models/mood_entry.dart';
 import '../../models/mood_type.dart';
 import '../../utils/date_helpers.dart';
@@ -68,27 +67,32 @@ class _MoodCalendarViewState extends State<MoodCalendarView> {
             formatButtonVisible: false,
             titleCentered: true,
             titleTextStyle: Theme.of(context).textTheme.headlineSmall!,
-            leftChevronIcon: const Icon(
+            leftChevronIcon: Icon(
               Icons.chevron_left,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
             ),
-            rightChevronIcon: const Icon(
+            rightChevronIcon: Icon(
               Icons.chevron_right,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
           calendarStyle: CalendarStyle(
             todayDecoration: BoxDecoration(
-              color: AppColors.primaryLight.withValues(alpha: 0.3),
+              color: Theme.of(context)
+                  .colorScheme
+                  .primaryContainer
+                  .withValues(alpha: 0.3),
               shape: BoxShape.circle,
             ),
-            todayTextStyle: const TextStyle(color: AppColors.textPrimary),
-            selectedDecoration: const BoxDecoration(
-              color: AppColors.primary,
+            todayTextStyle: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            selectedDecoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
               shape: BoxShape.circle,
             ),
-            markerDecoration: const BoxDecoration(
-              color: AppColors.secondary,
+            markerDecoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.secondary,
               shape: BoxShape.circle,
             ),
             markerSize: 6,
@@ -109,7 +113,7 @@ class _MoodCalendarViewState extends State<MoodCalendarView> {
                           vertical: 1,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -128,7 +132,7 @@ class _MoodCalendarViewState extends State<MoodCalendarView> {
                           height: 6,
                           margin: const EdgeInsets.symmetric(horizontal: 1),
                           decoration: BoxDecoration(
-                            color: mood?.color ?? AppColors.primary,
+                            color: mood?.color ?? Theme.of(context).colorScheme.primary,
                             shape: BoxShape.circle,
                           ),
                         );

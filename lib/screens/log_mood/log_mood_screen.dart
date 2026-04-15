@@ -10,6 +10,7 @@ import '../../providers/mood_provider.dart';
 import '../../widgets/confirmation_dialog.dart';
 import '../../widgets/mood_chip.dart';
 import '../../widgets/attachment_preview.dart';
+import '../../widgets/success_animation.dart';
 
 class LogMoodScreen extends StatefulWidget {
   const LogMoodScreen({super.key});
@@ -130,25 +131,16 @@ class _LogMoodScreenState extends State<LogMoodScreen> {
     setState(() => _isSaving = false);
 
     if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Text('\u{1F33B} '),
-              Text(
-                'Mood saved! Your garden is growing.',
-                style: Theme.of(context).snackBarTheme.contentTextStyle,
-              ),
-            ],
-          ),
-        ),
-      );
+      // Show success animation overlay
+      await showSuccessAnimation(context);
       // Reset form
-      setState(() {
-        _selectedMood = null;
-        _textController.clear();
-        _removeAttachment();
-      });
+      if (mounted) {
+        setState(() {
+          _selectedMood = null;
+          _textController.clear();
+          _removeAttachment();
+        });
+      }
     }
   }
 
