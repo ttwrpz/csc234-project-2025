@@ -4,6 +4,10 @@ import 'local_db_service_stub.dart'
     if (dart.library.html) 'local_db_service_web.dart'
     as impl;
 
+/// Abstract interface for local database operations.
+///
+/// Uses SQLite on Android ([local_db_service_mobile.dart]) and an
+/// in-memory store on Web ([local_db_service_web.dart]).
 abstract class LocalDbService {
   Future<void> init();
   Future<void> insertMoodEntry(MoodEntry entry);

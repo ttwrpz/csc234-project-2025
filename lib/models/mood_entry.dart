@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'mood_type.dart';
 
+/// Data model representing a single mood log entry.
+///
+/// Supports serialization to/from both Firestore and SQLite formats.
+/// The [isSynced] flag tracks whether the entry has been pushed to Firestore.
 class MoodEntry {
   final String id;
   final String userId;

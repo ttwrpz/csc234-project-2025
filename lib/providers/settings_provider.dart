@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/preferences_service.dart';
 
+/// Manages app settings: dark mode, animation speed, notifications, onboarding.
+///
+/// Persists all settings to SharedPreferences via [PreferencesService].
 class SettingsProvider extends ChangeNotifier {
   final PreferencesService _preferencesService;
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+/// Centralized mapping of Firebase error codes to user-friendly messages.
 class ErrorHandler {
+  /// Returns a user-friendly message for a Firebase Auth error code.
   static String getFirebaseAuthMessage(String code) {
     switch (code) {
       case 'user-not-found':
@@ -31,6 +33,7 @@ class ErrorHandler {
     }
   }
 
+  /// Returns a user-friendly message for a Firebase Storage error code.
   static String getStorageMessage(String code) {
     switch (code) {
       case 'object-not-found':
@@ -50,6 +53,7 @@ class ErrorHandler {
     }
   }
 
+  /// Returns a user-friendly message for a Firestore error code.
   static String getFirestoreMessage(String code) {
     switch (code) {
       case 'permission-denied':
@@ -65,6 +69,7 @@ class ErrorHandler {
     }
   }
 
+  /// Shows a red error snackbar with a warning icon. Duration: 5 seconds.
   static void showErrorSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -81,12 +86,14 @@ class ErrorHandler {
           ],
         ),
         backgroundColor: Theme.of(context).colorScheme.error,
+        duration: const Duration(seconds: 5),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
+  /// Shows a green success snackbar with a checkmark icon. Duration: 3 seconds.
   static void showSuccessSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -102,6 +109,8 @@ class ErrorHandler {
             ),
           ],
         ),
+        backgroundColor: const Color(0xFF4A7C59),
+        duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),

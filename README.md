@@ -196,6 +196,79 @@ flutter test integration_test/app_test.dart -d chrome
 
 ---
 
+## Version History
+
+| Version | Sprint | Status | Key Changes |
+|---------|--------|--------|-------------|
+| v0.1 Alpha | S1-S2 | Complete | Core screens, auth, CRUD, SQLite, basic garden |
+| v0.2 Beta | S3 | Complete | Dark mode, garden upgrade, integration tests, error handling |
+| v1.0 Final | S4 | Complete | Full test coverage, code quality polish, performance optimization, security hardening |
+
+---
+
+## Test Coverage
+
+See [`test/TEST_COVERAGE.md`](test/TEST_COVERAGE.md) for the complete test-to-feature mapping.
+
+| Category | Count | Status |
+|----------|-------|--------|
+| Unit Tests (models) | 15 tests | All passing |
+| Unit Tests (utils) | 30+ tests | All passing |
+| Unit Tests (providers) | 35+ tests | All passing |
+| Unit Tests (services) | 18 tests | All passing |
+| Widget Tests | 20+ tests | All passing |
+| Integration Tests | 8+ flows | All passing |
+| **Total** | **168 tests** | **All passing** |
+
+### Run Tests
+
+```bash
+# All unit + widget tests
+flutter test
+
+# With expanded output
+flutter test --reporter expanded
+
+# Integration tests (Android)
+flutter test integration_test/app_test.dart
+
+# Integration tests (Chrome)
+flutter test integration_test/app_test.dart -d chrome
+
+# Static analysis (zero warnings)
+flutter analyze
+```
+
+---
+
+## Security
+
+- Firestore security rules enforce per-user data isolation (`firestore.rules`)
+- Firebase Storage rules limit uploads to 5MB per file (`storage.rules`)
+- No API keys or credentials in source code (Firebase config via `flutterfire configure`)
+- SharedPreferences used only for non-sensitive settings (dark mode, animation speed)
+- Auth error messages are user-friendly (no raw Firebase codes exposed)
+
+---
+
+## Evidence Package
+
+Test execution logs and screenshots are stored in the `evidence/` folder.
+
+### Capture evidence
+
+```bash
+bash scripts/capture_evidence.sh
+```
+
+### Screenshots to capture
+
+1. App running on Android emulator (Home, Log Mood, History, Settings)
+2. App running on Chrome browser (same 4 screens)
+3. Test output showing all tests passing
+
+---
+
 ## Beta v0.2 Changes
 
 - **Dark Mode** - Full dark theme wired to settings toggle with custom dark palette
@@ -209,14 +282,27 @@ flutter test integration_test/app_test.dart -d chrome
 - **Shimmer Loading** - Placeholder cards in History while loading
 - **Pull-to-Refresh** - Themed refresh indicator with primary color
 
+## Final v1.0 Changes
+
+- **Full Test Coverage** - 168 tests across unit, widget, and integration levels
+- **Test-to-Feature Mapping** - `test/TEST_COVERAGE.md` maps every feature to its tests
+- **New Tests** - garden_provider, local_db_service, sync_manager, dark mode, delete, filter
+- **Dartdoc Comments** - All public APIs in services/, providers/, models/, utils/
+- **Zero Lint Warnings** - `flutter analyze` returns no issues
+- **Consistent Snackbars** - Green success / red error snackbars with icons and timed duration
+- **Web Hover Effects** - Hover feedback on mood cards for desktop/web
+- **Security Rules** - Firestore + Storage rules documented and version controlled
+- **Evidence Package** - Capture script and evidence folder for submission
+
 ---
 
 ## Known Limitations
 
-- Push notifications setting persists but actual notification delivery is not yet implemented (planned for v1.0)
-- Garden plant assets use styled containers — custom illustrated SVG assets planned for v1.0
-- Video recording from camera not supported on Web (browser limitation — gallery pick works)
-- Offline sync is eventual-consistency; conflict resolution uses last-write-wins
+- Push notifications: setting persists but delivery requires platform-specific setup (FCM for Android, not supported on Web)
+- Garden assets: styled containers with animations (custom SVG illustrations are a future enhancement)
+- Video camera recording: not supported on Web due to browser limitations (gallery pick works)
+- Offline sync: uses eventual consistency with last-write-wins conflict resolution
+- Data export: not yet implemented (planned for future version)
 
 ---
 

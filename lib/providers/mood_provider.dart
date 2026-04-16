@@ -9,6 +9,10 @@ import '../services/local_db_service.dart';
 import '../utils/sync_manager.dart';
 import '../utils/date_helpers.dart';
 
+/// Manages mood entries: loading, saving, updating, deleting, and sync status.
+///
+/// Uses offline-first strategy: entries save to local DB first, then sync to
+/// Firestore when online. Exposes streak count, filtered views, and sync state.
 class MoodProvider extends ChangeNotifier {
   final FirestoreService _firestoreService;
   final StorageService _storageService;

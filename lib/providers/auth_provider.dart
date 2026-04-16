@@ -6,6 +6,10 @@ import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 import '../services/local_db_service.dart';
 
+/// Manages authentication state, user profile, and auth-related actions.
+///
+/// Listens to Firebase auth state changes and exposes the current user,
+/// profile data, loading state, and error messages to the UI.
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
   final FirestoreService _firestoreService;

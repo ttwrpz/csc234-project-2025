@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/constants.dart';
 
+/// Wrapper around SharedPreferences for persisting app settings.
 class PreferencesService {
   SharedPreferences? _prefs;
 

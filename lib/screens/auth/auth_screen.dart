@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/routes.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/error_handler.dart';
 import '../../utils/validators.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -73,24 +74,20 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _forgotPassword() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter your email address first.')),
-      );
+      ErrorHandler.showErrorSnackBar(context, 'Enter your email address first.');
       return;
     }
 
     final auth = context.read<AuthProvider>();
     final success = await auth.sendPasswordReset(email);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? 'Password reset email sent! Check your inbox.'
-                : auth.error ?? 'Failed to send reset email.',
-          ),
-        ),
-      );
+      if (success) {
+        ErrorHandler.showSuccessSnackBar(
+          context, 'Password reset email sent! Check your inbox.');
+      } else {
+        ErrorHandler.showErrorSnackBar(
+          context, auth.error ?? 'Failed to send reset email.');
+      }
     }
   }
 

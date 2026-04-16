@@ -9,6 +9,7 @@ import '../../models/mood_entry.dart';
 import '../../models/mood_type.dart';
 import '../../providers/mood_provider.dart';
 import '../../utils/date_helpers.dart';
+import '../../utils/error_handler.dart';
 import '../../widgets/confirmation_dialog.dart';
 import '../../widgets/mood_chip.dart';
 import '../../widgets/attachment_preview.dart';
@@ -85,9 +86,7 @@ class _EntryDetailScreenState extends State<EntryDetailScreen> {
     );
 
     if (success && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Entry updated.')));
+      ErrorHandler.showSuccessSnackBar(context, 'Entry updated.');
       Navigator.of(context).pop();
     }
   }
@@ -105,9 +104,7 @@ class _EntryDetailScreenState extends State<EntryDetailScreen> {
     if (!confirmed) return;
     final success = await moodProvider.deleteEntry(widget.entry);
     if (success && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Entry deleted.')));
+      ErrorHandler.showSuccessSnackBar(context, 'Entry deleted.');
       Navigator.of(context).pop();
     }
   }
@@ -124,9 +121,7 @@ class _EntryDetailScreenState extends State<EntryDetailScreen> {
     final data = await picked.readAsBytes();
     if (data.length > AppConstants.maxAttachmentSizeBytes) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('File is too large. Maximum 5MB.')),
-        );
+        ErrorHandler.showErrorSnackBar(context, 'File is too large. Maximum 5MB.');
       }
       return;
     }

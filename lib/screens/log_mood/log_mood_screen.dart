@@ -7,6 +7,7 @@ import '../../config/constants.dart';
 import '../../models/mood_type.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/mood_provider.dart';
+import '../../utils/error_handler.dart';
 import '../../widgets/confirmation_dialog.dart';
 import '../../widgets/mood_chip.dart';
 import '../../widgets/attachment_preview.dart';
@@ -47,9 +48,7 @@ class _LogMoodScreenState extends State<LogMoodScreen> {
     final data = await picked.readAsBytes();
     if (data.length > AppConstants.maxAttachmentSizeBytes) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('File is too large. Maximum 5MB.')),
-        );
+        ErrorHandler.showErrorSnackBar(context, 'File is too large. Maximum 5MB.');
       }
       return;
     }
@@ -73,9 +72,7 @@ class _LogMoodScreenState extends State<LogMoodScreen> {
     final data = await picked.readAsBytes();
     if (data.length > AppConstants.maxAttachmentSizeBytes) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('File is too large. Maximum 5MB.')),
-        );
+        ErrorHandler.showErrorSnackBar(context, 'File is too large. Maximum 5MB.');
       }
       return;
     }
@@ -99,9 +96,7 @@ class _LogMoodScreenState extends State<LogMoodScreen> {
 
   Future<void> _save() async {
     if (_selectedMood == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please select a mood.')));
+      ErrorHandler.showErrorSnackBar(context, 'Please select a mood.');
       return;
     }
 

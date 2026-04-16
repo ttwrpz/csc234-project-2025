@@ -1,3 +1,4 @@
+/// Input validation utilities for forms (email, password, display name).
 class Validators {
   static String? email(String? value) {
     if (value == null || value.trim().isEmpty) {

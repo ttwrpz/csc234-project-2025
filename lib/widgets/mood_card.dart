@@ -4,6 +4,8 @@ import '../models/mood_type.dart';
 import '../utils/date_helpers.dart';
 import 'sync_indicator.dart';
 
+/// Displays a mood entry as a compact card with emoji, label, text preview,
+/// attachment icon, and sync indicator. Supports Hero animation for the emoji.
 class MoodCard extends StatelessWidget {
   final MoodEntry entry;
   final VoidCallback onTap;
@@ -23,6 +25,7 @@ class MoodCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
+        hoverColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

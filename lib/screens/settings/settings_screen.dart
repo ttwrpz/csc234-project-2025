@@ -5,6 +5,7 @@ import '../../config/routes.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/mood_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../utils/error_handler.dart';
 import '../../widgets/confirmation_dialog.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -169,7 +170,7 @@ class SettingsScreen extends StatelessWidget {
                     ListTile(
                       leading: const Icon(Icons.info_outline),
                       title: const Text('About MoodBloom'),
-                      subtitle: const Text('Version 0.2.0'),
+                      subtitle: const Text('Version 1.0.0'),
                       onTap: () => _showAbout(context),
                     ),
                   ],
@@ -248,9 +249,7 @@ class SettingsScreen extends StatelessWidget {
     if (success && context.mounted) {
       Navigator.of(context).pushReplacementNamed(AppRoutes.auth);
     } else if (context.mounted && auth.error != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(auth.error!)));
+      ErrorHandler.showErrorSnackBar(context, auth.error!);
     }
   }
 
@@ -374,9 +373,7 @@ class _SyncSection extends StatelessWidget {
     if (auth.user != null) {
       await moodProvider.refreshEntries(auth.user!.uid);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sync complete')),
-        );
+        ErrorHandler.showSuccessSnackBar(context, 'Sync complete');
       }
     }
   }

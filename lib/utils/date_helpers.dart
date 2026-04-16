@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+/// Utility class for date formatting, streak calculation, and week operations.
 class DateHelpers {
   static String formatFull(DateTime date) {
     return DateFormat('EEEE, MMMM d, y \'at\' h:mm a').format(date);

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/mood_entry.dart';
 import '../models/mood_type.dart';
 
+/// Represents a single visual element in the garden, derived from a mood entry.
 class GardenElement {
   final String id;
   final MoodType moodType;
@@ -23,6 +24,10 @@ class GardenElement {
   bool get isBug => moodType.category == MoodCategory.negative;
 }
 
+/// Converts mood entries into positioned garden elements (plants and bugs).
+///
+/// Positive moods become plants placed on the ground; negative moods become
+/// bugs that fade over time based on [animationSpeed].
 class GardenProvider extends ChangeNotifier {
   final List<GardenElement> _elements = [];
   double _animationSpeed = 2.0;

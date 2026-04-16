@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Screen-size breakpoint utilities for responsive layout decisions.
 class Responsive {
   static const double compactMaxWidth = 600;
   static const double expandedMaxWidth = 840;

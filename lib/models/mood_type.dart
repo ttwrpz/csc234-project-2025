@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+/// Categories that group mood types into positive, negative, or neutral.
 enum MoodCategory { positive, negative, neutral }
 
+/// The 10 supported mood types, each with display properties and garden mapping.
 enum MoodType {
   happy(
     label: 'Happy',
@@ -100,6 +102,7 @@ enum MoodType {
   final String gardenElement;
   final String gardenEmoji;
 
+  /// Parses a mood name string into a [MoodType], or null if not found.
   static MoodType? fromString(String value) {
     try {
       return MoodType.values.firstWhere(

@@ -3,6 +3,10 @@ import '../models/mood_entry.dart';
 import '../services/firestore_service.dart';
 import '../services/local_db_service.dart';
 
+/// Manages offline-first sync between local SQLite DB and Firestore.
+///
+/// Entries are always saved locally first, then pushed to Firestore when online.
+/// Uses last-write-wins conflict resolution.
 class SyncManager {
   final FirestoreService _firestoreService;
   final LocalDbService _localDbService;

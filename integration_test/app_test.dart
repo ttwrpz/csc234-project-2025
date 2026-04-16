@@ -422,5 +422,198 @@ void main() {
       // At 5x speed, fade is faster
       expect(sadElementFast.opacity, lessThanOrEqualTo(sadElement.opacity));
     });
+
+    testWidgets('garden populates with multiple mood types', (tester) async {
+      final garden = GardenProvider();
+
+      // Log 3 different moods: happy, sad, calm
+      final entries = [
+        MoodEntry(
+          id: 'g1',
+          userId: 'test-user',
+          mood: 'happy',
+          moodCategory: 'positive',
+          text: 'Happy entry',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+        MoodEntry(
+          id: 'g2',
+          userId: 'test-user',
+          mood: 'sad',
+          moodCategory: 'negative',
+          text: 'Sad entry',
+          createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+          updatedAt: DateTime.now().subtract(const Duration(hours: 1)),
+        ),
+        MoodEntry(
+          id: 'g3',
+          userId: 'test-user',
+          mood: 'calm',
+          moodCategory: 'positive',
+          text: 'Calm entry',
+          createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+          updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
+        ),
+      ];
+
+      garden.updateGarden(entries);
+
+      // Verify garden shows 3 elements
+      expect(garden.elements.length, 3);
+
+      // Verify mood types are correctly mapped
+      final moods = garden.elements.map((e) => e.moodType).toSet();
+      expect(moods, contains(MoodType.happy));
+      expect(moods, contains(MoodType.sad));
+      expect(moods, contains(MoodType.calm));
+
+      // Verify bug classification
+      final bugs = garden.elements.where((e) => e.isBug);
+      final plants = garden.elements.where((e) => !e.isBug);
+      expect(bugs.length, 1); // Only sad
+      expect(plants.length, 2); // happy and calm
+    });
+  });
+
+  group('Dark Mode Integration Test', () {
+    testWidgets('dark mode toggle persists and affects theme', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'onboarding_seen': true,
+        'dark_mode': false,
+      });
+
+      final preferencesService = PreferencesService();
+      final settingsProvider =
+          SettingsProvider(preferencesService: preferencesService);
+      await settingsProvider.loadSettings();
+
+      // Verify starts in light mode
+      expect(settingsProvider.darkMode, false);
+
+      // Toggle dark mode on
+      await settingsProvider.setDarkMode(true);
+      expect(settingsProvider.darkMode, true);
+
+      // Verify persistence by reloading
+      final settingsProvider2 =
+          SettingsProvider(preferencesService: preferencesService);
+      await settingsProvider2.loadSettings();
+      expect(settingsProvider2.darkMode, true);
+
+      // Toggle dark mode off
+      await settingsProvider2.setDarkMode(false);
+      expect(settingsProvider2.darkMode, false);
+
+      // Verify off persists
+      final settingsProvider3 =
+          SettingsProvider(preferencesService: preferencesService);
+      await settingsProvider3.loadSettings();
+      expect(settingsProvider3.darkMode, false);
+    });
+  });
+
+  group('Delete Entry Integration Test', () {
+    testWidgets('delete entry removes from provider', (tester) async {
+      final localDb = MockLocalDbService();
+      final firestoreService = MockFirestoreService();
+      final storageService = MockStorageService();
+      final syncManager = SyncManager(
+        firestoreService: firestoreService,
+        localDbService: localDb,
+      );
+
+      final moodProvider = MoodProvider(
+        firestoreService: firestoreService,
+        storageService: storageService,
+        localDbService: localDb,
+        syncManager: syncManager,
+      );
+
+      // Save two entries
+      await moodProvider.saveMoodEntry(
+        userId: 'test-user-1',
+        moodType: MoodType.happy,
+        text: 'Entry to keep',
+      );
+      await moodProvider.saveMoodEntry(
+        userId: 'test-user-1',
+        moodType: MoodType.sad,
+        text: 'Entry to delete',
+      );
+
+      expect(moodProvider.entries.length, 2);
+
+      // Delete the second entry
+      final entryToDelete = moodProvider.entries
+          .firstWhere((e) => e.text == 'Entry to delete');
+      final deleted = await moodProvider.deleteEntry(entryToDelete);
+
+      expect(deleted, true);
+      expect(moodProvider.entries.length, 1);
+      expect(moodProvider.entries.first.text, 'Entry to keep');
+    });
+  });
+
+  group('Filter Integration Test', () {
+    testWidgets('mood filter returns only matching entries', (tester) async {
+      final localDb = MockLocalDbService();
+      final firestoreService = MockFirestoreService();
+      final storageService = MockStorageService();
+      final syncManager = SyncManager(
+        firestoreService: firestoreService,
+        localDbService: localDb,
+      );
+
+      final moodProvider = MoodProvider(
+        firestoreService: firestoreService,
+        storageService: storageService,
+        localDbService: localDb,
+        syncManager: syncManager,
+      );
+
+      // Save entries with different moods
+      await moodProvider.saveMoodEntry(
+        userId: 'test-user-1',
+        moodType: MoodType.happy,
+        text: 'Happy entry 1',
+      );
+      await moodProvider.saveMoodEntry(
+        userId: 'test-user-1',
+        moodType: MoodType.sad,
+        text: 'Sad entry',
+      );
+      await moodProvider.saveMoodEntry(
+        userId: 'test-user-1',
+        moodType: MoodType.happy,
+        text: 'Happy entry 2',
+      );
+      await moodProvider.saveMoodEntry(
+        userId: 'test-user-1',
+        moodType: MoodType.calm,
+        text: 'Calm entry',
+      );
+
+      expect(moodProvider.entries.length, 4);
+
+      // Filter for happy only
+      final happyEntries = moodProvider.filteredEntries({MoodType.happy});
+      expect(happyEntries.length, 2);
+      expect(happyEntries.every((e) => e.mood == 'happy'), true);
+
+      // Filter for sad only
+      final sadEntries = moodProvider.filteredEntries({MoodType.sad});
+      expect(sadEntries.length, 1);
+      expect(sadEntries.first.text, 'Sad entry');
+
+      // Filter for multiple moods
+      final multiFilter =
+          moodProvider.filteredEntries({MoodType.happy, MoodType.calm});
+      expect(multiFilter.length, 3);
+
+      // Empty filter returns all
+      final allEntries = moodProvider.filteredEntries({});
+      expect(allEntries.length, 4);
+    });
   });
 }

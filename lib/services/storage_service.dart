@@ -2,9 +2,11 @@ import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../config/constants.dart';
 
+/// Service for uploading and managing photo/video attachments in Firebase Storage.
 class StorageService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
+  /// Uploads an attachment and returns the download URL.
   Future<String> uploadAttachment({
     required String userId,
     required String entryId,
@@ -23,6 +25,7 @@ class StorageService {
     return await ref.getDownloadURL();
   }
 
+  /// Deletes a single attachment by its download URL.
   Future<void> deleteAttachment(String url) async {
     try {
       final ref = _storage.refFromURL(url);
@@ -32,6 +35,7 @@ class StorageService {
     }
   }
 
+  /// Deletes all attachments for a user (used during account deletion).
   Future<void> deleteAllUserAttachments(String userId) async {
     try {
       final ref = _storage
