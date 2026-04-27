@@ -52,7 +52,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '433750563013',
     projectId: 'csc234-user-centric-mobile-app',
     authDomain: 'csc234-user-centric-mobile-app.firebaseapp.com',
-    databaseURL: 'https://csc234-user-centric-mobile-app-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'csc234-user-centric-mobile-app.firebasestorage.app',
     measurementId: 'G-2KH6XTFCEN',
   );
@@ -62,7 +61,6 @@ class DefaultFirebaseOptions {
     appId: '1:433750563013:android:c6aa458944c606faa538ac',
     messagingSenderId: '433750563013',
     projectId: 'csc234-user-centric-mobile-app',
-    databaseURL: 'https://csc234-user-centric-mobile-app-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'csc234-user-centric-mobile-app.firebasestorage.app',
   );
 
@@ -71,10 +69,9 @@ class DefaultFirebaseOptions {
     appId: '1:433750563013:ios:5b6b1c1bf0f3fed8a538ac',
     messagingSenderId: '433750563013',
     projectId: 'csc234-user-centric-mobile-app',
-    databaseURL: 'https://csc234-user-centric-mobile-app-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'csc234-user-centric-mobile-app.firebasestorage.app',
-    iosClientId: '433750563013-scltlfi42ns0tk3q85r1ha929mkedc5n.apps.googleusercontent.com',
+    iosClientId:
+        '433750563013-scltlfi42ns0tk3q85r1ha929mkedc5n.apps.googleusercontent.com',
     iosBundleId: 'com.cssit.usercentricapp',
   );
-
 }
