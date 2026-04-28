@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../features/auth/data/providers.dart';
+import '../features/auth/domain/entities/app_user.dart';
+import '../features/auth/presentation/sign_in_screen.dart';
+import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 
 const _onboardingCompleteKey = 'onboarding_complete';
@@ -13,17 +17,31 @@ final onboardingCompleteProvider = FutureProvider<bool>((ref) async {
 });
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final refresh = ValueNotifier<AppUser?>(null);
+  ref.onDispose(refresh.dispose);
+  ref.listen<AsyncValue<AppUser?>>(currentUserStreamProvider, (_, next) {
+    refresh.value = next.valueOrNull;
+  });
+
   return GoRouter(
     initialLocation: '/home',
+    refreshListenable: refresh,
     redirect: (context, state) async {
       final prefs = await SharedPreferences.getInstance();
       final onboardingDone = prefs.getBool(_onboardingCompleteKey) ?? false;
-      if (!onboardingDone && state.matchedLocation != '/onboarding') {
-        return '/onboarding';
+      final loc = state.matchedLocation;
+      final isAuthRoute = loc == '/sign-in' || loc == '/sign-up';
+
+      // 1. Onboarding gate (preserved from 6.1).
+      if (!onboardingDone && loc != '/onboarding') return '/onboarding';
+      if (onboardingDone && loc == '/onboarding') {
+        return refresh.value == null ? '/sign-in' : '/home';
       }
-      if (onboardingDone && state.matchedLocation == '/onboarding') {
-        return '/home';
+      // 2. Auth gate.
+      if (onboardingDone && refresh.value == null && !isAuthRoute) {
+        return '/sign-in';
       }
+      if (refresh.value != null && isAuthRoute) return '/home';
       return null;
     },
     routes: [
@@ -33,17 +51,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/sign-in',
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Sign in',
-          note: 'Implemented in WBS 2.1 (Day 3)',
-        ),
+        builder: (context, state) => const SignInScreen(),
       ),
       GoRoute(
         path: '/sign-up',
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Sign up',
-          note: 'Implemented in WBS 2.1 (Day 3)',
-        ),
+        builder: (context, state) => const SignUpScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -86,10 +98,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/settings',
-                builder: (c, s) => const _PlaceholderScreen(
-                  title: 'Settings',
-                  note: 'Theme + sign-out land in S3+',
-                ),
+                builder: (c, s) => const _SettingsScreen(),
               ),
             ],
           ),
@@ -165,6 +174,37 @@ class _PlaceholderScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SettingsScreen extends ConsumerWidget {
+  const _SettingsScreen();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserStreamProvider).valueOrNull;
+    final displayName = user?.displayName;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: ListView(
+        children: [
+          if (user != null)
+            ListTile(
+              leading: const Icon(Icons.account_circle_outlined),
+              title: Text(user.email ?? 'Signed in'),
+              subtitle: displayName == null ? null : Text(displayName),
+            ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout),
+            title: const Text('Sign out'),
+            onTap: () async {
+              await ref.read(signOutUseCaseProvider)();
+            },
+          ),
+        ],
       ),
     );
   }
