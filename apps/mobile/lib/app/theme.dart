@@ -1,8 +1,1 @@
-import 'package:flutter/material.dart';
-
-ThemeData buildLightTheme() {
-  return ThemeData(
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6750A4)),
-  );
-}
+export 'package:design_system/design_system.dart' show buildLightTheme;
