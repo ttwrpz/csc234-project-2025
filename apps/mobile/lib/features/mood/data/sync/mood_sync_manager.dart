@@ -88,9 +88,13 @@ class MoodSyncManager {
   late final StreamSubscription<bool> _connectivitySub;
   late final Timer _pollTimer;
 
-  /// Latest connectivity reading. Defaults to `true` so the first drain after
-  /// boot proceeds; the connectivity listener corrects within milliseconds.
-  bool _isOnline = true;
+  /// Latest connectivity reading. Defaults to `false` (R-7 fix from
+  /// 2026-04-29 audit): assuming online at boot would let the first drain
+  /// fire before the connectivity stream confirms, wasting an `attempt_count`
+  /// when the device actually starts offline. The `connectivity_plus`
+  /// listener emits the real state within milliseconds — no observable UX
+  /// regression — and offline-boot now correctly waits for connectivity.
+  bool _isOnline = false;
 
   String? _attachedUid;
   StreamSubscription<List<MoodEntryDto>>? _listenerSub;
@@ -195,9 +199,17 @@ class MoodSyncManager {
   Future<void> _drainImpl() async {
     if (_shutdown) return;
     if (!_isOnline) return;
+    // R-1 fix (2026-04-29 audit): without an attached uid we cannot enforce
+    // the cross-user filter, so skip drain entirely. The connectivity / kick
+    // / poll triggers will retry once bootstrap binds a uid.
+    final attachedUid = _attachedUid;
+    if (attachedUid == null) return;
 
-    // Loop until the queue is empty or every remaining row is parked in the
-    // future (peekAllDue filters by retry_after <= now).
+    // Loop until every due row is either processed or filtered out by the
+    // cross-user guard. We track which rows we've decided to skip in this
+    // drain pass so a fully-cross-user batch terminates instead of looping
+    // forever (peekAllDue filters by retry_after <= now, NOT by uid).
+    final skipped = <int>{};
     while (true) {
       final now = _clock().millisecondsSinceEpoch;
       final batch = await _syncQueueDao.peekAllDue(
@@ -206,14 +218,38 @@ class MoodSyncManager {
       );
       if (batch.isEmpty) return;
 
+      var madeProgress = false;
       for (final row in batch) {
         if (_shutdown) return;
+        if (skipped.contains(row.id)) continue;
+        // Cross-user filter: a row whose payload.userId differs from the
+        // currently-attached uid must NOT replay under the wrong auth
+        // context. We leave the row untouched (no markFailed, no dequeue)
+        // so it can drain when the original owner signs back in. The
+        // skipped-set bounds the loop so we don't spin.
+        final payloadUserId = _payloadUserId(row);
+        if (payloadUserId == null || payloadUserId != attachedUid) {
+          _logger.warn(
+            'sync skipping cross-user queue row',
+            data:
+                'rowId=${row.id} reason=uid-mismatch attachedUid=$attachedUid',
+          );
+          skipped.add(row.id);
+          continue;
+        }
         await _processRow(row);
+        madeProgress = true;
       }
+
+      // Every row in the batch was either skipped or already in our skipped
+      // set — no further progress is possible this drain pass.
+      if (!madeProgress) return;
     }
   }
 
   Future<void> _processRow(SyncQueueRow row) async {
+    // Cross-user filter is at the drain-level (see _drainImpl). By the time
+    // we land here, the row's payload.userId == _attachedUid is guaranteed.
     final entryId = row.entryId;
     try {
       await _moodDao.markSyncing(entryId);
@@ -386,6 +422,23 @@ class MoodSyncManager {
   /// JSON-decode a queue payload. Schema is owned by PR-3's repo, but PR-2
   /// must already understand it so the drain works.
   ///
+  /// R-1 (2026-04-29 audit): light-weight extraction of just the `userId`
+  /// from a queue row's payload, used to enforce the cross-user drain filter
+  /// without fully reconstructing the DTO. Returns `null` if the payload is
+  /// malformed or lacks a `userId` field — the caller treats null as
+  /// "unsafe to replay" and skips the row.
+  String? _payloadUserId(SyncQueueRow row) {
+    try {
+      final raw = jsonDecode(row.payload);
+      if (raw is! Map<String, dynamic>) return null;
+      final userId = raw['userId'];
+      if (userId is! String || userId.isEmpty) return null;
+      return userId;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Expected fields: `id`, `userId`, `mood`, `intensity`, `text`, `createdAt`
   /// (epoch ms), `updatedAt` (epoch ms or null), `mediaRefs` (`List<String>`).
   MoodEntryDto _decodeDto(String payload) {

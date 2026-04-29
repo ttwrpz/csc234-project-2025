@@ -205,6 +205,18 @@ Future<void> _settle([int turns = 8]) async {
   }
 }
 
+/// R-1 fix follow-up: drain tests need an attached uid so the cross-user
+/// queue filter doesn't skip the row. Schedules an empty initial snapshot for
+/// [uid] so the seed step resolves immediately, then awaits bootstrap.
+Future<void> _attachUid(
+  _FakeMoodFirestoreDatasource fakeRemote,
+  MoodSyncManager manager, {
+  String uid = _userA,
+}) async {
+  Future<void>.microtask(() => fakeRemote.emit(uid, const []));
+  await manager.bootstrap(uid);
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -265,6 +277,7 @@ void main() {
 
       final manager = build();
       addTearDown(manager.shutdown);
+      await _attachUid(fakeRemote, manager);
       // Mark online and drain.
       connectivity.add(true);
       await _settle();
@@ -291,6 +304,7 @@ void main() {
 
         final manager = build();
         addTearDown(manager.shutdown);
+        await _attachUid(fakeRemote, manager);
         connectivity.add(true);
         await _settle();
 
@@ -314,6 +328,7 @@ void main() {
 
         final manager = build();
         addTearDown(manager.shutdown);
+        await _attachUid(fakeRemote, manager);
         connectivity.add(true);
         await _settle();
 
@@ -341,6 +356,7 @@ void main() {
 
         final manager = build();
         addTearDown(manager.shutdown);
+        await _attachUid(fakeRemote, manager);
         connectivity.add(false);
         await _settle();
         // Even an explicit kick is a no-op while offline.
@@ -365,6 +381,7 @@ void main() {
 
       final manager = build();
       addTearDown(manager.shutdown);
+      await _attachUid(fakeRemote, manager);
       connectivity.add(false);
       await _settle();
       expect(fakeRemote.createCalls, isEmpty);
@@ -395,6 +412,7 @@ void main() {
 
       final manager = build();
       addTearDown(manager.shutdown);
+      await _attachUid(fakeRemote, manager);
       connectivity.add(true);
       await _settle();
 
@@ -427,6 +445,7 @@ void main() {
 
       final manager = build();
       addTearDown(manager.shutdown);
+      await _attachUid(fakeRemote, manager);
       connectivity.add(true);
       await _settle();
 
@@ -481,6 +500,7 @@ void main() {
 
       final manager = build();
       addTearDown(manager.shutdown);
+      await _attachUid(fakeRemote, manager);
       connectivity.add(true);
       await _settle();
 
@@ -686,6 +706,60 @@ void main() {
       ]);
       await _settle();
       expect(await moodDao.getById('post-shutdown'), isNull);
+    });
+  });
+
+  group('cross-user drain isolation (R-1 regression)', () {
+    test('queue rows enqueued under userA do NOT replay under userB after '
+        'sign-out / sign-in', () async {
+      // userA enqueues a create offline.
+      await moodDao.upsertFromLocal(_moodRow(id: 'a-row'));
+      await queueDao.enqueue(
+        SyncQueueCompanion.insert(
+          entryId: 'a-row',
+          operation: SyncOperation.create,
+          payload: _payload(id: 'a-row', userId: _userA),
+          createdAt: 1000,
+        ),
+      );
+      expect(await queueDao.length(), 1);
+
+      // userA signs in, manager bootstraps + queue drains successfully.
+      // (Skip the userA drain — we want the row to STILL be in queue when
+      // userB shows up, so we keep userA offline.)
+      final manager = build();
+      addTearDown(manager.shutdown);
+      Future<void>.microtask(() => fakeRemote.emit(_userA, const []));
+      await manager.bootstrap(_userA);
+      await _settle();
+      // Still offline — queue row stays.
+      expect(await queueDao.length(), 1);
+      expect(fakeRemote.createCalls, isEmpty);
+
+      // userA signs out.
+      await manager.shutdown();
+      // Queue row persists across shutdown.
+      expect(await queueDao.length(), 1);
+
+      // userB signs in on the same device. Build a fresh manager (typical
+      // post-sign-out app state).
+      connectivity = StreamController<bool>.broadcast();
+      final manager2 = build();
+      addTearDown(manager2.shutdown);
+      Future<void>.microtask(() => fakeRemote.emit('userB', const []));
+      await manager2.bootstrap('userB');
+      connectivity.add(true);
+      await _settle();
+
+      // Critical assertions: userA's row was NOT pushed to Firestore under
+      // userB's auth context, and the row is still in the queue (untouched
+      // for the original owner).
+      expect(
+        fakeRemote.createCalls,
+        isEmpty,
+        reason: 'userA queue row must NOT replay under userB auth',
+      );
+      expect(await queueDao.length(), 1);
     });
   });
 }
