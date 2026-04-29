@@ -7,6 +7,7 @@ import '../features/auth/data/providers.dart';
 import '../features/auth/domain/entities/app_user.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
+import '../features/garden/presentation/garden_screen.dart';
 import '../features/history/presentation/entry_detail_screen.dart';
 import '../features/history/presentation/history_screen.dart';
 import '../features/mood/presentation/log_mood_screen.dart';
@@ -68,10 +69,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/home',
-                builder: (c, s) => const _PlaceholderScreen(
-                  title: 'Home',
-                  note: 'Garden and quick log land in S3/S4',
-                ),
+                builder: (c, s) => const GardenScreen(),
               ),
             ],
           ),
@@ -148,36 +146,6 @@ class _AppShell extends StatelessWidget {
             label: 'Settings',
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({required this.title, required this.note});
-  final String title;
-  final String note;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(title, style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 12),
-              Text(
-                note,
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
