@@ -80,12 +80,14 @@ void main() {
       expect(row!.id, 'm1');
     });
 
-    test('isEmpty(userId) — true for fresh DB, false after one insert',
-        () async {
-      expect(await dao.isEmpty(userA), isTrue);
-      await dao.upsertFromLocal(sampleRow(id: 'm1'));
-      expect(await dao.isEmpty(userA), isFalse);
-    });
+    test(
+      'isEmpty(userId) — true for fresh DB, false after one insert',
+      () async {
+        expect(await dao.isEmpty(userA), isTrue);
+        await dao.upsertFromLocal(sampleRow(id: 'm1'));
+        expect(await dao.isEmpty(userA), isFalse);
+      },
+    );
 
     test('upsertFromLocal forces sync_state=pending', () async {
       // Even if caller passes synced, the DAO must re-stamp pending.
@@ -121,31 +123,35 @@ void main() {
   });
 
   group('MoodDao LWW (upsertFromRemote — ADR-0005)', () {
-    test('newer remote.updated_at overwrites local; sync_state=synced',
-        () async {
-      await dao.upsertFromLocal(
-        sampleRow(id: 'm1', note: 'old', updatedAt: 1000),
-      );
-      await dao.upsertFromRemote(
-        sampleRow(
-          id: 'm1',
-          note: 'new',
-          updatedAt: 2000,
-          syncState: MoodSyncState.synced,
-          deviceId: deviceA,
-        ),
-      );
-      final row = await dao.getById('m1');
-      expect(row!.note, 'new');
-      expect(row.updatedAt, 2000);
-      expect(row.syncState, MoodSyncState.synced);
-    });
+    test(
+      'newer remote.updated_at overwrites local; sync_state=synced',
+      () async {
+        await dao.upsertFromLocal(
+          sampleRow(id: 'm1', note: 'old', updatedAt: 1000),
+        );
+        await dao.upsertFromRemote(
+          sampleRow(
+            id: 'm1',
+            note: 'new',
+            updatedAt: 2000,
+            syncState: MoodSyncState.synced,
+            deviceId: deviceA,
+          ),
+        );
+        final row = await dao.getById('m1');
+        expect(row!.note, 'new');
+        expect(row.updatedAt, 2000);
+        expect(row.syncState, MoodSyncState.synced);
+      },
+    );
 
     test('older remote.updated_at is dropped; local wins', () async {
       // Seed a synced local row directly bypassing upsertFromLocal so its
       // sync_state stays `synced` (otherwise upsertFromLocal forces pending,
       // which triggers a different LWW branch).
-      await db.into(db.moodEntries).insert(
+      await db
+          .into(db.moodEntries)
+          .insert(
             sampleRow(
               id: 'm1',
               note: 'fresh',
@@ -166,33 +172,39 @@ void main() {
       expect(row.updatedAt, 5000);
     });
 
-    test('tie on updated_at: smaller device_id wins (overwrites local)',
-        () async {
-      await db.into(db.moodEntries).insert(
-            sampleRow(
-              id: 'm1',
-              note: 'local',
-              updatedAt: 5000,
-              syncState: MoodSyncState.synced,
-              deviceId: deviceB, // larger
-            ),
-          );
-      await dao.upsertFromRemote(
-        sampleRow(
-          id: 'm1',
-          note: 'remote-from-smaller-device',
-          updatedAt: 5000,
-          syncState: MoodSyncState.synced,
-          deviceId: deviceA, // smaller
-        ),
-      );
-      final row = await dao.getById('m1');
-      expect(row!.note, 'remote-from-smaller-device');
-      expect(row.deviceId, deviceA);
-    });
+    test(
+      'tie on updated_at: smaller device_id wins (overwrites local)',
+      () async {
+        await db
+            .into(db.moodEntries)
+            .insert(
+              sampleRow(
+                id: 'm1',
+                note: 'local',
+                updatedAt: 5000,
+                syncState: MoodSyncState.synced,
+                deviceId: deviceB, // larger
+              ),
+            );
+        await dao.upsertFromRemote(
+          sampleRow(
+            id: 'm1',
+            note: 'remote-from-smaller-device',
+            updatedAt: 5000,
+            syncState: MoodSyncState.synced,
+            deviceId: deviceA, // smaller
+          ),
+        );
+        final row = await dao.getById('m1');
+        expect(row!.note, 'remote-from-smaller-device');
+        expect(row.deviceId, deviceA);
+      },
+    );
 
     test('tie on updated_at: larger device_id loses (local stays)', () async {
-      await db.into(db.moodEntries).insert(
+      await db
+          .into(db.moodEntries)
+          .insert(
             sampleRow(
               id: 'm1',
               note: 'local',
@@ -215,27 +227,29 @@ void main() {
       expect(row.deviceId, deviceA);
     });
 
-    test('local pending row is NOT clobbered by an equal-timestamp remote echo',
-        () async {
-      // Simulates a freshly-saved local row before the sync manager has
-      // pushed it; the remote `snapshot()` listener must not overwrite the
-      // user's in-flight mutation.
-      await dao.upsertFromLocal(
-        sampleRow(id: 'm1', note: 'in-flight', updatedAt: 5000),
-      );
-      await dao.upsertFromRemote(
-        sampleRow(
-          id: 'm1',
-          note: 'stale-snapshot',
-          updatedAt: 5000,
-          syncState: MoodSyncState.synced,
-          deviceId: deviceB,
-        ),
-      );
-      final row = await dao.getById('m1');
-      expect(row!.note, 'in-flight');
-      expect(row.syncState, MoodSyncState.pending);
-    });
+    test(
+      'local pending row is NOT clobbered by an equal-timestamp remote echo',
+      () async {
+        // Simulates a freshly-saved local row before the sync manager has
+        // pushed it; the remote `snapshot()` listener must not overwrite the
+        // user's in-flight mutation.
+        await dao.upsertFromLocal(
+          sampleRow(id: 'm1', note: 'in-flight', updatedAt: 5000),
+        );
+        await dao.upsertFromRemote(
+          sampleRow(
+            id: 'm1',
+            note: 'stale-snapshot',
+            updatedAt: 5000,
+            syncState: MoodSyncState.synced,
+            deviceId: deviceB,
+          ),
+        );
+        final row = await dao.getById('m1');
+        expect(row!.note, 'in-flight');
+        expect(row.syncState, MoodSyncState.pending);
+      },
+    );
 
     test('remote insert when local is absent — inserts as synced', () async {
       await dao.upsertFromRemote(

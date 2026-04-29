@@ -32,8 +32,9 @@ class MoodEntries extends Table {
   // 1..5 invariant mirrors `MoodEntry.create`. customConstraint emits raw SQL
   // CHECK rather than Drift's column-DSL `check(...)` (which would make the
   // getter analyzer-recursive).
-  IntColumn get intensity =>
-      integer().customConstraint('NOT NULL CHECK (intensity BETWEEN 1 AND 5)')();
+  IntColumn get intensity => integer().customConstraint(
+    'NOT NULL CHECK (intensity BETWEEN 1 AND 5)',
+  )();
 
   /// The 500-char limit is also enforced in domain (`MoodEntry.create`);
   /// we mirror it at the schema layer as a defence-in-depth check.

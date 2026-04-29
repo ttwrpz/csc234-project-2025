@@ -22,8 +22,7 @@ class SyncQueue extends Table {
   /// Truncated to 200 chars at write time — see [SyncQueueDao.markFailed].
   /// Never include PII (entry text, email).
   TextColumn get lastError => text().named('last_error').nullable()();
-  TextColumn get lastErrorCode =>
-      text().named('last_error_code').nullable()();
+  TextColumn get lastErrorCode => text().named('last_error_code').nullable()();
 
   IntColumn get retryAfter =>
       integer().named('retry_after').withDefault(const Constant(0))();

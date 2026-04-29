@@ -36,18 +36,20 @@ class MoodDao extends DatabaseAccessor<MoodDatabase> with _$MoodDaoMixin {
   }
 
   Future<MoodEntryRow?> getById(String id) {
-    return (select(moodEntries)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (select(
+      moodEntries,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   /// True when the user has zero entries (live or tombstoned). Used by PR-3 to
   /// decide whether to bootstrap-fetch from Firestore on first launch.
   Future<bool> isEmpty(String userId) async {
-    final row = await (selectOnly(moodEntries)
-          ..addColumns([moodEntries.id])
-          ..where(moodEntries.userId.equals(userId))
-          ..limit(1))
-        .getSingleOrNull();
+    final row =
+        await (selectOnly(moodEntries)
+              ..addColumns([moodEntries.id])
+              ..where(moodEntries.userId.equals(userId))
+              ..limit(1))
+            .getSingleOrNull();
     return row == null;
   }
 
@@ -87,9 +89,9 @@ class MoodDao extends DatabaseAccessor<MoodDatabase> with _$MoodDaoMixin {
     final remoteDeviceId = row.deviceId.value;
 
     await transaction(() async {
-      final existing = await (select(moodEntries)
-            ..where((t) => t.id.equals(id)))
-          .getSingleOrNull();
+      final existing = await (select(
+        moodEntries,
+      )..where((t) => t.id.equals(id))).getSingleOrNull();
 
       if (existing == null) {
         await into(moodEntries).insert(
