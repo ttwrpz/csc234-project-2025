@@ -1,7 +1,13 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    match /{allPaths=**} {
+    match /users/{uid}/media/{path=**} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == uid
+                         && request.resource.size < 25 * 1024 * 1024
+                         && request.resource.contentType.matches('image/.*|video/.*');
+    }
+    match /{path=**} {
       allow read, write: if false;
     }
   }

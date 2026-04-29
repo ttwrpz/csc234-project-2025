@@ -5,17 +5,33 @@
   "storage": {
     "rules": "firebase/storage.rules"
   },
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "storage": {
+      "port": 9199
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    },
+    "singleProjectMode": true
+  },
   "flutter": {
     "platforms": {
       "android": {
         "default": {
           "projectId": "csc234-user-centric-mobile-app",
           "appId": "1:433750563013:android:c6aa458944c606faa538ac",
-          "fileOutput": "apps/mobile/android/app/google-services.json"
+          "fileOutput": "android/app/google-services.json"
         }
       },
       "dart": {
-        "apps/mobile/lib/firebase_options.dart": {
+        "lib/firebase_options.dart": {
           "projectId": "csc234-user-centric-mobile-app",
           "configurations": {
             "android": "1:433750563013:android:c6aa458944c606faa538ac",
