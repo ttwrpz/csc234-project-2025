@@ -1,3 +1,4 @@
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,8 +6,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../features/auth/data/providers.dart';
 import '../features/auth/domain/entities/app_user.dart';
+import '../features/auth/presentation/biometric_gate_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
+import '../features/auth/presentation/widgets/biometric_settings_tile.dart';
 import '../features/history/presentation/entry_detail_screen.dart';
 import '../features/history/presentation/history_screen.dart';
 import '../features/mood/presentation/log_mood_screen.dart';
@@ -22,8 +25,14 @@ final onboardingCompleteProvider = FutureProvider<bool>((ref) async {
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<AppUser?>(null);
   ref.onDispose(refresh.dispose);
-  ref.listen<AsyncValue<AppUser?>>(currentUserStreamProvider, (_, next) {
+  ref.listen<AsyncValue<AppUser?>>(currentUserStreamProvider, (prev, next) {
     refresh.value = next.valueOrNull;
+    // On sign-out (non-null → null), clear the session-scoped biometric
+    // unlock flag so a future re-sign-in re-prompts. Correct security
+    // behaviour: a fresh login should re-verify biometric on cold boot.
+    if (prev?.valueOrNull != null && next.valueOrNull == null) {
+      ref.read(biometricUnlockedThisSessionProvider.notifier).state = false;
+    }
   });
 
   return GoRouter(
@@ -45,6 +54,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/sign-in';
       }
       if (refresh.value != null && isAuthRoute) return '/home';
+
+      // 3. Biometric gate (WBS 2.2). Only inserts itself when (a) the user
+      // is signed in, (b) capability + opt-in are present AND ready
+      // synchronously, and (c) we haven't already unlocked this session.
+      // We avoid awaiting the FutureProvider here to keep redirects fast —
+      // if capability hasn't resolved yet, we let the user through and the
+      // gate will only kick in on the next router refresh once data lands.
+      if (refresh.value != null &&
+          loc != '/biometric-gate' &&
+          !ref.read(biometricUnlockedThisSessionProvider)) {
+        final cap = ref.read(biometricCapabilityProvider).valueOrNull;
+        if (cap != null && cap.shouldGate) {
+          return '/biometric-gate';
+        }
+      }
       return null;
     },
     routes: [
@@ -59,6 +83,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/sign-up',
         builder: (context, state) => const SignUpScreen(),
+      ),
+      GoRoute(
+        path: '/biometric-gate',
+        builder: (context, state) => const BiometricGateScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -208,6 +236,8 @@ class _SettingsScreen extends ConsumerWidget {
               await ref.read(signOutUseCaseProvider)();
             },
           ),
+          const SizedBox(height: MoodBloomSpacing.lg),
+          const BiometricSettingsTile(),
         ],
       ),
     );
