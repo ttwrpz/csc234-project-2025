@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'controllers/ai_suggestion_controller.dart';
 import 'controllers/log_mood_controller.dart';
 import 'controllers/log_mood_submission_controller.dart';
+import 'widgets/ai_suggestion_pill.dart';
 import 'widgets/intensity_dots.dart';
 import 'widgets/intensity_slider.dart';
 import 'widgets/mood_text_field.dart';
@@ -47,7 +49,17 @@ class LogMoodScreen extends ConsumerWidget {
               const SizedBox(height: MoodBloomSpacing.xl),
               Text('Want to add a note?', style: theme.textTheme.titleMedium),
               const SizedBox(height: MoodBloomSpacing.md),
-              MoodTextField(value: draft.text, onChanged: controller.setText),
+              MoodTextField(
+                value: draft.text,
+                onChanged: (text) {
+                  controller.setText(text);
+                  ref
+                      .read(aiSuggestionControllerProvider.notifier)
+                      .onTextChanged(text);
+                },
+              ),
+              const SizedBox(height: MoodBloomSpacing.sm),
+              const AISuggestionPill(),
               if (submission.errorMessage != null) ...[
                 const SizedBox(height: MoodBloomSpacing.sm),
                 Text(

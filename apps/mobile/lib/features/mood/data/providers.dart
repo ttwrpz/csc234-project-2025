@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,10 +7,14 @@ import '../../auth/data/providers.dart';
 import '../domain/entities/mood_entry.dart';
 import '../domain/mood_failure.dart';
 import '../domain/mood_repository.dart';
+import '../domain/repositories/ai_analysis_repository.dart';
+import '../domain/usecases/analyze_mood_text.dart';
 import '../domain/usecases/save_mood_entry.dart';
 import '../domain/usecases/watch_my_moods.dart';
+import 'datasources/ai_analysis_functions_datasource.dart';
 import 'datasources/mood_firestore_datasource.dart';
 import 'mood_repository_impl.dart';
+import 'repositories/ai_analysis_repository_impl.dart';
 
 final moodFirestoreDatasourceProvider = Provider<MoodFirestoreDatasource>((
   ref,
@@ -60,3 +65,28 @@ final moodEntryByIdProvider = FutureProvider.family<MoodEntry?, String>((
     Err<MoodEntry, MoodFailure>() => null,
   };
 });
+
+// AI analysis providers (WBS 3.4 — analyzeMoodText proxy per ADR-0003).
+// Region must match the function's deploy target (asia-southeast1).
+
+final firebaseFunctionsProvider = Provider<FirebaseFunctions>(
+  (ref) => FirebaseFunctions.instanceFor(region: 'asia-southeast1'),
+);
+
+final aiAnalysisFunctionsDatasourceProvider =
+    Provider<AiAnalysisFunctionsDatasource>(
+      (ref) =>
+          AiAnalysisFunctionsDatasource(ref.watch(firebaseFunctionsProvider)),
+    );
+
+final aiAnalysisRepositoryProvider = Provider<AIAnalysisRepository>(
+  (ref) => AiAnalysisRepositoryImpl(
+    datasource: ref.watch(aiAnalysisFunctionsDatasourceProvider),
+  ),
+);
+
+final analyzeMoodTextUseCaseProvider = Provider<AnalyzeMoodTextUseCase>(
+  (ref) => AnalyzeMoodTextUseCase(
+    repository: ref.watch(aiAnalysisRepositoryProvider),
+  ),
+);
