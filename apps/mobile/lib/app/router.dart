@@ -1,3 +1,5 @@
+import 'package:design_system/design_system.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -208,6 +210,25 @@ class _SettingsScreen extends ConsumerWidget {
               await ref.read(signOutUseCaseProvider)();
             },
           ),
+          if (kDebugMode) ...[
+            const SizedBox(height: MoodBloomSpacing.lg),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: MoodBloomSpacing.lg,
+              ),
+              child: FilledButton.tonal(
+                onPressed: () {
+                  // Debug-only escape hatch for verifying the Crashlytics
+                  // wiring end-to-end. Stripped in release builds via
+                  // kDebugMode.
+                  throw Exception(
+                    'Crashlytics test crash from Settings — debug only',
+                  );
+                },
+                child: const Text('Crash now (debug)'),
+              ),
+            ),
+          ],
         ],
       ),
     );
