@@ -24,11 +24,14 @@ service cloud.firestore {
         allow update: if isOwner(uid)
           && request.time.toMillis() - resource.data.createdAt.toMillis() < 86400000
           && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.updatedAt is timestamp
+          && request.resource.data.updatedAt == request.time
           && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['mood','intensity','text','mediaRefs','updatedAt'])
           && request.resource.data.intensity is int
           && request.resource.data.intensity >= 1
           && request.resource.data.intensity <= 5
+          && request.resource.data.text is string
           && request.resource.data.text.size() <= 500
           && request.resource.data.mood in ['happy','calm','okay','sad','angry','anxious'];
 

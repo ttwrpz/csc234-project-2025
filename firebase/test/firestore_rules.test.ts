@@ -293,6 +293,56 @@ describe("Firestore rules — users/{uid}/moods", () => {
     const userB = testEnv.authenticatedContext(USER_B).firestore();
     await assertFails(getDoc(doc(userB, `rateLimits/${USER_A}`)));
   });
+
+  // -------------------------------------------------------------------------
+  // Cases 16-17 — R-1 and R-2 from the security-reviewer audit (2026-04-29)
+  // -------------------------------------------------------------------------
+
+  it("Case 16 (R-1): update with client-supplied past updatedAt is denied", async () => {
+    // Seed a recent doc that's well within the 24h lock window.
+    const recentCreatedAt = Timestamp.fromMillis(Date.now() - ONE_HOUR_MS);
+    await seedMoodEntry(USER_A, "m1", {
+      mood: "okay",
+      intensity: 2,
+      text: "earlier today",
+      mediaRefs: [],
+      createdAt: recentCreatedAt,
+    });
+
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    // Client tries to backdate updatedAt — rules require == request.time, so
+    // any client-supplied Timestamp (past or future) must be rejected.
+    const backdatedUpdatedAt = Timestamp.fromMillis(
+      Date.now() - 10 * 60 * 60 * 1000,
+    );
+    await assertFails(
+      updateDoc(doc(userA, `users/${USER_A}/moods/m1`), {
+        text: "spoofed updatedAt",
+        updatedAt: backdatedUpdatedAt,
+      }),
+    );
+  });
+
+  it("Case 17 (R-2): update with text as a list (not string) is denied", async () => {
+    const recentCreatedAt = Timestamp.fromMillis(Date.now() - ONE_HOUR_MS);
+    await seedMoodEntry(USER_A, "m1", {
+      mood: "okay",
+      intensity: 2,
+      text: "earlier today",
+      mediaRefs: [],
+      createdAt: recentCreatedAt,
+    });
+
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    // Lists respond to .size() so size-only validation would let this through;
+    // the new `text is string` clause on update is what rejects it.
+    await assertFails(
+      updateDoc(doc(userA, `users/${USER_A}/moods/m1`), {
+        text: ["x"],
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
