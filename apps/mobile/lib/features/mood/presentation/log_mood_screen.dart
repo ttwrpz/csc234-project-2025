@@ -1,12 +1,17 @@
+import 'package:core/core.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/providers.dart';
+import '../domain/repositories/mood_media_repository.dart';
 import 'controllers/log_mood_controller.dart';
 import 'controllers/log_mood_submission_controller.dart';
 import 'widgets/intensity_dots.dart';
 import 'widgets/intensity_slider.dart';
+import 'widgets/media_picker_button.dart';
+import 'widgets/media_thumbnail_strip.dart';
 import 'widgets/mood_text_field.dart';
 import 'widgets/mood_type_grid.dart';
 
@@ -48,6 +53,17 @@ class LogMoodScreen extends ConsumerWidget {
               Text('Want to add a note?', style: theme.textTheme.titleMedium),
               const SizedBox(height: MoodBloomSpacing.md),
               MoodTextField(value: draft.text, onChanged: controller.setText),
+              const SizedBox(height: MoodBloomSpacing.lg),
+              if (draft.pickedMedia.isNotEmpty) ...[
+                MediaThumbnailStrip(
+                  media: draft.pickedMedia,
+                  onRemove: controller.removeMedia,
+                ),
+                const SizedBox(height: MoodBloomSpacing.sm),
+              ],
+              MediaPickerButton(
+                onPick: (source) => _onPickMedia(context, ref, source),
+              ),
               if (submission.errorMessage != null) ...[
                 const SizedBox(height: MoodBloomSpacing.sm),
                 Text(
@@ -82,6 +98,23 @@ class LogMoodScreen extends ConsumerWidget {
     final entry = await ref.read(logMoodControllerProvider.notifier).save();
     if (entry != null && context.mounted) {
       context.go('/history');
+    }
+  }
+
+  Future<void> _onPickMedia(
+    BuildContext context,
+    WidgetRef ref,
+    MoodMediaSource source,
+  ) async {
+    final picker = ref.read(pickMoodMediaUseCaseProvider);
+    final controller = ref.read(logMoodControllerProvider.notifier);
+    final submission = ref.read(logMoodSubmissionControllerProvider.notifier);
+    final result = await picker(source: source);
+    switch (result) {
+      case Ok(:final value):
+        controller.addAllMedia(value);
+      case Err(:final failure):
+        submission.fail(failure.message);
     }
   }
 }

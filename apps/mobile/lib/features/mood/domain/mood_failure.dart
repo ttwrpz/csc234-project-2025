@@ -14,6 +14,11 @@ sealed class MoodFailure extends Failure {
   const factory MoodFailure.network() = _Network;
   const factory MoodFailure.server(String reason) = _Server;
   const factory MoodFailure.unknown(Object? cause) = _Unknown;
+  const factory MoodFailure.mediaTooLarge(int sizeBytes) = _MediaTooLarge;
+  const factory MoodFailure.mediaUnsupportedType(String mimeType) =
+      _MediaUnsupportedType;
+  const factory MoodFailure.mediaUploadFailed(String reason) =
+      _MediaUploadFailed;
 }
 
 class _InvalidIntensity extends MoodFailure {
@@ -59,4 +64,22 @@ class _Server extends MoodFailure {
 class _Unknown extends MoodFailure {
   const _Unknown(this.cause) : super(message: 'Unknown error.');
   final Object? cause;
+}
+
+class _MediaTooLarge extends MoodFailure {
+  const _MediaTooLarge(this.sizeBytes)
+    : super(message: 'Attachment is larger than 25 MB.');
+  final int sizeBytes;
+}
+
+class _MediaUnsupportedType extends MoodFailure {
+  const _MediaUnsupportedType(this.mimeType)
+    : super(message: 'Only images and videos can be attached.');
+  final String mimeType;
+}
+
+class _MediaUploadFailed extends MoodFailure {
+  const _MediaUploadFailed(this.reason)
+    : super(message: 'Could not upload attachment.');
+  final String reason;
 }

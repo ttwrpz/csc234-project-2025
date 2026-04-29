@@ -6,7 +6,7 @@ part of 'log_mood_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$logMoodControllerHash() => r'a4ec7030aac06fdf12cab689e02d3feb87af0243';
+String _$logMoodControllerHash() => r'd60b925345192ffd3beb9607250f5c8dd60f0f44';
 
 /// Controller for `LogMoodScreen`. State is [MoodDraft] directly — it is the
 /// canonical in-progress entry shape and does not need a wrapper.

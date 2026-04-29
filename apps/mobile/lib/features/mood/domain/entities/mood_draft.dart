@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'mood_media.dart';
 import 'mood_type.dart';
 
 part 'mood_draft.freezed.dart';
@@ -7,6 +8,10 @@ part 'mood_draft.freezed.dart';
 /// In-progress mood entry held by `LogMoodController` (lands in 3.2).
 ///
 /// Lives only in memory — never serialized — so it has no JSON support.
+///
+/// `pickedMedia` is the local-device list of attachments the user has chosen
+/// but not yet uploaded. They become `mediaRefs` (`gs://...` URIs) only after
+/// a successful save flow uploads each item — see WBS 3.3.
 @freezed
 class MoodDraft with _$MoodDraft {
   const factory MoodDraft({
@@ -14,6 +19,7 @@ class MoodDraft with _$MoodDraft {
     @Default(3) int intensity,
     @Default('') String text,
     @Default(<String>[]) List<String> mediaRefs,
+    @Default(<MoodMedia>[]) List<MoodMedia> pickedMedia,
   }) = _MoodDraft;
 
   const MoodDraft._();
