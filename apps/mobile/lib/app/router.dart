@@ -7,6 +7,8 @@ import '../features/auth/data/providers.dart';
 import '../features/auth/domain/entities/app_user.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
+import '../features/history/presentation/entry_detail_screen.dart';
+import '../features/history/presentation/history_screen.dart';
 import '../features/mood/presentation/log_mood_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 
@@ -77,10 +79,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/history',
-                builder: (c, s) => const _PlaceholderScreen(
-                  title: 'History',
-                  note: 'List + filter chips land in WBS 5.1 (Day 5)',
-                ),
+                builder: (c, s) => const HistoryScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (c, s) =>
+                        EntryDetailScreen(id: s.pathParameters['id'] ?? ''),
+                  ),
+                ],
               ),
             ],
           ),

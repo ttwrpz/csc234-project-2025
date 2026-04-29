@@ -7,17 +7,31 @@ import 'package:moodbloom/features/mood/domain/mood_repository.dart';
 /// We don't use mockito in S2 — keeps generated code count low and tests
 /// readable.
 class FakeMoodRepository implements MoodRepository {
-  FakeMoodRepository({this.saveResult});
+  FakeMoodRepository({this.saveResult, this.findByIdResult});
 
   /// Result returned from [save]. If null, defaults to `Err(unknown)`.
   Result<MoodEntry, MoodFailure>? saveResult;
 
+  /// Result returned from [findById]. If null, defaults to `Err(notFound)`.
+  Result<MoodEntry, MoodFailure>? findByIdResult;
+
+  /// Sequence of emissions to yield from [watchAll]. Defaults to a single
+  /// empty list when null. Configure by setting before subscribing.
+  List<List<MoodEntry>>? streamedEntries;
+
   /// Captures every entry passed to [save] for assertion.
   final List<MoodEntry> saveCalls = [];
 
+  /// Captures every userId passed to [watchAll] for assertion.
+  final List<String> watchAllCalls = [];
+
   @override
   Stream<List<MoodEntry>> watchAll({required String userId}) async* {
-    yield const [];
+    watchAllCalls.add(userId);
+    final source = streamedEntries ?? const [<MoodEntry>[]];
+    for (final emission in source) {
+      yield emission;
+    }
   }
 
   @override
@@ -25,7 +39,7 @@ class FakeMoodRepository implements MoodRepository {
     required String userId,
     required String id,
   }) async {
-    return Err(MoodFailure.notFound(id));
+    return findByIdResult ?? Err(MoodFailure.notFound(id));
   }
 
   @override
