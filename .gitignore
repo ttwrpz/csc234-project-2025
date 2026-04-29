@@ -85,3 +85,8 @@ CLAUDE.md
 # VSCode AI integrations cache
 .vscode/.ai/
 .vscode-ai/
+
+# Cloud Functions (TypeScript build + node deps + runtime config secrets)
+functions/lib/
+functions/node_modules/
+functions/.runtimeconfig.json

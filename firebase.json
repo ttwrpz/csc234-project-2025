@@ -5,6 +5,18 @@
   "storage": {
     "rules": "firebase/storage.rules"
   },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20",
+    "predeploy": [
+      "npm --prefix \"$RESOURCE_DIR\" run build"
+    ]
+  },
+  "emulators": {
+    "functions": {
+      "port": 5001
+    }
+  },
   "flutter": {
     "platforms": {
       "android": {
