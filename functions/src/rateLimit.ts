@@ -70,6 +70,14 @@ export async function consumeToken(
       };
     }
 
+    // Note (R-M01 from 2026-04-29 security audit): we deliberately do NOT
+    // refresh `expireAt` on this in-window update. The Firestore TTL policy
+    // on `rateLimits/{uid}.expireAt` cleans the doc up ~60s after the window
+    // opens, regardless of how many in-window updates landed. Refreshing
+    // `expireAt` here would extend retention indefinitely under sustained
+    // traffic, which would defeat the TTL's storage-bound guarantee.
+    // Operational follow-up: confirm the TTL policy is configured against
+    // `expireAt` in the Firebase console (cannot be verified from source).
     tx.update(ref, { count: data.count + 1 });
     return {
       allowed: true,
