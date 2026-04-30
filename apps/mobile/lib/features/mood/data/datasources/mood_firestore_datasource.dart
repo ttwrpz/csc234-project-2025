@@ -28,6 +28,18 @@ class MoodFirestoreDatasource {
   }
 
   Future<MoodEntryDto> create(MoodEntryDto dto) async {
+    // R-2 fix (2026-04-29 audit): when the caller supplied an id (offline-first
+    // queue replay path), reuse it as the Firestore doc id so that the
+    // post-write listener emission's id matches the local Drift row's id and
+    // upsertFromRemote's LWW updates the existing row instead of inserting an
+    // orphan duplicate. The cloud-only fallback path (where id is empty) keeps
+    // the historical .add() behavior so Firestore generates a fresh id.
+    if (dto.id.isNotEmpty) {
+      final ref = _moodsRef(dto.userId).doc(dto.id);
+      await ref.set(dto.toFirestoreOnCreate());
+      final snap = await ref.get();
+      return MoodEntryDto.fromFirestore(snap);
+    }
     final ref = await _moodsRef(dto.userId).add(dto.toFirestoreOnCreate());
     final snap = await ref.get();
     return MoodEntryDto.fromFirestore(snap);

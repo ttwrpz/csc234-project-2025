@@ -85,3 +85,17 @@ CLAUDE.md
 # VSCode AI integrations cache
 .vscode/.ai/
 .vscode-ai/
+
+# Node — Firestore rules test harness (firebase/test/) and Cloud Functions
+**/node_modules/
+firebase/test/coverage/
+*.tsbuildinfo
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+storage-debug.log
+auth-debug.log
+
+# Cloud Functions (TypeScript build + runtime config secrets)
+functions/lib/
+functions/.runtimeconfig.json

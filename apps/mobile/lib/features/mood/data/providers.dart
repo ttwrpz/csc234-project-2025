@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,10 +7,37 @@ import '../../auth/data/providers.dart';
 import '../domain/entities/mood_entry.dart';
 import '../domain/mood_failure.dart';
 import '../domain/mood_repository.dart';
+import '../domain/repositories/ai_analysis_repository.dart';
+import '../domain/repositories/mood_media_repository.dart';
+import '../domain/usecases/analyze_mood_text.dart';
+import '../domain/usecases/pick_mood_media.dart';
 import '../domain/usecases/save_mood_entry.dart';
+import '../domain/usecases/upload_mood_media.dart';
 import '../domain/usecases/watch_my_moods.dart';
+import 'datasources/ai_analysis_functions_datasource.dart';
+import 'datasources/image_picker_datasource.dart';
 import 'datasources/mood_firestore_datasource.dart';
+import 'datasources/mood_storage_datasource.dart';
+import 'local/mood_dao.dart';
+import 'local/sync_queue_dao.dart';
+import 'mappers/mood_drift_mapper.dart';
+import 'mappers/mood_entry_mapper.dart';
 import 'mood_repository_impl.dart';
+import 'repositories/ai_analysis_repository_impl.dart';
+import 'repositories/mood_media_repository_impl.dart';
+import 'sync/connectivity_provider.dart';
+import 'sync/mood_sync_manager.dart';
+
+// PR-1 wires the DAOs as Riverpod providers but does NOT change the
+// repository wiring. PR-2 (sync manager) and PR-3 (repo cutover) consume
+// these. Until PR-3 lands, `moodRepositoryProvider` keeps routing through
+// the Firestore datasource — no behavior change at the UI layer.
+final moodDaoProvider = Provider<MoodDao>(
+  (ref) => ref.watch(databaseProvider).moodDao,
+);
+final syncQueueDaoProvider = Provider<SyncQueueDao>(
+  (ref) => ref.watch(databaseProvider).syncQueueDao,
+);
 
 final moodFirestoreDatasourceProvider = Provider<MoodFirestoreDatasource>((
   ref,
@@ -17,9 +45,66 @@ final moodFirestoreDatasourceProvider = Provider<MoodFirestoreDatasource>((
   return MoodFirestoreDatasource(ref.watch(firestoreProvider));
 });
 
+final moodEntryMapperProvider = Provider<MoodEntryMapper>(
+  (ref) => const MoodEntryMapper(),
+);
+
+final moodDriftMapperProvider = Provider<MoodDriftMapper>(
+  (ref) => const MoodDriftMapper(),
+);
+
+/// Feature flag for the offline-first cutover (PR-3). Default `true` — the
+/// repository routes reads + writes through Drift and the sync queue. Override
+/// to `false` (e.g., in `main.dart`'s shell or via Remote Config wiring) to
+/// fall back to the pre-PR-3 Firestore-only path. Reversible without a hotfix.
+final offlineFirstEnabledProvider = Provider<bool>((_) => true);
+
+/// Sync manager singleton. PR-2 wires it; PR-3 will have the repository call
+/// `kick()` after every enqueue. Disposed via `ref.onDispose`, so sign-out
+/// (which tears down the auth scope) cleans the listener and timers.
+///
+/// Note: `ref.watch(connectivityProvider.stream)` returns a broadcast
+/// `Stream<bool>` of `[true|false]` events. The provider's initial Async-loading
+/// state is squelched — the manager defaults `_isOnline = true` so the first
+/// drain after boot proceeds; the listener corrects within milliseconds.
+final moodSyncManagerProvider = Provider<MoodSyncManager>((ref) {
+  final prefsAsync = ref.watch(sharedPreferencesProvider);
+  final prefs = prefsAsync.valueOrNull;
+  if (prefs == null) {
+    throw StateError(
+      'moodSyncManagerProvider read before sharedPreferencesProvider resolved. '
+      'Await `ref.read(sharedPreferencesProvider.future)` upstream first.',
+    );
+  }
+  final manager = MoodSyncManager(
+    moodDao: ref.watch(moodDaoProvider),
+    syncQueueDao: ref.watch(syncQueueDaoProvider),
+    remote: ref.watch(moodFirestoreDatasourceProvider),
+    mapper: ref.watch(moodEntryMapperProvider),
+    // Riverpod 3 will replace `.stream`; until then it is the documented way
+    // to expose a StreamProvider's raw Stream to plain-Dart consumers like
+    // MoodSyncManager.
+    // ignore: deprecated_member_use
+    connectivity: ref.watch(connectivityProvider.stream),
+    deviceIdGetter: () =>
+        ref.read(deviceIdProvider).valueOrNull ?? 'unknown-device',
+    prefs: prefs,
+  );
+  ref.onDispose(() async => manager.shutdown());
+  return manager;
+});
+
 final moodRepositoryProvider = Provider<MoodRepository>((ref) {
   return MoodRepositoryImpl(
     datasource: ref.watch(moodFirestoreDatasourceProvider),
+    moodDao: ref.watch(moodDaoProvider),
+    syncQueueDao: ref.watch(syncQueueDaoProvider),
+    syncManager: ref.watch(moodSyncManagerProvider),
+    deviceIdGetter: () =>
+        ref.read(deviceIdProvider).valueOrNull ?? 'unknown-device',
+    offlineFirstEnabled: () => ref.read(offlineFirstEnabledProvider),
+    mapper: ref.watch(moodEntryMapperProvider),
+    driftMapper: ref.watch(moodDriftMapperProvider),
   );
 });
 
@@ -32,6 +117,37 @@ final saveMoodEntryUseCaseProvider = Provider<SaveMoodEntryUseCase>((ref) {
 
 final watchMyMoodsUseCaseProvider = Provider<WatchMyMoodsUseCase>((ref) {
   return WatchMyMoodsUseCase(repository: ref.watch(moodRepositoryProvider));
+});
+
+// Media (WBS 3.3) — picker + Storage upload. Sibling to the entry repository
+// so the Drift cutover (WBS 3.5) can rewrite mood storage without touching
+// media plumbing.
+
+final imagePickerDatasourceProvider = Provider<ImagePickerDatasource>((ref) {
+  return ImagePickerDatasource();
+});
+
+final moodStorageDatasourceProvider = Provider<MoodStorageDatasource>((ref) {
+  return MoodStorageDatasource(ref.watch(firebaseStorageProvider));
+});
+
+final moodMediaRepositoryProvider = Provider<MoodMediaRepository>((ref) {
+  return MoodMediaRepositoryImpl(
+    picker: ref.watch(imagePickerDatasourceProvider),
+    storage: ref.watch(moodStorageDatasourceProvider),
+  );
+});
+
+final pickMoodMediaUseCaseProvider = Provider<PickMoodMediaUseCase>((ref) {
+  return PickMoodMediaUseCase(
+    repository: ref.watch(moodMediaRepositoryProvider),
+  );
+});
+
+final uploadMoodMediaUseCaseProvider = Provider<UploadMoodMediaUseCase>((ref) {
+  return UploadMoodMediaUseCase(
+    repository: ref.watch(moodMediaRepositoryProvider),
+  );
 });
 
 /// Stream of the signed-in user's mood entries, ordered newest-first.
@@ -60,3 +176,28 @@ final moodEntryByIdProvider = FutureProvider.family<MoodEntry?, String>((
     Err<MoodEntry, MoodFailure>() => null,
   };
 });
+
+// AI analysis providers (WBS 3.4 — analyzeMoodText proxy per ADR-0003).
+// Region must match the function's deploy target (asia-southeast1).
+
+final firebaseFunctionsProvider = Provider<FirebaseFunctions>(
+  (ref) => FirebaseFunctions.instanceFor(region: 'asia-southeast1'),
+);
+
+final aiAnalysisFunctionsDatasourceProvider =
+    Provider<AiAnalysisFunctionsDatasource>(
+      (ref) =>
+          AiAnalysisFunctionsDatasource(ref.watch(firebaseFunctionsProvider)),
+    );
+
+final aiAnalysisRepositoryProvider = Provider<AIAnalysisRepository>(
+  (ref) => AiAnalysisRepositoryImpl(
+    datasource: ref.watch(aiAnalysisFunctionsDatasourceProvider),
+  ),
+);
+
+final analyzeMoodTextUseCaseProvider = Provider<AnalyzeMoodTextUseCase>(
+  (ref) => AnalyzeMoodTextUseCase(
+    repository: ref.watch(aiAnalysisRepositoryProvider),
+  ),
+);

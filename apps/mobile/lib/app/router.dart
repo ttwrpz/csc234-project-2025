@@ -1,14 +1,21 @@
+import 'package:design_system/design_system.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../features/analytics/presentation/analytics_screen.dart';
 import '../features/auth/data/providers.dart';
 import '../features/auth/domain/entities/app_user.dart';
+import '../features/auth/presentation/biometric_gate_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
+import '../features/auth/presentation/widgets/biometric_settings_tile.dart';
+import '../features/garden/presentation/garden_screen.dart';
 import '../features/history/presentation/entry_detail_screen.dart';
 import '../features/history/presentation/history_screen.dart';
+import '../features/mood/data/providers.dart' as mood_providers;
 import '../features/mood/presentation/log_mood_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 
@@ -22,8 +29,32 @@ final onboardingCompleteProvider = FutureProvider<bool>((ref) async {
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<AppUser?>(null);
   ref.onDispose(refresh.dispose);
-  ref.listen<AsyncValue<AppUser?>>(currentUserStreamProvider, (_, next) {
+  ref.listen<AsyncValue<AppUser?>>(currentUserStreamProvider, (previous, next) {
     refresh.value = next.valueOrNull;
+
+    final prevUid = previous?.valueOrNull?.uid;
+    final nextUid = next.valueOrNull?.uid;
+
+    // PR-3: drive the MoodSyncManager lifecycle off auth-state transitions.
+    // Sign-in (or auth resolves with a non-null user on app start) → bootstrap
+    // the sync manager so Drift is seeded once per uid and the live listener
+    // attaches. Sign-out → shutdown so the previous user's listener and timers
+    // are torn down before another sign-in re-attaches.
+    final manager = ref.read(mood_providers.moodSyncManagerProvider);
+    if (nextUid != null && nextUid != prevUid) {
+      // ignore: discarded_futures
+      manager.bootstrap(nextUid);
+    } else if (nextUid == null && prevUid != null) {
+      // ignore: discarded_futures
+      manager.shutdown();
+    }
+
+    // 2.2: on sign-out (non-null → null), clear the session-scoped biometric
+    // unlock flag so a future re-sign-in re-prompts. Correct security
+    // behaviour: a fresh login should re-verify biometric on cold boot.
+    if (previous?.valueOrNull != null && next.valueOrNull == null) {
+      ref.read(biometricUnlockedThisSessionProvider.notifier).state = false;
+    }
   });
 
   return GoRouter(
@@ -45,6 +76,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/sign-in';
       }
       if (refresh.value != null && isAuthRoute) return '/home';
+
+      // 3. Biometric gate (WBS 2.2). Only inserts itself when (a) the user
+      // is signed in, (b) capability + opt-in are present AND ready
+      // synchronously, and (c) we haven't already unlocked this session.
+      // We avoid awaiting the FutureProvider here to keep redirects fast —
+      // if capability hasn't resolved yet, we let the user through and the
+      // gate will only kick in on the next router refresh once data lands.
+      if (refresh.value != null &&
+          loc != '/biometric-gate' &&
+          !ref.read(biometricUnlockedThisSessionProvider)) {
+        final cap = ref.read(biometricCapabilityProvider).valueOrNull;
+        if (cap != null && cap.shouldGate) {
+          return '/biometric-gate';
+        }
+      }
       return null;
     },
     routes: [
@@ -60,6 +106,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/sign-up',
         builder: (context, state) => const SignUpScreen(),
       ),
+      GoRoute(
+        path: '/biometric-gate',
+        builder: (context, state) => const BiometricGateScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             _AppShell(navigationShell: navigationShell),
@@ -68,10 +118,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/home',
-                builder: (c, s) => const _PlaceholderScreen(
-                  title: 'Home',
-                  note: 'Garden and quick log land in S3/S4',
-                ),
+                builder: (c, s) => const GardenScreen(),
               ),
             ],
           ),
@@ -95,6 +142,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/log-mood',
                 builder: (c, s) => const LogMoodScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/analytics',
+                builder: (c, s) => const AnalyticsScreen(),
               ),
             ],
           ),
@@ -143,41 +198,16 @@ class _AppShell extends StatelessWidget {
             label: 'Log',
           ),
           NavigationDestination(
+            icon: Icon(Icons.insights_outlined),
+            selectedIcon: Icon(Icons.insights),
+            label: 'Insights',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
             label: 'Settings',
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({required this.title, required this.note});
-  final String title;
-  final String note;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(title, style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 12),
-              Text(
-                note,
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -208,6 +238,27 @@ class _SettingsScreen extends ConsumerWidget {
               await ref.read(signOutUseCaseProvider)();
             },
           ),
+          const SizedBox(height: MoodBloomSpacing.lg),
+          const BiometricSettingsTile(),
+          if (kDebugMode) ...[
+            const SizedBox(height: MoodBloomSpacing.lg),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: MoodBloomSpacing.lg,
+              ),
+              child: FilledButton.tonal(
+                onPressed: () {
+                  // Debug-only escape hatch for verifying the Crashlytics
+                  // wiring end-to-end. Stripped in release builds via
+                  // kDebugMode.
+                  throw Exception(
+                    'Crashlytics test crash from Settings — debug only',
+                  );
+                },
+                child: const Text('Crash now (debug)'),
+              ),
+            ),
+          ],
         ],
       ),
     );
