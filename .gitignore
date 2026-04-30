@@ -99,3 +99,18 @@ auth-debug.log
 # Cloud Functions (TypeScript build + runtime config secrets)
 functions/lib/
 functions/.runtimeconfig.json
+
+# Stray platform dirs at repo root.
+#
+# Per ADR-0001 the Flutter app lives entirely under apps/mobile/, so the real
+# Android module is at apps/mobile/android/ and the real iOS project is at
+# apps/mobile/ios/. If anyone runs `flutter pub get` (or an IDE auto-runs it)
+# from the repo root by mistake, Flutter regenerates partial android/ and
+# ios/ skeletons here. The skeletons are useless (no Gradle config, no
+# Xcode project) but git would happily track them on the next `git add`.
+#
+# `/android/` and `/ios/` are anchored — they only ignore the dirs at the
+# repo root. The real apps/mobile/android/ and apps/mobile/ios/ keep being
+# tracked.
+/android/
+/ios/
