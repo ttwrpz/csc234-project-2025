@@ -95,3 +95,7 @@ firestore-debug.log
 ui-debug.log
 storage-debug.log
 auth-debug.log
+
+# Cloud Functions (TypeScript build + runtime config secrets)
+functions/lib/
+functions/.runtimeconfig.json

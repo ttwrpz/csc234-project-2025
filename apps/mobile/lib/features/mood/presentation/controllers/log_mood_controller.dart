@@ -26,6 +26,13 @@ class LogMoodController extends _$LogMoodController {
 
   void pickMood(MoodType mood) => state = state.copyWith(mood: mood);
 
+  /// Apply a mood that came from the AI suggestion pill. Identical to
+  /// [pickMood] today; kept as a separate method so future analytics can
+  /// distinguish AI-accepted moods from manual picks (Lin US-Lin-2 metric).
+  /// Intentionally does NOT touch `intensity` — intensity is a deliberate
+  /// user choice, not part of the AI suggestion contract.
+  void applyAiSuggestion(MoodType mood) => state = state.copyWith(mood: mood);
+
   void setIntensity(int value) => state = state.copyWith(intensity: value);
 
   void setText(String text) => state = state.copyWith(text: text);

@@ -6,8 +6,10 @@ import 'package:go_router/go_router.dart';
 
 import '../data/providers.dart';
 import '../domain/repositories/mood_media_repository.dart';
+import 'controllers/ai_suggestion_controller.dart';
 import 'controllers/log_mood_controller.dart';
 import 'controllers/log_mood_submission_controller.dart';
+import 'widgets/ai_suggestion_pill.dart';
 import 'widgets/intensity_dots.dart';
 import 'widgets/intensity_slider.dart';
 import 'widgets/media_picker_button.dart';
@@ -52,7 +54,17 @@ class LogMoodScreen extends ConsumerWidget {
               const SizedBox(height: MoodBloomSpacing.xl),
               Text('Want to add a note?', style: theme.textTheme.titleMedium),
               const SizedBox(height: MoodBloomSpacing.md),
-              MoodTextField(value: draft.text, onChanged: controller.setText),
+              MoodTextField(
+                value: draft.text,
+                onChanged: (text) {
+                  controller.setText(text);
+                  ref
+                      .read(aiSuggestionControllerProvider.notifier)
+                      .onTextChanged(text);
+                },
+              ),
+              const SizedBox(height: MoodBloomSpacing.sm),
+              const AISuggestionPill(),
               const SizedBox(height: MoodBloomSpacing.lg),
               if (draft.pickedMedia.isNotEmpty) ...[
                 MediaThumbnailStrip(
