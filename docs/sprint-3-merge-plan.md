@@ -6,6 +6,76 @@
 
 ---
 
+## Phase 0 — clean the slate (one-time, before any S3 PR)
+
+When you opened the GitHub PR list you saw **24 branches**. Most are
+already-merged Sprint 2 work that needs garbage-collecting; some never
+went anywhere; only 14 are actually in scope for the v0.3-beta tag.
+Sort + sweep before the merge train so the queue is comprehensible.
+
+### Branch inventory
+
+| Category | Count | Action |
+|---|---:|---|
+| `main` (target) | 1 | leave alone |
+| Already-merged S2 feature branches | 7 | delete after release lands |
+| Stale / abandoned | 2 | delete |
+| `release/v0.2-walking-skeleton` (S2 integration) | 1 | **must merge to main first** |
+| Sprint 3 PRs (the 13 below) | 13 | merge per Phase 1–4 |
+| **total** | **24** | |
+
+### Step 1 — land Sprint 2 on main
+
+`main` is currently at `flutter create` scaffold + a chore commit.
+`release/v0.2-walking-skeleton` is **8 commits ahead and
+fast-forward-able** — every commit on it was already reviewed via
+its source `feat/*` PR during S2. The release PR is just an audit
+trail; no code changes happen.
+
+```bash
+gh pr create --base main --head release/v0.2-walking-skeleton \
+  --title 'release(v0.2): walking skeleton — auth + mood log + history + design tokens' \
+  --body 'S2 integration. 8 commits, each individually reviewed via its source feat/* PR.'
+```
+
+Squash-merge (or use the GitHub fast-forward button if your repo
+allows). After merge, optionally tag the resulting main commit as
+`v0.2-walking-skeleton` for traceability.
+
+### Step 2 — delete the now-redundant branches
+
+Once `release/v0.2` is on main, these S2 branches are stale:
+
+```bash
+for b in feat/1.1-foundation-restructure feat/2.1-auth \
+         feat/3.1-mood-entry-domain feat/3.2-mood-logging-ui \
+         feat/5.1-history-scaffold feat/6.1-design-tokens-shell-onboarding \
+         feat/qa-widget-tests; do
+  git push origin --delete "$b"
+done
+```
+
+And these stale/abandoned ones:
+
+```bash
+git push origin --delete feat/1.3-ci-cd       # superseded by chore/ci-integration
+git push origin --delete setup-schema         # pre-Sprint-1 example
+```
+
+### One naming gotcha
+
+`feat/5.1-history-scaffold` (S2, deletable in step 2) and
+`feat/5.1-calendar-view` (S3, in the merge train) **share the same
+WBS ID prefix**. Read the suffix carefully when deleting — the S2
+branch is the read-only history list shipped at v0.2; the S3 branch
+adds the calendar tab.
+
+After Phase 0 the PR list is **14 branches**: `main`,
+`release/v0.2-walking-skeleton` (already merged), and 13 in-flight
+S3 PRs. Now Phase 1 begins.
+
+---
+
 ## The 13 PRs at a glance
 
 | # | Branch | Tip | Tests | WBS | Reviewer gate |
