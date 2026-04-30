@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'feature_flags.dart';
@@ -11,6 +12,9 @@ final firebaseAuthProvider = Provider<FirebaseAuth>(
 );
 final firestoreProvider = Provider<FirebaseFirestore>(
   (ref) => FirebaseFirestore.instance,
+);
+final firebaseStorageProvider = Provider<FirebaseStorage>(
+  (ref) => FirebaseStorage.instance,
 );
 
 /// Singleton handle to Crashlytics. Wired up in `main.dart`.
