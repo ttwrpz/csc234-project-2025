@@ -17,7 +17,6 @@ final firebaseAuthProvider = Provider<FirebaseAuth>(
 final firestoreProvider = Provider<FirebaseFirestore>(
   (ref) => FirebaseFirestore.instance,
 );
-<<<<<<< HEAD
 final firebaseStorageProvider = Provider<FirebaseStorage>(
   (ref) => FirebaseStorage.instance,
 );
