@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../features/analytics/presentation/analytics_screen.dart';
 import '../features/auth/data/providers.dart';
 import '../features/auth/domain/entities/app_user.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
@@ -118,6 +119,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: '/analytics',
+                builder: (c, s) => const AnalyticsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
                 path: '/settings',
                 builder: (c, s) => const _SettingsScreen(),
               ),
@@ -158,6 +167,11 @@ class _AppShell extends StatelessWidget {
             icon: Icon(Icons.add_circle_outline),
             selectedIcon: Icon(Icons.add_circle),
             label: 'Log',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.insights_outlined),
+            selectedIcon: Icon(Icons.insights),
+            label: 'Insights',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
