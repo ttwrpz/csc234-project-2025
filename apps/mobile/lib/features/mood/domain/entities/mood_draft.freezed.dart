@@ -21,6 +21,7 @@ mixin _$MoodDraft {
   int get intensity => throw _privateConstructorUsedError;
   String get text => throw _privateConstructorUsedError;
   List<String> get mediaRefs => throw _privateConstructorUsedError;
+  List<MoodMedia> get pickedMedia => throw _privateConstructorUsedError;
 
   /// Create a copy of MoodDraft
   /// with the given fields replaced by the non-null parameter values.
@@ -39,6 +40,7 @@ abstract class $MoodDraftCopyWith<$Res> {
     int intensity,
     String text,
     List<String> mediaRefs,
+    List<MoodMedia> pickedMedia,
   });
 }
 
@@ -61,6 +63,7 @@ class _$MoodDraftCopyWithImpl<$Res, $Val extends MoodDraft>
     Object? intensity = null,
     Object? text = null,
     Object? mediaRefs = null,
+    Object? pickedMedia = null,
   }) {
     return _then(
       _value.copyWith(
@@ -80,6 +83,10 @@ class _$MoodDraftCopyWithImpl<$Res, $Val extends MoodDraft>
                 ? _value.mediaRefs
                 : mediaRefs // ignore: cast_nullable_to_non_nullable
                       as List<String>,
+            pickedMedia: null == pickedMedia
+                ? _value.pickedMedia
+                : pickedMedia // ignore: cast_nullable_to_non_nullable
+                      as List<MoodMedia>,
           )
           as $Val,
     );
@@ -100,6 +107,7 @@ abstract class _$$MoodDraftImplCopyWith<$Res>
     int intensity,
     String text,
     List<String> mediaRefs,
+    List<MoodMedia> pickedMedia,
   });
 }
 
@@ -121,6 +129,7 @@ class __$$MoodDraftImplCopyWithImpl<$Res>
     Object? intensity = null,
     Object? text = null,
     Object? mediaRefs = null,
+    Object? pickedMedia = null,
   }) {
     return _then(
       _$MoodDraftImpl(
@@ -140,6 +149,10 @@ class __$$MoodDraftImplCopyWithImpl<$Res>
             ? _value._mediaRefs
             : mediaRefs // ignore: cast_nullable_to_non_nullable
                   as List<String>,
+        pickedMedia: null == pickedMedia
+            ? _value._pickedMedia
+            : pickedMedia // ignore: cast_nullable_to_non_nullable
+                  as List<MoodMedia>,
       ),
     );
   }
@@ -153,7 +166,9 @@ class _$MoodDraftImpl extends _MoodDraft {
     this.intensity = 3,
     this.text = '',
     final List<String> mediaRefs = const <String>[],
+    final List<MoodMedia> pickedMedia = const <MoodMedia>[],
   }) : _mediaRefs = mediaRefs,
+       _pickedMedia = pickedMedia,
        super._();
 
   @override
@@ -173,9 +188,18 @@ class _$MoodDraftImpl extends _MoodDraft {
     return EqualUnmodifiableListView(_mediaRefs);
   }
 
+  final List<MoodMedia> _pickedMedia;
+  @override
+  @JsonKey()
+  List<MoodMedia> get pickedMedia {
+    if (_pickedMedia is EqualUnmodifiableListView) return _pickedMedia;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_pickedMedia);
+  }
+
   @override
   String toString() {
-    return 'MoodDraft(mood: $mood, intensity: $intensity, text: $text, mediaRefs: $mediaRefs)';
+    return 'MoodDraft(mood: $mood, intensity: $intensity, text: $text, mediaRefs: $mediaRefs, pickedMedia: $pickedMedia)';
   }
 
   @override
@@ -190,6 +214,10 @@ class _$MoodDraftImpl extends _MoodDraft {
             const DeepCollectionEquality().equals(
               other._mediaRefs,
               _mediaRefs,
+            ) &&
+            const DeepCollectionEquality().equals(
+              other._pickedMedia,
+              _pickedMedia,
             ));
   }
 
@@ -200,6 +228,7 @@ class _$MoodDraftImpl extends _MoodDraft {
     intensity,
     text,
     const DeepCollectionEquality().hash(_mediaRefs),
+    const DeepCollectionEquality().hash(_pickedMedia),
   );
 
   /// Create a copy of MoodDraft
@@ -217,6 +246,7 @@ abstract class _MoodDraft extends MoodDraft {
     final int intensity,
     final String text,
     final List<String> mediaRefs,
+    final List<MoodMedia> pickedMedia,
   }) = _$MoodDraftImpl;
   const _MoodDraft._() : super._();
 
@@ -228,6 +258,8 @@ abstract class _MoodDraft extends MoodDraft {
   String get text;
   @override
   List<String> get mediaRefs;
+  @override
+  List<MoodMedia> get pickedMedia;
 
   /// Create a copy of MoodDraft
   /// with the given fields replaced by the non-null parameter values.

@@ -1,0 +1,17 @@
+{
+  "name": "moodbloom-firestore-rules-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Emulator-driven unit tests for MoodBloom Firestore security rules (WBS 2.3).",
+  "scripts": {
+    "test": "jest --runInBand"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "@types/jest": "^29.5.12",
+    "firebase": "^10.12.2",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.4",
+    "typescript": "^5.4.5"
+  }
+}

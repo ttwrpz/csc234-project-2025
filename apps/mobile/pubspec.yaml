@@ -12,7 +12,11 @@ dependencies:
   cupertino_icons: ^1.0.8
   firebase_core: ^4.3.0
   firebase_auth: ^6.1.3
+  firebase_storage: ^13.0.0
   cloud_firestore: ^6.1.1
+  cloud_functions: ^6.0.0
+  firebase_crashlytics: ^5.0.0
+  firebase_remote_config: ^6.0.0
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
   go_router: ^14.6.0
@@ -20,12 +24,23 @@ dependencies:
   json_annotation: ^4.9.0
   google_sign_in: ^6.2.2
   shared_preferences: ^2.3.3
+  image_picker: ^1.1.2
+  mime: ^2.0.0
+  uuid: ^4.5.1
+  path: ^1.9.0
+  drift: ^2.20.0
+  sqlite3_flutter_libs: ^0.5.24
+  path_provider: ^2.1.4
+  synchronized: ^3.3.0
+  local_auth: ^2.3.0
+  local_auth_android: ^1.0.45
   core:
     path: ../../packages/core
   design_system:
     path: ../../packages/design_system
   analytics_pkg:
     path: ../../packages/analytics
+  connectivity_plus: ^7.1.1
 
 dev_dependencies:
   flutter_test:
@@ -35,6 +50,7 @@ dev_dependencies:
   riverpod_generator: ^2.6.3
   freezed: ^2.5.7
   json_serializable: ^6.9.0
+  drift_dev: ^2.20.0
 
 flutter:
   uses-material-design: true

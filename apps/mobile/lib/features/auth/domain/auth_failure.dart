@@ -17,6 +17,9 @@ sealed class AuthFailure extends Failure {
   const factory AuthFailure.googleConfigMissing() = _GoogleConfigMissing;
   const factory AuthFailure.network() = _Network;
   const factory AuthFailure.tooManyRequests() = _TooManyRequests;
+  const factory AuthFailure.biometricUnavailable() = _BiometricUnavailable;
+  const factory AuthFailure.biometricCancelled() = _BiometricCancelled;
+  const factory AuthFailure.biometricFailed(String reason) = _BiometricFailed;
   const factory AuthFailure.unknown(Object? cause) = _Unknown;
 }
 
@@ -60,6 +63,24 @@ class _Network extends AuthFailure {
 class _TooManyRequests extends AuthFailure {
   const _TooManyRequests()
     : super(message: 'Too many attempts. Please wait a moment and try again.');
+}
+
+class _BiometricUnavailable extends AuthFailure {
+  const _BiometricUnavailable()
+    : super(
+        message: 'Add a fingerprint or face on your device to enable this.',
+      );
+}
+
+class _BiometricCancelled extends AuthFailure {
+  const _BiometricCancelled()
+    : super(message: 'Biometric verification was cancelled.');
+}
+
+class _BiometricFailed extends AuthFailure {
+  const _BiometricFailed(this.reason)
+    : super(message: 'Couldn’t verify — please sign in again.');
+  final String reason;
 }
 
 class _Unknown extends AuthFailure {
