@@ -12,6 +12,7 @@ import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/garden/presentation/garden_screen.dart';
 import '../features/history/presentation/entry_detail_screen.dart';
 import '../features/history/presentation/history_screen.dart';
+import '../features/mood/data/providers.dart' as mood_providers;
 import '../features/mood/presentation/log_mood_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 
@@ -25,8 +26,24 @@ final onboardingCompleteProvider = FutureProvider<bool>((ref) async {
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<AppUser?>(null);
   ref.onDispose(refresh.dispose);
-  ref.listen<AsyncValue<AppUser?>>(currentUserStreamProvider, (_, next) {
+  ref.listen<AsyncValue<AppUser?>>(currentUserStreamProvider, (previous, next) {
     refresh.value = next.valueOrNull;
+
+    // PR-3: drive the MoodSyncManager lifecycle off auth-state transitions.
+    // Sign-in (or auth resolves with a non-null user on app start) → bootstrap
+    // the sync manager so Drift is seeded once per uid and the live listener
+    // attaches. Sign-out → shutdown so the previous user's listener and timers
+    // are torn down before another sign-in re-attaches.
+    final prevUid = previous?.valueOrNull?.uid;
+    final nextUid = next.valueOrNull?.uid;
+    final manager = ref.read(mood_providers.moodSyncManagerProvider);
+    if (nextUid != null && nextUid != prevUid) {
+      // ignore: discarded_futures
+      manager.bootstrap(nextUid);
+    } else if (nextUid == null && prevUid != null) {
+      // ignore: discarded_futures
+      manager.shutdown();
+    }
   });
 
   return GoRouter(

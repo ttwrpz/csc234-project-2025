@@ -20,6 +20,7 @@ import 'datasources/mood_firestore_datasource.dart';
 import 'datasources/mood_storage_datasource.dart';
 import 'local/mood_dao.dart';
 import 'local/sync_queue_dao.dart';
+import 'mappers/mood_drift_mapper.dart';
 import 'mappers/mood_entry_mapper.dart';
 import 'mood_repository_impl.dart';
 import 'repositories/ai_analysis_repository_impl.dart';
@@ -47,6 +48,16 @@ final moodFirestoreDatasourceProvider = Provider<MoodFirestoreDatasource>((
 final moodEntryMapperProvider = Provider<MoodEntryMapper>(
   (ref) => const MoodEntryMapper(),
 );
+
+final moodDriftMapperProvider = Provider<MoodDriftMapper>(
+  (ref) => const MoodDriftMapper(),
+);
+
+/// Feature flag for the offline-first cutover (PR-3). Default `true` — the
+/// repository routes reads + writes through Drift and the sync queue. Override
+/// to `false` (e.g., in `main.dart`'s shell or via Remote Config wiring) to
+/// fall back to the pre-PR-3 Firestore-only path. Reversible without a hotfix.
+final offlineFirstEnabledProvider = Provider<bool>((_) => true);
 
 /// Sync manager singleton. PR-2 wires it; PR-3 will have the repository call
 /// `kick()` after every enqueue. Disposed via `ref.onDispose`, so sign-out
@@ -86,6 +97,14 @@ final moodSyncManagerProvider = Provider<MoodSyncManager>((ref) {
 final moodRepositoryProvider = Provider<MoodRepository>((ref) {
   return MoodRepositoryImpl(
     datasource: ref.watch(moodFirestoreDatasourceProvider),
+    moodDao: ref.watch(moodDaoProvider),
+    syncQueueDao: ref.watch(syncQueueDaoProvider),
+    syncManager: ref.watch(moodSyncManagerProvider),
+    deviceIdGetter: () =>
+        ref.read(deviceIdProvider).valueOrNull ?? 'unknown-device',
+    offlineFirstEnabled: () => ref.read(offlineFirstEnabledProvider),
+    mapper: ref.watch(moodEntryMapperProvider),
+    driftMapper: ref.watch(moodDriftMapperProvider),
   );
 });
 
