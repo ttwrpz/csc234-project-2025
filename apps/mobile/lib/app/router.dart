@@ -8,8 +8,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../features/analytics/presentation/analytics_screen.dart';
 import '../features/auth/data/providers.dart';
 import '../features/auth/domain/entities/app_user.dart';
+import '../features/auth/presentation/biometric_gate_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
+import '../features/auth/presentation/widgets/biometric_settings_tile.dart';
 import '../features/garden/presentation/garden_screen.dart';
 import '../features/history/presentation/entry_detail_screen.dart';
 import '../features/history/presentation/history_screen.dart';
@@ -30,13 +32,14 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen<AsyncValue<AppUser?>>(currentUserStreamProvider, (previous, next) {
     refresh.value = next.valueOrNull;
 
+    final prevUid = previous?.valueOrNull?.uid;
+    final nextUid = next.valueOrNull?.uid;
+
     // PR-3: drive the MoodSyncManager lifecycle off auth-state transitions.
     // Sign-in (or auth resolves with a non-null user on app start) → bootstrap
     // the sync manager so Drift is seeded once per uid and the live listener
     // attaches. Sign-out → shutdown so the previous user's listener and timers
     // are torn down before another sign-in re-attaches.
-    final prevUid = previous?.valueOrNull?.uid;
-    final nextUid = next.valueOrNull?.uid;
     final manager = ref.read(mood_providers.moodSyncManagerProvider);
     if (nextUid != null && nextUid != prevUid) {
       // ignore: discarded_futures
@@ -44,6 +47,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     } else if (nextUid == null && prevUid != null) {
       // ignore: discarded_futures
       manager.shutdown();
+    }
+
+    // 2.2: on sign-out (non-null → null), clear the session-scoped biometric
+    // unlock flag so a future re-sign-in re-prompts. Correct security
+    // behaviour: a fresh login should re-verify biometric on cold boot.
+    if (previous?.valueOrNull != null && next.valueOrNull == null) {
+      ref.read(biometricUnlockedThisSessionProvider.notifier).state = false;
     }
   });
 
@@ -66,6 +76,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/sign-in';
       }
       if (refresh.value != null && isAuthRoute) return '/home';
+
+      // 3. Biometric gate (WBS 2.2). Only inserts itself when (a) the user
+      // is signed in, (b) capability + opt-in are present AND ready
+      // synchronously, and (c) we haven't already unlocked this session.
+      // We avoid awaiting the FutureProvider here to keep redirects fast —
+      // if capability hasn't resolved yet, we let the user through and the
+      // gate will only kick in on the next router refresh once data lands.
+      if (refresh.value != null &&
+          loc != '/biometric-gate' &&
+          !ref.read(biometricUnlockedThisSessionProvider)) {
+        final cap = ref.read(biometricCapabilityProvider).valueOrNull;
+        if (cap != null && cap.shouldGate) {
+          return '/biometric-gate';
+        }
+      }
       return null;
     },
     routes: [
@@ -80,6 +105,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/sign-up',
         builder: (context, state) => const SignUpScreen(),
+      ),
+      GoRoute(
+        path: '/biometric-gate',
+        builder: (context, state) => const BiometricGateScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -209,6 +238,8 @@ class _SettingsScreen extends ConsumerWidget {
               await ref.read(signOutUseCaseProvider)();
             },
           ),
+          const SizedBox(height: MoodBloomSpacing.lg),
+          const BiometricSettingsTile(),
           if (kDebugMode) ...[
             const SizedBox(height: MoodBloomSpacing.lg),
             Padding(

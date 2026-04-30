@@ -32,6 +32,8 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.24
   path_provider: ^2.1.4
   synchronized: ^3.3.0
+  local_auth: ^2.3.0
+  local_auth_android: ^1.0.45
   core:
     path: ../../packages/core
   design_system:
