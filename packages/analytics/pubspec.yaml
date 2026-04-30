@@ -1,0 +1,13 @@
+name: analytics_pkg
+description: "MoodBloom analytics_pkg package."
+publish_to: 'none'
+version: 0.1.0
+environment:
+  sdk: ^3.10.7
+dependencies:
+  flutter:
+    sdk: flutter
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
