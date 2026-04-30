@@ -18,9 +18,22 @@ import 'datasources/ai_analysis_functions_datasource.dart';
 import 'datasources/image_picker_datasource.dart';
 import 'datasources/mood_firestore_datasource.dart';
 import 'datasources/mood_storage_datasource.dart';
+import 'local/mood_dao.dart';
+import 'local/sync_queue_dao.dart';
 import 'mood_repository_impl.dart';
 import 'repositories/ai_analysis_repository_impl.dart';
 import 'repositories/mood_media_repository_impl.dart';
+
+// PR-1 wires the DAOs as Riverpod providers but does NOT change the
+// repository wiring. PR-2 (sync manager) and PR-3 (repo cutover) consume
+// these. Until PR-3 lands, `moodRepositoryProvider` keeps routing through
+// the Firestore datasource — no behavior change at the UI layer.
+final moodDaoProvider = Provider<MoodDao>(
+  (ref) => ref.watch(databaseProvider).moodDao,
+);
+final syncQueueDaoProvider = Provider<SyncQueueDao>(
+  (ref) => ref.watch(databaseProvider).syncQueueDao,
+);
 
 final moodFirestoreDatasourceProvider = Provider<MoodFirestoreDatasource>((
   ref,
