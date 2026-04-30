@@ -21,6 +21,13 @@ final firebaseStorageProvider = Provider<FirebaseStorage>(
   (ref) => FirebaseStorage.instance,
 );
 
+/// Shared preferences singleton. Resolved on first read; tests override with a
+/// `SharedPreferences.setMockInitialValues({...})` plus a fresh container
+/// scope, or override this provider directly with a fake.
+final sharedPreferencesProvider = FutureProvider<SharedPreferences>(
+  (ref) => SharedPreferences.getInstance(),
+);
+
 /// Singleton Drift database. Closed automatically when the provider scope is
 /// disposed. PR-1 ships the schema; PR-2 wires it to the sync manager and
 /// PR-3 routes `MoodRepositoryImpl` through it.

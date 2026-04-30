@@ -32,27 +32,26 @@ class SyncQueueDao extends DatabaseAccessor<MoodDatabase>
   Future<int> enqueue(SyncQueueCompanion row) {
     final operation = row.operation.present
         ? row.operation.value
-        : (throw ArgumentError(
-            'enqueue requires `operation` to be present',
-          ));
+        : (throw ArgumentError('enqueue requires `operation` to be present'));
     final entryId = row.entryId.present
         ? row.entryId.value
         : (throw ArgumentError('enqueue requires `entry_id` to be present'));
 
     return transaction(() async {
-      final existing = await (select(syncQueue)
-            ..where((t) => t.entryId.equals(entryId))
-            ..orderBy([
-              (t) =>
-                  OrderingTerm(expression: t.id, mode: OrderingMode.asc),
-            ]))
-          .get();
+      final existing =
+          await (select(syncQueue)
+                ..where((t) => t.entryId.equals(entryId))
+                ..orderBy([
+                  (t) => OrderingTerm(expression: t.id, mode: OrderingMode.asc),
+                ]))
+              .get();
 
       if (operation == SyncOperation.delete) {
         // Drop everything pending for this entry, then insert a single delete.
         if (existing.isNotEmpty) {
-          await (delete(syncQueue)..where((t) => t.entryId.equals(entryId)))
-              .go();
+          await (delete(
+            syncQueue,
+          )..where((t) => t.entryId.equals(entryId))).go();
         }
         return into(syncQueue).insert(row);
       }
@@ -93,40 +92,42 @@ class SyncQueueDao extends DatabaseAccessor<MoodDatabase>
     return (select(syncQueue)
           ..where((t) => t.retryAfter.isSmallerOrEqualValue(now))
           ..orderBy([
-            (t) =>
-                OrderingTerm(expression: t.id, mode: OrderingMode.asc),
+            (t) => OrderingTerm(expression: t.id, mode: OrderingMode.asc),
           ])
           ..limit(1))
         .getSingleOrNull();
   }
 
   /// Batched variant for PR-2's drain. [limit] caps the per-tick batch.
-  Future<List<SyncQueueRow>> peekAllDue({
-    required int now,
-    int limit = 32,
-  }) {
+  Future<List<SyncQueueRow>> peekAllDue({required int now, int limit = 32}) {
     return (select(syncQueue)
           ..where((t) => t.retryAfter.isSmallerOrEqualValue(now))
           ..orderBy([
-            (t) =>
-                OrderingTerm(expression: t.id, mode: OrderingMode.asc),
+            (t) => OrderingTerm(expression: t.id, mode: OrderingMode.asc),
           ])
           ..limit(limit))
         .get();
   }
 
-  /// Bumps `attempt_count` and pushes the row out of the worker's window.
-  /// Error metadata is truncated to the 200-char cap mandated by ADR-0004.
+  /// Records a failure and pushes the row out of the worker's window.
+  ///
+  /// By default `attempt_count` is incremented; pass `bumpAttempt: false` for
+  /// poison-pill outcomes (e.g. `permission-denied`) where retrying would
+  /// never succeed and the counter would mislead the "12 attempts" terminal
+  /// path. Error metadata is truncated to the 200-char cap mandated by
+  /// ADR-0004.
   Future<void> markFailed(
     int queueId, {
     required int retryAfter,
     String? code,
     String? message,
+    bool bumpAttempt = true,
   }) async {
-    final existing =
-        await (select(syncQueue)..where((t) => t.id.equals(queueId)))
-            .getSingleOrNull();
-    final nextAttempt = (existing?.attemptCount ?? 0) + 1;
+    final existing = await (select(
+      syncQueue,
+    )..where((t) => t.id.equals(queueId))).getSingleOrNull();
+    final currentAttempt = existing?.attemptCount ?? 0;
+    final nextAttempt = bumpAttempt ? currentAttempt + 1 : currentAttempt;
     final truncated = message == null
         ? null
         : (message.length > 200 ? message.substring(0, 200) : message);

@@ -17,10 +17,7 @@ part 'mood_database.g.dart';
 ///
 /// Schema version 1 is what S3 ships. v2 will use `MigrationStrategy.onUpgrade`
 /// step-by-step migrations.
-@DriftDatabase(
-  tables: [MoodEntries, SyncQueue],
-  daos: [MoodDao, SyncQueueDao],
-)
+@DriftDatabase(tables: [MoodEntries, SyncQueue], daos: [MoodDao, SyncQueueDao])
 class MoodDatabase extends _$MoodDatabase {
   MoodDatabase() : super(_openConnection());
 
@@ -33,11 +30,11 @@ class MoodDatabase extends _$MoodDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) async => m.createAll(),
-        onUpgrade: (m, from, to) async {
-          // v2+ migrations land in a future sprint; v1 ships clean.
-        },
-      );
+    onCreate: (m) async => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      // v2+ migrations land in a future sprint; v1 ships clean.
+    },
+  );
 }
 
 LazyDatabase _openConnection() {
