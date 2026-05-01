@@ -21,15 +21,25 @@ Future<void> main() async {
       // Crashlytics — capture both Flutter framework errors and async errors
       // from the platform dispatcher. Disabled in debug so dev crashes never
       // pollute the production console.
-      FlutterError.onError =
-          FirebaseCrashlytics.instance.recordFlutterFatalError;
-      PlatformDispatcher.instance.onError = (error, stack) {
-        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-        return true;
-      };
-      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(
-        !kDebugMode,
-      );
+      //
+      // Skipped on Web: firebase_crashlytics has no Web implementation; even
+      // touching `FirebaseCrashlytics.instance` (e.g. via
+      // `setCrashlyticsCollectionEnabled`) trips an assertion in the platform
+      // interface (`pluginConstants['isCrashlyticsCollectionEnabled'] != null`)
+      // because no Web plugin is registered. We gracefully no-op on Web —
+      // unhandled errors still surface in the browser console; production
+      // crash reporting on Web is a S5 follow-up (Sentry or similar).
+      if (!kIsWeb) {
+        FlutterError.onError =
+            FirebaseCrashlytics.instance.recordFlutterFatalError;
+        PlatformDispatcher.instance.onError = (error, stack) {
+          FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+          return true;
+        };
+        await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(
+          !kDebugMode,
+        );
+      }
 
       // Remote Config — register defaults synchronously so flag reads return
       // sane values even before the first fetchAndActivate completes. The
@@ -52,7 +62,11 @@ Future<void> main() async {
       runApp(const ProviderScope(child: MoodBloomApp()));
     },
     (error, stack) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      // Web: no-op (Crashlytics has no Web impl). Native: forward to
+      // Crashlytics so async-zone unhandled errors are recorded.
+      if (!kIsWeb) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      }
     },
   );
 }
