@@ -25,11 +25,7 @@ void main() {
 
     test('forwards args and returns gs:// uri on success', () async {
       repo.uploadResults = [const Ok('gs://bucket/users/u-1/media/m-1/x.jpg')];
-      final result = await usecase(
-        userId: 'u-1',
-        moodId: 'm-1',
-        media: media,
-      );
+      final result = await usecase(userId: 'u-1', moodId: 'm-1', media: media);
       expect(result, isA<Ok<String, MoodFailure>>());
       expect(result.getOrNull(), 'gs://bucket/users/u-1/media/m-1/x.jpg');
       expect(repo.uploadCalls.single.userId, 'u-1');
@@ -39,11 +35,7 @@ void main() {
 
     test('passes through mediaTooLarge failure', () async {
       repo.uploadResults = [const Err(MoodFailure.mediaTooLarge(30000000))];
-      final result = await usecase(
-        userId: 'u-1',
-        moodId: 'm-1',
-        media: media,
-      );
+      final result = await usecase(userId: 'u-1', moodId: 'm-1', media: media);
       expect(result, isA<Err<String, MoodFailure>>());
       expect(
         (result.errOrNull()! as Object).runtimeType.toString(),
@@ -53,11 +45,7 @@ void main() {
 
     test('passes through mediaUploadFailed failure', () async {
       repo.uploadResults = [const Err(MoodFailure.mediaUploadFailed('quota'))];
-      final result = await usecase(
-        userId: 'u-1',
-        moodId: 'm-1',
-        media: media,
-      );
+      final result = await usecase(userId: 'u-1', moodId: 'm-1', media: media);
       expect(result, isA<Err<String, MoodFailure>>());
       expect(
         (result.errOrNull()! as Object).runtimeType.toString(),

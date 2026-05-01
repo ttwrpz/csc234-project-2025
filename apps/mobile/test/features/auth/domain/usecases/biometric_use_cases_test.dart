@@ -26,16 +26,18 @@ void main() {
       expect(err.failure.runtimeType.toString(), contains('Cancel'));
     });
 
-    test('repository throws → Err(biometricFailed) with runtimeType only',
-        () async {
-      final repo = FakeBiometricRepository(
-        authenticateThrows: StateError('hardware'),
-      );
-      final useCase = AuthenticateWithBiometricUseCase(repo);
-      final result = await useCase(reason: 'unlock');
-      final err = result as Err<void, AuthFailure>;
-      expect(err.failure.runtimeType.toString(), contains('Failed'));
-    });
+    test(
+      'repository throws → Err(biometricFailed) with runtimeType only',
+      () async {
+        final repo = FakeBiometricRepository(
+          authenticateThrows: StateError('hardware'),
+        );
+        final useCase = AuthenticateWithBiometricUseCase(repo);
+        final result = await useCase(reason: 'unlock');
+        final err = result as Err<void, AuthFailure>;
+        expect(err.failure.runtimeType.toString(), contains('Failed'));
+      },
+    );
   });
 
   group('CheckBiometricCapabilityUseCase', () {

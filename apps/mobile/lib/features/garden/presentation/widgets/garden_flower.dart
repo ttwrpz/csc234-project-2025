@@ -6,7 +6,11 @@ import 'package:flutter/material.dart';
 /// moods. The hue is parameterized so the canvas can alternate between
 /// happy (warm yellow) and calm (sage teal) blooms.
 class GardenFlower extends StatelessWidget {
-  const GardenFlower({super.key, required this.color, this.size = _defaultSize});
+  const GardenFlower({
+    super.key,
+    required this.color,
+    this.size = _defaultSize,
+  });
 
   final Color color;
   final double size;

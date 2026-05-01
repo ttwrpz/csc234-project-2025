@@ -116,19 +116,13 @@ class LogMoodController extends _$LogMoodController {
     };
   }
 
-  MoodEntry _onSaveOk(
-    LogMoodSubmissionController submission,
-    MoodEntry entry,
-  ) {
+  MoodEntry _onSaveOk(LogMoodSubmissionController submission, MoodEntry entry) {
     submission.succeed();
     state = MoodDraft.empty();
     return entry;
   }
 
-  Null _onSaveErr(
-    LogMoodSubmissionController submission,
-    MoodFailure failure,
-  ) {
+  Null _onSaveErr(LogMoodSubmissionController submission, MoodFailure failure) {
     submission.fail(failure.message);
     return null;
   }

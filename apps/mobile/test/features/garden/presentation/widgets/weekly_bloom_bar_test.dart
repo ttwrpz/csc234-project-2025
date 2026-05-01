@@ -8,7 +8,9 @@ import 'package:moodbloom/features/garden/presentation/widgets/weekly_bloom_bar.
 /// label colors so a real ThemeData is required.
 Future<void> _pumpBar(WidgetTester tester, WeeklyBloomBar bar) async {
   await tester.pumpWidget(
-    MaterialApp(home: Scaffold(body: Center(child: bar))),
+    MaterialApp(
+      home: Scaffold(body: Center(child: bar)),
+    ),
   );
 }
 
@@ -17,7 +19,10 @@ List<DayBloom> _days(List<DayBloomKind> kinds) {
   final today = DateTime(2026, 4, 29);
   return [
     for (var i = 0; i < kinds.length; i += 1)
-      DayBloom(day: today.subtract(Duration(days: i)), kind: kinds[i]),
+      DayBloom(
+        day: today.subtract(Duration(days: i)),
+        kind: kinds[i],
+      ),
   ];
 }
 
@@ -83,9 +88,7 @@ void main() {
       ];
       await _pumpBar(tester, WeeklyBloomBar(days: _days(kinds)));
       final colors = _cellColors(tester);
-      final blooms = colors
-          .where((c) => c == MoodBloomColors.moodHappy)
-          .length;
+      final blooms = colors.where((c) => c == MoodBloomColors.moodHappy).length;
       final empties = colors
           .where((c) => c == MoodBloomColors.surfaceDim)
           .length;

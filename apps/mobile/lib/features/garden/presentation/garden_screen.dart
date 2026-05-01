@@ -65,7 +65,9 @@ class _GardenView extends StatelessWidget {
         const SizedBox(height: MoodBloomSpacing.xl),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: MoodBloomSpacing.xl),
-          child: state.isEmpty ? const _GardenEmpty() : _GardenCanvas(state: state),
+          child: state.isEmpty
+              ? const _GardenEmpty()
+              : _GardenCanvas(state: state),
         ),
         const SizedBox(height: MoodBloomSpacing.xxl),
       ],
@@ -97,8 +99,8 @@ class _GardenCanvas extends StatelessWidget {
             children: [
               for (var i = 0; i < flowerCount; i += 1)
                 GardenFlower(
-                  color: GardenFlower.positivePalette[
-                      i % GardenFlower.positivePalette.length],
+                  color: GardenFlower
+                      .positivePalette[i % GardenFlower.positivePalette.length],
                 ),
             ],
           ),
