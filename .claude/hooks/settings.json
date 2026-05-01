@@ -1,0 +1,109 @@
+{
+  "$schema": "https://claude.com/schemas/claude-code/settings.json",
+  "hooks": {
+    "postEdit": [
+      {
+        "name": "dart-format",
+        "description": "Format any .dart file that was edited",
+        "matcher": "*.dart",
+        "command": "cd apps/mobile && dart format $CLAUDE_EDITED_FILE",
+        "blocking": false,
+        "timeout": 30
+      },
+      {
+        "name": "flutter-analyze-changed",
+        "description": "Run flutter analyze on the feature folder of any edited Dart file",
+        "matcher": "apps/mobile/lib/**/*.dart",
+        "command": "cd apps/mobile && flutter analyze $(dirname $CLAUDE_EDITED_FILE) 2>&1 | grep -E 'error|warning' | head -20",
+        "blocking": false,
+        "timeout": 60
+      }
+    ],
+    "preWrite": [
+      {
+        "name": "secret-scan",
+        "description": "Block writes that contain what look like API keys or secrets",
+        "matcher": "*",
+        "command": "echo \"$CLAUDE_WRITE_CONTENT\" | grep -qE '(AIza[A-Za-z0-9_-]{35}|sk-[A-Za-z0-9]{40,}|xox[baprs]-[A-Za-z0-9-]{10,}|ghp_[A-Za-z0-9]{36}|AKIA[A-Z0-9]{16})' && { echo 'BLOCKED: possible secret detected'; exit 1; } || exit 0",
+        "blocking": true,
+        "timeout": 5
+      },
+      {
+        "name": "no-print-in-prod",
+        "description": "Warn if a print() is being added outside of test files",
+        "matcher": "apps/mobile/lib/**/*.dart",
+        "command": "echo \"$CLAUDE_WRITE_CONTENT\" | grep -qE '^\\s*print\\(' && echo 'WARNING: print() found. Use packages/core/logger.dart instead.' || exit 0",
+        "blocking": false,
+        "timeout": 5
+      },
+      {
+        "name": "domain-layer-purity",
+        "description": "Block Flutter or Firebase imports in domain/ folders",
+        "matcher": "apps/mobile/lib/features/**/domain/**/*.dart",
+        "command": "echo \"$CLAUDE_WRITE_CONTENT\" | grep -qE \"^import 'package:(flutter|firebase_|cloud_firestore|firebase_auth|firebase_storage)\" && { echo 'BLOCKED: domain layer cannot import Flutter or Firebase packages (see CLAUDE.md)'; exit 1; } || exit 0",
+        "blocking": true,
+        "timeout": 5
+      }
+    ],
+    "postCommit": [
+      {
+        "name": "run-domain-tests",
+        "description": "Run domain unit tests after any commit touching domain/",
+        "matcher": "apps/mobile/lib/features/**/domain/**/*.dart",
+        "command": "cd apps/mobile && flutter test test/features/$(basename $(dirname $(dirname $CLAUDE_EDITED_FILE)))/domain/ 2>&1 | tail -5",
+        "blocking": false,
+        "timeout": 120
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Bash(dart format*)",
+      "Bash(flutter analyze*)",
+      "Bash(flutter test*)",
+      "Bash(flutter pub*)",
+      "Bash(flutter build*)",
+      "Bash(cd apps/mobile*)",
+      "Bash(cd functions*)",
+      "Bash(npm test*)",
+      "Bash(npm audit*)",
+      "Bash(npm install*)",
+      "Bash(npm run*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(gh pr*)",
+      "Bash(firebase emulators*)"
+    ],
+    "deny": [
+      "Bash(rm -rf*)",
+      "Bash(git push --force*)",
+      "Bash(curl*)",
+      "Bash(wget*)",
+      "Bash(firebase deploy*)",
+      "Bash(flutterfire configure*)",
+      "Write(android/app/google-services.json)",
+      "Write(ios/Runner/GoogleService-Info.plist)",
+      "Write(.env*)",
+      "Write(functions/.runtimeconfig.json)"
+    ]
+  },
+  "mcpServers": {
+    "firebase-emulator": {
+      "description": "Reserved for later — MCP server wrapping the Firebase emulator for QA integration tests. Do not enable until S4.",
+      "enabled": false
+    }
+  },
+  "modelDefaults": {
+    "architect": "claude-opus-4-7",
+    "flutter-engineer": "claude-opus-4-7",
+    "qa-engineer": "claude-sonnet-4-6",
+    "security-reviewer": "claude-opus-4-7"
+  }
+}

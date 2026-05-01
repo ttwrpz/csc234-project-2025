@@ -43,8 +43,8 @@ void main() {
   }
 
   final features = byFeature.keys.toList()..sort();
-  print('| feature | lines covered | total lines | coverage |');
-  print('|---|---:|---:|---:|');
+  stdout.writeln('| feature | lines covered | total lines | coverage |');
+  stdout.writeln('|---|---:|---:|---:|');
   var allCovered = 0;
   var allTotal = 0;
   var anyBelow = false;
@@ -55,12 +55,12 @@ void main() {
     final pct = t.lines == 0 ? 100.0 : (t.hit * 100.0) / t.lines;
     final marker = pct >= 80 ? '✓' : '✗';
     if (pct < 80) anyBelow = true;
-    print(
+    stdout.writeln(
       '| $feat | ${t.hit} | ${t.lines} | ${pct.toStringAsFixed(1)}% $marker |',
     );
   }
   final overall = allTotal == 0 ? 100.0 : (allCovered * 100.0) / allTotal;
-  print(
+  stdout.writeln(
     '| **all** | **$allCovered** | **$allTotal** | **${overall.toStringAsFixed(1)}%** |',
   );
   if (anyBelow) {
