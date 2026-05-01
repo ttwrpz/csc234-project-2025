@@ -126,31 +126,51 @@ void main() {
       },
     );
 
-    test('negative-only history → count 0, streak 0, all 7 days empty', () {
+    test('negative-only history (S4) → wilting/rain cells, streak still 0', () {
+      // Sprint 4 reframing: negatives surface as wilting (i ≤ 3) or
+      // rainCloud (i ≥ 4) cells. The streak counter remains
+      // positive-only (regression guard against streak-shaming).
       final result = useCase(
         entries: [
-          _entry(mood: MoodType.sad, createdAt: now),
-          _entry(mood: MoodType.angry, createdAt: yesterday),
-          _entry(mood: MoodType.anxious, createdAt: twoDaysAgo),
-          _entry(mood: MoodType.okay, createdAt: yesterday),
+          _entry(mood: MoodType.sad, createdAt: now, intensity: 2), // wilt
+          _entry(
+            mood: MoodType.angry,
+            createdAt: yesterday,
+            intensity: 5,
+          ), // rain
+          _entry(
+            mood: MoodType.anxious,
+            createdAt: twoDaysAgo,
+            intensity: 4,
+          ), // rain
+          _entry(
+            mood: MoodType.okay,
+            createdAt: yesterday,
+            intensity: 1,
+          ), // wilt (but rain wins on the day)
         ],
         now: now,
       );
 
       expect(result.positiveMoodCount, 0);
+      expect(result.wiltingMoodCount, 2);
+      expect(result.rainCloudMoodCount, 2);
       expect(result.currentStreakDays, 0);
+      expect(result.last7Days[0].kind, DayBloomKind.wilting);
       expect(
-        result.last7Days.every((d) => d.kind == DayBloomKind.empty),
-        isTrue,
-        reason: 'S3 does not visualise negatives; that is S4 scope.',
+        result.last7Days[1].kind,
+        DayBloomKind.rainCloud,
+        reason: 'Day with both wilting and rain → rain wins (priority).',
       );
-      expect(result.isEmpty, isTrue);
+      expect(result.last7Days[2].kind, DayBloomKind.rainCloud);
+      expect(result.isEmpty, isFalse);
     });
 
     test('mixed positive + negative on the same day → that day blooms', () {
+      // Day-priority `bloom > rainCloud > wilting > empty` (ADR-0006).
       final result = useCase(
         entries: [
-          _entry(mood: MoodType.sad, createdAt: now),
+          _entry(mood: MoodType.sad, createdAt: now, intensity: 5), // rain
           _entry(
             mood: MoodType.happy,
             createdAt: now.add(const Duration(hours: 1)),
@@ -161,6 +181,7 @@ void main() {
 
       expect(result.last7Days.first.kind, DayBloomKind.bloom);
       expect(result.positiveMoodCount, 1);
+      expect(result.rainCloudMoodCount, 1);
       expect(result.currentStreakDays, 1);
     });
 
@@ -218,6 +239,121 @@ void main() {
         now: now,
       );
       expect(result.positiveMoodCount, 2);
+    });
+
+    // ───── S4 (ADR-0006): compassionate reframing ─────
+
+    test('kind() table: every (MoodType × intensity 1..5)', () {
+      // Pure rule: positives → bloom regardless of intensity; negatives
+      // split on user-felt intensity (≤3 wilting, ≥4 rainCloud).
+      final expected = <(MoodType, int), DayBloomKind>{
+        // Positives — always bloom.
+        for (final i in [1, 2, 3, 4, 5]) ...{
+          (MoodType.happy, i): DayBloomKind.bloom,
+          (MoodType.calm, i): DayBloomKind.bloom,
+        },
+        // Negatives — intensity-based.
+        for (final m in [
+          MoodType.okay,
+          MoodType.sad,
+          MoodType.angry,
+          MoodType.anxious,
+        ]) ...{
+          (m, 1): DayBloomKind.wilting,
+          (m, 2): DayBloomKind.wilting,
+          (m, 3): DayBloomKind.wilting,
+          (m, 4): DayBloomKind.rainCloud,
+          (m, 5): DayBloomKind.rainCloud,
+        },
+      };
+
+      for (final entry in expected.entries) {
+        final (mood, intensity) = entry.key;
+        expect(
+          ComputeGardenStateUseCase.kind(mood, intensity),
+          entry.value,
+          reason: 'kind(${mood.name}, $intensity) should be ${entry.value}',
+        );
+      }
+    });
+
+    test('intensity boundary: sad@3 wilts, sad@4 rains', () {
+      expect(
+        ComputeGardenStateUseCase.kind(MoodType.sad, 3),
+        DayBloomKind.wilting,
+      );
+      expect(
+        ComputeGardenStateUseCase.kind(MoodType.sad, 4),
+        DayBloomKind.rainCloud,
+      );
+    });
+
+    test('intensity is clamped defensively to [1, 5]', () {
+      // Out-of-range intensity (should never happen — MoodEntry validates)
+      // is clamped rather than crashing. 0 → wilting, 99 → rainCloud.
+      expect(
+        ComputeGardenStateUseCase.kind(MoodType.sad, 0),
+        DayBloomKind.wilting,
+      );
+      expect(
+        ComputeGardenStateUseCase.kind(MoodType.sad, 99),
+        DayBloomKind.rainCloud,
+      );
+    });
+
+    test('day priority: only wilting on a day → wilting cell', () {
+      final result = useCase(
+        entries: [_entry(mood: MoodType.sad, createdAt: now, intensity: 2)],
+        now: now,
+      );
+      expect(result.last7Days[0].kind, DayBloomKind.wilting);
+      expect(result.wiltingMoodCount, 1);
+      expect(result.rainCloudMoodCount, 0);
+    });
+
+    test('day priority: wilting + rainCloud on a day → rainCloud cell', () {
+      final result = useCase(
+        entries: [
+          _entry(mood: MoodType.sad, createdAt: now, intensity: 2), // wilt
+          _entry(
+            mood: MoodType.angry,
+            createdAt: now.add(const Duration(hours: 2)),
+            intensity: 5,
+          ), // rain
+        ],
+        now: now,
+      );
+      expect(result.last7Days[0].kind, DayBloomKind.rainCloud);
+      expect(result.wiltingMoodCount, 1);
+      expect(result.rainCloudMoodCount, 1);
+    });
+
+    test(
+      'streak regression: negatives between positives do NOT extend streak',
+      () {
+        // today positive, yesterday negative-only, twoDaysAgo positive.
+        // Streak must still break at yesterday — wilting/rain days are
+        // intentionally NOT streak-eligible (no streak-shaming, no
+        // streak-rewarding negatives either).
+        final result = useCase(
+          entries: [
+            _entry(mood: MoodType.happy, createdAt: now),
+            _entry(mood: MoodType.sad, createdAt: yesterday, intensity: 5),
+            _entry(mood: MoodType.happy, createdAt: twoDaysAgo),
+          ],
+          now: now,
+        );
+        expect(result.currentStreakDays, 1);
+        expect(result.last7Days[1].kind, DayBloomKind.rainCloud);
+      },
+    );
+
+    test('isEmpty is false when only wilting entries exist', () {
+      final result = useCase(
+        entries: [_entry(mood: MoodType.sad, createdAt: now, intensity: 1)],
+        now: now,
+      );
+      expect(result.isEmpty, isFalse);
     });
   });
 }
