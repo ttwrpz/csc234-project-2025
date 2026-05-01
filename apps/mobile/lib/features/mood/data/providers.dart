@@ -1,5 +1,6 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:core/core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
@@ -53,11 +54,13 @@ final moodDriftMapperProvider = Provider<MoodDriftMapper>(
   (ref) => const MoodDriftMapper(),
 );
 
-/// Feature flag for the offline-first cutover (PR-3). Default `true` — the
-/// repository routes reads + writes through Drift and the sync queue. Override
-/// to `false` (e.g., in `main.dart`'s shell or via Remote Config wiring) to
-/// fall back to the pre-PR-3 Firestore-only path. Reversible without a hotfix.
-final offlineFirstEnabledProvider = Provider<bool>((_) => true);
+/// Feature flag for the offline-first cutover (PR-3). Default `!kIsWeb` —
+/// native targets get the Drift-first read/write path; Web routes through
+/// the Firestore-only fallback because Drift's native connector pulls
+/// `dart:ffi` which is not available on Web (ADR-0004 §"Risks #1" specified
+/// Android-only Drift for S3; revisit in S4 with `drift_flutter` OPFS).
+/// Override in tests or via Remote Config to flip behaviour at runtime.
+final offlineFirstEnabledProvider = Provider<bool>((_) => !kIsWeb);
 
 /// Sync manager singleton. PR-2 wires it; PR-3 will have the repository call
 /// `kick()` after every enqueue. Disposed via `ref.onDispose`, so sign-out
