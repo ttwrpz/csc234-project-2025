@@ -52,10 +52,9 @@ class MoodLineChart extends StatelessWidget {
     for (final category in ChartMoodCategory.values) {
       final color = theme.colorByCategory[category];
       if (color == null) continue;
-      final categoryPoints = points
-          .where((p) => p.category == category)
-          .toList()
-        ..sort((a, b) => a.day.compareTo(b.day));
+      final categoryPoints =
+          points.where((p) => p.category == category).toList()
+            ..sort((a, b) => a.day.compareTo(b.day));
       if (categoryPoints.isEmpty) continue;
 
       final spots = <FlSpot>[

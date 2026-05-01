@@ -7,7 +7,9 @@ abstract final class MoodBloomColors {
   static const Color seedDark = Color(0xFF3F6855);
 
   // Neutrals (light mode)
-  static const Color surfaceCream = Color(0xFFFAF7F2); // warm off-white background
+  static const Color surfaceCream = Color(
+    0xFFFAF7F2,
+  ); // warm off-white background
   static const Color surfaceDim = Color(0xFFEEE9DF);
   static const Color outline = Color(0xFFD7D0C2);
   static const Color onSurface = Color(0xFF2C2A26);

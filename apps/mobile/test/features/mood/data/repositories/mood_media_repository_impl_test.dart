@@ -5,15 +5,13 @@ import 'package:moodbloom/features/mood/domain/mood_failure.dart';
 
 void main() {
   group('MoodMediaRepositoryImpl.validate', () {
-    MoodMedia media({
-      int sizeBytes = 1024,
-      String mimeType = 'image/jpeg',
-    }) => MoodMedia(
-      localPath: '/tmp/x.jpg',
-      kind: MoodMediaKind.image,
-      sizeBytes: sizeBytes,
-      mimeType: mimeType,
-    );
+    MoodMedia media({int sizeBytes = 1024, String mimeType = 'image/jpeg'}) =>
+        MoodMedia(
+          localPath: '/tmp/x.jpg',
+          kind: MoodMediaKind.image,
+          sizeBytes: sizeBytes,
+          mimeType: mimeType,
+        );
 
     test('accepts a 1KB JPEG', () {
       expect(MoodMediaRepositoryImpl.validate(media()), isNull);

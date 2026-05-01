@@ -103,8 +103,7 @@ void main() {
     ) async {
       final today = DateTime.now();
       final entries = [
-        for (var i = 0; i < 5; i += 1)
-          _entry(MoodType.happy, today, id: 'e$i'),
+        for (var i = 0; i < 5; i += 1) _entry(MoodType.happy, today, id: 'e$i'),
       ];
       final repo = FakeMoodRepository()..streamedEntries = [entries];
       await _pumpGarden(tester, repo: repo);
@@ -113,21 +112,20 @@ void main() {
       expect(find.textContaining('and '), findsNothing);
     });
 
-    testWidgets(
-      'overflow caption appears when positiveMoodCount exceeds 100',
-      (tester) async {
-        final today = DateTime.now();
-        final entries = [
-          for (var i = 0; i < 105; i += 1)
-            _entry(MoodType.happy, today, id: 'e$i'),
-        ];
-        final repo = FakeMoodRepository()..streamedEntries = [entries];
-        await _pumpGarden(tester, repo: repo);
+    testWidgets('overflow caption appears when positiveMoodCount exceeds 100', (
+      tester,
+    ) async {
+      final today = DateTime.now();
+      final entries = [
+        for (var i = 0; i < 105; i += 1)
+          _entry(MoodType.happy, today, id: 'e$i'),
+      ];
+      final repo = FakeMoodRepository()..streamedEntries = [entries];
+      await _pumpGarden(tester, repo: repo);
 
-        expect(find.byType(GardenFlower), findsNWidgets(100));
-        expect(find.text('and 5 more'), findsOneWidget);
-      },
-    );
+      expect(find.byType(GardenFlower), findsNWidgets(100));
+      expect(find.text('and 5 more'), findsOneWidget);
+    });
 
     testWidgets(
       'negative-only history → empty canvas, NO wilting/rain-cloud icons',
