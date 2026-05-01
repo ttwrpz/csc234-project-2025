@@ -1,11 +1,9 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import 'mood_dao.dart';
+import 'mood_database_web.dart'
+    if (dart.library.io) 'mood_database_native.dart'
+    as platform;
 import 'mood_entry_table.dart';
 import 'sync_queue_dao.dart';
 import 'sync_queue_table.dart';
@@ -17,9 +15,16 @@ part 'mood_database.g.dart';
 ///
 /// Schema version 1 is what S3 ships. v2 will use `MigrationStrategy.onUpgrade`
 /// step-by-step migrations.
+///
+/// Connector platform split: `dart.library.io` is used as the conditional
+/// import switch — native targets (Android, iOS, desktop, VM) get the
+/// FFI-backed `NativeDatabase` from `mood_database_native.dart`; Web gets a
+/// throwing stub from `mood_database_web.dart` (see ADR-0004 §"Risks #1"
+/// — Web ships through the Firestore-only fallback path, so the stub is
+/// never invoked at runtime).
 @DriftDatabase(tables: [MoodEntries, SyncQueue], daos: [MoodDao, SyncQueueDao])
 class MoodDatabase extends _$MoodDatabase {
-  MoodDatabase() : super(_openConnection());
+  MoodDatabase() : super(platform.openConnection());
 
   /// Test-only constructor — allows passing `NativeDatabase.memory()` so the
   /// DAO suite can run in-process without touching the filesystem.
@@ -35,12 +40,4 @@ class MoodDatabase extends _$MoodDatabase {
       // v2+ migrations land in a future sprint; v1 ships clean.
     },
   );
-}
-
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dir.path, 'moodbloom.sqlite'));
-    return NativeDatabase.createInBackground(file);
-  });
 }

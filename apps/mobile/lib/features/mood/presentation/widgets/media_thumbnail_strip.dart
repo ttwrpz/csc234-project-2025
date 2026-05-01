@@ -32,8 +32,7 @@ class MediaThumbnailStrip extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: media.length,
-        separatorBuilder: (_, _) =>
-            const SizedBox(width: MoodBloomSpacing.sm),
+        separatorBuilder: (_, _) => const SizedBox(width: MoodBloomSpacing.sm),
         itemBuilder: (context, index) =>
             _Thumbnail(media: media[index], onRemove: () => onRemove(index)),
       ),

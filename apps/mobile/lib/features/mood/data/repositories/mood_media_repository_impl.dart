@@ -156,4 +156,3 @@ class MoodMediaRepositoryImpl implements MoodMediaRepository {
     return fromPath.substring(1).toLowerCase(); // strip the leading "."
   }
 }
-

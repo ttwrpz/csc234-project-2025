@@ -16,8 +16,11 @@ void main() {
   for (final line in lines) {
     if (line.startsWith('SF:')) {
       final path = line.substring(3).replaceAll(r'\', '/');
-      final m = RegExp(r'lib/features/([^/]+)/domain/.+\.dart$').firstMatch(path);
-      isDomain = m != null &&
+      final m = RegExp(
+        r'lib/features/([^/]+)/domain/.+\.dart$',
+      ).firstMatch(path);
+      isDomain =
+          m != null &&
           !path.endsWith('.freezed.dart') &&
           !path.endsWith('.g.dart');
       feature = m?.group(1);
@@ -52,14 +55,21 @@ void main() {
     final pct = t.lines == 0 ? 100.0 : (t.hit * 100.0) / t.lines;
     final marker = pct >= 80 ? '✓' : '✗';
     if (pct < 80) anyBelow = true;
-    print('| $feat | ${t.hit} | ${t.lines} | ${pct.toStringAsFixed(1)}% $marker |');
+    print(
+      '| $feat | ${t.hit} | ${t.lines} | ${pct.toStringAsFixed(1)}% $marker |',
+    );
   }
   final overall = allTotal == 0 ? 100.0 : (allCovered * 100.0) / allTotal;
-  print('| **all** | **$allCovered** | **$allTotal** | **${overall.toStringAsFixed(1)}%** |');
+  print(
+    '| **all** | **$allCovered** | **$allTotal** | **${overall.toStringAsFixed(1)}%** |',
+  );
   if (anyBelow) {
     stderr.writeln('\nAt least one feature is below 80%.');
     exit(1);
   }
 }
 
-class _Tally { int lines = 0; int hit = 0; }
+class _Tally {
+  int lines = 0;
+  int hit = 0;
+}

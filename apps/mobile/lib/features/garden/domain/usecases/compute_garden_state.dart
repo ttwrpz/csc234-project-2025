@@ -19,10 +19,7 @@ class ComputeGardenStateUseCase {
   /// reference it without hard-coding a magic number.
   static const int weeklyWindow = 7;
 
-  GardenState call({
-    required List<MoodEntry> entries,
-    required DateTime now,
-  }) {
+  GardenState call({required List<MoodEntry> entries, required DateTime now}) {
     // Bucket positive entries by their *local* day so we can answer the
     // streak-and-bloom-bar questions in O(n) rather than rescanning the list.
     final positiveDays = <DateTime>{};
