@@ -42,7 +42,10 @@ void main() {
       expect(result.positiveMoodCount, 0);
       expect(result.currentStreakDays, 0);
       expect(result.last7Days, hasLength(7));
-      expect(result.last7Days.every((d) => d.kind == DayBloomKind.empty), isTrue);
+      expect(
+        result.last7Days.every((d) => d.kind == DayBloomKind.empty),
+        isTrue,
+      );
       expect(result.isEmpty, isTrue);
     });
 
@@ -67,8 +70,14 @@ void main() {
       final result = useCase(
         entries: [
           _entry(mood: MoodType.happy, createdAt: now),
-          _entry(mood: MoodType.calm, createdAt: yesterday.add(const Duration(hours: 9))),
-          _entry(mood: MoodType.happy, createdAt: twoDaysAgo.add(const Duration(hours: 18))),
+          _entry(
+            mood: MoodType.calm,
+            createdAt: yesterday.add(const Duration(hours: 9)),
+          ),
+          _entry(
+            mood: MoodType.happy,
+            createdAt: twoDaysAgo.add(const Duration(hours: 18)),
+          ),
         ],
         now: now,
       );
@@ -82,24 +91,24 @@ void main() {
       expect(result.last7Days[3].kind, DayBloomKind.empty);
     });
 
-    test(
-      'gap in middle: today positive, yesterday missing, two-days-ago '
-      'positive → streak 1 (chain breaks at yesterday)',
-      () {
-        final result = useCase(
-          entries: [
-            _entry(mood: MoodType.happy, createdAt: now),
-            _entry(mood: MoodType.happy, createdAt: twoDaysAgo.add(const Duration(hours: 12))),
-          ],
-          now: now,
-        );
+    test('gap in middle: today positive, yesterday missing, two-days-ago '
+        'positive → streak 1 (chain breaks at yesterday)', () {
+      final result = useCase(
+        entries: [
+          _entry(mood: MoodType.happy, createdAt: now),
+          _entry(
+            mood: MoodType.happy,
+            createdAt: twoDaysAgo.add(const Duration(hours: 12)),
+          ),
+        ],
+        now: now,
+      );
 
-        expect(result.currentStreakDays, 1);
-        expect(result.last7Days[0].kind, DayBloomKind.bloom);
-        expect(result.last7Days[1].kind, DayBloomKind.empty);
-        expect(result.last7Days[2].kind, DayBloomKind.bloom);
-      },
-    );
+      expect(result.currentStreakDays, 1);
+      expect(result.last7Days[0].kind, DayBloomKind.bloom);
+      expect(result.last7Days[1].kind, DayBloomKind.empty);
+      expect(result.last7Days[2].kind, DayBloomKind.bloom);
+    });
 
     test(
       'today missing but historical positives exist → streak 0 (silent break)',
@@ -142,7 +151,10 @@ void main() {
       final result = useCase(
         entries: [
           _entry(mood: MoodType.sad, createdAt: now),
-          _entry(mood: MoodType.happy, createdAt: now.add(const Duration(hours: 1))),
+          _entry(
+            mood: MoodType.happy,
+            createdAt: now.add(const Duration(hours: 1)),
+          ),
         ],
         now: now,
       );
@@ -152,34 +164,40 @@ void main() {
       expect(result.currentStreakDays, 1);
     });
 
-    test('entry from 8 days ago → counted overall, NOT in last7Days window', () {
-      final result = useCase(
-        entries: [_entry(mood: MoodType.happy, createdAt: eightDaysAgo)],
-        now: now,
-      );
+    test(
+      'entry from 8 days ago → counted overall, NOT in last7Days window',
+      () {
+        final result = useCase(
+          entries: [_entry(mood: MoodType.happy, createdAt: eightDaysAgo)],
+          now: now,
+        );
 
-      expect(result.positiveMoodCount, 1);
-      expect(result.currentStreakDays, 0);
-      expect(
-        result.last7Days.every((d) => d.kind == DayBloomKind.empty),
-        isTrue,
-        reason: '8 days ago is outside the 7-cell window.',
-      );
-    });
+        expect(result.positiveMoodCount, 1);
+        expect(result.currentStreakDays, 0);
+        expect(
+          result.last7Days.every((d) => d.kind == DayBloomKind.empty),
+          isTrue,
+          reason: '8 days ago is outside the 7-cell window.',
+        );
+      },
+    );
 
-    test('entry created at 23:59 local time today still counts toward today', () {
-      // The test runs in the host's local TZ; since we already build `now`
-      // in local time, an "edge of day" entry at 23:59 local should bucket
-      // into the same day as `now`.
-      final lateToday = DateTime(2026, 4, 29, 23, 59, 30);
-      final result = useCase(
-        entries: [_entry(mood: MoodType.happy, createdAt: lateToday)],
-        now: now,
-      );
+    test(
+      'entry created at 23:59 local time today still counts toward today',
+      () {
+        // The test runs in the host's local TZ; since we already build `now`
+        // in local time, an "edge of day" entry at 23:59 local should bucket
+        // into the same day as `now`.
+        final lateToday = DateTime(2026, 4, 29, 23, 59, 30);
+        final result = useCase(
+          entries: [_entry(mood: MoodType.happy, createdAt: lateToday)],
+          now: now,
+        );
 
-      expect(result.last7Days.first.kind, DayBloomKind.bloom);
-      expect(result.currentStreakDays, 1);
-    });
+        expect(result.last7Days.first.kind, DayBloomKind.bloom);
+        expect(result.currentStreakDays, 1);
+      },
+    );
 
     test('last7Days is always exactly 7 cells, newest first', () {
       final result = useCase(entries: const [], now: now);
