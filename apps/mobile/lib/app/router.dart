@@ -40,13 +40,21 @@ final routerProvider = Provider<GoRouter>((ref) {
     // the sync manager so Drift is seeded once per uid and the live listener
     // attaches. Sign-out → shutdown so the previous user's listener and timers
     // are torn down before another sign-in re-attaches.
-    final manager = ref.read(mood_providers.moodSyncManagerProvider);
-    if (nextUid != null && nextUid != prevUid) {
-      // ignore: discarded_futures
-      manager.bootstrap(nextUid);
-    } else if (nextUid == null && prevUid != null) {
-      // ignore: discarded_futures
-      manager.shutdown();
+    //
+    // Skipped on Web: Drift's native connector is unavailable there
+    // (ADR-0004 §"Risks #1"). The repository's offlineFirstEnabledProvider
+    // already defaults to `!kIsWeb`, so reads/writes route through Firestore
+    // directly; bootstrapping the sync manager would only open a DB that
+    // throws on first query.
+    if (!kIsWeb) {
+      final manager = ref.read(mood_providers.moodSyncManagerProvider);
+      if (nextUid != null && nextUid != prevUid) {
+        // ignore: discarded_futures
+        manager.bootstrap(nextUid);
+      } else if (nextUid == null && prevUid != null) {
+        // ignore: discarded_futures
+        manager.shutdown();
+      }
     }
 
     // 2.2: on sign-out (non-null → null), clear the session-scoped biometric
