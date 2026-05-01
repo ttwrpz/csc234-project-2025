@@ -51,9 +51,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Claude Code
-.claude/
-CLAUDE.md
+# Claude Code — track project artifacts (agents, briefs, hooks, prompts, CLAUDE.md);
+# only ignore user-local permission overrides.
+.claude/settings.local.json
 
 # Cursor AI
 .cursor/
