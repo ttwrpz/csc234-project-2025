@@ -173,12 +173,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          # Version is read from `firebase/test/package.json#packageManager`
+          # (pnpm@10.18.0 — kept in sync with `functions/package.json`).
+          run_install: false
+
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
           node-version: "22"
-          cache: "npm"
-          cache-dependency-path: firebase/test/package-lock.json
+          cache: "pnpm"
+          cache-dependency-path: firebase/test/pnpm-lock.yaml
 
       - name: Set up Java 21 (required by firebase-tools)
         uses: actions/setup-java@v5
@@ -191,14 +198,14 @@ jobs:
 
       - name: Install rules-test dependencies
         working-directory: firebase/test
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run rules tests under emulator
         run: |
           firebase emulators:exec \
             --only firestore,storage,auth \
             --project moodbloom-rules-test \
-            "cd firebase/test && npm test"
+            "cd firebase/test && pnpm test"
 
   functions:
     name: Cloud Functions — lint, build, test
@@ -209,45 +216,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      # ------------------------------------------------------------------
-      # functions/ is a placeholder until D3.1 (analyzeMoodText). When the
-      # package.json lands, this job runs the full TypeScript pipeline. It
-      # exits cleanly today so PRs from S3 Day 1 / Day 2 don't go red.
-      # ------------------------------------------------------------------
-      - name: Detect functions package
-        id: detect
-        run: |
-          if [ -f functions/package.json ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "functions/package.json not present yet (lands in D3.1 — analyzeMoodText). Skipping."
-          fi
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          # Version is read from `functions/package.json#packageManager`.
+          run_install: false
 
       - name: Set up Node.js
-        if: steps.detect.outputs.present == 'true'
         uses: actions/setup-node@v5
         with:
           node-version: "22"
-          cache: "npm"
-          cache-dependency-path: functions/package-lock.json
+          cache: "pnpm"
+          cache-dependency-path: functions/pnpm-lock.yaml
 
       - name: Install dependencies
-        if: steps.detect.outputs.present == 'true'
         working-directory: functions
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
-        if: steps.detect.outputs.present == 'true'
         working-directory: functions
-        run: npm run lint --if-present
+        run: pnpm lint
 
       - name: Type-check / build
-        if: steps.detect.outputs.present == 'true'
         working-directory: functions
-        run: npm run build --if-present
+        run: pnpm build
 
       - name: Test
-        if: steps.detect.outputs.present == 'true'
         working-directory: functions
-        run: npm test --if-present
+        run: pnpm test

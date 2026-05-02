@@ -5,6 +5,7 @@
   "description": "MoodBloom Cloud Functions — Gemini AI proxy and pattern analysis (S3+).",
   "type": "module",
   "main": "lib/index.js",
+  "packageManager": "pnpm@10.18.0",
   "engines": {
     "node": "^20 || ^24"
   },
@@ -22,6 +23,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@jest/globals": "^29.7.0",
     "@types/jest": "^29.5.13",
     "@types/node": "^20.16.10",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
