@@ -3,10 +3,12 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../domain/entities/analytics_state.dart';
+import '../../../app/providers.dart';
 import '../../mood/domain/entities/mood_type.dart';
+import '../domain/entities/analytics_state.dart';
 import 'controllers/analytics_controller.dart';
 import 'widgets/mood_window_selector.dart';
+import 'widgets/pattern_insight_card.dart';
 
 /// Read-only analytics dashboard — pivot feature #3. Renders a fl_chart line
 /// chart of mean intensity per local-time day, one line per mood category,
@@ -50,6 +52,11 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                       _ChartBody(analytics: analytics, window: _window),
                 ),
               ),
+              // Defence in depth: hide the slot when the flag is off so
+              // the card consumes zero layout space — the widget also
+              // self-hides via `SizedBox.shrink()`.
+              if (ref.watch(featureFlagsProvider).aiPatternAnalysisEnabled)
+                const PatternInsightCard(),
               const SizedBox(height: MoodBloomSpacing.md),
               _Legend(),
             ],

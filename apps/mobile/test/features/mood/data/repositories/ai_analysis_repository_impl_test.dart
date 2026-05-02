@@ -1,10 +1,12 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moodbloom/features/analytics/data/datasources/analyze_patterns_functions_datasource.dart';
 import 'package:moodbloom/features/mood/data/datasources/ai_analysis_functions_datasource.dart';
 import 'package:moodbloom/features/mood/data/repositories/ai_analysis_repository_impl.dart';
 import 'package:moodbloom/features/mood/domain/ai_analysis_failure.dart';
 import 'package:moodbloom/features/mood/domain/entities/ai_suggestion.dart';
+import 'package:moodbloom/features/mood/domain/entities/mood_entry.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
 
 class _FakeDatasource implements AiAnalysisFunctionsDatasource {
@@ -18,6 +20,28 @@ class _FakeDatasource implements AiAnalysisFunctionsDatasource {
     String? locale,
   }) async {
     calls.add((text: text, locale: locale));
+    if (throwOnCall != null) {
+      throw throwOnCall!;
+    }
+    return nextResponse ?? const {};
+  }
+
+  @override
+  // ignore: unused_element
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakePatternsDatasource implements AnalyzePatternsFunctionsDatasource {
+  Map<String, dynamic>? nextResponse;
+  Object? throwOnCall;
+  final List<({List<MoodEntry> history, int windowDays})> calls = [];
+
+  @override
+  Future<Map<String, dynamic>> call({
+    required List<MoodEntry> history,
+    int windowDays = 90,
+  }) async {
+    calls.add((history: history, windowDays: windowDays));
     if (throwOnCall != null) {
       throw throwOnCall!;
     }
@@ -60,11 +84,17 @@ Map<String, Object?> errorPayload(String code, {Object? extra}) {
 
 void main() {
   late _FakeDatasource ds;
+  late _FakePatternsDatasource patternsDs;
   late AiAnalysisRepositoryImpl repo;
 
   setUp(() {
     ds = _FakeDatasource();
-    repo = AiAnalysisRepositoryImpl(datasource: ds);
+    patternsDs = _FakePatternsDatasource();
+    repo = AiAnalysisRepositoryImpl(
+      datasource: ds,
+      patternsDatasource: patternsDs,
+      patternAnalysisEnabled: true,
+    );
   });
 
   group('AiAnalysisRepositoryImpl — success path', () {
