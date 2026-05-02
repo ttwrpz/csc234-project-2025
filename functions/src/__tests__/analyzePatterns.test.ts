@@ -103,8 +103,73 @@ jest.unstable_mockModule('firebase-admin/firestore', () => ({
   getFirestore: () => firestoreMock,
 }));
 
+// Gemini mock — settable per-test via `nextGeminiResponse`. The new
+// `@google/genai` SDK shape: `ai.models.generateContent({ model, contents,
+// config: { abortSignal, ... } })` returns `GenerateContentResponse` with
+// a `.text` getter and `.usageMetadata`.
+type GeminiResponseMode =
+  | { kind: 'json'; payload: unknown; latencyMs?: number }
+  | { kind: 'syntaxError' }
+  | { kind: 'reject'; cause: Error }
+  | { kind: 'delay'; ms: number; payload: unknown };
+let nextGeminiResponse: GeminiResponseMode = {
+  kind: 'json',
+  payload: {
+    insightText: 'Recent days show a gentle theme of evening dips.',
+    confidence: 0.55,
+  },
+};
+
+interface GenerateContentInput {
+  model: string;
+  contents: unknown;
+  config?: { abortSignal?: AbortSignal };
+}
+interface GenerateContentMockResponse {
+  text: string;
+  usageMetadata: { promptTokenCount: number; candidatesTokenCount: number };
+}
+
+const generateContentMock = jest.fn(
+  async (input: GenerateContentInput): Promise<GenerateContentMockResponse> => {
+    const mode = nextGeminiResponse;
+    const signal = input.config?.abortSignal;
+    if (mode.kind === 'syntaxError') {
+      return {
+        text: 'this is not json {{{',
+        usageMetadata: { promptTokenCount: 50, candidatesTokenCount: 30 },
+      };
+    }
+    if (mode.kind === 'reject') {
+      throw mode.cause;
+    }
+    if (mode.kind === 'delay') {
+      await new Promise<void>((resolve, reject) => {
+        const t = setTimeout(() => resolve(), mode.ms);
+        signal?.addEventListener('abort', () => {
+          clearTimeout(t);
+          reject(new Error('aborted'));
+        });
+      });
+      return {
+        text: JSON.stringify(mode.payload),
+        usageMetadata: { promptTokenCount: 50, candidatesTokenCount: 30 },
+      };
+    }
+    if (mode.latencyMs !== undefined) {
+      await new Promise<void>((resolve) => setTimeout(resolve, mode.latencyMs));
+    }
+    return {
+      text: JSON.stringify(mode.payload),
+      usageMetadata: { promptTokenCount: 50, candidatesTokenCount: 30 },
+    };
+  },
+);
+
 jest.unstable_mockModule('@google/genai', () => ({
-  GoogleGenAI: jest.fn(),
+  GoogleGenAI: jest.fn().mockImplementation(() => ({
+    models: { generateContent: generateContentMock },
+  })),
   Type: { OBJECT: 'OBJECT', STRING: 'STRING', NUMBER: 'NUMBER' },
 }));
 
@@ -123,6 +188,14 @@ beforeEach(() => {
   loggerCalls.length = 0;
   rateLimitStore.clear();
   txChain = Promise.resolve();
+  generateContentMock.mockClear();
+  nextGeminiResponse = {
+    kind: 'json',
+    payload: {
+      insightText: 'Recent days show a gentle theme of evening dips.',
+      confidence: 0.55,
+    },
+  };
 });
 
 interface CallableLike {
@@ -241,7 +314,14 @@ describe('analyzePatterns handler', () => {
     }
   });
 
-  test('4. statistical happy path — strong Monday bias yields a weekday insight, geminiSkipped: flag_disabled', async () => {
+  test('4. statistical happy path — strong Monday bias yields a weekday insight; Gemini supplements', async () => {
+    nextGeminiResponse = {
+      kind: 'json',
+      payload: {
+        insightText: 'Mondays have felt heavier than the rest of the week.',
+        confidence: 0.58,
+      },
+    };
     const res = await handleAnalyzePatterns(
       makeRequest('uid-stat', makeRequestData(strongMondayHistory())) as unknown as Parameters<
         typeof handleAnalyzePatterns
@@ -250,7 +330,7 @@ describe('analyzePatterns handler', () => {
     expect(res).toMatchObject({ ok: true });
     if (res.ok === false) return;
 
-    expect(res.insights.length).toBeGreaterThanOrEqual(1);
+    expect(res.insights.length).toBeGreaterThanOrEqual(2);
     const wkd = res.insights.find((i) => i.kind === 'weekday');
     expect(wkd).toBeTruthy();
     expect(wkd!.text).toContain('Monday');
@@ -258,7 +338,13 @@ describe('analyzePatterns handler', () => {
     expect(wkd!.confidence).toBeLessThanOrEqual(1);
     expect(wkd!.sampleSize).toBeGreaterThanOrEqual(10);
 
-    expect(res.modelVersion).toBeNull();
+    const gem = res.insights.find((i) => i.kind === 'gemini');
+    expect(gem).toBeTruthy();
+    expect(gem!.text).toBe('Mondays have felt heavier than the rest of the week.');
+    expect(gem!.confidence).toBeLessThanOrEqual(0.7); // PATTERN_GEMINI_MAX_CONFIDENCE clamp
+
+    expect(res.modelVersion).toBe('gemini-2.5-flash');
+    expect(generateContentMock).toHaveBeenCalledTimes(1);
 
     const successLog = loggerCalls.find(
       (c) =>
@@ -270,10 +356,8 @@ describe('analyzePatterns handler', () => {
         (c.payload as { outcome: string }).outcome === 'success',
     );
     expect(successLog).toBeTruthy();
-    expect((successLog!.payload as { geminiSkipped: boolean }).geminiSkipped).toBe(true);
-    expect((successLog!.payload as { geminiSkipReason: string }).geminiSkipReason).toBe(
-      'flag_disabled',
-    );
+    expect((successLog!.payload as { geminiSkipped: boolean }).geminiSkipped).toBe(false);
+    expect((successLog!.payload as { geminiSkipReason: string | null }).geminiSkipReason).toBeNull();
   });
 
   test('5. sample-size floor — weekday with n < 10 yields no weekday insight', async () => {
@@ -413,6 +497,125 @@ describe('analyzePatterns handler', () => {
       expect(serialised).not.toContain('"history"');
       expect(serialised).not.toContain('"text"');
       expect(serialised).not.toContain('"mediaRefs"');
+    }
+  });
+
+  test('11. sample below Gemini floor (n < 30) → Gemini skipped with sample_too_small', async () => {
+    const history: HistoryItem[] = [
+      { date: '2026-04-01', moodCode: 'sad', intensity: 3 },
+      { date: '2026-04-02', moodCode: 'sad', intensity: 3 },
+    ];
+    const res = await handleAnalyzePatterns(
+      makeRequest('uid-floor-gem', makeRequestData(history)) as unknown as Parameters<
+        typeof handleAnalyzePatterns
+      >[0],
+    );
+    expect(res).toMatchObject({ ok: true });
+    if (res.ok === false) return;
+    expect(res.insights.find((i) => i.kind === 'gemini')).toBeUndefined();
+    expect(res.modelVersion).toBeNull();
+    expect(generateContentMock).not.toHaveBeenCalled();
+
+    const successLog = loggerCalls.find(
+      (c) =>
+        typeof c.payload === 'object' &&
+        c.payload !== null &&
+        'outcome' in c.payload &&
+        (c.payload as { outcome: string }).outcome === 'success',
+    );
+    expect((successLog!.payload as { geminiSkipReason: string }).geminiSkipReason).toBe(
+      'sample_too_small',
+    );
+  });
+
+  test('12. Gemini timeout → graceful degradation; statistical insights still ship', async () => {
+    nextGeminiResponse = { kind: 'delay', ms: 10_000, payload: {} }; // > 5s timeout
+    const res = await handleAnalyzePatterns(
+      makeRequest('uid-gem-timeout', makeRequestData(strongMondayHistory())) as unknown as Parameters<
+        typeof handleAnalyzePatterns
+      >[0],
+    );
+    expect(res).toMatchObject({ ok: true });
+    if (res.ok === false) return;
+    expect(res.insights.find((i) => i.kind === 'weekday')).toBeTruthy();
+    expect(res.insights.find((i) => i.kind === 'gemini')).toBeUndefined();
+    expect(res.modelVersion).toBeNull();
+
+    const successLog = loggerCalls.find(
+      (c) =>
+        typeof c.payload === 'object' &&
+        c.payload !== null &&
+        'outcome' in c.payload &&
+        (c.payload as { outcome: string }).outcome === 'success',
+    );
+    expect((successLog!.payload as { geminiSkipReason: string }).geminiSkipReason).toBe(
+      'timeout',
+    );
+  }, 15_000);
+
+  test('13. Gemini malformed JSON → graceful degradation; geminiSkipReason: parse_error', async () => {
+    nextGeminiResponse = { kind: 'syntaxError' };
+    const res = await handleAnalyzePatterns(
+      makeRequest('uid-gem-parse', makeRequestData(strongMondayHistory())) as unknown as Parameters<
+        typeof handleAnalyzePatterns
+      >[0],
+    );
+    expect(res).toMatchObject({ ok: true });
+    if (res.ok === false) return;
+    expect(res.insights.find((i) => i.kind === 'gemini')).toBeUndefined();
+    expect(res.modelVersion).toBeNull();
+
+    const successLog = loggerCalls.find(
+      (c) =>
+        typeof c.payload === 'object' &&
+        c.payload !== null &&
+        'outcome' in c.payload &&
+        (c.payload as { outcome: string }).outcome === 'success',
+    );
+    expect((successLog!.payload as { geminiSkipReason: string }).geminiSkipReason).toBe(
+      'parse_error',
+    );
+  });
+
+  test('14. Gemini confidence is clamped to PATTERN_GEMINI_MAX_CONFIDENCE (0.7)', async () => {
+    nextGeminiResponse = {
+      kind: 'json',
+      payload: {
+        insightText: 'Themes look stable in your recent entries.',
+        confidence: 0.95, // model overclaims; server must clamp to 0.7
+      },
+    };
+    const res = await handleAnalyzePatterns(
+      makeRequest('uid-clamp', makeRequestData(strongMondayHistory())) as unknown as Parameters<
+        typeof handleAnalyzePatterns
+      >[0],
+    );
+    expect(res).toMatchObject({ ok: true });
+    if (res.ok === false) return;
+    const gem = res.insights.find((i) => i.kind === 'gemini');
+    expect(gem).toBeTruthy();
+    expect(gem!.confidence).toBeLessThanOrEqual(0.7);
+    expect(gem!.confidence).toBe(0.7);
+  });
+
+  test('15. Gemini PII canary — model-emitted insight body is NOT logged', async () => {
+    const sensitive = 'AaBb_canary_string_should_never_appear_in_logs';
+    nextGeminiResponse = {
+      kind: 'json',
+      payload: {
+        insightText: sensitive,
+        confidence: 0.5,
+      },
+    };
+    await handleAnalyzePatterns(
+      makeRequest('uid-gem-canary', makeRequestData(strongMondayHistory())) as unknown as Parameters<
+        typeof handleAnalyzePatterns
+      >[0],
+    );
+    for (const call of loggerCalls) {
+      const serialised = JSON.stringify(call.payload);
+      expect(serialised).not.toContain(sensitive);
+      expect(serialised).not.toContain('"insightText"');
     }
   });
 });
