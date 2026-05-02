@@ -174,7 +174,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
         with:
           # Version is read from `firebase/test/package.json#packageManager`
           # (pnpm@10.18.0 — kept in sync with `functions/package.json`).
@@ -218,7 +218,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
         with:
           # Version is read from `functions/package.json#packageManager`.
           package_json_file: functions/package.json
