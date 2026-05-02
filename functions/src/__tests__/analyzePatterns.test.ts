@@ -7,9 +7,11 @@
 //  - Mock `firebase-functions/v2/https` so handler is callable directly.
 //  - Mock `firebase-functions/params` so `defineSecret` is a no-op.
 //
-// We do NOT mock `@google/generative-ai` because S4 ships with Gemini
-// supplementary calls disabled (geminiSkipped: true). Gemini-mode tests
-// will land in the follow-up patch that wires the supplementary call.
+// We do NOT exercise `@google/genai` because S4 ships with Gemini
+// supplementary calls disabled (geminiSkipped: true). The mock below
+// is a structural stub so the SDK module resolves at import time;
+// real Gemini-mode tests land in the follow-up patch that wires the
+// supplementary call.
 
 import { jest } from '@jest/globals';
 
@@ -101,9 +103,9 @@ jest.unstable_mockModule('firebase-admin/firestore', () => ({
   getFirestore: () => firestoreMock,
 }));
 
-jest.unstable_mockModule('@google/generative-ai', () => ({
-  GoogleGenerativeAI: jest.fn(),
-  SchemaType: { OBJECT: 'OBJECT', STRING: 'STRING', NUMBER: 'NUMBER' },
+jest.unstable_mockModule('@google/genai', () => ({
+  GoogleGenAI: jest.fn(),
+  Type: { OBJECT: 'OBJECT', STRING: 'STRING', NUMBER: 'NUMBER' },
 }));
 
 // ---------------------------------------------------------------------------
