@@ -6,22 +6,36 @@ void main() {
     final today = DateTime(2026, 4, 29);
     final yesterday = today.subtract(const Duration(days: 1));
 
-    GardenState makeState({int positiveCount = 0, int streak = 0}) =>
-        GardenState(
-          positiveMoodCount: positiveCount,
-          currentStreakDays: streak,
-          last7Days: [
-            DayBloom(day: today, kind: DayBloomKind.empty),
-            DayBloom(day: yesterday, kind: DayBloomKind.empty),
-          ],
-        );
+    GardenState makeState({
+      int positiveCount = 0,
+      int wiltingCount = 0,
+      int rainCloudCount = 0,
+      int streak = 0,
+    }) => GardenState(
+      positiveMoodCount: positiveCount,
+      wiltingMoodCount: wiltingCount,
+      rainCloudMoodCount: rainCloudCount,
+      currentStreakDays: streak,
+      last7Days: [
+        DayBloom(day: today, kind: DayBloomKind.empty),
+        DayBloom(day: yesterday, kind: DayBloomKind.empty),
+      ],
+    );
 
-    test('isEmpty is true when positiveMoodCount is 0', () {
+    test('isEmpty is true when all three glyph counts are 0', () {
       expect(makeState().isEmpty, isTrue);
     });
 
     test('isEmpty is false when at least one positive mood is logged', () {
       expect(makeState(positiveCount: 1).isEmpty, isFalse);
+    });
+
+    test('isEmpty is false when only wilting entries exist (S4)', () {
+      expect(makeState(wiltingCount: 1).isEmpty, isFalse);
+    });
+
+    test('isEmpty is false when only rain-cloud entries exist (S4)', () {
+      expect(makeState(rainCloudCount: 1).isEmpty, isFalse);
     });
 
     test('two equal states compare equal (Freezed value equality)', () {
