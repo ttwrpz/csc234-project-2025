@@ -9,7 +9,7 @@ part 'biometric_capability.freezed.dart';
 /// see [shouldGate]. The flags are independent so the settings tile can show
 /// distinct messaging (e.g. "no biometric enrolled" vs. "user has opted out").
 @freezed
-class BiometricCapability with _$BiometricCapability {
+abstract class BiometricCapability with _$BiometricCapability {
   const factory BiometricCapability({
     /// Hardware supports biometric (fingerprint, face, etc.).
     required bool isAvailable,

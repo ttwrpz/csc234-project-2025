@@ -12,7 +12,7 @@ part 'ai_suggestion_dto.g.dart';
 /// functions/src/types.ts. Mirrors the server's discriminated-union success
 /// branch (`ok: true, ...`).
 @freezed
-class AiSuggestionDto with _$AiSuggestionDto {
+abstract class AiSuggestionDto with _$AiSuggestionDto {
   const AiSuggestionDto._();
 
   const factory AiSuggestionDto({
@@ -81,7 +81,7 @@ class AiSuggestionDto with _$AiSuggestionDto {
 }
 
 @freezed
-class AiSuggestionAlternativeDto with _$AiSuggestionAlternativeDto {
+abstract class AiSuggestionAlternativeDto with _$AiSuggestionAlternativeDto {
   const factory AiSuggestionAlternativeDto({
     required String mood,
     required double confidence,

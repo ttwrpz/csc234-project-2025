@@ -10,7 +10,7 @@ part 'feature_flags.freezed.dart';
 /// Remote Config not yet initialised). Keep these two sources in sync —
 /// see CLAUDE.md "Feature flag (rollback plan)".
 @freezed
-class FeatureFlags with _$FeatureFlags {
+abstract class FeatureFlags with _$FeatureFlags {
   const factory FeatureFlags({
     required bool aiPatternAnalysisEnabled,
     required bool geminiDetectionEnabled,

@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,229 +9,280 @@ part of 'mood_media.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
-
 /// @nodoc
 mixin _$MoodMedia {
-  /// Device-side file URI returned by the picker. Treat as ephemeral —
-  /// callers must upload before the user backgrounds the app for long.
-  String get localPath => throw _privateConstructorUsedError;
-  MoodMediaKind get kind => throw _privateConstructorUsedError;
-  int get sizeBytes => throw _privateConstructorUsedError;
 
-  /// MIME type detected from the picker (`XFile.mimeType`) or, when null,
-  /// inferred from the filename via `package:mime`.
-  String get mimeType => throw _privateConstructorUsedError;
+/// Device-side file URI returned by the picker. Treat as ephemeral —
+/// callers must upload before the user backgrounds the app for long.
+ String get localPath; MoodMediaKind get kind; int get sizeBytes;/// MIME type detected from the picker (`XFile.mimeType`) or, when null,
+/// inferred from the filename via `package:mime`.
+ String get mimeType;
+/// Create a copy of MoodMedia
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MoodMediaCopyWith<MoodMedia> get copyWith => _$MoodMediaCopyWithImpl<MoodMedia>(this as MoodMedia, _$identity);
 
-  /// Create a copy of MoodMedia
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $MoodMediaCopyWith<MoodMedia> get copyWith =>
-      throw _privateConstructorUsedError;
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MoodMedia&&(identical(other.localPath, localPath) || other.localPath == localPath)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,localPath,kind,sizeBytes,mimeType);
+
+@override
+String toString() {
+  return 'MoodMedia(localPath: $localPath, kind: $kind, sizeBytes: $sizeBytes, mimeType: $mimeType)';
+}
+
+
 }
 
 /// @nodoc
-abstract class $MoodMediaCopyWith<$Res> {
-  factory $MoodMediaCopyWith(MoodMedia value, $Res Function(MoodMedia) then) =
-      _$MoodMediaCopyWithImpl<$Res, MoodMedia>;
-  @useResult
-  $Res call({
-    String localPath,
-    MoodMediaKind kind,
-    int sizeBytes,
-    String mimeType,
-  });
-}
+abstract mixin class $MoodMediaCopyWith<$Res>  {
+  factory $MoodMediaCopyWith(MoodMedia value, $Res Function(MoodMedia) _then) = _$MoodMediaCopyWithImpl;
+@useResult
+$Res call({
+ String localPath, MoodMediaKind kind, int sizeBytes, String mimeType
+});
 
+
+
+
+}
 /// @nodoc
-class _$MoodMediaCopyWithImpl<$Res, $Val extends MoodMedia>
+class _$MoodMediaCopyWithImpl<$Res>
     implements $MoodMediaCopyWith<$Res> {
-  _$MoodMediaCopyWithImpl(this._value, this._then);
+  _$MoodMediaCopyWithImpl(this._self, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+  final MoodMedia _self;
+  final $Res Function(MoodMedia) _then;
 
-  /// Create a copy of MoodMedia
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? localPath = null,
-    Object? kind = null,
-    Object? sizeBytes = null,
-    Object? mimeType = null,
-  }) {
-    return _then(
-      _value.copyWith(
-            localPath: null == localPath
-                ? _value.localPath
-                : localPath // ignore: cast_nullable_to_non_nullable
-                      as String,
-            kind: null == kind
-                ? _value.kind
-                : kind // ignore: cast_nullable_to_non_nullable
-                      as MoodMediaKind,
-            sizeBytes: null == sizeBytes
-                ? _value.sizeBytes
-                : sizeBytes // ignore: cast_nullable_to_non_nullable
-                      as int,
-            mimeType: null == mimeType
-                ? _value.mimeType
-                : mimeType // ignore: cast_nullable_to_non_nullable
-                      as String,
-          )
-          as $Val,
-    );
-  }
+/// Create a copy of MoodMedia
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? localPath = null,Object? kind = null,Object? sizeBytes = null,Object? mimeType = null,}) {
+  return _then(_self.copyWith(
+localPath: null == localPath ? _self.localPath : localPath // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as MoodMediaKind,sizeBytes: null == sizeBytes ? _self.sizeBytes : sizeBytes // ignore: cast_nullable_to_non_nullable
+as int,mimeType: null == mimeType ? _self.mimeType : mimeType // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [MoodMedia].
+extension MoodMediaPatterns on MoodMedia {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _MoodMedia value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _MoodMedia() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _MoodMedia value)  $default,){
+final _that = this;
+switch (_that) {
+case _MoodMedia():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _MoodMedia value)?  $default,){
+final _that = this;
+switch (_that) {
+case _MoodMedia() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String localPath,  MoodMediaKind kind,  int sizeBytes,  String mimeType)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _MoodMedia() when $default != null:
+return $default(_that.localPath,_that.kind,_that.sizeBytes,_that.mimeType);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String localPath,  MoodMediaKind kind,  int sizeBytes,  String mimeType)  $default,) {final _that = this;
+switch (_that) {
+case _MoodMedia():
+return $default(_that.localPath,_that.kind,_that.sizeBytes,_that.mimeType);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String localPath,  MoodMediaKind kind,  int sizeBytes,  String mimeType)?  $default,) {final _that = this;
+switch (_that) {
+case _MoodMedia() when $default != null:
+return $default(_that.localPath,_that.kind,_that.sizeBytes,_that.mimeType);case _:
+  return null;
+
+}
+}
+
 }
 
 /// @nodoc
-abstract class _$$MoodMediaImplCopyWith<$Res>
-    implements $MoodMediaCopyWith<$Res> {
-  factory _$$MoodMediaImplCopyWith(
-    _$MoodMediaImpl value,
-    $Res Function(_$MoodMediaImpl) then,
-  ) = __$$MoodMediaImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({
-    String localPath,
-    MoodMediaKind kind,
-    int sizeBytes,
-    String mimeType,
-  });
+
+
+class _MoodMedia implements MoodMedia {
+  const _MoodMedia({required this.localPath, required this.kind, required this.sizeBytes, required this.mimeType});
+  
+
+/// Device-side file URI returned by the picker. Treat as ephemeral —
+/// callers must upload before the user backgrounds the app for long.
+@override final  String localPath;
+@override final  MoodMediaKind kind;
+@override final  int sizeBytes;
+/// MIME type detected from the picker (`XFile.mimeType`) or, when null,
+/// inferred from the filename via `package:mime`.
+@override final  String mimeType;
+
+/// Create a copy of MoodMedia
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$MoodMediaCopyWith<_MoodMedia> get copyWith => __$MoodMediaCopyWithImpl<_MoodMedia>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MoodMedia&&(identical(other.localPath, localPath) || other.localPath == localPath)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,localPath,kind,sizeBytes,mimeType);
+
+@override
+String toString() {
+  return 'MoodMedia(localPath: $localPath, kind: $kind, sizeBytes: $sizeBytes, mimeType: $mimeType)';
+}
+
+
 }
 
 /// @nodoc
-class __$$MoodMediaImplCopyWithImpl<$Res>
-    extends _$MoodMediaCopyWithImpl<$Res, _$MoodMediaImpl>
-    implements _$$MoodMediaImplCopyWith<$Res> {
-  __$$MoodMediaImplCopyWithImpl(
-    _$MoodMediaImpl _value,
-    $Res Function(_$MoodMediaImpl) _then,
-  ) : super(_value, _then);
+abstract mixin class _$MoodMediaCopyWith<$Res> implements $MoodMediaCopyWith<$Res> {
+  factory _$MoodMediaCopyWith(_MoodMedia value, $Res Function(_MoodMedia) _then) = __$MoodMediaCopyWithImpl;
+@override @useResult
+$Res call({
+ String localPath, MoodMediaKind kind, int sizeBytes, String mimeType
+});
 
-  /// Create a copy of MoodMedia
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? localPath = null,
-    Object? kind = null,
-    Object? sizeBytes = null,
-    Object? mimeType = null,
-  }) {
-    return _then(
-      _$MoodMediaImpl(
-        localPath: null == localPath
-            ? _value.localPath
-            : localPath // ignore: cast_nullable_to_non_nullable
-                  as String,
-        kind: null == kind
-            ? _value.kind
-            : kind // ignore: cast_nullable_to_non_nullable
-                  as MoodMediaKind,
-        sizeBytes: null == sizeBytes
-            ? _value.sizeBytes
-            : sizeBytes // ignore: cast_nullable_to_non_nullable
-                  as int,
-        mimeType: null == mimeType
-            ? _value.mimeType
-            : mimeType // ignore: cast_nullable_to_non_nullable
-                  as String,
-      ),
-    );
-  }
+
+
+
 }
-
 /// @nodoc
+class __$MoodMediaCopyWithImpl<$Res>
+    implements _$MoodMediaCopyWith<$Res> {
+  __$MoodMediaCopyWithImpl(this._self, this._then);
 
-class _$MoodMediaImpl implements _MoodMedia {
-  const _$MoodMediaImpl({
-    required this.localPath,
-    required this.kind,
-    required this.sizeBytes,
-    required this.mimeType,
-  });
+  final _MoodMedia _self;
+  final $Res Function(_MoodMedia) _then;
 
-  /// Device-side file URI returned by the picker. Treat as ephemeral —
-  /// callers must upload before the user backgrounds the app for long.
-  @override
-  final String localPath;
-  @override
-  final MoodMediaKind kind;
-  @override
-  final int sizeBytes;
-
-  /// MIME type detected from the picker (`XFile.mimeType`) or, when null,
-  /// inferred from the filename via `package:mime`.
-  @override
-  final String mimeType;
-
-  @override
-  String toString() {
-    return 'MoodMedia(localPath: $localPath, kind: $kind, sizeBytes: $sizeBytes, mimeType: $mimeType)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$MoodMediaImpl &&
-            (identical(other.localPath, localPath) ||
-                other.localPath == localPath) &&
-            (identical(other.kind, kind) || other.kind == kind) &&
-            (identical(other.sizeBytes, sizeBytes) ||
-                other.sizeBytes == sizeBytes) &&
-            (identical(other.mimeType, mimeType) ||
-                other.mimeType == mimeType));
-  }
-
-  @override
-  int get hashCode =>
-      Object.hash(runtimeType, localPath, kind, sizeBytes, mimeType);
-
-  /// Create a copy of MoodMedia
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$MoodMediaImplCopyWith<_$MoodMediaImpl> get copyWith =>
-      __$$MoodMediaImplCopyWithImpl<_$MoodMediaImpl>(this, _$identity);
+/// Create a copy of MoodMedia
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? localPath = null,Object? kind = null,Object? sizeBytes = null,Object? mimeType = null,}) {
+  return _then(_MoodMedia(
+localPath: null == localPath ? _self.localPath : localPath // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as MoodMediaKind,sizeBytes: null == sizeBytes ? _self.sizeBytes : sizeBytes // ignore: cast_nullable_to_non_nullable
+as int,mimeType: null == mimeType ? _self.mimeType : mimeType // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
 }
 
-abstract class _MoodMedia implements MoodMedia {
-  const factory _MoodMedia({
-    required final String localPath,
-    required final MoodMediaKind kind,
-    required final int sizeBytes,
-    required final String mimeType,
-  }) = _$MoodMediaImpl;
 
-  /// Device-side file URI returned by the picker. Treat as ephemeral —
-  /// callers must upload before the user backgrounds the app for long.
-  @override
-  String get localPath;
-  @override
-  MoodMediaKind get kind;
-  @override
-  int get sizeBytes;
-
-  /// MIME type detected from the picker (`XFile.mimeType`) or, when null,
-  /// inferred from the filename via `package:mime`.
-  @override
-  String get mimeType;
-
-  /// Create a copy of MoodMedia
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$MoodMediaImplCopyWith<_$MoodMediaImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
+
+// dart format on

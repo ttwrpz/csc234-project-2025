@@ -13,7 +13,7 @@ part 'mood_draft.freezed.dart';
 /// but not yet uploaded. They become `mediaRefs` (`gs://...` URIs) only after
 /// a successful save flow uploads each item — see WBS 3.3.
 @freezed
-class MoodDraft with _$MoodDraft {
+abstract class MoodDraft with _$MoodDraft {
   const factory MoodDraft({
     MoodType? mood,
     @Default(3) int intensity,

@@ -7,7 +7,7 @@ part 'mood_entry_dto.freezed.dart';
 /// `users/{uid}/moods/{moodId}`. Lives in `data/` only — domain entities never
 /// see this type.
 @freezed
-class MoodEntryDto with _$MoodEntryDto {
+abstract class MoodEntryDto with _$MoodEntryDto {
   const factory MoodEntryDto({
     required String id,
     required String userId,

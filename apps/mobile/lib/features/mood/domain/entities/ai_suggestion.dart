@@ -16,7 +16,7 @@ part 'ai_suggestion.freezed.dart';
 /// already clamps on the wire). The assert hard-fails dev builds so we catch
 /// the bug at the boundary, not in the UI.
 @freezed
-class AiSuggestion with _$AiSuggestion {
+abstract class AiSuggestion with _$AiSuggestion {
   @Assert('confidence >= 0 && confidence <= 1', 'confidence must be in [0, 1]')
   const factory AiSuggestion({
     required MoodType mood,
@@ -31,7 +31,7 @@ class AiSuggestion with _$AiSuggestion {
 /// Optional second-best mood suggested by the model. Surfaced in the override
 /// UX so the user can swap from primary → alternative without retyping.
 @freezed
-class AiSuggestionAlternative with _$AiSuggestionAlternative {
+abstract class AiSuggestionAlternative with _$AiSuggestionAlternative {
   @Assert('confidence >= 0 && confidence <= 1', 'confidence must be in [0, 1]')
   const factory AiSuggestionAlternative({
     required MoodType mood,

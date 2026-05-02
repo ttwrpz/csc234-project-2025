@@ -6,25 +6,22 @@ part of 'mood_entry.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$MoodEntryImpl _$$MoodEntryImplFromJson(Map<String, dynamic> json) =>
-    _$MoodEntryImpl(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
-      mood: $enumDecode(_$MoodTypeEnumMap, json['mood']),
-      intensity: (json['intensity'] as num).toInt(),
-      text: json['text'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: json['updatedAt'] == null
-          ? null
-          : DateTime.parse(json['updatedAt'] as String),
-      mediaRefs:
-          (json['mediaRefs'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          const <String>[],
-    );
+_MoodEntry _$MoodEntryFromJson(Map<String, dynamic> json) => _MoodEntry(
+  id: json['id'] as String,
+  userId: json['userId'] as String,
+  mood: $enumDecode(_$MoodTypeEnumMap, json['mood']),
+  intensity: (json['intensity'] as num).toInt(),
+  text: json['text'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: json['updatedAt'] == null
+      ? null
+      : DateTime.parse(json['updatedAt'] as String),
+  mediaRefs:
+      (json['mediaRefs'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const <String>[],
+);
 
-Map<String, dynamic> _$$MoodEntryImplToJson(_$MoodEntryImpl instance) =>
+Map<String, dynamic> _$MoodEntryToJson(_MoodEntry instance) =>
     <String, dynamic>{
       'id': instance.id,
       'userId': instance.userId,

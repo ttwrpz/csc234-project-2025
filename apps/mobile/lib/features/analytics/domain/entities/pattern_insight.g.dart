@@ -6,8 +6,8 @@ part of 'pattern_insight.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$PatternInsightImpl _$$PatternInsightImplFromJson(Map<String, dynamic> json) =>
-    _$PatternInsightImpl(
+_PatternInsight _$PatternInsightFromJson(Map<String, dynamic> json) =>
+    _PatternInsight(
       id: json['id'] as String,
       kind: $enumDecode(_$PatternInsightKindEnumMap, json['kind']),
       text: json['text'] as String,
@@ -16,16 +16,15 @@ _$PatternInsightImpl _$$PatternInsightImplFromJson(Map<String, dynamic> json) =>
       generatedAt: DateTime.parse(json['generatedAt'] as String),
     );
 
-Map<String, dynamic> _$$PatternInsightImplToJson(
-  _$PatternInsightImpl instance,
-) => <String, dynamic>{
-  'id': instance.id,
-  'kind': _$PatternInsightKindEnumMap[instance.kind]!,
-  'text': instance.text,
-  'confidence': instance.confidence,
-  'sampleSize': instance.sampleSize,
-  'generatedAt': instance.generatedAt.toIso8601String(),
-};
+Map<String, dynamic> _$PatternInsightToJson(_PatternInsight instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'kind': _$PatternInsightKindEnumMap[instance.kind]!,
+      'text': instance.text,
+      'confidence': instance.confidence,
+      'sampleSize': instance.sampleSize,
+      'generatedAt': instance.generatedAt.toIso8601String(),
+    };
 
 const _$PatternInsightKindEnumMap = {
   PatternInsightKind.weekday: 'weekday',

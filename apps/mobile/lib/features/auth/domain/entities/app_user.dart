@@ -8,7 +8,7 @@ part 'app_user.freezed.dart';
 /// layer. JSON serialization is deferred to HB-002 (UserProfile upsert), so
 /// no `fromJson` factory yet.
 @freezed
-class AppUser with _$AppUser {
+abstract class AppUser with _$AppUser {
   const factory AppUser({
     required String uid,
     String? email,

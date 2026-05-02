@@ -10,7 +10,7 @@ part 'pattern_insight.g.dart';
 /// to [0, 1] and respects the sample-size floor (n < 10 → confidence
 /// ≤ 0.5) regardless of effect size — see ADR-0007.
 @freezed
-class PatternInsight with _$PatternInsight {
+abstract class PatternInsight with _$PatternInsight {
   const factory PatternInsight({
     required String id,
     required PatternInsightKind kind,

@@ -19,7 +19,7 @@ part 'garden_state.freezed.dart';
 /// **intensity**, not the `MoodCategory` bucket — see ADR-0006 and
 /// `ComputeGardenStateUseCase` for the rule.
 @freezed
-class GardenState with _$GardenState {
+abstract class GardenState with _$GardenState {
   const factory GardenState({
     /// Total number of positive mood entries in the user's history. Drives
     /// the canvas density: more positives → more flowers.
@@ -57,7 +57,7 @@ class GardenState with _$GardenState {
 
 /// One cell in the weekly bloom bar.
 @freezed
-class DayBloom with _$DayBloom {
+abstract class DayBloom with _$DayBloom {
   const factory DayBloom({
     /// Midnight of the day in the user's local time zone.
     required DateTime day,
