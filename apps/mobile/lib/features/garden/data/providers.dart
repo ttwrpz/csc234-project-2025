@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../mood/data/providers.dart';
+import '../../mood/domain/entities/mood_entry.dart';
 import '../domain/entities/garden_state.dart';
 import '../domain/usecases/compute_garden_state.dart';
 
@@ -31,3 +32,12 @@ final gardenStateStreamProvider = Provider<AsyncValue<GardenState>>((ref) {
     (entries) => useCase(entries: entries, now: DateTime.now()),
   );
 });
+
+/// Underlying mood entries the garden canvas iterates to render per-entry
+/// glyphs (flower / wilting plant / rain cloud). Mirrors
+/// [myMoodsStreamProvider] under a garden-namespaced alias so the screen
+/// can compose state + entries without reaching into the mood feature's
+/// providers directly. WBS 4.3 — Day 2.
+final gardenEntriesStreamProvider = Provider<AsyncValue<List<MoodEntry>>>(
+  (ref) => ref.watch(myMoodsStreamProvider),
+);
