@@ -20,14 +20,17 @@ import {
   type AnalyzePatternsResponse,
   type HistoryEntryWire,
   MODEL_VERSION,
-  PATTERN_GEMINI_MAX_CONFIDENCE,
   PATTERN_SAMPLE_FLOOR,
   type PatternInsight,
 } from './types.js';
 
-const GEMINI_TIMEOUT_MS = 5_000;
 const PATTERNS_RATE_LIMIT_WINDOW_MS = 30_000;
 const PATTERNS_RATE_LIMIT_MAX = 1;
+
+// GEMINI_TIMEOUT_MS (5s) is reserved for the deferred Gemini supplementary
+// call (ADR-0007 §"Gemini supplementary") that lands in v1.0.1; it lives
+// alongside the `analyze()` import and AbortController setup at that
+// point.
 
 /** Mood codes that are NOT positive. Mirrors `MoodType.category` on Dart. */
 const NEGATIVE_MOOD_CODES = new Set<HistoryEntryWire['moodCode']>([
@@ -429,10 +432,6 @@ export async function handleAnalyzePatterns(
   const geminiSkipped = true;
   const geminiSkipReason: 'flag_disabled' | 'timeout' | 'parse_error' | 'gemini_unavailable' =
     'flag_disabled';
-
-  // Suppress unused references in the TypeScript narrow check below.
-  void GEMINI_TIMEOUT_MS;
-  void GEMINI_API_KEY;
 
   const totalLatencyMs = Date.now() - startMs;
 
