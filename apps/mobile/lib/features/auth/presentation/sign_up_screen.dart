@@ -1,10 +1,12 @@
 import 'package:design_system/design_system.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'controllers/sign_up_controller.dart';
 import 'widgets/auth_text_field.dart';
+import 'widgets/google_sign_in_button.dart';
 
 class SignUpScreen extends ConsumerWidget {
   const SignUpScreen({super.key});
@@ -13,6 +15,9 @@ class SignUpScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(signUpControllerProvider);
     final controller = ref.read(signUpControllerProvider.notifier);
+    final showGoogle =
+        !kIsWeb; // Web Google sign-in goes through Firebase popup;
+    // we hide the dedicated button to keep the sign-up surface single-path on web.
 
     return Scaffold(
       appBar: AppBar(title: const Text('Create an account')),
@@ -74,6 +79,13 @@ class SignUpScreen extends ConsumerWidget {
                         : const Text('Create account'),
                   ),
                 ),
+                if (showGoogle) ...[
+                  const SizedBox(height: MoodBloomSpacing.lg),
+                  GoogleSignInButton(
+                    onPressed: controller.submitGoogle,
+                    isLoading: state.isSubmitting,
+                  ),
+                ],
                 const SizedBox(height: MoodBloomSpacing.xl),
                 Center(
                   child: TextButton(

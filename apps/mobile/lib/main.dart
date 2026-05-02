@@ -6,6 +6,7 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/bootstrap.dart';
@@ -65,6 +66,20 @@ Future<void> main() async {
       );
       // Fire-and-forget — must not block app startup.
       unawaited(rc.fetchAndActivate());
+
+      // google_sign_in 7.x requires `initialize()` to be called exactly
+      // once before any other method, with its Future awaited. Skipped
+      // on Web because we use Firebase's `signInWithPopup` directly
+      // (see firebase_auth_datasource.dart §kIsWeb branch); the v7
+      // `google_sign_in_web` flow needs an OAuth client id that we
+      // don't currently configure for web. `clientId` and
+      // `serverClientId` are intentionally null — the Android plugin
+      // reads from `google-services.json` and iOS reads from
+      // `GoogleService-Info.plist`, both already in place from
+      // `flutterfire configure`.
+      if (!kIsWeb) {
+        await GoogleSignIn.instance.initialize();
+      }
 
       // Eager-resolve SharedPreferences before runApp so the theme-mode
       // controller has its persisted value on the very first frame —
