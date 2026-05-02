@@ -89,8 +89,7 @@ final moodSyncManagerProvider = Provider<MoodSyncManager>((ref) {
     // `connectivityStreamProvider` exposes the raw `Stream<bool>` for
     // plain-Dart consumers like MoodSyncManager.
     connectivity: ref.watch(connectivityStreamProvider),
-    deviceIdGetter: () =>
-        ref.read(deviceIdProvider).value ?? 'unknown-device',
+    deviceIdGetter: () => ref.read(deviceIdProvider).value ?? 'unknown-device',
     prefs: prefs,
   );
   ref.onDispose(() async => manager.shutdown());
@@ -103,8 +102,7 @@ final moodRepositoryProvider = Provider<MoodRepository>((ref) {
     moodDao: ref.watch(moodDaoProvider),
     syncQueueDao: ref.watch(syncQueueDaoProvider),
     syncManager: ref.watch(moodSyncManagerProvider),
-    deviceIdGetter: () =>
-        ref.read(deviceIdProvider).value ?? 'unknown-device',
+    deviceIdGetter: () => ref.read(deviceIdProvider).value ?? 'unknown-device',
     offlineFirstEnabled: () => ref.read(offlineFirstEnabledProvider),
     mapper: ref.watch(moodEntryMapperProvider),
     driftMapper: ref.watch(moodDriftMapperProvider),

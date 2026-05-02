@@ -61,9 +61,9 @@ void main() {
         () => container.read(themeModeControllerProvider),
         throwsA(
           predicate<Object>(
-            (e) => e
-                .toString()
-                .contains('themeModeControllerProvider must be overridden'),
+            (e) => e.toString().contains(
+              'themeModeControllerProvider must be overridden',
+            ),
           ),
         ),
       );
