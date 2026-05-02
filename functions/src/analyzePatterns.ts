@@ -12,14 +12,16 @@ import {
 } from 'firebase-functions/v2/https';
 import { ZodError } from 'zod';
 
-import { GEMINI_API_KEY } from './geminiClient.js';
+import { analyzeForPatterns, GEMINI_API_KEY } from './geminiClient.js';
 import { consumeToken } from './rateLimit.js';
 import {
   AnalyzePatternsRequestSchema,
   type AnalyzePatternsErrorCode,
   type AnalyzePatternsResponse,
+  GeminiThemeResponseSchema,
   type HistoryEntryWire,
   MODEL_VERSION,
+  PATTERN_GEMINI_MAX_CONFIDENCE,
   PATTERN_SAMPLE_FLOOR,
   type PatternInsight,
 } from './types.js';
@@ -27,10 +29,16 @@ import {
 const PATTERNS_RATE_LIMIT_WINDOW_MS = 30_000;
 const PATTERNS_RATE_LIMIT_MAX = 1;
 
-// GEMINI_TIMEOUT_MS (5s) is reserved for the deferred Gemini supplementary
-// call (ADR-0007 §"Gemini supplementary") that lands in v1.0.1; it lives
-// alongside the `analyze()` import and AbortController setup at that
-// point.
+/** Wall-clock cap for the Gemini supplementary call (per ADR-0007). */
+const GEMINI_TIMEOUT_MS = 5_000;
+
+/**
+ * Sample-size floor below which we skip the Gemini supplementary call
+ * entirely. Below 30 entries the model has too little signal to give
+ * a meaningful theme — and the sample-size floor would clamp its
+ * confidence to ≤0.5 anyway. Saving the round-trip + the Gemini quota.
+ */
+const PATTERNS_GEMINI_SAMPLE_FLOOR = 30;
 
 /** Mood codes that are NOT positive. Mirrors `MoodType.category` on Dart. */
 const NEGATIVE_MOOD_CODES = new Set<HistoryEntryWire['moodCode']>([
@@ -425,13 +433,69 @@ export async function handleAnalyzePatterns(
     if (tr) insights.push(tr);
   }
 
-  // 5. Gemini supplementary — intentionally NOT implemented in S4. The
-  // server-side flag-check + Gemini call lands in a follow-up patch; the
-  // statistical insights satisfy the demo acceptance bar on their own.
-  // Logging this skip keeps the wire format forward-compatible.
-  const geminiSkipped = true;
-  const geminiSkipReason: 'flag_disabled' | 'timeout' | 'parse_error' | 'gemini_unavailable' =
-    'flag_disabled';
+  // 5. Gemini supplementary call (ADR-0007 §"Decision: statistical-primary,
+  // Gemini-supplementary"). Always non-fatal — any failure swallows
+  // gracefully and the statistical insights ship on their own.
+  const statisticalInsightCount = insights.length;
+  let geminiSkipped = false;
+  let geminiSkipReason:
+    | 'sample_too_small'
+    | 'timeout'
+    | 'parse_error'
+    | 'gemini_unavailable'
+    | null = null;
+
+  if (parsed.history.length < PATTERNS_GEMINI_SAMPLE_FLOOR) {
+    geminiSkipped = true;
+    geminiSkipReason = 'sample_too_small';
+  } else {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), GEMINI_TIMEOUT_MS);
+    try {
+      const gem = await analyzeForPatterns(
+        parsed.history,
+        parsed.windowDays,
+        ac.signal,
+      );
+      clearTimeout(timer);
+      try {
+        const validated = GeminiThemeResponseSchema.parse(gem.raw);
+        const sampleSize = parsed.history.length;
+        // Sample-size floor is irrelevant here (we only call when ≥30),
+        // but Gemini-emitted confidence is capped at PATTERN_GEMINI_MAX_CONFIDENCE
+        // regardless — the model cannot claim "high" certainty on a
+        // theme it inferred from numeric codes alone.
+        const confidence = Math.min(
+          validated.confidence,
+          PATTERN_GEMINI_MAX_CONFIDENCE,
+        );
+        insights.push({
+          id: 'gemini',
+          kind: 'gemini',
+          text: validated.insightText,
+          confidence,
+          sampleSize,
+          generatedAt,
+        });
+      } catch {
+        // Schema validation failed — Gemini returned malformed JSON.
+        geminiSkipped = true;
+        geminiSkipReason = 'parse_error';
+      }
+    } catch (e) {
+      clearTimeout(timer);
+      geminiSkipped = true;
+      const aborted = ac.signal.aborted;
+      const isSyntax = e instanceof SyntaxError;
+      if (isSyntax) {
+        geminiSkipReason = 'parse_error';
+      } else if (aborted) {
+        geminiSkipReason = 'timeout';
+      } else {
+        geminiSkipReason = 'gemini_unavailable';
+      }
+    }
+  }
 
   const totalLatencyMs = Date.now() - startMs;
 
@@ -445,7 +509,7 @@ export async function handleAnalyzePatterns(
     windowDays: parsed.windowDays,
     historyLen: parsed.history.length,
     insightCount: insights.length,
-    statisticalInsightCount: insights.length,
+    statisticalInsightCount,
     geminiSkipped,
     geminiSkipReason,
     latencyTotalMs: totalLatencyMs,
