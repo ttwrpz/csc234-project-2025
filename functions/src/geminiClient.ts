@@ -7,8 +7,15 @@
 // - Wraps the SDK call with an externally-supplied AbortSignal so the caller
 //   in `analyzeMoodText.ts` can enforce a 5s timeout that maps to
 //   `gemini_unavailable`.
+//
+// Sprint 5 — migrated from `@google/generative-ai` (deprecated 2025-09)
+// to the unified `@google/genai` SDK. The wire-level call shape changed
+// (`ai.models.generateContent({ model, contents, config })` instead of
+// `model.generateContent(req, opts)`), but the system prompt, response
+// schema, and downstream `Result<AiSuggestion, AiAnalysisFailure>`
+// mapping are byte-identical from the caller's perspective.
 
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { GoogleGenAI, Type, type Schema } from '@google/genai';
 import { defineSecret } from 'firebase-functions/params';
 
 import { MODEL_VERSION, MOOD_TYPES, SAFETY_FLAGS } from './types.js';
@@ -58,30 +65,34 @@ Output: {"mood":"happy","confidence":0.92,
  * Enum-constrained response schema for Gemini's structured-output mode.
  * Collapses parse errors to a rare exception (the model can still emit
  * out-of-range numbers, hence the runtime Zod check downstream).
+ *
+ * The new `@google/genai` SDK exposes the schema enum as `Type` (vs the
+ * legacy `SchemaType`); the field set (`type`, `properties`, `enum`,
+ * `nullable`, `required`) is unchanged.
  */
-const RESPONSE_SCHEMA = {
-  type: SchemaType.OBJECT,
+const RESPONSE_SCHEMA: Schema = {
+  type: Type.OBJECT,
   properties: {
-    mood: { type: SchemaType.STRING, enum: [...MOOD_TYPES] },
-    confidence: { type: SchemaType.NUMBER },
+    mood: { type: Type.STRING, enum: [...MOOD_TYPES] },
+    confidence: { type: Type.NUMBER },
     alternative: {
-      type: SchemaType.OBJECT,
+      type: Type.OBJECT,
       nullable: true,
       properties: {
-        mood: { type: SchemaType.STRING, enum: [...MOOD_TYPES] },
-        confidence: { type: SchemaType.NUMBER },
+        mood: { type: Type.STRING, enum: [...MOOD_TYPES] },
+        confidence: { type: Type.NUMBER },
       },
       required: ['mood', 'confidence'],
     },
-    rationale: { type: SchemaType.STRING },
+    rationale: { type: Type.STRING },
     flag: {
-      type: SchemaType.STRING,
+      type: Type.STRING,
       enum: [...SAFETY_FLAGS],
       nullable: true,
     },
   },
   required: ['mood', 'confidence', 'alternative', 'rationale', 'flag'],
-} as const;
+};
 
 export interface GeminiAnalyzeResult {
   /** Raw parsed JSON from the model. Caller validates with Zod. */
@@ -117,40 +128,35 @@ export async function analyze(
   signal: AbortSignal,
 ): Promise<GeminiAnalyzeResult> {
   const apiKey = GEMINI_API_KEY.value();
-  const client = new GoogleGenerativeAI(apiKey);
-  const model = client.getGenerativeModel({
-    model: MODEL_VERSION,
-    systemInstruction: SYSTEM_PROMPT,
-    generationConfig: {
-      temperature: 0.2,
-      topP: 0.9,
-      maxOutputTokens: 200,
-      responseMimeType: 'application/json',
-      // The SDK accepts a Schema-shaped object here. The narrow `as const` on
-      // RESPONSE_SCHEMA preserves enum literals at compile time but conflicts
-      // with the SDK's mutable `Schema` interface, so we widen at this single
-      // call site rather than throughout the schema declaration.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-      responseSchema: RESPONSE_SCHEMA as any,
-    },
-  });
+  const ai = new GoogleGenAI({ apiKey });
 
   const userContent = buildUserContent(text, locale);
   const start = Date.now();
 
-  const result = await model.generateContent(
-    {
-      contents: [{ role: 'user', parts: [{ text: userContent }] }],
+  const response = await ai.models.generateContent({
+    model: MODEL_VERSION,
+    contents: [{ role: 'user', parts: [{ text: userContent }] }],
+    config: {
+      systemInstruction: SYSTEM_PROMPT,
+      temperature: 0.2,
+      topP: 0.9,
+      maxOutputTokens: 200,
+      responseMimeType: 'application/json',
+      responseSchema: RESPONSE_SCHEMA,
+      abortSignal: signal,
     },
-    { signal },
-  );
+  });
 
   const latencyMs = Date.now() - start;
-  const responseText = result.response.text();
+  // `response.text` is a getter on `GenerateContentResponse` that returns
+  // the concatenated text of all candidate parts. May be undefined if the
+  // model declined to emit output (we treat that as a JSON parse error
+  // downstream — `JSON.parse(undefined as any)` throws SyntaxError, which
+  // the handler maps to `parse_error`).
+  const responseText = response.text ?? '';
   const raw: unknown = JSON.parse(responseText);
 
-  const usage = result.response.usageMetadata;
-
+  const usage = response.usageMetadata;
   return {
     raw,
     latencyMs,

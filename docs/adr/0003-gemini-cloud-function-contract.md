@@ -20,7 +20,7 @@ The mood enum has six values: `happy, calm, okay, sad, angry, anxious` (apps/mob
 - HTTPS-callable Cloud Function v2 (`firebase-functions/v2`, `onCall`). Region: `asia-southeast1` (matches existing Firestore project, lowest latency for KMUTT users).
 - `enforceAppCheck: false` for Sprint 3. Firebase Auth + per-user rate limit are the only defences. App Check is Sprint 4 scope; flutter-engineer must wire `enforceAppCheck: true` then with no other contract change.
 - Runtime: Node 20, ESM (`"type": "module"`), `timeoutSeconds: 30`, `memory: '256MiB'`.
-- Model: `gemini-2.5-flash` via `@google/generative-ai`. Generation config: `temperature: 0.2`, `topP: 0.9`, `maxOutputTokens: 200`, `responseMimeType: 'application/json'`, `responseSchema` enum-constrained to the six moods.
+- Model: `gemini-2.5-flash` via `@google/genai` (migrated from the deprecated `@google/generative-ai` in v1.0.1; the call shape changed from `model.generateContent(req, opts)` to `ai.models.generateContent({ model, contents, config })` but the wire contract above is unchanged). Generation config: `temperature: 0.2`, `topP: 0.9`, `maxOutputTokens: 200`, `responseMimeType: 'application/json'`, `responseSchema` enum-constrained to the six moods.
 
 ### Secret handling
 
@@ -140,8 +140,8 @@ Forbidden fields: raw `text`, full assembled `prompt`, model `rationale` string.
 
 ```
 functions/
-├── package.json            # type: module; firebase-admin@12, firebase-functions@5,
-│                           # @google/generative-ai@0.21, zod@3
+├── package.json            # type: module; firebase-admin@13, firebase-functions@7,
+│                           # @google/genai@1, zod@3 (versions current as of v1.0.1)
 ├── tsconfig.json           # ES2022, strict, noUncheckedIndexedAccess
 ├── .eslintrc.cjs           # forbids functions.config, console.*
 ├── src/

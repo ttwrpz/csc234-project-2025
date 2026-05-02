@@ -122,7 +122,11 @@ jest.unstable_mockModule('firebase-admin/firestore', () => ({
   getFirestore: () => firestoreMock,
 }));
 
-// `@google/generative-ai` mock with a settable next-response.
+// `@google/genai` mock with a settable next-response. The new SDK shape:
+// `ai.models.generateContent({ model, contents, config })` returns
+// `GenerateContentResponse` with a `.text` getter (string, not method)
+// and `.usageMetadata`. The abort signal lives at `config.abortSignal`
+// instead of the legacy second-arg `options.signal`.
 type NextResponseMode =
   | { kind: 'json'; payload: unknown; latencyMs?: number }
   | { kind: 'syntaxError' }
@@ -139,24 +143,25 @@ let nextResponse: NextResponseMode = {
   },
 };
 
+interface GenerateContentInput {
+  model: string;
+  contents: unknown;
+  config?: { abortSignal?: AbortSignal };
+}
+interface GenerateContentMockResponse {
+  text: string;
+  usageMetadata: { promptTokenCount: number; candidatesTokenCount: number };
+}
+
 const generateContentMock = jest.fn(
-  async (
-    _input: unknown,
-    options: { signal: AbortSignal },
-  ): Promise<{
-    response: {
-      text: () => string;
-      usageMetadata: { promptTokenCount: number; candidatesTokenCount: number };
-    };
-  }> => {
+  async (input: GenerateContentInput): Promise<GenerateContentMockResponse> => {
     const mode = nextResponse;
+    const signal = input.config?.abortSignal;
     if (mode.kind === 'syntaxError') {
       // Simulate the SDK successfully returning text but text is not JSON.
       return {
-        response: {
-          text: () => 'this is not json {{{',
-          usageMetadata: { promptTokenCount: 50, candidatesTokenCount: 30 },
-        },
+        text: 'this is not json {{{',
+        usageMetadata: { promptTokenCount: 50, candidatesTokenCount: 30 },
       };
     }
     if (mode.kind === 'reject') {
@@ -165,37 +170,33 @@ const generateContentMock = jest.fn(
     if (mode.kind === 'delay') {
       await new Promise<void>((resolve, reject) => {
         const t = setTimeout(() => resolve(), mode.ms);
-        options.signal.addEventListener('abort', () => {
+        signal?.addEventListener('abort', () => {
           clearTimeout(t);
           reject(new Error('aborted'));
         });
       });
       return {
-        response: {
-          text: () => JSON.stringify(mode.payload),
-          usageMetadata: { promptTokenCount: 50, candidatesTokenCount: 30 },
-        },
+        text: JSON.stringify(mode.payload),
+        usageMetadata: { promptTokenCount: 50, candidatesTokenCount: 30 },
       };
     }
     if (mode.latencyMs !== undefined) {
       await new Promise<void>((resolve) => setTimeout(resolve, mode.latencyMs));
     }
     return {
-      response: {
-        text: () => JSON.stringify(mode.payload),
-        usageMetadata: { promptTokenCount: 50, candidatesTokenCount: 30 },
-      },
+      text: JSON.stringify(mode.payload),
+      usageMetadata: { promptTokenCount: 50, candidatesTokenCount: 30 },
     };
   },
 );
 
-jest.unstable_mockModule('@google/generative-ai', () => ({
-  GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
-    getGenerativeModel: () => ({
+jest.unstable_mockModule('@google/genai', () => ({
+  GoogleGenAI: jest.fn().mockImplementation(() => ({
+    models: {
       generateContent: generateContentMock,
-    }),
+    },
   })),
-  SchemaType: {
+  Type: {
     OBJECT: 'OBJECT',
     STRING: 'STRING',
     NUMBER: 'NUMBER',
