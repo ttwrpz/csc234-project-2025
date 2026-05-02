@@ -20,27 +20,23 @@ Both flows use the same Remote Config key. They differ only in the **minimum fet
 
 Both keys are registered as defaults in `apps/mobile/lib/main.dart` (`rc.setDefaults(...)`). The defaults are baked into the build so a never-fetched client still sees a working app.
 
-## Demo prep — lower the minimum fetch interval
+## Demo prep — lower the minimum fetch interval (v1.0 only — RESTORED)
 
-`FirebaseRemoteConfig.minimumFetchInterval` is set to **60 seconds** for the v1.0 demo (per kickoff Open Question O-3). The kickoff acceptance bar requires the Insights card to hide within 60 seconds of a flag flip. **This is a demo-only setting** — it is restored to **60 minutes** in a v1.0.1 patch immediately post-demo to avoid flooding Remote Config with fetch requests in production.
+> **Status as of v1.0.1:** the `minimumFetchInterval` is back to **60 minutes**. Production clients pick up server-side flag flips within an hour. The 60-second window described below applies ONLY to the original v1.0 demo build that has since been superseded.
 
-The lowered interval lives at one location:
+For the original v1.0 demo, `FirebaseRemoteConfig.minimumFetchInterval` was lowered to **60 seconds** (per kickoff Open Question O-3) so the kill-switch rehearsal could complete within the kickoff acceptance bar. That interval was restored to 60 minutes in v1.0.1 to avoid flooding Remote Config with fetch requests in production. The current code:
 
 ```dart
-// apps/mobile/lib/main.dart (Sprint 4 — restored in v1.0.1)
+// apps/mobile/lib/main.dart (v1.0.1 — restored)
 await rc.setConfigSettings(
   RemoteConfigSettings(
     fetchTimeout: const Duration(seconds: 10),
-    minimumFetchInterval: const Duration(seconds: 60), // demo: 60s; prod: 60min
+    minimumFetchInterval: const Duration(minutes: 60),
   ),
 );
 ```
 
-**Pre-demo checklist:**
-- [ ] Confirm `minimumFetchInterval` is 60 seconds on the build flashed for the demo device.
-- [ ] Open the Analytics screen on the demo device and wait for one Insights card to render before flipping the flag (otherwise the kill-switch demo has nothing visible to hide).
-- [ ] Have the Firebase Console open in a second window, navigated to `Run > Remote Config`.
-- [ ] File a v1.0.1 ticket to restore the interval to 60 minutes BEFORE the demo so it cannot be forgotten.
+**If you ever need to re-stage the demo on a fresh build** (e.g. for the v1.x retrospective), temporarily flip `Duration(minutes: 60)` → `Duration(seconds: 60)` on a throwaway demo branch — never on `main`.
 
 ## Demo kill-switch — step-by-step
 
@@ -54,7 +50,7 @@ await rc.setConfigSettings(
 
 ## Production incident rollback
 
-Same procedure as steps 2–4 above. **Do NOT** lower `minimumFetchInterval` for production — clients on the v1.0.0 build see the change within ≤ 60 minutes (60-min default), which is the documented SLO. v1.0.1+ clients respect whatever interval ships with that release.
+Same procedure as steps 2–4 above. **Do NOT** lower `minimumFetchInterval` — production clients on v1.0.1+ see the change within ≤ 60 minutes (60-min default), which is the documented SLO.
 
 After flipping the flag, file a Crashlytics issue + post in `#mobile-incidents` with:
 - the flag name
@@ -62,15 +58,9 @@ After flipping the flag, file a Crashlytics issue + post in `#mobile-incidents` 
 - the user-facing impact (e.g. "Insights card hidden globally; mood logging unaffected")
 - a link to the Gemini Cloud Function logs that prompted the action
 
-## Restoring the 60-minute interval (v1.0.1)
+## ~~Restoring the 60-minute interval (v1.0.1)~~ — DONE
 
-Post-demo, open `apps/mobile/lib/main.dart` and revert:
-
-```dart
-minimumFetchInterval: const Duration(minutes: 60),
-```
-
-Bump the app version, ship the patch, tag `v1.0.1`. The 60-second interval is fine for a 5-minute demo on a single device but would be wasteful on hundreds of clients.
+The 60-minute `minimumFetchInterval` was restored in the v1.0.1 patch at `apps/mobile/lib/main.dart`. No further action required. Section retained for historical reference; remove on the next runbook revision.
 
 ## Failure modes
 

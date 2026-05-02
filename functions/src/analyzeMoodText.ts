@@ -286,8 +286,8 @@ export async function handleAnalyzeMoodText(
 
 /**
  * The exported v2 callable. Region matches Firestore (lowest latency for KMUTT
- * users); App Check is intentionally disabled in S3 — flagged in ADR-0003 to
- * be enabled in S4.
+ * users). App Check is enforced (matches `analyzePatterns` — both endpoints
+ * now reject non-attested clients per ADR-0003).
  */
 export const analyzeMoodText = onCall(
   {
@@ -295,7 +295,7 @@ export const analyzeMoodText = onCall(
     secrets: [GEMINI_API_KEY],
     timeoutSeconds: 30,
     memory: '256MiB',
-    enforceAppCheck: false,
+    enforceAppCheck: true,
   },
   handleAnalyzeMoodText,
 );
