@@ -51,10 +51,8 @@ class GardenScreen extends ConsumerWidget {
               ),
             ),
           ),
-          data: (garden) => _GardenView(
-            state: garden,
-            entries: entries.value ?? const [],
-          ),
+          data: (garden) =>
+              _GardenView(state: garden, entries: entries.value ?? const []),
         ),
       ),
     );
