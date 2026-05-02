@@ -10,16 +10,26 @@ import '../../domain/auth_failure.dart';
 /// here, no widgets here. Methods either return the raw `firebase_auth.User`
 /// (mapped upstream by [AppUserMapper]) or throw an [AuthDatasourceException]
 /// carrying a sealed [AuthFailure].
+///
+/// google_sign_in 7.x: the plugin is now a singleton accessed via
+/// `GoogleSignIn.instance`, initialised once in `main.dart` before
+/// `runApp`. The constructor's `googleSignIn` parameter has been
+/// removed — tests can no longer inject a fake; instead they should
+/// override `firebaseAuthDatasourceProvider` directly with a fake
+/// datasource. (No existing tests inject a `GoogleSignIn` so this is
+/// a no-op test-side migration.)
 class FirebaseAuthDatasource {
-  FirebaseAuthDatasource({
-    required fb.FirebaseAuth auth,
-    GoogleSignIn? googleSignIn,
-  }) : _auth = auth,
-       // OAuth scope minimum: 'email' only — see security review item R-002.
-       _googleSignIn = googleSignIn ?? GoogleSignIn(scopes: const ['email']);
+  FirebaseAuthDatasource({required fb.FirebaseAuth auth}) : _auth = auth;
 
   final fb.FirebaseAuth _auth;
-  final GoogleSignIn _googleSignIn;
+
+  /// OAuth scope hint for the combined-flow platforms (Android One Tap).
+  /// On platforms that don't support a combined flow, the hint is ignored
+  /// and authentication proceeds without scope authorization. This app
+  /// only needs `idToken` (passed to `GoogleAuthProvider.credential`),
+  /// so we never call `authorizationClient.authorizeScopes(...)` —
+  /// avoiding a second round-trip and a second consent screen.
+  static const List<String> _scopeHint = <String>['email'];
 
   fb.User? get currentUser => _auth.currentUser;
 
@@ -73,12 +83,12 @@ class FirebaseAuthDatasource {
 
   Future<fb.User> signInWithGoogle() async {
     try {
-      final fb.OAuthCredential credential;
       if (kIsWeb) {
-        // Web flow: prefer Firebase's signInWithPopup which goes through the
-        // Google Identity Services script loaded in web/index.html. The
-        // `google_sign_in` web flow is more fragile and requires extra meta
-        // tags, so we use Firebase's popup directly.
+        // Web flow: Firebase's `signInWithPopup` goes through the Google
+        // Identity Services script loaded by Firebase Auth on web. The
+        // `google_sign_in_web` flow needs an OAuth client id we don't
+        // ship for web; using Firebase's popup directly avoids that
+        // configuration burden.
         final provider = fb.GoogleAuthProvider()..addScope('email');
         final userCredential = await _auth.signInWithPopup(provider);
         final user = userCredential.user;
@@ -88,33 +98,57 @@ class FirebaseAuthDatasource {
         return user;
       }
 
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        throw AuthDatasourceException(const AuthFailure.googleCancelled());
-      }
-      final googleAuth = await googleUser.authentication;
-      credential = fb.GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
-        accessToken: googleAuth.accessToken,
+      // google_sign_in 7.x: singleton + authenticate(scopeHint:).
+      // Throws GoogleSignInException on cancel / config errors.
+      final googleUser = await GoogleSignIn.instance.authenticate(
+        scopeHint: _scopeHint,
       );
+      // 7.x's `authentication` is a synchronous getter (not a Future
+      // like 6.x). Returns `GoogleSignInAuthentication { idToken }`.
+      // We deliberately don't request an `accessToken` — Firebase's
+      // `GoogleAuthProvider.credential` only needs `idToken`, and
+      // skipping the authorization round-trip removes a second consent
+      // screen on first sign-in.
+      final googleAuth = googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null) {
+        // The platform is supposed to attach an idToken when scopes are
+        // requested via the scopeHint. If it didn't, treat as config
+        // error so the UI surfaces "Google sign-in not configured"
+        // rather than a generic "unknown".
+        throw AuthDatasourceException(const AuthFailure.googleConfigMissing());
+      }
+      final credential = fb.GoogleAuthProvider.credential(idToken: idToken);
       final userCredential = await _auth.signInWithCredential(credential);
       final user = userCredential.user;
       if (user == null) {
         throw AuthDatasourceException(const AuthFailure.unknown(null));
       }
       return user;
+    } on GoogleSignInException catch (e) {
+      // 7.x: typed exception with a `code` enum. Map cancel/timeout to
+      // googleCancelled, configuration / unknown to googleConfigMissing.
+      switch (e.code) {
+        case GoogleSignInExceptionCode.canceled:
+          throw AuthDatasourceException(const AuthFailure.googleCancelled());
+        case GoogleSignInExceptionCode.interrupted:
+        case GoogleSignInExceptionCode.uiUnavailable:
+          throw AuthDatasourceException(const AuthFailure.googleCancelled());
+        case GoogleSignInExceptionCode.clientConfigurationError:
+        case GoogleSignInExceptionCode.providerConfigurationError:
+          throw AuthDatasourceException(
+            const AuthFailure.googleConfigMissing(),
+          );
+        // ignore: no_default_cases
+        default:
+          throw AuthDatasourceException(AuthFailure.unknown(e));
+      }
     } on fb.FirebaseAuthException catch (e) {
       throw AuthDatasourceException(_codeToFailure(e.code, e));
     } on PlatformException catch (e) {
-      // Common: network_error, sign_in_canceled, sign_in_failed (config).
-      if (e.code == 'sign_in_canceled' || e.code == 'canceled') {
-        throw AuthDatasourceException(const AuthFailure.googleCancelled());
-      }
-      if (e.code == 'sign_in_failed' ||
-          e.code == 'sign_in_required' ||
-          e.code == 'developer_error') {
-        throw AuthDatasourceException(const AuthFailure.googleConfigMissing());
-      }
+      // Pre-7.x callers could hit raw PlatformExceptions; keep the
+      // catch arm as defence-in-depth in case a transitive dependency
+      // re-raises one.
       throw AuthDatasourceException(_codeToFailure(e.code, e));
     } on AuthDatasourceException {
       rethrow;
@@ -127,7 +161,7 @@ class FirebaseAuthDatasource {
     try {
       // Best-effort Google sign-out; ignore if not signed in there.
       if (!kIsWeb) {
-        await _googleSignIn.signOut().catchError((_) => null);
+        await GoogleSignIn.instance.signOut().catchError((_) => null);
       }
       await _auth.signOut();
     } on fb.FirebaseAuthException catch (e) {

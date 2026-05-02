@@ -76,5 +76,27 @@ void main() {
         expect(repo.registerCalls.single.password, equals('longenoughpw'));
       },
     );
+
+    testWidgets('tapping Continue with Google invokes SignInWithGoogleUseCase', (
+      tester,
+    ) async {
+      final repo = FakeAuthRepository(
+        googleResult: const Ok(AppUser(uid: 'u-1', email: 'u@example.com')),
+      );
+      await _pumpSignUp(tester, repo: repo);
+
+      // The Google button is rendered via GoogleSignInButton which uses
+      // an OutlinedButton.icon under the hood; locating by label text
+      // matches the sign_in_screen_test pattern.
+      await tester.tap(find.text('Continue with Google'));
+      await tester.pumpAndSettle();
+
+      expect(
+        repo.googleCalls,
+        equals(1),
+        reason:
+            'tapping the Google button on sign-up must call the Google use case',
+      );
+    });
   });
 }
