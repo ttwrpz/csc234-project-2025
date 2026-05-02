@@ -1,4 +1,3 @@
-import 'package:design_system/design_system.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,13 +10,13 @@ import '../features/auth/domain/entities/app_user.dart';
 import '../features/auth/presentation/biometric_gate_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
-import '../features/auth/presentation/widgets/biometric_settings_tile.dart';
 import '../features/garden/presentation/garden_screen.dart';
 import '../features/history/presentation/entry_detail_screen.dart';
 import '../features/history/presentation/history_screen.dart';
 import '../features/mood/data/providers.dart' as mood_providers;
 import '../features/mood/presentation/log_mood_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
+import '../features/settings/presentation/settings_screen.dart';
 
 const _onboardingCompleteKey = 'onboarding_complete';
 
@@ -162,7 +161,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/settings',
-                builder: (c, s) => const _SettingsScreen(),
+                builder: (c, s) => const SettingsScreen(),
               ),
             ],
           ),
@@ -212,58 +211,6 @@ class _AppShell extends StatelessWidget {
             selectedIcon: Icon(Icons.settings),
             label: 'Settings',
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SettingsScreen extends ConsumerWidget {
-  const _SettingsScreen();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserStreamProvider).valueOrNull;
-    final displayName = user?.displayName;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: ListView(
-        children: [
-          if (user != null)
-            ListTile(
-              leading: const Icon(Icons.account_circle_outlined),
-              title: Text(user.email ?? 'Signed in'),
-              subtitle: displayName == null ? null : Text(displayName),
-            ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Sign out'),
-            onTap: () async {
-              await ref.read(signOutUseCaseProvider)();
-            },
-          ),
-          const SizedBox(height: MoodBloomSpacing.lg),
-          const BiometricSettingsTile(),
-          if (kDebugMode) ...[
-            const SizedBox(height: MoodBloomSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: MoodBloomSpacing.lg,
-              ),
-              child: FilledButton.tonal(
-                onPressed: () {
-                  // Debug-only escape hatch for verifying the Crashlytics
-                  // wiring end-to-end. Stripped in release builds via
-                  // kDebugMode.
-                  throw Exception(
-                    'Crashlytics test crash from Settings — debug only',
-                  );
-                },
-                child: const Text('Crash now (debug)'),
-              ),
-            ),
-          ],
         ],
       ),
     );
