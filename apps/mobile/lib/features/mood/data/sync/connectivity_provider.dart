@@ -10,9 +10,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Consumed by [MoodSyncManager]'s constructor and exposed to the future PR-3
 /// "pending uploads" UI badge.
 final connectivityProvider = StreamProvider<bool>((ref) {
+  return _onlineStream();
+});
+
+/// Plain `Stream<bool>` exposed to plain-Dart consumers (e.g.
+/// [MoodSyncManager]) that want a raw stream rather than an `AsyncValue`.
+/// Riverpod 3 retired `StreamProvider.stream`; the replacement is to
+/// expose the underlying broadcast stream via a sibling provider.
+final connectivityStreamProvider = Provider<Stream<bool>>((ref) {
+  return _onlineStream();
+});
+
+Stream<bool> _onlineStream() {
   final connectivity = Connectivity();
   return connectivity.onConnectivityChanged.map(isOnlineFromResults).distinct();
-});
+}
 
 /// Synchronous-current-value snapshot for one-shot gating logic.
 ///

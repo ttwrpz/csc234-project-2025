@@ -6,7 +6,18 @@ part of 'log_mood_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$logMoodControllerHash() => r'4a63d3f358804ef9951538ffab4b70c54643c401';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+/// Controller for `LogMoodScreen`. State is [MoodDraft] directly — it is the
+/// canonical in-progress entry shape and does not need a wrapper.
+///
+/// Transient submission state (`isSubmitting`, `errorMessage`) lives on the
+/// sibling [LogMoodSubmissionController]. Navigation on success is performed
+/// by the screen, not this controller — keeps the controller free of
+/// `BuildContext` and `package:go_router` imports.
+
+@ProviderFor(LogMoodController)
+final logMoodControllerProvider = LogMoodControllerProvider._();
 
 /// Controller for `LogMoodScreen`. State is [MoodDraft] directly — it is the
 /// canonical in-progress entry shape and does not need a wrapper.
@@ -15,20 +26,66 @@ String _$logMoodControllerHash() => r'4a63d3f358804ef9951538ffab4b70c54643c401';
 /// sibling [LogMoodSubmissionController]. Navigation on success is performed
 /// by the screen, not this controller — keeps the controller free of
 /// `BuildContext` and `package:go_router` imports.
-///
-/// Copied from [LogMoodController].
-@ProviderFor(LogMoodController)
-final logMoodControllerProvider =
-    AutoDisposeNotifierProvider<LogMoodController, MoodDraft>.internal(
-      LogMoodController.new,
-      name: r'logMoodControllerProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$logMoodControllerHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final class LogMoodControllerProvider
+    extends $NotifierProvider<LogMoodController, MoodDraft> {
+  /// Controller for `LogMoodScreen`. State is [MoodDraft] directly — it is the
+  /// canonical in-progress entry shape and does not need a wrapper.
+  ///
+  /// Transient submission state (`isSubmitting`, `errorMessage`) lives on the
+  /// sibling [LogMoodSubmissionController]. Navigation on success is performed
+  /// by the screen, not this controller — keeps the controller free of
+  /// `BuildContext` and `package:go_router` imports.
+  LogMoodControllerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'logMoodControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
-typedef _$LogMoodController = AutoDisposeNotifier<MoodDraft>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+  @override
+  String debugGetCreateSourceHash() => _$logMoodControllerHash();
+
+  @$internal
+  @override
+  LogMoodController create() => LogMoodController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(MoodDraft value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<MoodDraft>(value),
+    );
+  }
+}
+
+String _$logMoodControllerHash() => r'7334e2240aa835e07652666e545655c2b8ea5143';
+
+/// Controller for `LogMoodScreen`. State is [MoodDraft] directly — it is the
+/// canonical in-progress entry shape and does not need a wrapper.
+///
+/// Transient submission state (`isSubmitting`, `errorMessage`) lives on the
+/// sibling [LogMoodSubmissionController]. Navigation on success is performed
+/// by the screen, not this controller — keeps the controller free of
+/// `BuildContext` and `package:go_router` imports.
+
+abstract class _$LogMoodController extends $Notifier<MoodDraft> {
+  MoodDraft build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<MoodDraft, MoodDraft>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<MoodDraft, MoodDraft>,
+              MoodDraft,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}

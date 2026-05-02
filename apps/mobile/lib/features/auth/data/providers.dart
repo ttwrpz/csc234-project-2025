@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart' show StateProvider;
 
 import '../../../app/providers.dart';
 import '../domain/auth_repository.dart';
@@ -116,4 +117,8 @@ final biometricCapabilityProvider = FutureProvider<BiometricCapability>((ref) {
 /// Used by the router to avoid re-prompting on every redirect tick within
 /// the same app session. Reset to `false` on sign-out so a future re-sign-in
 /// re-prompts (correct security behaviour).
+///
+/// Riverpod 3 retired `StateProvider` from the public API. We import it
+/// from `legacy.dart` to keep the trivially-ergonomic toggle without
+/// expanding the surface area to a full `Notifier` class for one bool.
 final biometricUnlockedThisSessionProvider = StateProvider<bool>((_) => false);

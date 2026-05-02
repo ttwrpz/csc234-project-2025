@@ -6,190 +6,147 @@ part of 'analytics_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$analyticsControllerHash() =>
-    r'0549a2b8f11965d939775f9fee5cf63293aceb4d';
-
-/// Copied from Dart SDK
-class _SystemHash {
-  _SystemHash._();
-
-  static int combine(int hash, int value) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + value);
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
-    return hash ^ (hash >> 6);
-  }
-
-  static int finish(int hash) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
-    // ignore: parameter_assignments
-    hash = hash ^ (hash >> 11);
-    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
-  }
-}
-
-/// Streams an [AnalyticsState] for the requested [MoodWindow]. The chart
-/// re-renders whenever new mood entries arrive on `myMoodsStreamProvider`.
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+/// Returns an `AsyncValue<AnalyticsState>` for the requested [MoodWindow].
+/// The chart re-renders whenever new mood entries arrive on
+/// `myMoodsStreamProvider`.
 ///
 /// Parameterised by `window` (riverpod_generator family) so each window
 /// selection has its own provider instance — no manual cache invalidation
 /// needed when the user toggles between 7d / 30d / 90d.
 ///
-/// Copied from [analyticsController].
+/// Riverpod 3: `StreamProvider.stream` was removed. We watch the upstream
+/// `AsyncValue<List<MoodEntry>>` directly and `whenData` it through the
+/// pure use case, mirroring the `gardenStateStreamProvider` shape.
+
 @ProviderFor(analyticsController)
-const analyticsControllerProvider = AnalyticsControllerFamily();
+final analyticsControllerProvider = AnalyticsControllerFamily._();
 
-/// Streams an [AnalyticsState] for the requested [MoodWindow]. The chart
-/// re-renders whenever new mood entries arrive on `myMoodsStreamProvider`.
+/// Returns an `AsyncValue<AnalyticsState>` for the requested [MoodWindow].
+/// The chart re-renders whenever new mood entries arrive on
+/// `myMoodsStreamProvider`.
 ///
 /// Parameterised by `window` (riverpod_generator family) so each window
 /// selection has its own provider instance — no manual cache invalidation
 /// needed when the user toggles between 7d / 30d / 90d.
 ///
-/// Copied from [analyticsController].
-class AnalyticsControllerFamily extends Family<AsyncValue<AnalyticsState>> {
-  /// Streams an [AnalyticsState] for the requested [MoodWindow]. The chart
-  /// re-renders whenever new mood entries arrive on `myMoodsStreamProvider`.
-  ///
-  /// Parameterised by `window` (riverpod_generator family) so each window
-  /// selection has its own provider instance — no manual cache invalidation
-  /// needed when the user toggles between 7d / 30d / 90d.
-  ///
-  /// Copied from [analyticsController].
-  const AnalyticsControllerFamily();
+/// Riverpod 3: `StreamProvider.stream` was removed. We watch the upstream
+/// `AsyncValue<List<MoodEntry>>` directly and `whenData` it through the
+/// pure use case, mirroring the `gardenStateStreamProvider` shape.
 
-  /// Streams an [AnalyticsState] for the requested [MoodWindow]. The chart
-  /// re-renders whenever new mood entries arrive on `myMoodsStreamProvider`.
+final class AnalyticsControllerProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<AnalyticsState>,
+          AsyncValue<AnalyticsState>,
+          AsyncValue<AnalyticsState>
+        >
+    with $Provider<AsyncValue<AnalyticsState>> {
+  /// Returns an `AsyncValue<AnalyticsState>` for the requested [MoodWindow].
+  /// The chart re-renders whenever new mood entries arrive on
+  /// `myMoodsStreamProvider`.
   ///
   /// Parameterised by `window` (riverpod_generator family) so each window
   /// selection has its own provider instance — no manual cache invalidation
   /// needed when the user toggles between 7d / 30d / 90d.
   ///
-  /// Copied from [analyticsController].
-  AnalyticsControllerProvider call(MoodWindow window) {
-    return AnalyticsControllerProvider(window);
+  /// Riverpod 3: `StreamProvider.stream` was removed. We watch the upstream
+  /// `AsyncValue<List<MoodEntry>>` directly and `whenData` it through the
+  /// pure use case, mirroring the `gardenStateStreamProvider` shape.
+  AnalyticsControllerProvider._({
+    required AnalyticsControllerFamily super.from,
+    required MoodWindow super.argument,
+  }) : super(
+         retry: null,
+         name: r'analyticsControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$analyticsControllerHash();
+
+  @override
+  String toString() {
+    return r'analyticsControllerProvider'
+        ''
+        '($argument)';
   }
 
+  @$internal
   @override
-  AnalyticsControllerProvider getProviderOverride(
-    covariant AnalyticsControllerProvider provider,
-  ) {
-    return call(provider.window);
+  $ProviderElement<AsyncValue<AnalyticsState>> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AsyncValue<AnalyticsState> create(Ref ref) {
+    final argument = this.argument as MoodWindow;
+    return analyticsController(ref, argument);
   }
 
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'analyticsControllerProvider';
-}
-
-/// Streams an [AnalyticsState] for the requested [MoodWindow]. The chart
-/// re-renders whenever new mood entries arrive on `myMoodsStreamProvider`.
-///
-/// Parameterised by `window` (riverpod_generator family) so each window
-/// selection has its own provider instance — no manual cache invalidation
-/// needed when the user toggles between 7d / 30d / 90d.
-///
-/// Copied from [analyticsController].
-class AnalyticsControllerProvider
-    extends AutoDisposeStreamProvider<AnalyticsState> {
-  /// Streams an [AnalyticsState] for the requested [MoodWindow]. The chart
-  /// re-renders whenever new mood entries arrive on `myMoodsStreamProvider`.
-  ///
-  /// Parameterised by `window` (riverpod_generator family) so each window
-  /// selection has its own provider instance — no manual cache invalidation
-  /// needed when the user toggles between 7d / 30d / 90d.
-  ///
-  /// Copied from [analyticsController].
-  AnalyticsControllerProvider(MoodWindow window)
-    : this._internal(
-        (ref) => analyticsController(ref as AnalyticsControllerRef, window),
-        from: analyticsControllerProvider,
-        name: r'analyticsControllerProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$analyticsControllerHash,
-        dependencies: AnalyticsControllerFamily._dependencies,
-        allTransitiveDependencies:
-            AnalyticsControllerFamily._allTransitiveDependencies,
-        window: window,
-      );
-
-  AnalyticsControllerProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.window,
-  }) : super.internal();
-
-  final MoodWindow window;
-
-  @override
-  Override overrideWith(
-    Stream<AnalyticsState> Function(AnalyticsControllerRef provider) create,
-  ) {
-    return ProviderOverride(
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AsyncValue<AnalyticsState> value) {
+    return $ProviderOverride(
       origin: this,
-      override: AnalyticsControllerProvider._internal(
-        (ref) => create(ref as AnalyticsControllerRef),
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        window: window,
-      ),
+      providerOverride: $SyncValueProvider<AsyncValue<AnalyticsState>>(value),
     );
   }
 
   @override
-  AutoDisposeStreamProviderElement<AnalyticsState> createElement() {
-    return _AnalyticsControllerProviderElement(this);
-  }
-
-  @override
   bool operator ==(Object other) {
-    return other is AnalyticsControllerProvider && other.window == window;
+    return other is AnalyticsControllerProvider && other.argument == argument;
   }
 
   @override
   int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, window.hashCode);
-
-    return _SystemHash.finish(hash);
+    return argument.hashCode;
   }
 }
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin AnalyticsControllerRef on AutoDisposeStreamProviderRef<AnalyticsState> {
-  /// The parameter `window` of this provider.
-  MoodWindow get window;
-}
+String _$analyticsControllerHash() =>
+    r'17d8f529a7b68b7a70fb8e99ae30674c299b32c2';
 
-class _AnalyticsControllerProviderElement
-    extends AutoDisposeStreamProviderElement<AnalyticsState>
-    with AnalyticsControllerRef {
-  _AnalyticsControllerProviderElement(super.provider);
+/// Returns an `AsyncValue<AnalyticsState>` for the requested [MoodWindow].
+/// The chart re-renders whenever new mood entries arrive on
+/// `myMoodsStreamProvider`.
+///
+/// Parameterised by `window` (riverpod_generator family) so each window
+/// selection has its own provider instance — no manual cache invalidation
+/// needed when the user toggles between 7d / 30d / 90d.
+///
+/// Riverpod 3: `StreamProvider.stream` was removed. We watch the upstream
+/// `AsyncValue<List<MoodEntry>>` directly and `whenData` it through the
+/// pure use case, mirroring the `gardenStateStreamProvider` shape.
+
+final class AnalyticsControllerFamily extends $Family
+    with $FunctionalFamilyOverride<AsyncValue<AnalyticsState>, MoodWindow> {
+  AnalyticsControllerFamily._()
+    : super(
+        retry: null,
+        name: r'analyticsControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Returns an `AsyncValue<AnalyticsState>` for the requested [MoodWindow].
+  /// The chart re-renders whenever new mood entries arrive on
+  /// `myMoodsStreamProvider`.
+  ///
+  /// Parameterised by `window` (riverpod_generator family) so each window
+  /// selection has its own provider instance — no manual cache invalidation
+  /// needed when the user toggles between 7d / 30d / 90d.
+  ///
+  /// Riverpod 3: `StreamProvider.stream` was removed. We watch the upstream
+  /// `AsyncValue<List<MoodEntry>>` directly and `whenData` it through the
+  /// pure use case, mirroring the `gardenStateStreamProvider` shape.
+
+  AnalyticsControllerProvider call(MoodWindow window) =>
+      AnalyticsControllerProvider._(argument: window, from: this);
 
   @override
-  MoodWindow get window => (origin as AnalyticsControllerProvider).window;
+  String toString() => r'analyticsControllerProvider';
 }
-
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

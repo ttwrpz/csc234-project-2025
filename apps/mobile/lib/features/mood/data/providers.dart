@@ -73,7 +73,7 @@ final offlineFirstEnabledProvider = Provider<bool>((_) => !kIsWeb);
 /// drain after boot proceeds; the listener corrects within milliseconds.
 final moodSyncManagerProvider = Provider<MoodSyncManager>((ref) {
   final prefsAsync = ref.watch(sharedPreferencesProvider);
-  final prefs = prefsAsync.valueOrNull;
+  final prefs = prefsAsync.value;
   if (prefs == null) {
     throw StateError(
       'moodSyncManagerProvider read before sharedPreferencesProvider resolved. '
@@ -85,13 +85,12 @@ final moodSyncManagerProvider = Provider<MoodSyncManager>((ref) {
     syncQueueDao: ref.watch(syncQueueDaoProvider),
     remote: ref.watch(moodFirestoreDatasourceProvider),
     mapper: ref.watch(moodEntryMapperProvider),
-    // Riverpod 3 will replace `.stream`; until then it is the documented way
-    // to expose a StreamProvider's raw Stream to plain-Dart consumers like
-    // MoodSyncManager.
-    // ignore: deprecated_member_use
-    connectivity: ref.watch(connectivityProvider.stream),
+    // Riverpod 3: `StreamProvider.stream` was removed. The sibling
+    // `connectivityStreamProvider` exposes the raw `Stream<bool>` for
+    // plain-Dart consumers like MoodSyncManager.
+    connectivity: ref.watch(connectivityStreamProvider),
     deviceIdGetter: () =>
-        ref.read(deviceIdProvider).valueOrNull ?? 'unknown-device',
+        ref.read(deviceIdProvider).value ?? 'unknown-device',
     prefs: prefs,
   );
   ref.onDispose(() async => manager.shutdown());
@@ -105,7 +104,7 @@ final moodRepositoryProvider = Provider<MoodRepository>((ref) {
     syncQueueDao: ref.watch(syncQueueDaoProvider),
     syncManager: ref.watch(moodSyncManagerProvider),
     deviceIdGetter: () =>
-        ref.read(deviceIdProvider).valueOrNull ?? 'unknown-device',
+        ref.read(deviceIdProvider).value ?? 'unknown-device',
     offlineFirstEnabled: () => ref.read(offlineFirstEnabledProvider),
     mapper: ref.watch(moodEntryMapperProvider),
     driftMapper: ref.watch(moodDriftMapperProvider),
@@ -158,7 +157,7 @@ final uploadMoodMediaUseCaseProvider = Provider<UploadMoodMediaUseCase>((ref) {
 /// Returns an empty stream when no user is signed in (router guarantees this
 /// won't happen in practice, but defense-in-depth).
 final myMoodsStreamProvider = StreamProvider<List<MoodEntry>>((ref) {
-  final user = ref.watch(currentUserStreamProvider).valueOrNull;
+  final user = ref.watch(currentUserStreamProvider).value;
   if (user == null) {
     return const Stream.empty();
   }
@@ -170,7 +169,7 @@ final moodEntryByIdProvider = FutureProvider.family<MoodEntry?, String>((
   ref,
   id,
 ) async {
-  final user = ref.watch(currentUserStreamProvider).valueOrNull;
+  final user = ref.watch(currentUserStreamProvider).value;
   if (user == null) return null;
   final result = await ref
       .watch(moodRepositoryProvider)

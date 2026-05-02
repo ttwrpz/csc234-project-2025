@@ -29,10 +29,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<AppUser?>(null);
   ref.onDispose(refresh.dispose);
   ref.listen<AsyncValue<AppUser?>>(currentUserStreamProvider, (previous, next) {
-    refresh.value = next.valueOrNull;
+    refresh.value = next.value;
 
-    final prevUid = previous?.valueOrNull?.uid;
-    final nextUid = next.valueOrNull?.uid;
+    final prevUid = previous?.value?.uid;
+    final nextUid = next.value?.uid;
 
     // PR-3: drive the MoodSyncManager lifecycle off auth-state transitions.
     // Sign-in (or auth resolves with a non-null user on app start) → bootstrap
@@ -59,7 +59,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     // 2.2: on sign-out (non-null → null), clear the session-scoped biometric
     // unlock flag so a future re-sign-in re-prompts. Correct security
     // behaviour: a fresh login should re-verify biometric on cold boot.
-    if (previous?.valueOrNull != null && next.valueOrNull == null) {
+    if (previous?.value != null && next.value == null) {
       ref.read(biometricUnlockedThisSessionProvider.notifier).state = false;
     }
   });
@@ -93,7 +93,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (refresh.value != null &&
           loc != '/biometric-gate' &&
           !ref.read(biometricUnlockedThisSessionProvider)) {
-        final cap = ref.read(biometricCapabilityProvider).valueOrNull;
+        final cap = ref.read(biometricCapabilityProvider).value;
         if (cap != null && cap.shouldGate) {
           return '/biometric-gate';
         }
