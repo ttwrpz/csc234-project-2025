@@ -21,9 +21,19 @@ mixin _$GardenState {
   /// the canvas density: more positives → more flowers.
   int get positiveMoodCount => throw _privateConstructorUsedError;
 
+  /// Total number of negative-mood entries at intensity 1–3 (gentler
+  /// negatives). Rendered as wilting plants on the garden canvas.
+  int get wiltingMoodCount => throw _privateConstructorUsedError;
+
+  /// Total number of negative-mood entries at intensity 4–5 (stormier
+  /// negatives). Rendered as rain clouds that drift and fade on their own
+  /// — the user is never asked to clean them up.
+  int get rainCloudMoodCount => throw _privateConstructorUsedError;
+
   /// Consecutive days, ending today, on which the user logged at least one
   /// positive mood. Empty days break the streak silently — there is no
-  /// streak-shaming copy.
+  /// streak-shaming copy. **Wilting and rain-cloud days do NOT contribute
+  /// to the streak**, by design (see ADR-0006).
   int get currentStreakDays => throw _privateConstructorUsedError;
 
   /// Last 7 days, newest first (today, yesterday, …, 6 days ago). Always
@@ -46,6 +56,8 @@ abstract class $GardenStateCopyWith<$Res> {
   @useResult
   $Res call({
     int positiveMoodCount,
+    int wiltingMoodCount,
+    int rainCloudMoodCount,
     int currentStreakDays,
     List<DayBloom> last7Days,
   });
@@ -67,6 +79,8 @@ class _$GardenStateCopyWithImpl<$Res, $Val extends GardenState>
   @override
   $Res call({
     Object? positiveMoodCount = null,
+    Object? wiltingMoodCount = null,
+    Object? rainCloudMoodCount = null,
     Object? currentStreakDays = null,
     Object? last7Days = null,
   }) {
@@ -75,6 +89,14 @@ class _$GardenStateCopyWithImpl<$Res, $Val extends GardenState>
             positiveMoodCount: null == positiveMoodCount
                 ? _value.positiveMoodCount
                 : positiveMoodCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            wiltingMoodCount: null == wiltingMoodCount
+                ? _value.wiltingMoodCount
+                : wiltingMoodCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            rainCloudMoodCount: null == rainCloudMoodCount
+                ? _value.rainCloudMoodCount
+                : rainCloudMoodCount // ignore: cast_nullable_to_non_nullable
                       as int,
             currentStreakDays: null == currentStreakDays
                 ? _value.currentStreakDays
@@ -101,6 +123,8 @@ abstract class _$$GardenStateImplCopyWith<$Res>
   @useResult
   $Res call({
     int positiveMoodCount,
+    int wiltingMoodCount,
+    int rainCloudMoodCount,
     int currentStreakDays,
     List<DayBloom> last7Days,
   });
@@ -121,6 +145,8 @@ class __$$GardenStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? positiveMoodCount = null,
+    Object? wiltingMoodCount = null,
+    Object? rainCloudMoodCount = null,
     Object? currentStreakDays = null,
     Object? last7Days = null,
   }) {
@@ -129,6 +155,14 @@ class __$$GardenStateImplCopyWithImpl<$Res>
         positiveMoodCount: null == positiveMoodCount
             ? _value.positiveMoodCount
             : positiveMoodCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        wiltingMoodCount: null == wiltingMoodCount
+            ? _value.wiltingMoodCount
+            : wiltingMoodCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        rainCloudMoodCount: null == rainCloudMoodCount
+            ? _value.rainCloudMoodCount
+            : rainCloudMoodCount // ignore: cast_nullable_to_non_nullable
                   as int,
         currentStreakDays: null == currentStreakDays
             ? _value.currentStreakDays
@@ -148,6 +182,8 @@ class __$$GardenStateImplCopyWithImpl<$Res>
 class _$GardenStateImpl extends _GardenState {
   const _$GardenStateImpl({
     required this.positiveMoodCount,
+    required this.wiltingMoodCount,
+    required this.rainCloudMoodCount,
     required this.currentStreakDays,
     required final List<DayBloom> last7Days,
   }) : _last7Days = last7Days,
@@ -158,9 +194,21 @@ class _$GardenStateImpl extends _GardenState {
   @override
   final int positiveMoodCount;
 
+  /// Total number of negative-mood entries at intensity 1–3 (gentler
+  /// negatives). Rendered as wilting plants on the garden canvas.
+  @override
+  final int wiltingMoodCount;
+
+  /// Total number of negative-mood entries at intensity 4–5 (stormier
+  /// negatives). Rendered as rain clouds that drift and fade on their own
+  /// — the user is never asked to clean them up.
+  @override
+  final int rainCloudMoodCount;
+
   /// Consecutive days, ending today, on which the user logged at least one
   /// positive mood. Empty days break the streak silently — there is no
-  /// streak-shaming copy.
+  /// streak-shaming copy. **Wilting and rain-cloud days do NOT contribute
+  /// to the streak**, by design (see ADR-0006).
   @override
   final int currentStreakDays;
 
@@ -179,7 +227,7 @@ class _$GardenStateImpl extends _GardenState {
 
   @override
   String toString() {
-    return 'GardenState(positiveMoodCount: $positiveMoodCount, currentStreakDays: $currentStreakDays, last7Days: $last7Days)';
+    return 'GardenState(positiveMoodCount: $positiveMoodCount, wiltingMoodCount: $wiltingMoodCount, rainCloudMoodCount: $rainCloudMoodCount, currentStreakDays: $currentStreakDays, last7Days: $last7Days)';
   }
 
   @override
@@ -189,6 +237,10 @@ class _$GardenStateImpl extends _GardenState {
             other is _$GardenStateImpl &&
             (identical(other.positiveMoodCount, positiveMoodCount) ||
                 other.positiveMoodCount == positiveMoodCount) &&
+            (identical(other.wiltingMoodCount, wiltingMoodCount) ||
+                other.wiltingMoodCount == wiltingMoodCount) &&
+            (identical(other.rainCloudMoodCount, rainCloudMoodCount) ||
+                other.rainCloudMoodCount == rainCloudMoodCount) &&
             (identical(other.currentStreakDays, currentStreakDays) ||
                 other.currentStreakDays == currentStreakDays) &&
             const DeepCollectionEquality().equals(
@@ -201,6 +253,8 @@ class _$GardenStateImpl extends _GardenState {
   int get hashCode => Object.hash(
     runtimeType,
     positiveMoodCount,
+    wiltingMoodCount,
+    rainCloudMoodCount,
     currentStreakDays,
     const DeepCollectionEquality().hash(_last7Days),
   );
@@ -217,6 +271,8 @@ class _$GardenStateImpl extends _GardenState {
 abstract class _GardenState extends GardenState {
   const factory _GardenState({
     required final int positiveMoodCount,
+    required final int wiltingMoodCount,
+    required final int rainCloudMoodCount,
     required final int currentStreakDays,
     required final List<DayBloom> last7Days,
   }) = _$GardenStateImpl;
@@ -227,9 +283,21 @@ abstract class _GardenState extends GardenState {
   @override
   int get positiveMoodCount;
 
+  /// Total number of negative-mood entries at intensity 1–3 (gentler
+  /// negatives). Rendered as wilting plants on the garden canvas.
+  @override
+  int get wiltingMoodCount;
+
+  /// Total number of negative-mood entries at intensity 4–5 (stormier
+  /// negatives). Rendered as rain clouds that drift and fade on their own
+  /// — the user is never asked to clean them up.
+  @override
+  int get rainCloudMoodCount;
+
   /// Consecutive days, ending today, on which the user logged at least one
   /// positive mood. Empty days break the streak silently — there is no
-  /// streak-shaming copy.
+  /// streak-shaming copy. **Wilting and rain-cloud days do NOT contribute
+  /// to the streak**, by design (see ADR-0006).
   @override
   int get currentStreakDays;
 

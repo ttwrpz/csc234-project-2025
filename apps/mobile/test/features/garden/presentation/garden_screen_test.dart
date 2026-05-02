@@ -128,7 +128,8 @@ void main() {
     });
 
     testWidgets(
-      'negative-only history → empty canvas, NO wilting/rain-cloud icons',
+      'negative-only history (S4) → no empty state, no flowers; canvas '
+      'glyph wiring lands on WBS 4.2 Day 2',
       (tester) async {
         final today = DateTime.now();
         final repo = FakeMoodRepository()
@@ -141,12 +142,15 @@ void main() {
           ];
         await _pumpGarden(tester, repo: repo);
 
-        // S3 does not visualise negatives — empty state must show.
-        expect(find.text('Your garden is waiting.'), findsOneWidget);
+        // S4 reframing: negatives surface as wilting/rain counts, so
+        // GardenState.isEmpty is false → empty-state copy is hidden.
+        expect(find.text('Your garden is waiting.'), findsNothing);
+        // No positives → no flowers.
         expect(find.byType(GardenFlower), findsNothing);
-        // S4 sentinels must not have leaked in.
-        expect(find.byIcon(Icons.cloud), findsNothing);
-        expect(find.byIcon(Icons.water_drop), findsNothing);
+        // The per-entry glyph rendering on `_GardenCanvas` lands on Day 2
+        // of WBS 4.2 (the rain-cloud widget arrives same day). For now the
+        // canvas exists but draws nothing — re-enable the WiltingPlant /
+        // RainCloud finders once the canvas iterates entries.
       },
     );
 

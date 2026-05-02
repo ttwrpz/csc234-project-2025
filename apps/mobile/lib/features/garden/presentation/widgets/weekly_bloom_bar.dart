@@ -6,12 +6,14 @@ import '../../domain/entities/garden_state.dart';
 /// Horizontal 7-cell bar showing the dominant mood for each of the last 7
 /// days. Today is on the right; six days ago is on the left.
 ///
-/// S3 only renders two states per cell:
-///  * [DayBloomKind.bloom] — at least one positive mood that day, painted
-///    with the warm "happy" hue.
-///  * [DayBloomKind.empty] — no positive mood (or no entries at all),
-///    painted with the muted neutral surface. *Not* a wilting/rain-cloud
-///    icon — those land in S4.
+/// Per ADR-0006, every cell is one of four [DayBloomKind] values:
+///  * [DayBloomKind.bloom] — at least one positive mood that day; warm
+///    "happy" hue.
+///  * [DayBloomKind.rainCloud] — at least one negative mood at intensity
+///    ≥ 4 that day; muted "anxious" hue. Day-priority above wilting.
+///  * [DayBloomKind.wilting] — at least one negative mood at intensity
+///    ≤ 3 that day; muted "sad" hue.
+///  * [DayBloomKind.empty] — no entries that day; neutral surface.
 class WeeklyBloomBar extends StatelessWidget {
   const WeeklyBloomBar({super.key, required this.days});
 
@@ -89,13 +91,22 @@ class _BloomCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subdued tints for negative cells — the bar is a glance-summary; the
+    // garden canvas itself carries the full glyphs. Sad hue at 60% opacity
+    // for wilting; anxious hue at 60% for rain-cloud.
     final color = switch (day.kind) {
       DayBloomKind.bloom => MoodBloomColors.moodHappy,
+      DayBloomKind.rainCloud => MoodBloomColors.moodAnxious.withValues(
+        alpha: 0.6,
+      ),
+      DayBloomKind.wilting => MoodBloomColors.moodSad.withValues(alpha: 0.6),
       DayBloomKind.empty => MoodBloomColors.surfaceDim,
     };
     return Semantics(
       label: switch (day.kind) {
         DayBloomKind.bloom => 'Bloom day',
+        DayBloomKind.rainCloud => 'A heavier day, drifting away',
+        DayBloomKind.wilting => 'A gentler day',
         DayBloomKind.empty => 'Empty day',
       },
       child: Container(
