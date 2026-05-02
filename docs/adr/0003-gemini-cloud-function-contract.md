@@ -18,7 +18,7 @@ The mood enum has six values: `happy, calm, okay, sad, angry, anxious` (apps/mob
 ### Transport and runtime
 
 - HTTPS-callable Cloud Function v2 (`firebase-functions/v2`, `onCall`). Region: `asia-southeast1` (matches existing Firestore project, lowest latency for KMUTT users).
-- `enforceAppCheck: false` for Sprint 3. Firebase Auth + per-user rate limit are the only defences. App Check is Sprint 4 scope; flutter-engineer must wire `enforceAppCheck: true` then with no other contract change.
+- `enforceAppCheck: true` (matches `analyzePatterns`). Sprint 3 originally shipped with `enforceAppCheck: false` and Firebase Auth + per-user rate limit as the only defences; the v1.0.1 patch enables enforcement to bring `analyzeMoodText` to parity with `analyzePatterns`. Clients call via `FirebaseFunctions.instanceFor(region: 'asia-southeast1')` which attaches App Check tokens automatically when the SDK is initialised; the wire contract is unchanged.
 - Runtime: Node 20, ESM (`"type": "module"`), `timeoutSeconds: 30`, `memory: '256MiB'`.
 - Model: `gemini-2.5-flash` via `@google/genai` (migrated from the deprecated `@google/generative-ai` in v1.0.1; the call shape changed from `model.generateContent(req, opts)` to `ai.models.generateContent({ model, contents, config })` but the wire contract above is unchanged). Generation config: `temperature: 0.2`, `topP: 0.9`, `maxOutputTokens: 200`, `responseMimeType: 'application/json'`, `responseSchema` enum-constrained to the six moods.
 
