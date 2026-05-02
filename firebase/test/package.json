@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Emulator-driven unit tests for MoodBloom Firestore security rules (WBS 2.3).",
+  "packageManager": "pnpm@10.18.0",
   "scripts": {
     "test": "jest --runInBand"
   },
