@@ -15,11 +15,10 @@ ProviderContainer _container({required FakeAiAnalysisRepository fake}) {
   final container = ProviderContainer(
     overrides: [
       aiAnalysisRepositoryProvider.overrideWithValue(fake),
-      // Override the controller provider with a short debounce so tests are
-      // not slow.
-      aiSuggestionControllerProvider.overrideWith(
-        (ref) => AiSuggestionController(ref, debounceWindow: _shortDebounce),
-      ),
+      // Riverpod 3: `Notifier` constructors take no args. Dependency
+      // injection of the debounce window now goes through a sibling
+      // provider override.
+      aiSuggestionDebounceWindowProvider.overrideWithValue(_shortDebounce),
     ],
   );
   // autoDispose providers are reaped once the last subscription drops; keep a

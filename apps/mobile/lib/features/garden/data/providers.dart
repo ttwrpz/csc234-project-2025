@@ -75,7 +75,7 @@ final interventionStateProvider = Provider<AsyncValue<InterventionState>>((
   final storageAsync = ref.watch(interventionStateStorageProvider);
 
   if (storageAsync.isLoading) return const AsyncValue.loading();
-  final storage = storageAsync.valueOrNull;
+  final storage = storageAsync.value;
   if (storage == null) {
     return AsyncValue.error(
       storageAsync.error ?? StateError('storage unavailable'),

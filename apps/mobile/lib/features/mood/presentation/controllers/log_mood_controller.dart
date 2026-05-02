@@ -72,7 +72,7 @@ class LogMoodController extends _$LogMoodController {
   /// reaps these — see [MoodMediaRepositoryImpl] doc.
   Future<MoodEntry?> save() async {
     final submission = ref.read(logMoodSubmissionControllerProvider.notifier);
-    final user = ref.read(currentUserStreamProvider).valueOrNull;
+    final user = ref.read(currentUserStreamProvider).value;
     if (user == null) {
       // Defense in depth — the router already prevents reaching this screen
       // unauthenticated.

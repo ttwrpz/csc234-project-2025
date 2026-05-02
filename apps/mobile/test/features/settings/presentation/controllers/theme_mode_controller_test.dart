@@ -52,9 +52,20 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
+      // Riverpod 3 wraps the provider's factory exception in a
+      // `ProviderException`; the original `UnimplementedError` is the
+      // `.cause` of that wrapper, but `toString()` carries the message
+      // verbatim for both layers. Match on the message rather than the
+      // wrapper class so future internal changes don't break the test.
       expect(
         () => container.read(themeModeControllerProvider),
-        throwsA(isA<UnimplementedError>()),
+        throwsA(
+          predicate<Object>(
+            (e) => e
+                .toString()
+                .contains('themeModeControllerProvider must be overridden'),
+          ),
+        ),
       );
     });
   });

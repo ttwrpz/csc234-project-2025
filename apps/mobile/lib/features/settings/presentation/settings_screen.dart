@@ -17,7 +17,7 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserStreamProvider).valueOrNull;
+    final user = ref.watch(currentUserStreamProvider).value;
     final displayName = user?.displayName;
     final themeMode = ref.watch(themeModeControllerProvider);
     final theme = Theme.of(context);

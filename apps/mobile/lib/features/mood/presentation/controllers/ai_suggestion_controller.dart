@@ -8,23 +8,38 @@ import '../../domain/ai_analysis_failure.dart';
 import '../../domain/entities/ai_suggestion.dart';
 
 /// 600ms debounce on text changes — coalesces rapid typing into one Cloud
-/// Function call. Tunable via the constant; longer feels laggy, shorter wastes
-/// quota.
+/// Function call. Tunable via [aiSuggestionDebounceWindowProvider]; longer
+/// feels laggy, shorter wastes quota.
 const Duration _kDefaultDebounceWindow = Duration(milliseconds: 600);
 
-/// Pure-Riverpod (no codegen) so tests can override it cleanly with a fake
-/// notifier subclass.
-class AiSuggestionController extends StateNotifier<AsyncValue<AiSuggestion?>> {
-  AiSuggestionController(this._ref, {Duration? debounceWindow})
-    : _debounceWindow = debounceWindow ?? _kDefaultDebounceWindow,
-      super(const AsyncValue.data(null));
+/// Debounce window for the AI suggestion call. Tests override this with a
+/// short interval (e.g. 30ms) so the timer fires inside the test budget.
+/// Riverpod 3: `Notifier` constructors take no args, so dependency
+/// injection happens through provider overrides instead of `new
+/// AiSuggestionController(ref, debounceWindow: …)`.
+final aiSuggestionDebounceWindowProvider = Provider<Duration>(
+  (ref) => _kDefaultDebounceWindow,
+);
 
-  final Ref _ref;
-  final Duration _debounceWindow;
+/// Auto-disposed notifier holding the latest AI mood suggestion for the
+/// Log Mood screen. Pure-Riverpod (no codegen) so tests can override the
+/// provider with a fresh instance and the debounce-window provider in
+/// the same `ProviderContainer`.
+class AiSuggestionController extends Notifier<AsyncValue<AiSuggestion?>> {
+  AiSuggestionController();
+
   Timer? _debounce;
+  late Duration _debounceWindow;
+
+  @override
+  AsyncValue<AiSuggestion?> build() {
+    _debounceWindow = ref.watch(aiSuggestionDebounceWindowProvider);
+    ref.onDispose(() => _debounce?.cancel());
+    return const AsyncValue.data(null);
+  }
 
   /// Pump text into the controller. Debounced — only the latest call within
-  /// [_debounceWindow] survives.
+  /// the configured window survives.
   void onTextChanged(String text) {
     _debounce?.cancel();
     final trimmed = text.trim();
@@ -35,8 +50,8 @@ class AiSuggestionController extends StateNotifier<AsyncValue<AiSuggestion?>> {
     _debounce = Timer(_debounceWindow, () => _run(trimmed));
   }
 
-  /// Cancel any pending debounce and reset to data(null). Called when the user
-  /// manually picks a mood or taps "Choose another".
+  /// Cancel any pending debounce and reset to data(null). Called when the
+  /// user manually picks a mood or taps "Choose another".
   void clear() {
     _debounce?.cancel();
     state = const AsyncValue.data(null);
@@ -44,9 +59,10 @@ class AiSuggestionController extends StateNotifier<AsyncValue<AiSuggestion?>> {
 
   Future<void> _run(String text) async {
     state = const AsyncValue.loading();
-    final usecase = _ref.read(analyzeMoodTextUseCaseProvider);
+    final usecase = ref.read(analyzeMoodTextUseCaseProvider);
     final result = await usecase(text: text);
-    if (!mounted) return;
+    // Riverpod 3: `Notifier.state =` is a no-op once the provider is
+    // disposed; no `mounted` guard needed.
     state = switch (result) {
       Ok(:final value) => AsyncValue.data(value),
       Err<AiSuggestion, AiAnalysisFailure>(:final failure) => AsyncValue.error(
@@ -55,18 +71,12 @@ class AiSuggestionController extends StateNotifier<AsyncValue<AiSuggestion?>> {
       ),
     };
   }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
-  }
 }
 
+/// Auto-disposed provider so the controller (and its pending debounce)
+/// is reaped when the Log Mood screen leaves the tree.
 final aiSuggestionControllerProvider =
-    StateNotifierProvider.autoDispose<
+    NotifierProvider.autoDispose<
       AiSuggestionController,
       AsyncValue<AiSuggestion?>
-    >((ref) {
-      return AiSuggestionController(ref);
-    });
+    >(AiSuggestionController.new);
