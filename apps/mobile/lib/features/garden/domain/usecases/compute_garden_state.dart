@@ -1,3 +1,5 @@
+import 'package:core/core.dart';
+
 import '../../../mood/domain/entities/mood_entry.dart';
 import '../../../mood/domain/entities/mood_type.dart';
 import '../entities/garden_state.dart';
@@ -44,7 +46,7 @@ class ComputeGardenStateUseCase {
     var wiltingCount = 0;
     var rainCloudCount = 0;
     for (final entry in entries) {
-      final day = _atMidnightLocal(entry.createdAt);
+      final day = localMidnight(entry.createdAt);
       switch (kind(entry.mood, entry.intensity)) {
         case DayBloomKind.bloom:
           positiveCount += 1;
@@ -62,7 +64,7 @@ class ComputeGardenStateUseCase {
       }
     }
 
-    final today = _atMidnightLocal(now);
+    final today = localMidnight(now);
 
     // Streak: walk back from today; stop the first day with no positive
     // entry. **Wilting and rain-cloud days do NOT count** — we do not
@@ -103,13 +105,5 @@ class ComputeGardenStateUseCase {
       currentStreakDays: streak,
       last7Days: last7Days,
     );
-  }
-
-  /// Truncates [dt] to midnight in the local TZ. Doing the conversion to
-  /// local *before* the date math is what makes "an entry at 23:59 local"
-  /// land on the day the user expects.
-  static DateTime _atMidnightLocal(DateTime dt) {
-    final local = dt.toLocal();
-    return DateTime(local.year, local.month, local.day);
   }
 }

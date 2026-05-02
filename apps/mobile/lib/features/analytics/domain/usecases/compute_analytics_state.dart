@@ -1,4 +1,5 @@
 import 'package:analytics_pkg/analytics_pkg.dart';
+import 'package:core/core.dart';
 
 import '../../../mood/domain/entities/mood_entry.dart';
 import '../../../mood/domain/entities/mood_type.dart';
@@ -30,14 +31,14 @@ class ComputeAnalyticsStateUseCase {
     required MoodWindow window,
     required DateTime now,
   }) {
-    final today = _localMidnight(now);
+    final today = localMidnight(now);
     final earliest = today.subtract(Duration(days: window.days - 1));
 
     // For each in-window day, accumulate per-category running sums and counts.
     final perDayPerCat = <DateTime, Map<MoodCategory, _RunningMean>>{};
     var totalInWindow = 0;
     for (final entry in entries) {
-      final day = _localMidnight(entry.createdAt);
+      final day = localMidnight(entry.createdAt);
       if (day.isBefore(earliest) || day.isAfter(today)) continue;
       final byCat = perDayPerCat.putIfAbsent(day, () => {});
       final running = byCat.putIfAbsent(
@@ -84,11 +85,6 @@ class ComputeAnalyticsStateUseCase {
     );
 
     return AnalyticsState(window: window, days: daysNewestFirst);
-  }
-
-  static DateTime _localMidnight(DateTime t) {
-    final local = t.toLocal();
-    return DateTime(local.year, local.month, local.day);
   }
 }
 

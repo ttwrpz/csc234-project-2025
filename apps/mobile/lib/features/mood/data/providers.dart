@@ -3,6 +3,7 @@ import 'package:core/core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../analytics/data/datasources/analyze_patterns_functions_datasource.dart';
 import '../../../app/providers.dart';
 import '../../auth/data/providers.dart';
 import '../domain/entities/mood_entry.dart';
@@ -193,9 +194,20 @@ final aiAnalysisFunctionsDatasourceProvider =
           AiAnalysisFunctionsDatasource(ref.watch(firebaseFunctionsProvider)),
     );
 
+final analyzePatternsFunctionsDatasourceProvider =
+    Provider<AnalyzePatternsFunctionsDatasource>(
+      (ref) => AnalyzePatternsFunctionsDatasource(
+        ref.watch(firebaseFunctionsProvider),
+      ),
+    );
+
 final aiAnalysisRepositoryProvider = Provider<AIAnalysisRepository>(
   (ref) => AiAnalysisRepositoryImpl(
     datasource: ref.watch(aiAnalysisFunctionsDatasourceProvider),
+    patternsDatasource: ref.watch(analyzePatternsFunctionsDatasourceProvider),
+    patternAnalysisEnabled: ref
+        .watch(featureFlagsProvider)
+        .aiPatternAnalysisEnabled,
   ),
 );
 
