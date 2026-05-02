@@ -45,9 +45,15 @@ Future<void> main() async {
       }
 
       // Remote Config — register defaults synchronously so flag reads return
-      // sane values even before the first fetchAndActivate completes. The
-      // 60-min minimumFetchInterval matches CLAUDE.md "Feature flag
-      // (rollback plan)" — clients pick up server-side flips within an hour.
+      // sane values even before the first fetchAndActivate completes.
+      //
+      // `minimumFetchInterval` is lowered to 60s for the v1.0 demo per kickoff
+      // Open Question O-3 — the demo's kill-switch rehearsal acceptance bar
+      // requires the Pattern Insights card to hide within 60s of flipping
+      // `ai_pattern_analysis_enabled`. **Restored to 60min in the v1.0.1
+      // patch** (see `docs/runbooks/feature-flag-rollback.md` §"Restoring the
+      // 60-minute interval"). Hundreds of production clients would flood RC
+      // at this cadence; the lowered interval is demo-only.
       final rc = FirebaseRemoteConfig.instance;
       await rc.setDefaults(<String, Object>{
         'ai_pattern_analysis_enabled': true,
@@ -56,7 +62,7 @@ Future<void> main() async {
       await rc.setConfigSettings(
         RemoteConfigSettings(
           fetchTimeout: const Duration(seconds: 10),
-          minimumFetchInterval: const Duration(minutes: 60),
+          minimumFetchInterval: const Duration(seconds: 60),
         ),
       );
       // Fire-and-forget — must not block app startup.
