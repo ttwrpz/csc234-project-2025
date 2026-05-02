@@ -7,6 +7,8 @@ import 'package:moodbloom/features/auth/data/providers.dart';
 import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
 import 'package:moodbloom/features/garden/presentation/garden_screen.dart';
 import 'package:moodbloom/features/garden/presentation/widgets/garden_flower.dart';
+import 'package:moodbloom/features/garden/presentation/widgets/rain_cloud.dart';
+import 'package:moodbloom/features/garden/presentation/widgets/wilting_plant.dart';
 import 'package:moodbloom/features/mood/data/providers.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_entry.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
@@ -51,12 +53,17 @@ Future<void> _pumpGarden(
   await tester.pumpAndSettle();
 }
 
-MoodEntry _entry(MoodType mood, DateTime createdAt, {String id = 'e'}) {
+MoodEntry _entry(
+  MoodType mood,
+  DateTime createdAt, {
+  String id = 'e',
+  int intensity = 3,
+}) {
   return MoodEntry(
     id: id,
     userId: 'u-1',
     mood: mood,
-    intensity: 3,
+    intensity: intensity,
     text: '',
     createdAt: createdAt,
   );
@@ -128,29 +135,66 @@ void main() {
     });
 
     testWidgets(
-      'negative-only history (S4) → no empty state, no flowers; canvas '
-      'glyph wiring lands on WBS 4.2 Day 2',
+      'negative-only history (S4) → wilting plants for i ≤ 3, rain clouds '
+      'for i ≥ 4; no flowers, no empty-state copy',
       (tester) async {
         final today = DateTime.now();
         final repo = FakeMoodRepository()
           ..streamedEntries = [
             [
-              _entry(MoodType.sad, today, id: 'a'),
-              _entry(MoodType.angry, today, id: 'b'),
-              _entry(MoodType.anxious, today, id: 'c'),
+              _entry(MoodType.sad, today, id: 'a', intensity: 2), // wilt
+              _entry(MoodType.angry, today, id: 'b', intensity: 3), // wilt
+              _entry(MoodType.anxious, today, id: 'c', intensity: 5), // rain
             ],
           ];
         await _pumpGarden(tester, repo: repo);
 
-        // S4 reframing: negatives surface as wilting/rain counts, so
-        // GardenState.isEmpty is false → empty-state copy is hidden.
         expect(find.text('Your garden is waiting.'), findsNothing);
-        // No positives → no flowers.
         expect(find.byType(GardenFlower), findsNothing);
-        // The per-entry glyph rendering on `_GardenCanvas` lands on Day 2
-        // of WBS 4.2 (the rain-cloud widget arrives same day). For now the
-        // canvas exists but draws nothing — re-enable the WiltingPlant /
-        // RainCloud finders once the canvas iterates entries.
+        expect(find.byType(WiltingPlant), findsNWidgets(2));
+        expect(find.byType(RainCloud), findsOneWidget);
+      },
+    );
+
+    testWidgets('mixed canvas: positives + negatives render in entry order', (
+      tester,
+    ) async {
+      final today = DateTime.now();
+      final repo = FakeMoodRepository()
+        ..streamedEntries = [
+          [
+            _entry(MoodType.happy, today, id: 'p1'),
+            _entry(MoodType.sad, today, id: 'w1', intensity: 1),
+            _entry(MoodType.calm, today, id: 'p2'),
+            _entry(MoodType.angry, today, id: 'r1', intensity: 5),
+            _entry(MoodType.anxious, today, id: 'r2', intensity: 4),
+          ],
+        ];
+      await _pumpGarden(tester, repo: repo);
+
+      expect(find.byType(GardenFlower), findsNWidgets(2));
+      expect(find.byType(WiltingPlant), findsOneWidget);
+      expect(find.byType(RainCloud), findsNWidgets(2));
+    });
+
+    testWidgets(
+      'rain-cloud animation cap: only first 5 animate; further clouds '
+      'render with animate=false',
+      (tester) async {
+        final today = DateTime.now();
+        final entries = [
+          for (var i = 0; i < 7; i += 1)
+            _entry(MoodType.angry, today, id: 'r$i', intensity: 5),
+        ];
+        final repo = FakeMoodRepository()..streamedEntries = [entries];
+        await _pumpGarden(tester, repo: repo);
+
+        final clouds = tester
+            .widgetList<RainCloud>(find.byType(RainCloud))
+            .toList();
+        expect(clouds, hasLength(7));
+        final animatingCount = clouds.where((c) => c.animate).length;
+        expect(animatingCount, 5);
       },
     );
 
