@@ -14,7 +14,7 @@ part 'intervention_state.freezed.dart';
 ///  * `'cooldown'` — a previous trigger fired within the past 48h; suppress.
 ///  * `'none'` — no qualifying pattern.
 @freezed
-class InterventionState with _$InterventionState {
+abstract class InterventionState with _$InterventionState {
   const factory InterventionState({
     required bool triggered,
     required bool escalated,

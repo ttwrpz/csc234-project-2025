@@ -11,7 +11,7 @@ part 'analytics_state.freezed.dart';
 /// `meanIntensityByCategory` only contains categories that had entries that
 /// day; missing keys mean "no entries of that category on this day".
 @freezed
-class DailyMoodAggregate with _$DailyMoodAggregate {
+abstract class DailyMoodAggregate with _$DailyMoodAggregate {
   const factory DailyMoodAggregate({
     required DateTime day,
     required int totalEntries,
@@ -23,7 +23,7 @@ class DailyMoodAggregate with _$DailyMoodAggregate {
 /// length equal to `window.days` — every slot in the window is present even
 /// when it has zero entries, so the chart's X-axis is stable.
 @freezed
-class AnalyticsState with _$AnalyticsState {
+abstract class AnalyticsState with _$AnalyticsState {
   const AnalyticsState._();
 
   const factory AnalyticsState({

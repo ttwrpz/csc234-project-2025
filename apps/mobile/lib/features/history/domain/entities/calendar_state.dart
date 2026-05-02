@@ -11,7 +11,7 @@ part 'calendar_state.freezed.dart';
 /// `month` is normalised to local-time midnight on the first of the month.
 /// `dotsByDay` keys are also local-time midnight `DateTime`s.
 @freezed
-class CalendarState with _$CalendarState {
+abstract class CalendarState with _$CalendarState {
   const CalendarState._();
 
   const factory CalendarState({
@@ -28,7 +28,7 @@ class CalendarState with _$CalendarState {
 /// entries the user logged, and the id of the most-recent entry to navigate to
 /// when the cell is tapped.
 @freezed
-class DayDot with _$DayDot {
+abstract class DayDot with _$DayDot {
   const factory DayDot({
     required DateTime day,
     required MoodCategory dominantCategory,

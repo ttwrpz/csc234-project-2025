@@ -15,7 +15,7 @@ part 'mood_entry.g.dart';
 /// 24h lock *enforcement* (preventing edits/deletes) lands in S3; this entity
 /// only ships the guard so callers can already query it.
 @freezed
-class MoodEntry with _$MoodEntry {
+abstract class MoodEntry with _$MoodEntry {
   const MoodEntry._();
 
   const factory MoodEntry({

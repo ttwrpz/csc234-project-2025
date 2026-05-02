@@ -7,7 +7,7 @@ part 'mood_media.freezed.dart';
 /// serialized. Once the entry is saved, the data layer uploads each item to
 /// Storage and the resulting `gs://` URI lands in `MoodEntry.mediaRefs`.
 @freezed
-class MoodMedia with _$MoodMedia {
+abstract class MoodMedia with _$MoodMedia {
   const factory MoodMedia({
     /// Device-side file URI returned by the picker. Treat as ephemeral —
     /// callers must upload before the user backgrounds the app for long.

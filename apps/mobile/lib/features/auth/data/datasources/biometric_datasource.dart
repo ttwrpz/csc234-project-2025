@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
 /// Thin wrapper around `LocalAuthentication`. This is the boundary between
@@ -24,31 +23,33 @@ class BiometricDatasource {
 
   /// Show the OS biometric prompt. Returns true on success.
   ///
-  /// Translates `PlatformException` codes into the typed exceptions below.
   /// `biometricOnly: true` is critical — it prevents the OS from falling
   /// back to a device PIN/passcode, which is NOT what we want for a biometric
-  /// gate. `stickyAuth: true` keeps the prompt alive across config changes.
+  /// gate. `persistAcrossBackgrounding: true` keeps the prompt alive across
+  /// config changes (replaces `stickyAuth` from local_auth 2.x).
+  ///
+  /// Migrated to local_auth 3.x: errors are now [LocalAuthException]
+  /// with a typed [LocalAuthExceptionCode] enum instead of stringly-typed
+  /// `PlatformException` codes.
   Future<bool> authenticate({required String reason}) async {
     try {
       return await _localAuth.authenticate(
         localizedReason: reason,
-        options: const AuthenticationOptions(
-          biometricOnly: true,
-          stickyAuth: true,
-        ),
+        biometricOnly: true,
+        persistAcrossBackgrounding: true,
       );
-    } on PlatformException catch (e) {
+    } on LocalAuthException catch (e) {
       switch (e.code) {
-        case 'NotAvailable':
-        case 'NotEnrolled':
-        case 'PasscodeNotSet':
+        case LocalAuthExceptionCode.noBiometricHardware:
+        case LocalAuthExceptionCode.biometricHardwareTemporarilyUnavailable:
+        case LocalAuthExceptionCode.noBiometricsEnrolled:
+        case LocalAuthExceptionCode.noCredentialsSet:
           throw const BiometricUnavailableException();
-        case 'auth_in_progress':
-        case 'user_cancel':
-        case 'UserCancel':
+        case LocalAuthExceptionCode.userCanceled:
+        case LocalAuthExceptionCode.systemCanceled:
           throw const BiometricCancelledException();
         default:
-          throw BiometricFailedException(e.code);
+          throw BiometricFailedException(e.code.name);
       }
     }
   }
