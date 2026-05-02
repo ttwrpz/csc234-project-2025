@@ -125,13 +125,28 @@ jobs:
 
       # ------------------------------------------------------------------
       # Tests. Only apps/mobile and packages/core have tests today.
+      #
+      # Goldens (`@Tags(['golden'])`) are run as a separate step so font
+      # rendering or pixel diffs are surfaced distinctly from logic
+      # failures. Baselines are committed and only updated via local
+      # `flutter test --update-goldens --tags=golden` on Linux. Off-Linux
+      # contributors should not run the golden step locally — sub-pixel
+      # differences make the diffs noisy.
       # ------------------------------------------------------------------
       - name: flutter test (apps/mobile)
         working-directory: apps/mobile
         run: flutter test
 
+      - name: flutter test --tags=golden (apps/mobile)
+        working-directory: apps/mobile
+        run: flutter test --tags=golden
+
       - name: flutter test (packages/core)
         working-directory: packages/core
+        run: flutter test
+
+      - name: flutter test (packages/design_system)
+        working-directory: packages/design_system
         run: flutter test
 
       # ------------------------------------------------------------------
