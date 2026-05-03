@@ -153,13 +153,7 @@ export async function analyze(
   });
 
   const latencyMs = Date.now() - start;
-  // `response.text` is a getter on `GenerateContentResponse` that returns
-  // the concatenated text of all candidate parts. May be undefined if the
-  // model declined to emit output (we treat that as a JSON parse error
-  // downstream — `JSON.parse(undefined as any)` throws SyntaxError, which
-  // the handler maps to `parse_error`).
-  const responseText = response.text ?? '';
-  const raw: unknown = JSON.parse(responseText);
+  const raw = parseGenAiJson(response, 'analyze');
 
   const usage = response.usageMetadata;
   return {
@@ -170,6 +164,55 @@ export async function analyze(
       completionTokens: usage?.candidatesTokenCount,
     },
   };
+}
+
+/**
+ * Defensive JSON extractor for `@google/genai` responses.
+ *
+ * The SDK's `response.text` getter has surprised us in production with
+ * three failure modes that all manifested as `parse_error: json_syntax`:
+ *  1. Empty text — happens when the model finishes with `MAX_TOKENS` /
+ *     `SAFETY` and emits no content parts. We surface a more useful
+ *     message + finish-reason diagnostic so the caller can distinguish
+ *     "model is unavailable" from "response was blocked".
+ *  2. Markdown-fenced output — even with `responseMimeType: 'application/json'`,
+ *     Gemini occasionally wraps the JSON in ```json … ``` fences. We strip
+ *     a leading/trailing fence before parsing.
+ *  3. Whitespace-only text — same root cause as (1).
+ *
+ * Anything still un-parseable throws SyntaxError so the handler maps it
+ * to `parse_error`. We do NOT log the raw text — it could echo a user's
+ * journal entry indirectly via the rationale field, which CLAUDE.md
+ * forbids ("Never log PII (mood text, …)").
+ */
+function parseGenAiJson(
+  response: { text?: string; candidates?: Array<{ finishReason?: string }> },
+  callsite: 'analyze' | 'patterns',
+): unknown {
+  let text = (response.text ?? '').trim();
+
+  // Strip ```json … ``` (or plain ``` … ```) fences. Gemini occasionally
+  // emits them despite responseMimeType.
+  if (text.startsWith('```')) {
+    const stripped = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+    text = stripped.trim();
+  }
+
+  if (text.length === 0) {
+    const finish =
+      response.candidates && response.candidates.length > 0
+        ? response.candidates[0]?.finishReason ?? 'unknown'
+        : 'no_candidates';
+    // Throw SyntaxError so the existing handler-side switch (which
+    // checks `e instanceof SyntaxError`) keeps mapping this to
+    // `parse_error`. The message includes the finish reason so the log
+    // entry shows *why* the model returned nothing.
+    throw new SyntaxError(
+      `${callsite}: Gemini returned no text (finishReason=${finish})`,
+    );
+  }
+
+  return JSON.parse(text);
 }
 
 // ---------------------------------------------------------------------------
@@ -262,8 +305,7 @@ export async function analyzeForPatterns(
   });
 
   const latencyMs = Date.now() - start;
-  const responseText = response.text ?? '';
-  const raw: unknown = JSON.parse(responseText);
+  const raw = parseGenAiJson(response, 'patterns');
 
   const usage = response.usageMetadata;
   return {

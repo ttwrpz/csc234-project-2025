@@ -122,35 +122,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             _AppShell(navigationShell: navigationShell),
-        // Branch order matches the design's bottom-nav left-to-right layout:
-        // Garden / Log / Patterns / History / Settings. Route paths are
-        // unchanged — only the index-to-path mapping moves.
+        // Bottom-nav order: Home / History / Log (highlighted, centre) /
+        // Patterns / Settings. Putting Log at the geometric centre with a
+        // primary-coloured halo makes the most-frequent action obvious to
+        // first-time users; History and Patterns keep their nav slots but
+        // swap positions vs the original prototype so navigation reads
+        // chronologically (past on the left, predictive on the right).
         branches: [
-          // 0 — Garden (🌱)
+          // 0 — Home (formerly Garden)
           StatefulShellBranch(
             routes: [
               GoRoute(path: '/home', builder: (c, s) => const GardenScreen()),
             ],
           ),
-          // 1 — Log mood (✏️)
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/log-mood',
-                builder: (c, s) => const LogMoodScreen(),
-              ),
-            ],
-          ),
-          // 2 — Patterns / Analytics (📊)
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/analytics',
-                builder: (c, s) => const AnalyticsScreen(),
-              ),
-            ],
-          ),
-          // 3 — History (📖)
+          // 1 — History
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -166,7 +151,25 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // 4 — Settings (⚙️)
+          // 2 — Log mood (centre, highlighted)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/log-mood',
+                builder: (c, s) => const LogMoodScreen(),
+              ),
+            ],
+          ),
+          // 3 — Patterns / Analytics
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/analytics',
+                builder: (c, s) => const AnalyticsScreen(),
+              ),
+            ],
+          ),
+          // 4 — Settings
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -208,10 +211,12 @@ class _AppShell extends StatelessWidget {
   /// replace the prototype's emoji glyphs so the result is consistent across
   /// platforms.
   static const List<MbBottomNavItem> _items = [
-    MbBottomNavItem(icon: Icons.local_florist_outlined, label: 'Garden'),
-    MbBottomNavItem(icon: Icons.edit_outlined, label: 'Log'),
-    MbBottomNavItem(icon: Icons.insights_outlined, label: 'Patterns'),
+    MbBottomNavItem(icon: Icons.home_outlined, label: 'Home'),
     MbBottomNavItem(icon: Icons.menu_book_outlined, label: 'History'),
+    // The middle slot. `highlighted: true` paints it as a primary-tinted
+    // circular button so first-time users see the main action immediately.
+    MbBottomNavItem(icon: Icons.add, label: 'Add', highlighted: true),
+    MbBottomNavItem(icon: Icons.insights_outlined, label: 'Patterns'),
     MbBottomNavItem(icon: Icons.settings_outlined, label: 'Settings'),
   ];
 

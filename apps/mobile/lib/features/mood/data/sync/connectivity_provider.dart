@@ -10,8 +10,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Consumed by [MoodSyncManager]'s constructor and exposed to the future PR-3
 /// "pending uploads" UI badge.
 final connectivityProvider = StreamProvider<bool>((ref) {
+  // Debug override: when the Settings "Force offline" toggle is on, we
+  // synthesise a steady stream of `false` so the rest of the app behaves
+  // exactly as if Wi-Fi was unplugged. The override is opt-in (defaults
+  // to false) and lives only in memory, so toggling it has no effect
+  // outside the current session.
+  final forced = ref.watch(debugForceOfflineProvider);
+  if (forced) {
+    return Stream<bool>.value(false);
+  }
   return _onlineStream();
 });
+
+/// Debug-only override for [connectivityProvider]. Set from the Settings
+/// screen via the "Force offline" switch. Persists for the current
+/// session only.
+class DebugForceOfflineNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  // ignore: avoid_positional_boolean_parameters
+  void set(bool value) => state = value;
+}
+
+final debugForceOfflineProvider =
+    NotifierProvider<DebugForceOfflineNotifier, bool>(
+      DebugForceOfflineNotifier.new,
+    );
 
 /// Plain `Stream<bool>` exposed to plain-Dart consumers (e.g.
 /// [MoodSyncManager]) that want a raw stream rather than an `AsyncValue`.

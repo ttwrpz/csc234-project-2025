@@ -16,10 +16,15 @@ import '../../domain/entities/garden_state.dart';
 ///  * Bar colour: primary for bloom, amber for any negative; both at
 ///    85% opacity. Empty days render as a 1px dashed-border placeholder.
 class WeeklyBloomBar extends StatelessWidget {
-  const WeeklyBloomBar({super.key, required this.days});
+  const WeeklyBloomBar({super.key, required this.days, this.onDayTap});
 
   /// Newest-first list of cells (today, yesterday, …). Always length 7.
   final List<DayBloom> days;
+
+  /// Optional tap handler — called with the local-midnight `DateTime` of
+  /// the tapped column. Home wires this to open a bottom-sheet listing
+  /// the day's entries; the bar still renders read-only when null.
+  final ValueChanged<DateTime>? onDayTap;
 
   // SMTWTFS — index by `DateTime.weekday % 7` so Sunday=0.
   static const List<String> _weekdayLetters = <String>[
@@ -74,7 +79,16 @@ class WeeklyBloomBar extends StatelessWidget {
               children: [
                 for (var i = 0; i < displayed.length; i += 1) ...[
                   if (i > 0) const SizedBox(width: 6),
-                  Expanded(child: _BloomColumn(day: displayed[i])),
+                  Expanded(
+                    child: _BloomColumn(
+                      day: displayed[i],
+                      onTap: onDayTap == null
+                          ? null
+                          : () => onDayTap!(
+                              _truncateToLocalDay(displayed[i].day),
+                            ),
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -85,10 +99,16 @@ class WeeklyBloomBar extends StatelessWidget {
   }
 }
 
+DateTime _truncateToLocalDay(DateTime t) {
+  final l = t.toLocal();
+  return DateTime(l.year, l.month, l.day);
+}
+
 class _BloomColumn extends StatelessWidget {
-  const _BloomColumn({required this.day});
+  const _BloomColumn({required this.day, this.onTap});
 
   final DayBloom day;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -116,36 +136,50 @@ class _BloomColumn extends StatelessWidget {
         : mb.line;
     final opacity = isEmpty ? 0.3 : 0.85;
 
+    final col = Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Container(
+          height: height,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: isEmpty
+                ? Colors.transparent
+                : color.withValues(alpha: opacity),
+            borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusSm),
+            border: isEmpty ? Border.all(color: mb.line, width: 1) : null,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          WeeklyBloomBar._weekdayLetters[day.day.weekday % 7],
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: mb.textDim,
+            fontSize: 10,
+          ),
+        ),
+      ],
+    );
+
+    final semanticLabel = switch (day.kind) {
+      DayBloomKind.bloom => 'Bloom day',
+      DayBloomKind.rainCloud => 'A heavier day',
+      DayBloomKind.wilting => 'A gentler day',
+      DayBloomKind.empty => 'Empty day',
+    };
+
+    // Empty days have nothing to show in the sheet, so they stay
+    // non-interactive even when the parent supplied an `onTap`.
+    if (onTap == null || isEmpty) {
+      return Semantics(label: semanticLabel, child: col);
+    }
     return Semantics(
-      label: switch (day.kind) {
-        DayBloomKind.bloom => 'Bloom day',
-        DayBloomKind.rainCloud => 'A heavier day',
-        DayBloomKind.wilting => 'A gentler day',
-        DayBloomKind.empty => 'Empty day',
-      },
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Container(
-            height: height,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: isEmpty
-                  ? Colors.transparent
-                  : color.withValues(alpha: opacity),
-              borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusSm),
-              border: isEmpty ? Border.all(color: mb.line, width: 1) : null,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            WeeklyBloomBar._weekdayLetters[day.day.weekday % 7],
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: mb.textDim,
-              fontSize: 10,
-            ),
-          ),
-        ],
+      button: true,
+      label: '$semanticLabel — open entries',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusSm),
+        onTap: onTap,
+        child: col,
       ),
     );
   }

@@ -51,99 +51,110 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     return Scaffold(
       backgroundColor: mb.bg,
+      // Centred form column. See sign_in_screen.dart for the rationale —
+      // capping at 420 dp keeps the form compact on desktop and stops a
+      // ListView from spreading the brand mark across half the screen.
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: AutofillGroup(
-            child: ListView(
-              children: [
-                const SizedBox(height: 36),
-                Center(
-                  child: Column(
-                    children: [
-                      const BrandMark(),
-                      const SizedBox(height: 14),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(28),
+              child: AutofillGroup(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Column(
+                        children: [
+                          const BrandMark(),
+                          const SizedBox(height: 14),
+                          Text(
+                            'MoodBloom',
+                            style: MbFonts.fraunces(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.3,
+                              color: mb.text,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'A quiet space to notice how you feel',
+                            style: MbFonts.nunito(
+                              fontSize: 14,
+                              color: mb.textDim,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    MbInputField(
+                      label: 'Email',
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.email],
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 10),
+                    MbInputField(
+                      label: 'Password',
+                      controller: _passwordController,
+                      obscureText: true,
+                      autofillHints: const [AutofillHints.newPassword],
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 10),
+                    MbInputField(
+                      label: 'Confirm password',
+                      controller: _confirmController,
+                      obscureText: true,
+                      autofillHints: const [AutofillHints.newPassword],
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => controller.submit(),
+                    ),
+                    if (state.errorMessage != null) ...[
+                      const SizedBox(height: 8),
                       Text(
-                        'MoodBloom',
-                        style: MbFonts.fraunces(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.3,
-                          color: mb.text,
+                        state.errorMessage!,
+                        style: MbFonts.nunito(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.error,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'A quiet space to notice how you feel',
-                        style: MbFonts.nunito(fontSize: 14, color: mb.textDim),
-                      ),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 36),
-                MbInputField(
-                  label: 'Email',
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  autofillHints: const [AutofillHints.email],
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 10),
-                MbInputField(
-                  label: 'Password',
-                  controller: _passwordController,
-                  obscureText: true,
-                  autofillHints: const [AutofillHints.newPassword],
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 10),
-                MbInputField(
-                  label: 'Confirm password',
-                  controller: _confirmController,
-                  obscureText: true,
-                  autofillHints: const [AutofillHints.newPassword],
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => controller.submit(),
-                ),
-                if (state.errorMessage != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    state.errorMessage!,
-                    style: MbFonts.nunito(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: theme.colorScheme.error,
+                    const SizedBox(height: 16),
+                    MbPrimaryButton(
+                      label: 'Create account',
+                      onPressed: state.isSubmitting ? null : controller.submit,
+                      loading: state.isSubmitting,
                     ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                MbPrimaryButton(
-                  label: 'Create account',
-                  onPressed: state.isSubmitting ? null : controller.submit,
-                  loading: state.isSubmitting,
+                    const SizedBox(height: 14),
+                    _OrDivider(mb: mb),
+                    const SizedBox(height: 14),
+                    GoogleSignInButton(
+                      onPressed: controller.submitGoogle,
+                      isLoading: state.isSubmitting,
+                    ),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: TextButton(
+                        onPressed: () => context.go('/sign-in'),
+                        child: const Text('Already have an account? Sign in'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: Text(
+                        'By continuing you agree to our gentle terms.',
+                        style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 14),
-                _OrDivider(mb: mb),
-                const SizedBox(height: 14),
-                GoogleSignInButton(
-                  onPressed: controller.submitGoogle,
-                  isLoading: state.isSubmitting,
-                ),
-                const SizedBox(height: 24),
-                Center(
-                  child: TextButton(
-                    onPressed: () => context.go('/sign-in'),
-                    child: const Text('Already have an account? Sign in'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Center(
-                  child: Text(
-                    'By continuing you agree to our gentle terms.',
-                    style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

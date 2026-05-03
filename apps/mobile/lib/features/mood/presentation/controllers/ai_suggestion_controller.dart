@@ -57,6 +57,18 @@ class AiSuggestionController extends Notifier<AsyncValue<AiSuggestion?>> {
     state = const AsyncValue.data(null);
   }
 
+  /// Re-run the analysis immediately, bypassing the debounce. Wired to
+  /// the "Retry" button in the AI suggestion card's error state.
+  Future<void> retry(String text) async {
+    _debounce?.cancel();
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      state = const AsyncValue.data(null);
+      return;
+    }
+    await _run(trimmed);
+  }
+
   Future<void> _run(String text) async {
     state = const AsyncValue.loading();
     final usecase = ref.read(analyzeMoodTextUseCaseProvider);

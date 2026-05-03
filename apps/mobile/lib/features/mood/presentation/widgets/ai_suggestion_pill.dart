@@ -53,7 +53,14 @@ class AISuggestionPill extends ConsumerWidget {
           ),
         );
       },
-      error: (_, _) => const _AiCard(child: _ErrorBody()),
+      error: (_, _) => _AiCard(
+        child: _ErrorBody(
+          onRetry: () {
+            final note = ref.read(logMoodControllerProvider).text;
+            ref.read(aiSuggestionControllerProvider.notifier).retry(note);
+          },
+        ),
+      ),
     );
   }
 }
@@ -139,14 +146,24 @@ class _LoadingBody extends StatelessWidget {
 }
 
 class _ErrorBody extends StatelessWidget {
-  const _ErrorBody();
+  const _ErrorBody({required this.onRetry});
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    return Text(
-      "Couldn't analyze — pick manually.",
-      style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Text(
+            "Couldn't analyze — pick manually or retry.",
+            style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
+          ),
+        ),
+        const SizedBox(width: 8),
+        _PillButton(label: 'Retry', onPressed: onRetry, primary: true),
+      ],
     );
   }
 }

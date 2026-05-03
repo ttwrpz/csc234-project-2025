@@ -5,51 +5,230 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/data/providers.dart';
 import '../../auth/presentation/widgets/biometric_settings_tile.dart';
+import '../../mood/data/sync/connectivity_provider.dart';
 import 'controllers/theme_mode_controller.dart';
 
-/// Settings screen — extracted from `app/router.dart:221-271` (S3) in
-/// Sprint 4 WBS 6.2 Day 2. Hosts all user-facing preferences. The
-/// Appearance section (theme-mode dropdown) is the new addition; account
-/// row, sign-out, biometric tile, and the debug crash button are
-/// preserved verbatim from the in-file S3 version.
+/// Settings screen — restyled in Phase C and re-grouped in this round so
+/// related preferences live in clearly-zoned [MbCard] clusters: Profile,
+/// Preferences, Account (sign-out, with confirmation dialog), and a
+/// Debug zone (only in debug builds).
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserStreamProvider).value;
-    final displayName = user?.displayName;
     final themeMode = ref.watch(themeModeControllerProvider);
-    final theme = Theme.of(context);
+    final mb = Theme.of(context).extension<MbColors>()!;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: ListView(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              MoodBloomSpacing.lg,
-              MoodBloomSpacing.lg,
-              MoodBloomSpacing.lg,
-              MoodBloomSpacing.sm,
-            ),
-            child: Text(
-              'Appearance',
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+      backgroundColor: mb.bg,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            MoodBloomSpacing.pagePadding,
+            MoodBloomSpacing.pagePadding,
+            MoodBloomSpacing.pagePadding,
+            MoodBloomSpacing.lg,
+          ),
+          children: [
+            Text(
+              'Settings',
+              style: MbFonts.fraunces(
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: mb.text,
               ),
             ),
+            const SizedBox(height: 16),
+
+            // ── Profile zone ──
+            if (user != null)
+              MbCard(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    _Avatar(
+                      label: _avatarInitial(user.displayName, user.email),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.displayName ?? 'Signed in',
+                            style: MbFonts.nunito(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: mb.text,
+                            ),
+                          ),
+                          if (user.email != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              user.email!,
+                              style: MbFonts.nunito(
+                                fontSize: 12,
+                                color: mb.textDim,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            const SizedBox(height: 18),
+
+            // ── Preferences zone ──
+            const MbSectionLabel('PREFERENCES'),
+            const SizedBox(height: 6),
+            _PreferencesCluster(themeMode: themeMode),
+
+            const SizedBox(height: 18),
+
+            // ── Security zone ──
+            const MbSectionLabel('SECURITY'),
+            const SizedBox(height: 6),
+            MbCard(
+              clipBehavior: Clip.hardEdge,
+              padding: EdgeInsets.zero,
+              child: const BiometricSettingsTile(),
+            ),
+
+            const SizedBox(height: 18),
+
+            // ── Account zone ──
+            const MbSectionLabel('ACCOUNT'),
+            const SizedBox(height: 6),
+            MbCard(
+              clipBehavior: Clip.hardEdge,
+              padding: EdgeInsets.zero,
+              child: ListTile(
+                leading: Icon(Icons.logout, color: MoodBloomColors.coral),
+                title: Text(
+                  'Sign out',
+                  style: TextStyle(
+                    color: MoodBloomColors.coral,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onTap: () => _confirmSignOut(context, ref),
+              ),
+            ),
+
+            // ── Debug zone (debug builds only) ──
+            if (kDebugMode) ...[
+              const SizedBox(height: 18),
+              const MbSectionLabel('DEBUG'),
+              const SizedBox(height: 6),
+              const _DebugCluster(),
+            ],
+
+            const SizedBox(height: 24),
+            Center(
+              child: Text(
+                'Made with care · KMUTT',
+                style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text(
+          'Your moods stay safe on this device and in the cloud. You can '
+          'always sign back in.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
           ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: MoodBloomColors.coral,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(signOutUseCaseProvider)();
+  }
+
+  static String _avatarInitial(String? displayName, String? email) {
+    final source = displayName?.trim().isNotEmpty == true
+        ? displayName!.trim()
+        : email?.trim() ?? '?';
+    return source.substring(0, 1).toUpperCase();
+  }
+}
+
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MoodBloomColors.seed, MoodBloomColors.amber],
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        style: MbFonts.nunito(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+}
+
+class _PreferencesCluster extends ConsumerWidget {
+  const _PreferencesCluster({required this.themeMode});
+
+  final ThemeMode themeMode;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return MbCard(
+      clipBehavior: Clip.hardEdge,
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
           ListTile(
             leading: const Icon(Icons.brightness_6_outlined),
             title: const Text('Theme'),
             subtitle: Text(_themeModeLabel(themeMode)),
             trailing: DropdownButton<ThemeMode>(
               value: themeMode,
+              underline: const SizedBox.shrink(),
               onChanged: (mode) {
                 if (mode == null) return;
-                // Fire-and-forget: state updates synchronously; the
-                // SharedPreferences write resolves in the background.
                 ref.read(themeModeControllerProvider.notifier).setMode(mode);
               },
               items: const [
@@ -62,42 +241,6 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const Divider(),
-          if (user != null)
-            ListTile(
-              leading: const Icon(Icons.account_circle_outlined),
-              title: Text(user.email ?? 'Signed in'),
-              subtitle: displayName == null ? null : Text(displayName),
-            ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Sign out'),
-            onTap: () async {
-              await ref.read(signOutUseCaseProvider)();
-            },
-          ),
-          const SizedBox(height: MoodBloomSpacing.lg),
-          const BiometricSettingsTile(),
-          if (kDebugMode) ...[
-            const SizedBox(height: MoodBloomSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: MoodBloomSpacing.lg,
-              ),
-              child: FilledButton.tonal(
-                onPressed: () {
-                  // Debug-only escape hatch for verifying the Crashlytics
-                  // wiring end-to-end. Stripped in release builds via
-                  // kDebugMode.
-                  throw Exception(
-                    'Crashlytics test crash from Settings — debug only',
-                  );
-                },
-                child: const Text('Crash now (debug)'),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -108,4 +251,47 @@ class SettingsScreen extends ConsumerWidget {
     ThemeMode.light => 'Always light',
     ThemeMode.dark => 'Always dark',
   };
+}
+
+/// Debug zone, only rendered in debug builds. Bundles existing tools
+/// (Crashlytics test crash) plus a "Force offline" toggle that lets QA
+/// simulate the no-Wi-Fi flow without touching the device's radios.
+class _DebugCluster extends ConsumerWidget {
+  const _DebugCluster();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final forced = ref.watch(debugForceOfflineProvider);
+    return MbCard(
+      clipBehavior: Clip.hardEdge,
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          SwitchListTile(
+            secondary: const Icon(Icons.wifi_off_outlined),
+            title: const Text('Force offline'),
+            subtitle: const Text(
+              'Simulates a dropped network for the rest of this session.',
+            ),
+            value: forced,
+            onChanged: (v) =>
+                ref.read(debugForceOfflineProvider.notifier).set(v),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.bug_report_outlined),
+            title: const Text('Crash now'),
+            subtitle: const Text(
+              'Throws a non-fatal error to verify Crashlytics wiring.',
+            ),
+            onTap: () {
+              throw Exception(
+                'Crashlytics test crash from Settings — debug only',
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }

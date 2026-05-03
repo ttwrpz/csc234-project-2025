@@ -179,6 +179,12 @@ export async function handleAnalyzeMoodText(
         uid,
         outcome: 'parse_error',
         errorReason: 'json_syntax',
+        // The geminiClient's `parseGenAiJson` helper throws SyntaxError
+        // with a `finishReason=…` suffix when Gemini emits no text.
+        // Surfacing the message in the structured log lets us distinguish
+        // "model truncated" (MAX_TOKENS) from "blocked" (SAFETY) without
+        // ever logging PII.
+        cause: e instanceof Error ? e.message : 'unknown',
       });
       return makeError(
         { requestId: ctx.requestId },

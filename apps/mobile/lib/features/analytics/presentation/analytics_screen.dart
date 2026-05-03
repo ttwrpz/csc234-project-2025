@@ -232,21 +232,37 @@ class _QuickStatsRow extends StatelessWidget {
 
     return Row(
       children: [
-        Expanded(child: _MostFrequentCard(mood: mostFrequent)),
-        const SizedBox(width: 8),
         Expanded(
-          child: _NumberStatCard(
-            value: avgIntensity == null ? '—' : avgIntensity.toStringAsFixed(1),
-            label: 'avg intensity',
-            sub: '${inWindow.length} entries',
+          child: Tooltip(
+            message:
+                'The mood you logged most often in the last ${window.days} days.',
+            child: _MostFrequentCard(mood: mostFrequent),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: _NumberStatCard(
-            value: '$streak',
-            label: 'day streak',
-            sub: 'gentle rhythm',
+          child: Tooltip(
+            message:
+                'Average of the intensity sliders (1–5) across '
+                '${inWindow.length} ${inWindow.length == 1 ? "entry" : "entries"}.',
+            child: _NumberStatCard(
+              value: avgIntensity == null
+                  ? '—'
+                  : avgIntensity.toStringAsFixed(1),
+              label: 'avg intensity',
+              sub: '${inWindow.length} entries',
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Tooltip(
+            message: 'Days in a row with at least one mood entry.',
+            child: _NumberStatCard(
+              value: '$streak',
+              label: 'day streak',
+              sub: 'gentle rhythm',
+            ),
           ),
         ),
       ],
