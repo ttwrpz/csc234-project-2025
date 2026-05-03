@@ -35,7 +35,8 @@ class PatternInsightCard extends ConsumerWidget {
     final asyncEntries = ref.watch(myMoodsStreamProvider);
     return asyncEntries.when(
       loading: () => const _LoadingCard(),
-      error: (_, _) => const _ErrorCard(),
+      error: (_, _) =>
+          _ErrorCard(onRetry: () => ref.invalidate(myMoodsStreamProvider)),
       data: (entries) {
         if (entries.isEmpty) {
           return const _EmptyCard();
@@ -43,11 +44,15 @@ class PatternInsightCard extends ConsumerWidget {
         final insightsAsync = ref.watch(_patternInsightsProvider(entries));
         return insightsAsync.when(
           loading: () => const _LoadingCard(),
-          error: (_, _) => const _ErrorCard(),
+          error: (_, _) => _ErrorCard(
+            onRetry: () => ref.invalidate(_patternInsightsProvider(entries)),
+          ),
           data: (result) => switch (result) {
             Ok(value: final list) when list.isEmpty => const _EmptyCard(),
             Ok(value: final list) => _DataCard(insights: list),
-            Err() => const _ErrorCard(),
+            Err() => _ErrorCard(
+              onRetry: () => ref.invalidate(_patternInsightsProvider(entries)),
+            ),
           },
         );
       },
@@ -127,16 +132,33 @@ class _LoadingCard extends StatelessWidget {
 }
 
 class _ErrorCard extends StatelessWidget {
-  const _ErrorCard();
+  const _ErrorCard({this.onRetry});
+  final VoidCallback? onRetry;
+
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
     return _CardShell(
       child: Padding(
         padding: const EdgeInsets.only(top: 10),
-        child: Text(
-          "We couldn't read your patterns just now.",
-          style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                "We couldn't read your patterns just now.",
+                style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
+              ),
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(width: 8),
+              TextButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Retry'),
+              ),
+            ],
+          ],
         ),
       ),
     );

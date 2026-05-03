@@ -80,58 +80,76 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     return Scaffold(
       backgroundColor: mb.bg,
+      // Centred column with a fixed max width so the carousel doesn't
+      // stretch across a desktop viewport (which previously pushed the
+      // bottom button row off-screen on tall windows). 480 dp matches
+      // the carousel art's natural reading width.
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            children: [
-              Expanded(
-                child: PageView.builder(
-                  controller: _controller,
-                  itemCount: _slides.length,
-                  onPageChanged: (i) => setState(() => _index = i),
-                  itemBuilder: (context, i) {
-                    final s = _slides[i];
-                    return OnboardingSlide(
-                      art: _buildArt(s.art),
-                      title: s.title,
-                      body: s.body,
-                    );
-                  },
-                ),
-              ),
-              _Dots(count: _slides.length, activeIndex: _index),
-              const SizedBox(height: 20),
-              Row(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
                 children: [
-                  if (!isFirst) ...[
-                    MbGhostButton(
-                      label: 'Back',
-                      onPressed: _back,
-                      fullWidth: false,
-                    ),
-                    const SizedBox(width: 10),
-                  ],
                   Expanded(
-                    child: MbPrimaryButton(
-                      label: isLast ? 'Get started' : 'Next',
-                      onPressed: _next,
+                    child: PageView.builder(
+                      controller: _controller,
+                      itemCount: _slides.length,
+                      onPageChanged: (i) => setState(() => _index = i),
+                      itemBuilder: (context, i) {
+                        final s = _slides[i];
+                        return OnboardingSlide(
+                          art: _buildArt(s.art),
+                          title: s.title,
+                          body: s.body,
+                        );
+                      },
                     ),
+                  ),
+                  _Dots(count: _slides.length, activeIndex: _index),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      if (!isFirst) ...[
+                        MbGhostButton(
+                          label: 'Back',
+                          onPressed: _back,
+                          fullWidth: false,
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+                      Expanded(
+                        child: MbPrimaryButton(
+                          label: isLast ? 'Get started' : 'Next',
+                          onPressed: _next,
+                          // The Get-started CTA is the only entry-point on
+                          // the final slide — make it visually unmistakable
+                          // even when the user is on a small phone. Add a
+                          // forward arrow so it reads as "go".
+                          leading: isLast
+                              ? const Icon(Icons.arrow_forward, size: 18)
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // Skip on slides 0/1 lets the user bail early; on the last
+                  // slide the same slot becomes a "I'm ready" reinforcement
+                  // — same destination, redundant CTA, but it removes any
+                  // ambiguity about how to leave the carousel.
+                  TextButton(
+                    onPressed: _complete,
+                    style: TextButton.styleFrom(
+                      foregroundColor: mb.textDim,
+                      textStyle: MbFonts.nunito(fontSize: 13),
+                    ),
+                    child: Text(isLast ? "I'm ready" : 'Skip'),
                   ),
                 ],
               ),
-              if (!isLast) ...[
-                const SizedBox(height: 10),
-                TextButton(
-                  onPressed: _complete,
-                  style: TextButton.styleFrom(
-                    foregroundColor: mb.textDim,
-                    textStyle: MbFonts.nunito(fontSize: 13),
-                  ),
-                  child: const Text('Skip'),
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),

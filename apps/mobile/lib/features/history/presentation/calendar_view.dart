@@ -10,12 +10,16 @@ import '../../mood/presentation/widgets/mood_kind_adapter.dart';
 import '../domain/entities/calendar_state.dart';
 import 'controllers/calendar_controller.dart';
 
-/// Month-grid calendar of mood history. Restyled to the Sprint 2 Prototype:
-/// the whole calendar lives inside a single [MbCard]; header is two
-/// chevron [MbIconButton]s flanking the "Month Year" label; each day cell
-/// is a 1px-line, r8, aspect-1 box with the day number top-left, a mood
-/// color dot bottom-left, and a count badge top-right when entries > 1.
-/// Today's cell carries a primary border + soft-green fill + 700 number.
+/// Width breakpoint at which the calendar switches from a single-column
+/// "tap → bottom sheet" layout to a two-column "calendar + side panel"
+/// layout. Below this we keep the phone-style flow; above this the user
+/// gets a persistent panel listing the selected day's entries.
+const double _kSidePanelBreakpoint = 720;
+
+/// Month-grid calendar of mood history. On phone widths, tapping a day cell
+/// opens a bottom sheet listing every entry on that day. On tablet/desktop
+/// (≥ [_kSidePanelBreakpoint]) we render the calendar on the left and a
+/// persistent entries panel on the right that updates with each tap.
 class CalendarView extends ConsumerStatefulWidget {
   const CalendarView({super.key});
 
@@ -28,11 +32,16 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
   /// users navigate prev/next via the header arrows.
   late DateTime _viewedMonth;
 
+  /// Local-midnight `DateTime` of the day whose entries are shown in the
+  /// side panel (desktop / tablet only). Defaults to today on first build.
+  DateTime? _selectedDay;
+
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
     _viewedMonth = DateTime(now.year, now.month, 1);
+    _selectedDay = DateTime(now.year, now.month, now.day);
   }
 
   void _goPrevMonth() {
@@ -55,14 +64,68 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
 
   @override
   Widget build(BuildContext context) {
-    final stateAsync = ref.watch(calendarControllerProvider(_viewedMonth));
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= _kSidePanelBreakpoint;
+        final calendar = _CalendarCard(
+          viewedMonth: _viewedMonth,
+          selectedDay: wide ? _selectedDay : null,
+          onPrev: _goPrevMonth,
+          onNext: _isCurrentMonth ? null : _goNextMonth,
+          onDayTap: wide ? (day) => setState(() => _selectedDay = day) : null,
+        );
+        if (!wide) return calendar;
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 5, child: calendar),
+            const SizedBox(width: 16),
+            Expanded(
+              flex: 4,
+              child: _selectedDay == null
+                  ? const SizedBox.shrink()
+                  : DayEntriesPanel(
+                      key: ValueKey(_selectedDay),
+                      dayKey: _selectedDay!,
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Just the calendar card — header, weekday row, month grid. Stateless so
+/// the parent can drive the selection from outside (the wide layout) or
+/// not at all (the phone layout).
+class _CalendarCard extends ConsumerWidget {
+  const _CalendarCard({
+    required this.viewedMonth,
+    required this.selectedDay,
+    required this.onPrev,
+    required this.onNext,
+    required this.onDayTap,
+  });
+
+  final DateTime viewedMonth;
+
+  /// Highlight ring on the selected day (wide layout only). `null` skips
+  /// the ring and falls back to the today-cell highlight.
+  final DateTime? selectedDay;
+  final VoidCallback onPrev;
+  final VoidCallback? onNext;
+
+  /// When non-null, day cells call this *instead of* the
+  /// detail-or-sheet navigation — used by the wide layout to drive the
+  /// side panel without leaving the screen.
+  final ValueChanged<DateTime>? onDayTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stateAsync = ref.watch(calendarControllerProvider(viewedMonth));
     final mb = Theme.of(context).extension<MbColors>()!;
 
-    // Cap calendar to a reasonable max width on tablet/desktop. Without
-    // this, each cell on a 1200 dp content column became ~165 dp tall —
-    // visually noisy and the source of the layout overflow the user
-    // reported. 560 dp keeps cells in the same readable size band the
-    // prototype designs for.
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
@@ -72,11 +135,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _MonthHeader(
-                month: _viewedMonth,
-                onPrev: _goPrevMonth,
-                onNext: _isCurrentMonth ? null : _goNextMonth,
-              ),
+              _MonthHeader(month: viewedMonth, onPrev: onPrev, onNext: onNext),
               const SizedBox(height: 12),
               const _WeekdayHeaderRow(),
               const SizedBox(height: 4),
@@ -93,7 +152,11 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                     textAlign: TextAlign.center,
                   ),
                 ),
-                data: (state) => _MonthGrid(state: state),
+                data: (state) => _MonthGrid(
+                  state: state,
+                  selectedDay: selectedDay,
+                  onDayTap: onDayTap,
+                ),
               ),
             ],
           ),
@@ -103,32 +166,31 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
   }
 }
 
-/// Bottom-sheet list of all entries on `dayKey`. Triggered when the user
-/// taps a multi-entry calendar cell so all the day's entries are reachable,
-/// not only the most recent one (which is what the cell's default tap
-/// navigation goes to). Reads `myMoodsStreamProvider` so it always sees the
-/// freshest snapshot.
-class _DayEntriesSheet extends ConsumerWidget {
-  const _DayEntriesSheet({required this.dayKey});
+/// Bottom-sheet wrapper around [DayEntriesPanel]. Used by the calendar's
+/// phone layout (when the user taps a multi-entry cell) and by Home's
+/// weekly bloom bar (which always uses the modal regardless of viewport).
+class DayEntriesSheet extends StatelessWidget {
+  const DayEntriesSheet({super.key, required this.dayKey});
+
+  static Future<void> show(BuildContext context, DateTime dayKey) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: false,
+      isScrollControlled: true,
+      backgroundColor: mb.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => DayEntriesSheet(dayKey: dayKey),
+    );
+  }
 
   final DateTime dayKey;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    final palette = Theme.of(context).extension<MbMoodPalette>()!;
-    final entriesAsync = ref.watch(myMoodsStreamProvider);
-    final dayLabel =
-        '${_monthName(dayKey.month)} ${dayKey.day}, ${dayKey.year}';
-
-    final dayEntries = entriesAsync.maybeWhen(
-      data: (all) => [
-        for (final e in all)
-          if (_truncateToLocalDay(e.createdAt) == dayKey) e,
-      ]..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
-      orElse: () => const <MoodEntry>[],
-    );
-
     return SafeArea(
       top: false,
       child: Padding(
@@ -149,89 +211,136 @@ class _DayEntriesSheet extends ConsumerWidget {
                 ),
               ),
             ),
-            Text(
-              dayLabel,
-              style: MbFonts.fraunces(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: mb.text,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${dayEntries.length} ${dayEntries.length == 1 ? "entry" : "entries"}',
-              style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
-            ),
-            const SizedBox(height: 12),
-            for (final e in dayEntries)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    context.go('/history/${e.id}');
-                  },
-                  child: MbCard(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: palette
-                                .colorOf(e.mood.mbKind)
-                                .withAlpha(0x33),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            palette.emojiOf(e.mood.mbKind),
-                            style: const TextStyle(fontSize: 18),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                e.mood.name,
-                                style: MbFonts.nunito(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: mb.text,
-                                ),
-                              ),
-                              if (e.text.isNotEmpty)
-                                Text(
-                                  e.text,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: MbFonts.nunito(
-                                    fontSize: 12,
-                                    color: mb.textDim,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        Text(
-                          _formatTime(e.createdAt),
-                          style: MbFonts.nunito(
-                            fontSize: 11,
-                            color: mb.textDim,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+            DayEntriesPanel(dayKey: dayKey, popOnTap: true),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The list of entries for a given day. Reused by both the bottom sheet
+/// (phone) and the side panel (desktop). When [popOnTap] is true, tapping
+/// an entry pops the enclosing route before navigating — the bottom-sheet
+/// flow needs that; the side panel does not.
+class DayEntriesPanel extends ConsumerWidget {
+  const DayEntriesPanel({
+    super.key,
+    required this.dayKey,
+    this.popOnTap = false,
+  });
+
+  final DateTime dayKey;
+  final bool popOnTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final palette = Theme.of(context).extension<MbMoodPalette>()!;
+    final entriesAsync = ref.watch(myMoodsStreamProvider);
+    final dayLabel =
+        '${_monthName(dayKey.month)} ${dayKey.day}, ${dayKey.year}';
+
+    final dayEntries = entriesAsync.maybeWhen(
+      data: (all) => [
+        for (final e in all)
+          if (_truncateToLocalDay(e.createdAt) == dayKey) e,
+      ]..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
+      orElse: () => const <MoodEntry>[],
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          dayLabel,
+          style: MbFonts.fraunces(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: mb.text,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          dayEntries.isEmpty
+              ? 'No entries'
+              : '${dayEntries.length} ${dayEntries.length == 1 ? "entry" : "entries"}',
+          style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
+        ),
+        const SizedBox(height: 12),
+        if (dayEntries.isEmpty)
+          MbCard(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              "Nothing logged here yet — tap Log mood when you're ready.",
+              style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
+              textAlign: TextAlign.center,
+            ),
+          )
+        else
+          for (final e in dayEntries)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  if (popOnTap) Navigator.of(context).pop();
+                  context.go('/history/${e.id}');
+                },
+                child: MbCard(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: palette.colorOf(e.mood.mbKind).withAlpha(0x33),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          palette.emojiOf(e.mood.mbKind),
+                          style: const TextStyle(fontSize: 18),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              e.mood.name,
+                              style: MbFonts.nunito(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: mb.text,
+                              ),
+                            ),
+                            if (e.text.isNotEmpty)
+                              Text(
+                                e.text,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: MbFonts.nunito(
+                                  fontSize: 12,
+                                  color: mb.textDim,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        _formatTime(e.createdAt),
+                        style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+      ],
     );
   }
 }
@@ -323,15 +432,19 @@ class _WeekdayHeaderRow extends StatelessWidget {
 }
 
 class _MonthGrid extends StatelessWidget {
-  const _MonthGrid({required this.state});
+  const _MonthGrid({
+    required this.state,
+    required this.selectedDay,
+    required this.onDayTap,
+  });
 
   final CalendarState state;
+  final DateTime? selectedDay;
+  final ValueChanged<DateTime>? onDayTap;
 
   @override
   Widget build(BuildContext context) {
     final firstOfMonth = state.month;
-    // Dart's DateTime.weekday is 1..7 (Mon..Sun). We render Sun-first, so
-    // Sunday lands in column 0 and the leading-blank count is `weekday % 7`.
     final leadingBlanks = firstOfMonth.weekday % 7;
     final daysInMonth = DateTime(
       firstOfMonth.year,
@@ -352,12 +465,15 @@ class _MonthGrid extends StatelessWidget {
       final dayKey = DateTime(firstOfMonth.year, firstOfMonth.month, dayNumber);
       final dot = state.dotsByDay[dayKey];
       final isToday = dayKey == today;
+      final isSelected = selectedDay != null && dayKey == selectedDay;
       cells.add(
         _DayCell(
           dayNumber: dayNumber,
           dayKey: dayKey,
           dot: dot,
           isToday: isToday,
+          isSelected: isSelected,
+          onDayTap: onDayTap,
         ),
       );
     }
@@ -391,12 +507,16 @@ class _DayCell extends StatelessWidget {
     required this.dayKey,
     required this.dot,
     required this.isToday,
+    required this.isSelected,
+    required this.onDayTap,
   });
 
   final int dayNumber;
   final DateTime dayKey;
   final DayDot? dot;
   final bool isToday;
+  final bool isSelected;
+  final ValueChanged<DateTime>? onDayTap;
 
   @override
   Widget build(BuildContext context) {
@@ -410,13 +530,18 @@ class _DayCell extends StatelessWidget {
               '${dot!.totalEntries == 1 ? "entry" : "entries"}'
         : 'Day $dayNumber, no entries';
 
+    final borderColor = isSelected
+        ? theme.colorScheme.primary
+        : (isToday ? theme.colorScheme.primary : mb.line);
+    final borderWidth = isSelected ? 2.0 : 1.0;
+
     final cell = Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isToday ? MoodBloomColors.softGreen : Colors.transparent,
-        border: Border.all(
-          color: isToday ? theme.colorScheme.primary : mb.line,
-        ),
+        color: isToday || isSelected
+            ? MoodBloomColors.softGreen
+            : Colors.transparent,
+        border: Border.all(color: borderColor, width: borderWidth),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Stack(
@@ -427,7 +552,9 @@ class _DayCell extends StatelessWidget {
               '$dayNumber',
               style: MbFonts.nunito(
                 fontSize: 10,
-                fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: isToday || isSelected
+                    ? FontWeight.w700
+                    : FontWeight.w500,
                 color: mb.textDim,
               ),
             ),
@@ -469,6 +596,20 @@ class _DayCell extends StatelessWidget {
       ),
     );
 
+    // Wide layout drives the side panel on every tap (entries OR not).
+    // Phone layout only reacts when there's something to show.
+    if (onDayTap != null) {
+      return Semantics(
+        button: true,
+        label: semanticsLabel,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => onDayTap!(dayKey),
+          child: cell,
+        ),
+      );
+    }
+
     if (!hasEntry) {
       return Semantics(label: semanticsLabel, child: cell);
     }
@@ -479,20 +620,8 @@ class _DayCell extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: () {
-          // Single entry → straight to detail. Multi-entry → bottom sheet
-          // listing every entry for the day; the previous behaviour silently
-          // navigated to only the most-recent one and lost the others.
           if (count > 1) {
-            showModalBottomSheet<void>(
-              context: context,
-              showDragHandle: false,
-              isScrollControlled: true,
-              backgroundColor: theme.extension<MbColors>()!.bg,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              builder: (_) => _DayEntriesSheet(dayKey: dayKey),
-            );
+            DayEntriesSheet.show(context, dayKey);
           } else {
             context.go('/history/${dot!.mostRecentEntryId}');
           }

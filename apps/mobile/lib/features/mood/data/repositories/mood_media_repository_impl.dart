@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:core/core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as p;
@@ -111,11 +112,27 @@ class MoodMediaRepositoryImpl implements MoodMediaRepository {
         'users/$userId/media/$moodId/${_uuid.v4()}${ext.isEmpty ? '' : '.$ext'}';
 
     try {
-      final task = _storage.upload(
-        objectPath,
-        _fileFactory(media.localPath),
-        contentType: media.mimeType,
-      );
+      // Web cannot back a `dart:io File` from a blob: URL — the
+      // `XFile.path` returned by image_picker on web is a blob handle,
+      // not a filesystem path. Read the bytes through `XFile` (which
+      // handles blob URLs on web and falls back to filesystem reads on
+      // native) and call the bytes upload variant. On native we still
+      // use the cheaper `putFile` path that streams off disk.
+      final UploadTask task;
+      if (kIsWeb) {
+        final bytes = await XFile(media.localPath).readAsBytes();
+        task = _storage.uploadBytes(
+          objectPath,
+          bytes,
+          contentType: media.mimeType,
+        );
+      } else {
+        task = _storage.upload(
+          objectPath,
+          _fileFactory(media.localPath),
+          contentType: media.mimeType,
+        );
+      }
       await task;
       return Ok(_storage.gsUriFor(objectPath));
     } on FirebaseException catch (e) {

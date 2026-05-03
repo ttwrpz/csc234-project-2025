@@ -13,12 +13,21 @@ const double kMbBottomNavHeight = 70;
 /// `icon` is a Material `IconData` so the glyph scales, themes, and renders
 /// identically across platforms (the previous emoji glyphs varied
 /// considerably between Android, iOS, and the various web font fallbacks).
+///
+/// When [highlighted] is true the item is rendered as a primary-tinted
+/// circular button, drawing the eye to the most-frequent action (the Log
+/// slot). Used at most once per nav.
 @immutable
 class MbBottomNavItem {
-  const MbBottomNavItem({required this.icon, required this.label});
+  const MbBottomNavItem({
+    required this.icon,
+    required this.label,
+    this.highlighted = false,
+  });
 
   final IconData icon;
   final String label;
+  final bool highlighted;
 }
 
 /// Translucent bottom navigation bar used by the app shell on phone-width
@@ -101,6 +110,14 @@ class _MbBottomNavTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (item.highlighted) {
+      return _HighlightedTab(
+        item: item,
+        active: active,
+        primary: primary,
+        onTap: onTap,
+      );
+    }
     final color = active ? primary : textDim;
     return Semantics(
       button: true,
@@ -126,6 +143,53 @@ class _MbBottomNavTab extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Primary-tinted circular bottom-nav item used for the centred Log slot.
+/// Visually distinct so first-time users notice "this is the main action".
+class _HighlightedTab extends StatelessWidget {
+  const _HighlightedTab({
+    required this.item,
+    required this.active,
+    required this.primary,
+    required this.onTap,
+  });
+
+  final MbBottomNavItem item;
+  final bool active;
+  final Color primary;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: active,
+      label: item.label,
+      child: Center(
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: primary,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: primary.withAlpha(0x55),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(item.icon, size: 24, color: Colors.white),
           ),
         ),
       ),
