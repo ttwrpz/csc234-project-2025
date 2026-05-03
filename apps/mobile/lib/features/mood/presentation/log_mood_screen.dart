@@ -41,35 +41,64 @@ class LogMoodScreen extends ConsumerStatefulWidget {
 
 class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
   /// Entry being edited. Null on the create flow. Populated by the
-  /// post-frame init callback below; we hold a reference so
+  /// post-frame hydration callback; we hold a reference so
   /// `updateExisting` can preserve `id`/`userId`/`createdAt`.
   MoodEntry? _editing;
+
+  /// True while the edit-mode hydration future is in flight. Suppresses
+  /// the form so the user doesn't see a flash of empty inputs before
+  /// the entry's values land.
+  bool _hydrating = false;
 
   @override
   void initState() {
     super.initState();
     // Riverpod state persists across bottom-nav swaps because the
-    // navigation shell keeps every branch alive. Schedule a one-shot
-    // reset on the next frame so a fresh visit always starts blank.
-    // In edit mode the reset happens FIRST and then we hydrate from
-    // the existing entry — keeps the AI pill / submission state
-    // pristine in both flows.
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    // navigation shell keeps every branch alive. The router uses
+    // `ValueKey('log-mood:<edit>')` to force a fresh `State` whenever
+    // the edit param changes, so this `initState` runs once per
+    // create-or-edit visit. The post-frame deferral lets `_resetAll`
+    // touch Riverpod notifiers safely (you can't write to a notifier
+    // mid-build).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _resetAll(ref);
-      final id = widget.editEntryId;
-      if (id == null) return;
-      final entryAsync = await ref.read(moodEntryByIdProvider(id).future);
-      if (!mounted || entryAsync == null) return;
+      _enterScreen();
+    });
+  }
+
+  /// Wipes any leftover draft / AI / submission state and, when in
+  /// edit mode, fetches and hydrates the entry. Called from
+  /// `initState` and re-callable if the route key strategy ever
+  /// changes; defence in depth.
+  Future<void> _enterScreen() async {
+    _resetAll(ref);
+    if (!mounted) return;
+    setState(() => _editing = null);
+
+    final id = widget.editEntryId;
+    if (id == null) return;
+
+    setState(() => _hydrating = true);
+    final entry = await ref.read(moodEntryByIdProvider(id).future);
+    if (!mounted) return;
+
+    if (entry == null) {
+      setState(() => _hydrating = false);
+      if (context.mounted) context.go('/history');
+      return;
+    }
+    if (entry.isLocked()) {
       // Defence in depth: never let an already-locked entry leak into
-      // the editor (the detail screen disables Edit, but a stale
-      // deep link could still land us here).
-      if (entryAsync.isLocked()) {
-        if (context.mounted) context.go('/history/$id');
-        return;
-      }
-      ref.read(logMoodControllerProvider.notifier).loadFromEntry(entryAsync);
-      setState(() => _editing = entryAsync);
+      // the editor (the detail screen disables Edit, but a stale deep
+      // link could still land us here).
+      setState(() => _hydrating = false);
+      if (context.mounted) context.go('/history/$id');
+      return;
+    }
+    ref.read(logMoodControllerProvider.notifier).loadFromEntry(entry);
+    setState(() {
+      _editing = entry;
+      _hydrating = false;
     });
   }
 
@@ -90,6 +119,31 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
     final hasMood = draft.mood != null;
     final canSave = hasMood && !submission.isSubmitting;
     final isEditMode = _editing != null;
+    final isCreatingViaEditUrl = widget.editEntryId != null && _editing == null;
+
+    // Hydrating phase: route says "?edit=X" but we haven't pulled the
+    // entry yet. Show a loading state instead of an empty form so the
+    // user doesn't think nothing happened.
+    if (_hydrating || isCreatingViaEditUrl) {
+      return Scaffold(
+        backgroundColor: mb.bg,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(MoodBloomSpacing.pagePadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Header(isEditMode: true),
+                const SizedBox(height: MoodBloomSpacing.lg),
+                const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: mb.bg,
@@ -106,6 +160,13 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
                 ),
                 children: [
                   _Header(isEditMode: isEditMode),
+                  if (isEditMode) ...[
+                    const SizedBox(height: MoodBloomSpacing.md),
+                    _EditModeBanner(
+                      entry: _editing!,
+                      onCancel: () => context.go('/history/${_editing!.id}'),
+                    ),
+                  ],
                   const SizedBox(height: MoodBloomSpacing.lg),
                   const MbSectionLabel('Choose a feeling'),
                   const SizedBox(height: MoodBloomSpacing.sm),
@@ -157,6 +218,7 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
             _SaveBar(
               hasMood: hasMood,
               loading: submission.isSubmitting,
+              isEditMode: isEditMode,
               onPressed: canSave ? () => _onSave(context, ref) : null,
             ),
           ],
@@ -348,15 +410,20 @@ class _SaveBar extends StatelessWidget {
   const _SaveBar({
     required this.hasMood,
     required this.loading,
+    required this.isEditMode,
     required this.onPressed,
   });
 
   final bool hasMood;
   final bool loading;
+  final bool isEditMode;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
+    final label = !hasMood
+        ? 'Pick a feeling to continue'
+        : (isEditMode ? 'Save changes' : 'Save entry');
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         MoodBloomSpacing.pagePadding,
@@ -365,10 +432,94 @@ class _SaveBar extends StatelessWidget {
         MoodBloomSpacing.lg,
       ),
       child: MbPrimaryButton(
-        label: hasMood ? 'Save entry' : 'Pick a feeling to continue',
+        label: label,
         onPressed: onPressed,
         loading: loading,
       ),
     );
+  }
+}
+
+/// Soft-coral banner shown at the top of Log Mood when in edit mode.
+/// Tells the user (1) which entry they're editing — by date — and
+/// (2) gives them a one-tap escape via Cancel that drops them back at
+/// the detail screen unchanged.
+class _EditModeBanner extends StatelessWidget {
+  const _EditModeBanner({required this.entry, required this.onCancel});
+
+  final MoodEntry entry;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final created = entry.createdAt.toLocal();
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
+      decoration: BoxDecoration(
+        color: mb.softCoral,
+        border: Border.all(color: MoodBloomColors.coral.withAlpha(0x55)),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(Icons.edit_outlined, size: 16, color: mb.text),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Editing your entry from '
+              '${_shortDate(created)} · ${_shortTime(created)}',
+              style: MbFonts.nunito(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: mb.text,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: onCancel,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              'Cancel',
+              style: MbFonts.nunito(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: mb.text,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _shortDate(DateTime d) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[d.month - 1]} ${d.day}';
+  }
+
+  static String _shortTime(DateTime d) {
+    final h = d.hour == 0 ? 12 : (d.hour > 12 ? d.hour - 12 : d.hour);
+    final mm = d.minute.toString().padLeft(2, '0');
+    final ap = d.hour >= 12 ? 'pm' : 'am';
+    return '$h:$mm $ap';
   }
 }

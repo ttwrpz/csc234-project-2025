@@ -154,17 +154,27 @@ final routerProvider = Provider<GoRouter>((ref) {
           // 2 — Log mood (centre, highlighted)
           //
           // Optional `?edit=<entryId>` puts the screen into edit mode:
-          // the controller hydrates from the existing entry on first
-          // build and the Save button calls `updateExisting` instead
-          // of `save`. The query param is read on every build, so the
-          // user navigating away (which clears the param) reverts to
-          // a fresh-create flow.
+          // the controller hydrates from the existing entry, the
+          // header reads "Edit entry", and Save calls `updateExisting`.
+          //
+          // The `ValueKey('log-mood:<edit>')` is load-bearing: without
+          // it, navigating back and forth between `/log-mood` and
+          // `/log-mood?edit=X` reuses the same `State` (because
+          // `StatefulShellRoute.indexedStack` keeps the branch alive
+          // across visits), and `initState`'s hydration never re-runs.
+          // Keying by the edit param forces a fresh `State` on every
+          // mode swap so the post-frame hydration always fires.
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/log-mood',
-                builder: (c, s) =>
-                    LogMoodScreen(editEntryId: s.uri.queryParameters['edit']),
+                builder: (c, s) {
+                  final editId = s.uri.queryParameters['edit'];
+                  return LogMoodScreen(
+                    key: ValueKey('log-mood:${editId ?? "new"}'),
+                    editEntryId: editId,
+                  );
+                },
               ),
             ],
           ),
