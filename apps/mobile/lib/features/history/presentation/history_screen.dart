@@ -83,11 +83,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 onViewChanged: (v) => setState(() => _view = v),
               ),
               const SizedBox(height: MoodBloomSpacing.md),
-              _FilterChipRow(
-                value: _filter,
-                onChanged: (f) => setState(() => _filter = f),
-              ),
-              const SizedBox(height: MoodBloomSpacing.md),
+              // Filter pills only act on the list. Hiding them on the
+              // calendar tab removes a noisy non-functional control and
+              // lets the calendar grid use the full vertical space below
+              // the header.
+              if (_view == HistoryView.list) ...[
+                _FilterChipRow(
+                  value: _filter,
+                  onChanged: (f) => setState(() => _filter = f),
+                ),
+                const SizedBox(height: MoodBloomSpacing.md),
+              ],
               Expanded(
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 220),

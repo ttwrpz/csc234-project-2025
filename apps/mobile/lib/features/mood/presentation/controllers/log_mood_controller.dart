@@ -24,6 +24,13 @@ class LogMoodController extends _$LogMoodController {
   @override
   MoodDraft build() => MoodDraft.empty();
 
+  /// Discard everything currently in the draft. Called by the screen
+  /// after a successful save AND on screen-enter so a previous abandoned
+  /// session does not leak into the next one (the controller is a
+  /// non-autoDispose `Notifier`, so without an explicit reset its state
+  /// would persist across tab swaps).
+  void reset() => state = MoodDraft.empty();
+
   void pickMood(MoodType mood) => state = state.copyWith(mood: mood);
 
   /// Apply a mood that came from the AI suggestion pill. Identical to

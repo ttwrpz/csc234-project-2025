@@ -137,13 +137,16 @@ void main() {
       expect(find.byType(RainCloud), findsNWidgets(2));
     });
 
-    testWidgets('"Log today\'s mood" CTA is reachable from the garden', (
+    testWidgets('"Log mood" CTA (FAB) is reachable from the home page', (
       tester,
     ) async {
+      // The inline "Log today's mood" button was retired once the FAB
+      // and the centred bottom-nav slot covered the same action. The
+      // FAB stays — it's the primary mood-logging affordance on Home.
       final repo = FakeMoodRepository()..streamedEntries = [const []];
       await _pumpGarden(tester, repo: repo);
 
-      expect(find.text("Log today's mood"), findsOneWidget);
+      expect(find.text('Log mood'), findsOneWidget);
     });
   });
 }

@@ -56,6 +56,17 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     });
   }
 
+  /// Snap back to the current month + select today. Wired to the new
+  /// "Today" button in the calendar header so users who have paged months
+  /// back can return in one tap.
+  void _goToday() {
+    final now = DateTime.now();
+    setState(() {
+      _viewedMonth = DateTime(now.year, now.month, 1);
+      _selectedDay = DateTime(now.year, now.month, now.day);
+    });
+  }
+
   bool get _isCurrentMonth {
     final now = DateTime.now();
     final thisMonth = DateTime(now.year, now.month, 1);
@@ -72,6 +83,9 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
           selectedDay: wide ? _selectedDay : null,
           onPrev: _goPrevMonth,
           onNext: _isCurrentMonth ? null : _goNextMonth,
+          // Hide the Today affordance once the user is already on the
+          // current month — it'd be a no-op there.
+          onToday: _isCurrentMonth ? null : _goToday,
           onDayTap: wide ? (day) => setState(() => _selectedDay = day) : null,
         );
         if (!wide) return calendar;
@@ -105,6 +119,7 @@ class _CalendarCard extends ConsumerWidget {
     required this.selectedDay,
     required this.onPrev,
     required this.onNext,
+    required this.onToday,
     required this.onDayTap,
   });
 
@@ -115,6 +130,11 @@ class _CalendarCard extends ConsumerWidget {
   final DateTime? selectedDay;
   final VoidCallback onPrev;
   final VoidCallback? onNext;
+
+  /// Tapping "Today" jumps back to the current month + selects today.
+  /// `null` when the user is already viewing the current month — the
+  /// header hides the chip in that case.
+  final VoidCallback? onToday;
 
   /// When non-null, day cells call this *instead of* the
   /// detail-or-sheet navigation — used by the wide layout to drive the
@@ -135,7 +155,12 @@ class _CalendarCard extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _MonthHeader(month: viewedMonth, onPrev: onPrev, onNext: onNext),
+              _MonthHeader(
+                month: viewedMonth,
+                onPrev: onPrev,
+                onNext: onNext,
+                onToday: onToday,
+              ),
               const SizedBox(height: 12),
               const _WeekdayHeaderRow(),
               const SizedBox(height: 4),
@@ -360,18 +385,20 @@ class _MonthHeader extends StatelessWidget {
     required this.month,
     required this.onPrev,
     required this.onNext,
+    required this.onToday,
   });
 
   final DateTime month;
   final VoidCallback onPrev;
   final VoidCallback? onNext;
+  final VoidCallback? onToday;
 
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
+    final theme = Theme.of(context);
     final label = '${_monthName(month.month)} ${month.year}';
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         MbIconButton(
           icon: const Icon(Icons.chevron_left),
@@ -379,17 +406,42 @@ class _MonthHeader extends StatelessWidget {
           size: MbIconButtonSize.sm,
           semanticLabel: 'Previous month',
         ),
-        Semantics(
-          header: true,
-          child: Text(
-            label,
-            style: MbFonts.nunito(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: mb.text,
+        Expanded(
+          child: Center(
+            child: Semantics(
+              header: true,
+              child: Text(
+                label,
+                style: MbFonts.nunito(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: mb.text,
+                ),
+              ),
             ),
           ),
         ),
+        // Today chip — only rendered once the user has paged away from
+        // the current month, so it never duplicates state already on
+        // screen. Sits inline with the chevrons so the layout stays
+        // tight on narrow phone widths.
+        if (onToday != null) ...[
+          TextButton(
+            onPressed: onToday,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              minimumSize: const Size(0, 28),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              foregroundColor: theme.colorScheme.primary,
+              textStyle: MbFonts.nunito(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            child: const Text('Today'),
+          ),
+          const SizedBox(width: 4),
+        ],
         MbIconButton(
           icon: const Icon(Icons.chevron_right),
           onPressed: onNext,

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../mood/data/providers.dart';
 import '../../mood/domain/entities/mood_entry.dart';
 import '../../mood/presentation/widgets/mood_kind_adapter.dart';
+import 'widgets/entry_attachments.dart';
 
 /// Read-only entry detail. Sprint 2 ships only the scaffold — edit/delete
 /// land in S3 along with the 24h immutability enforcement (WBS 3.5).
@@ -191,6 +192,15 @@ class _Detail extends StatelessWidget {
                         ),
                       ),
               ),
+              // Attachments — resolved on demand from gs:// URIs to
+              // download URLs and rendered as 96 dp thumbnails. Only the
+              // mediaRefs list lives on the Firestore document; the
+              // widget caches each download URL via a family-keyed
+              // FutureProvider so cell rebuilds don't re-fetch.
+              if (entry.mediaRefs.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                EntryAttachments(refs: entry.mediaRefs),
+              ],
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.only(top: 10),
