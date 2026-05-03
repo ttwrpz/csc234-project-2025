@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/providers.dart';
+import '../domain/entities/mood_entry.dart';
 import '../domain/entities/mood_type.dart';
 import '../domain/repositories/mood_media_repository.dart';
 import 'controllers/ai_suggestion_controller.dart';
@@ -24,24 +25,51 @@ import 'widgets/mood_type_grid.dart';
 /// + AI suggestion + submission state on every screen-enter. Without that,
 /// the controllers persist across bottom-nav swaps and the user comes
 /// back to a half-filled form from a previous session.
+///
+/// When [editEntryId] is non-null the screen enters edit mode: the draft
+/// is hydrated from the existing entry on first build, the heading
+/// changes to "Edit entry", and Save calls `updateExisting` instead of
+/// `save`.
 class LogMoodScreen extends ConsumerStatefulWidget {
-  const LogMoodScreen({super.key});
+  const LogMoodScreen({super.key, this.editEntryId});
+
+  final String? editEntryId;
 
   @override
   ConsumerState<LogMoodScreen> createState() => _LogMoodScreenState();
 }
 
 class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
+  /// Entry being edited. Null on the create flow. Populated by the
+  /// post-frame init callback below; we hold a reference so
+  /// `updateExisting` can preserve `id`/`userId`/`createdAt`.
+  MoodEntry? _editing;
+
   @override
   void initState() {
     super.initState();
     // Riverpod state persists across bottom-nav swaps because the
     // navigation shell keeps every branch alive. Schedule a one-shot
-    // reset on the next frame so a fresh visit always starts blank —
-    // mood, intensity, note, attachments, AI suggestion, error banner.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // reset on the next frame so a fresh visit always starts blank.
+    // In edit mode the reset happens FIRST and then we hydrate from
+    // the existing entry — keeps the AI pill / submission state
+    // pristine in both flows.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       _resetAll(ref);
+      final id = widget.editEntryId;
+      if (id == null) return;
+      final entryAsync = await ref.read(moodEntryByIdProvider(id).future);
+      if (!mounted || entryAsync == null) return;
+      // Defence in depth: never let an already-locked entry leak into
+      // the editor (the detail screen disables Edit, but a stale
+      // deep link could still land us here).
+      if (entryAsync.isLocked()) {
+        if (context.mounted) context.go('/history/$id');
+        return;
+      }
+      ref.read(logMoodControllerProvider.notifier).loadFromEntry(entryAsync);
+      setState(() => _editing = entryAsync);
     });
   }
 
@@ -61,6 +89,7 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
 
     final hasMood = draft.mood != null;
     final canSave = hasMood && !submission.isSubmitting;
+    final isEditMode = _editing != null;
 
     return Scaffold(
       backgroundColor: mb.bg,
@@ -76,7 +105,7 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
                   MoodBloomSpacing.lg,
                 ),
                 children: [
-                  const _Header(),
+                  _Header(isEditMode: isEditMode),
                   const SizedBox(height: MoodBloomSpacing.lg),
                   const MbSectionLabel('Choose a feeling'),
                   const SizedBox(height: MoodBloomSpacing.sm),
@@ -137,14 +166,22 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
   }
 
   Future<void> _onSave(BuildContext context, WidgetRef ref) async {
-    final entry = await ref.read(logMoodControllerProvider.notifier).save();
+    final original = _editing;
+    final entry = original == null
+        ? await ref.read(logMoodControllerProvider.notifier).save()
+        : await ref
+              .read(logMoodControllerProvider.notifier)
+              .updateExisting(original);
     if (entry == null) return;
-    // Belt-and-braces: the controller's `_onSaveOk` already empties the
-    // draft, but we also clear the AI pill and submission state so the
-    // user lands on /history with a clean slate behind them.
     _resetAll(ref);
     if (context.mounted) {
-      context.go('/history');
+      // Edit returns to the detail screen so the user can verify the
+      // updated values; create flows still drop on /history.
+      if (original != null) {
+        context.go('/history/${entry.id}');
+      } else {
+        context.go('/history');
+      }
     }
   }
 
@@ -166,19 +203,19 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
   }
 }
 
-/// Header row — Fraunces 20/600 title only. The previous build had a
-/// back-arrow `MbIconButton`, which made no sense once Log moved into a
-/// permanent bottom-nav slot (there is nothing to "go back" to — the tab
-/// itself is the destination). Removing the button also bumps the title
-/// flush-left so it matches every other tab root in the app.
+/// Header row — Fraunces 20/600 title only. Title flips to "Edit entry"
+/// when the screen is opened with `?edit=<id>` so the user knows they
+/// are mutating an existing record, not creating a new one.
 class _Header extends StatelessWidget {
-  const _Header();
+  const _Header({required this.isEditMode});
+
+  final bool isEditMode;
 
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
     return Text(
-      'How are you?',
+      isEditMode ? 'Edit entry' : 'How are you?',
       style: MbFonts.fraunces(
         fontSize: 20,
         fontWeight: FontWeight.w600,

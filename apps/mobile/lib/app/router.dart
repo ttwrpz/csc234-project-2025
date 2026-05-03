@@ -152,11 +152,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           // 2 — Log mood (centre, highlighted)
+          //
+          // Optional `?edit=<entryId>` puts the screen into edit mode:
+          // the controller hydrates from the existing entry on first
+          // build and the Save button calls `updateExisting` instead
+          // of `save`. The query param is read on every build, so the
+          // user navigating away (which clears the param) reverts to
+          // a fresh-create flow.
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/log-mood',
-                builder: (c, s) => const LogMoodScreen(),
+                builder: (c, s) =>
+                    LogMoodScreen(editEntryId: s.uri.queryParameters['edit']),
               ),
             ],
           ),

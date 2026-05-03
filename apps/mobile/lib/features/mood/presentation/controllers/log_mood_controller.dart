@@ -31,6 +31,19 @@ class LogMoodController extends _$LogMoodController {
   /// would persist across tab swaps).
   void reset() => state = MoodDraft.empty();
 
+  /// Hydrate the draft from an existing entry — used by the edit flow
+  /// when the screen is opened with `?edit=<id>`. mediaRefs are
+  /// preserved so existing attachments survive a re-save; pickedMedia
+  /// stays empty (any new picks land alongside the existing refs).
+  void loadFromEntry(MoodEntry entry) {
+    state = MoodDraft(
+      mood: entry.mood,
+      intensity: entry.intensity,
+      text: entry.text,
+      mediaRefs: List<String>.from(entry.mediaRefs),
+    );
+  }
+
   void pickMood(MoodType mood) => state = state.copyWith(mood: mood);
 
   /// Apply a mood that came from the AI suggestion pill. Identical to
@@ -117,6 +130,59 @@ class LogMoodController extends _$LogMoodController {
       mediaRefs: [...state.mediaRefs, ...mediaRefs],
     );
     final result = await usecase(userId: user.uid, draft: draftWithRefs);
+    return switch (result) {
+      Ok(:final value) => _onSaveOk(submission, value),
+      Err(:final failure) => _onSaveErr(submission, failure),
+    };
+  }
+
+  /// Update an existing entry using the current draft. Used by the
+  /// edit flow ([loadFromEntry] hydrates the draft, the user mutates,
+  /// then calls this). The repository's update path enforces the
+  /// same-day lock + the field-level diff so we don't re-validate here.
+  ///
+  /// [original] is the entry being edited, used to preserve `id`,
+  /// `userId`, `createdAt`, and the existing `mediaRefs`. We append any
+  /// newly picked media to `mediaRefs` (uploads happen first, mirroring
+  /// [save]). Returns the updated entry on success.
+  Future<MoodEntry?> updateExisting(MoodEntry original) async {
+    final submission = ref.read(logMoodSubmissionControllerProvider.notifier);
+    final user = ref.read(currentUserStreamProvider).value;
+    if (user == null) {
+      submission.fail('You need to be signed in.');
+      return null;
+    }
+    submission.begin();
+
+    final newMediaRefs = <String>[];
+    if (state.pickedMedia.isNotEmpty) {
+      final uploader = ref.read(uploadMoodMediaUseCaseProvider);
+      for (final media in state.pickedMedia) {
+        final result = await uploader(
+          userId: user.uid,
+          moodId: original.id,
+          media: media,
+        );
+        switch (result) {
+          case Ok(:final value):
+            newMediaRefs.add(value);
+          case Err(:final failure):
+            submission.fail(failure.message);
+            return null;
+        }
+      }
+    }
+
+    final updated = original.copyWith(
+      mood: state.mood ?? original.mood,
+      intensity: state.intensity,
+      text: state.text,
+      mediaRefs: [...state.mediaRefs, ...newMediaRefs],
+      updatedAt: DateTime.now(),
+    );
+
+    final repo = ref.read(moodRepositoryProvider);
+    final result = await repo.update(updated);
     return switch (result) {
       Ok(:final value) => _onSaveOk(submission, value),
       Err(:final failure) => _onSaveErr(submission, failure),
