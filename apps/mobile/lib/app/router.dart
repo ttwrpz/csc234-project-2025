@@ -245,6 +245,18 @@ class _AppShell extends StatelessWidget {
     );
   }
 
+  /// Index to highlight in the nav. Normally just `currentIndex`, but
+  /// when the user is on `/log-mood?edit=<id>` we return -1 so neither
+  /// the bottom-nav Add button nor the desktop sidebar shows an active
+  /// state — editing an entry is a transient sub-flow, not a tab.
+  int _activeNavIndex(BuildContext context) {
+    final loc = GoRouterState.of(context).uri;
+    final isEditingMood =
+        loc.path == '/log-mood' && loc.queryParameters.containsKey('edit');
+    if (isEditingMood) return -1;
+    return navigationShell.currentIndex;
+  }
+
   /// Body builder. The previous build wrapped the navigation shell in a
   /// 220 ms `TweenAnimationBuilder` fade, but that introduced a visible
   /// stutter on every tab swap (Flutter rebuilds the whole shell once the
@@ -285,7 +297,7 @@ class _AppShell extends StatelessWidget {
       body: Row(
         children: [
           MbSideNav(
-            currentIndex: navigationShell.currentIndex,
+            currentIndex: _activeNavIndex(context),
             onTap: _goBranch,
             items: _items,
           ),
@@ -348,7 +360,7 @@ class _AppShell extends StatelessWidget {
             right: 0,
             bottom: 0,
             child: MbBottomNav(
-              currentIndex: navigationShell.currentIndex,
+              currentIndex: _activeNavIndex(context),
               onTap: _goBranch,
               items: _items,
             ),

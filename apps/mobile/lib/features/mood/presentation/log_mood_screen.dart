@@ -12,6 +12,7 @@ import 'controllers/ai_suggestion_controller.dart';
 import 'controllers/log_mood_controller.dart';
 import 'controllers/log_mood_submission_controller.dart';
 import 'widgets/ai_suggestion_pill.dart';
+import 'widgets/existing_media_strip.dart';
 import 'widgets/intensity_slider.dart';
 import 'widgets/media_picker_button.dart';
 import 'widgets/media_thumbnail_strip.dart';
@@ -193,6 +194,18 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
                     },
                     onPickMedia: (source) => _onPickMedia(context, ref, source),
                   ),
+                  // Already-uploaded attachments (edit flow only). The
+                  // user can drop existing refs from the entry; the
+                  // controller's `removeMediaRef` only mutates the
+                  // draft, so the change reverts cleanly if the user
+                  // cancels.
+                  if (draft.mediaRefs.isNotEmpty) ...[
+                    const SizedBox(height: MoodBloomSpacing.md),
+                    ExistingMediaStrip(
+                      gsUris: draft.mediaRefs,
+                      onRemove: controller.removeMediaRef,
+                    ),
+                  ],
                   if (draft.pickedMedia.isNotEmpty) ...[
                     const SizedBox(height: MoodBloomSpacing.md),
                     MediaThumbnailStrip(
@@ -464,7 +477,7 @@ class _EditModeBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(Icons.edit_outlined, size: 16, color: mb.text),
+          Icon(Icons.edit_note_outlined, size: 18, color: mb.text),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
