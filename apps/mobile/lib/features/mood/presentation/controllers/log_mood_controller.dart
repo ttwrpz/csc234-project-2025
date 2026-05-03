@@ -78,6 +78,19 @@ class LogMoodController extends _$LogMoodController {
     state = state.copyWith(pickedMedia: next);
   }
 
+  /// Remove an already-uploaded attachment from the entry (edit flow only).
+  /// We drop the gs:// URI from `mediaRefs`; the next `updateExisting` call
+  /// will persist the shorter list. The Storage blob remains until the
+  /// orphan-janitor sweeps it (same path as a failed save) — we accept
+  /// the temporary leak rather than firing a delete here, because the
+  /// user might still cancel the edit and we'd have already destroyed
+  /// the file.
+  void removeMediaRef(int index) {
+    if (index < 0 || index >= state.mediaRefs.length) return;
+    final next = [...state.mediaRefs]..removeAt(index);
+    state = state.copyWith(mediaRefs: next);
+  }
+
   /// Validates the draft, uploads any picked media sequentially, and forwards
   /// the populated entry to the save use case. Returns the saved [MoodEntry]
   /// on success or `null` on failure.
