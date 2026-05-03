@@ -16,6 +16,10 @@ import 'widgets/hotline_footer.dart';
 import 'widgets/sky_header.dart';
 import 'widgets/weekly_bloom_bar.dart';
 
+// Removed: `import 'package:go_router/go_router.dart';` once the inline
+// CTA went away — the FAB still uses GoRouter so we keep it imported
+// where actually used (see below).
+
 /// Home screen — pivot feature #7. Restyled in Phase B to match the
 /// "Sprint 2 Prototype": a 320 dp gradient sky header with a soft sun,
 /// a CustomPaint ground line, animated flora, drifting rain clouds, and
@@ -176,14 +180,10 @@ class _GardenView extends StatelessWidget {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
-              child: MbPrimaryButton(
-                label: "Log today's mood",
-                leading: const Icon(Icons.edit_outlined, size: 18),
-                onPressed: () => context.go('/log-mood'),
-              ),
-            ),
+            // The inline "Log today's mood" button used to live here. It
+            // was removed once the centred bottom-nav slot + the home-page
+            // FAB both became permanent visible CTAs — three buttons doing
+            // the same thing on one page is just clutter.
             if (preview.isNotEmpty) ...[
               const SizedBox(height: 24),
               const Padding(

@@ -120,6 +120,12 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
 
+            // ── About zone ──
+            const SizedBox(height: 18),
+            const MbSectionLabel('ABOUT'),
+            const SizedBox(height: 6),
+            const _AboutCluster(),
+
             // ── Debug zone (debug builds only) ──
             if (kDebugMode) ...[
               const SizedBox(height: 18),
@@ -131,8 +137,9 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             Center(
               child: Text(
-                'Made with care · KMUTT',
+                'Made with care · School of Information Technology, KMUTT',
                 style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
+                textAlign: TextAlign.center,
               ),
             ),
           ],
@@ -251,6 +258,30 @@ class _PreferencesCluster extends ConsumerWidget {
     ThemeMode.light => 'Always light',
     ThemeMode.dark => 'Always dark',
   };
+}
+
+/// About zone — application metadata for the demo. Version string is a
+/// hard-coded constant for now; once the app graduates from Sprint 2 we
+/// can read it from `package_info_plus` instead. Keeping it inline avoids
+/// the extra dependency on a single string.
+class _AboutCluster extends StatelessWidget {
+  const _AboutCluster();
+
+  /// Hand-maintained until package_info_plus lands. Bumped per release.
+  static const String _appVersion = 'Beta 0.5';
+
+  @override
+  Widget build(BuildContext context) {
+    return MbCard(
+      clipBehavior: Clip.hardEdge,
+      padding: EdgeInsets.zero,
+      child: ListTile(
+        leading: const Icon(Icons.info_outline),
+        title: const Text('MoodBloom'),
+        subtitle: Text('Version $_appVersion'),
+      ),
+    );
+  }
 }
 
 /// Debug zone, only rendered in debug builds. Bundles existing tools

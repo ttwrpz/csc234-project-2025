@@ -48,7 +48,13 @@ class MoodLineChart extends StatelessWidget {
     final today = _truncateToLocalDay(DateTime.now());
     final earliest = today.subtract(Duration(days: window.days - 1));
 
+    // Parallel arrays keyed by `barIndex` (== position in `lines`). The
+    // hover tooltip callback receives `LineBarSpot.barIndex` and uses
+    // these to resolve the category label/color without re-running the
+    // grouping logic.
     final lines = <LineChartBarData>[];
+    final lineCategories = <ChartMoodCategory>[];
+    final lineColors = <Color>[];
     for (final category in ChartMoodCategory.values) {
       final color = theme.colorByCategory[category];
       if (color == null) continue;
@@ -64,6 +70,8 @@ class MoodLineChart extends StatelessWidget {
             p.meanIntensity,
           ),
       ];
+      lineCategories.add(category);
+      lineColors.add(color);
       final areaColors = theme.areaFillBelowGradient;
       lines.add(
         LineChartBarData(
@@ -200,15 +208,31 @@ class MoodLineChart extends StatelessWidget {
                         Brightness.dark
                     ? Colors.white
                     : const Color(0xFF1F2937);
+                final fgDim = fg.withValues(alpha: 0.7);
                 return [
                   for (final t in touched)
                     LineTooltipItem(
-                      t.y.toStringAsFixed(1),
+                      // Header line: weekday + day, e.g. "Sun · Mar 9".
+                      _tooltipDateLabel(earliest, t.x),
                       TextStyle(
-                        color: fg,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        color: fgDim,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
                       ),
+                      children: [
+                        const TextSpan(text: '\n'),
+                        TextSpan(
+                          // Body line: category dot + label + value.
+                          text:
+                              '${_categoryLabel(t.barIndex < lineCategories.length ? lineCategories[t.barIndex] : null)} '
+                              '${t.y.toStringAsFixed(1)}',
+                          style: TextStyle(
+                            color: fg,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                 ];
               },
@@ -232,6 +256,35 @@ class MoodLineChart extends StatelessWidget {
     };
   }
 }
+
+/// Tooltip helpers — kept top-level so they aren't captured by the
+/// closure on every paint, and so the formatting is unit-testable.
+String _tooltipDateLabel(DateTime earliest, double xValue) {
+  final day = earliest.add(Duration(days: xValue.round()));
+  const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${weekdays[day.weekday - 1]} · ${months[day.month - 1]} ${day.day}';
+}
+
+String _categoryLabel(ChartMoodCategory? c) => switch (c) {
+  ChartMoodCategory.positive => 'Positive',
+  ChartMoodCategory.negativeMild => 'Mild',
+  ChartMoodCategory.negativeStrong => 'Strong',
+  null => '',
+};
 
 class _DefaultEmptyState extends StatelessWidget {
   const _DefaultEmptyState();

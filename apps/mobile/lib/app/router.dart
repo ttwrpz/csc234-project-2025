@@ -227,20 +227,13 @@ class _AppShell extends StatelessWidget {
     );
   }
 
-  Widget _fadingBody() {
-    // 220 ms fade on every branch swap. Keying the inner widget by
-    // currentIndex restarts the tween whenever the active branch
-    // changes; same-branch route pushes (e.g. /history → /history/:id)
-    // keep the same key and don't re-fade.
-    return TweenAnimationBuilder<double>(
-      key: ValueKey(navigationShell.currentIndex),
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOut,
-      builder: (context, value, child) => Opacity(opacity: value, child: child),
-      child: navigationShell,
-    );
-  }
+  /// Body builder. The previous build wrapped the navigation shell in a
+  /// 220 ms `TweenAnimationBuilder` fade, but that introduced a visible
+  /// stutter on every tab swap (Flutter rebuilds the whole shell once the
+  /// branch index changes, then animates opacity over the new tree — on
+  /// debug builds especially the first frame lands a few hundred ms
+  /// late). Removing the wrapper makes tab swaps feel instantaneous.
+  Widget _body() => navigationShell;
 
   @override
   Widget build(BuildContext context) {
@@ -284,7 +277,7 @@ class _AppShell extends StatelessWidget {
                 constraints: const BoxConstraints(maxWidth: _desktopBodyMax),
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: hPadding),
-                  child: _fadingBody(),
+                  child: _body(),
                 ),
               ),
             ),
@@ -310,8 +303,12 @@ class _AppShell extends StatelessWidget {
   }) {
     final bottomSafe = MediaQuery.viewPaddingOf(context).bottom;
     // Add bottom padding to the body so content isn't hidden under the
-    // translucent nav. The nav itself draws its own SafeArea on top of this.
-    final bodyBottomPad = kMbBottomNavHeight + bottomSafe;
+    // translucent nav. The nav itself draws its own SafeArea on top of
+    // this. The extra 16 dp of breathing room sits between the last
+    // scroll-end card and the nav's translucent edge — without it,
+    // primary buttons (e.g. Save) ended up flush against the nav.
+    const navBreathingRoom = 16.0;
+    final bodyBottomPad = kMbBottomNavHeight + bottomSafe + navBreathingRoom;
 
     return Scaffold(
       // Stack lets the translucent + blurred nav layer over the body so the
@@ -324,7 +321,7 @@ class _AppShell extends StatelessWidget {
             child: Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: contentMaxWidth),
-                child: _fadingBody(),
+                child: _body(),
               ),
             ),
           ),

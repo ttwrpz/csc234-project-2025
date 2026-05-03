@@ -18,16 +18,41 @@ import 'widgets/mood_text_field.dart';
 import 'widgets/mood_type_grid.dart';
 
 /// Mood logging screen — pivot feature #1 (intensity 1..5) and the entry
-/// point for AI mood detection. Restyled to the Sprint 2 Prototype:
-/// back-icon header, "Choose a feeling" + 3×2 grid, "Intensity" card with
-/// soft/vivid labels, "What's on your mind?" note card with attach buttons
-/// and char counter, AI suggestion card, and a sticky-bottom primary CTA
-/// that reads "Pick a feeling to continue" until a mood is chosen.
-class LogMoodScreen extends ConsumerWidget {
+/// point for AI mood detection.
+///
+/// This is a ConsumerStatefulWidget specifically so we can reset the draft
+/// + AI suggestion + submission state on every screen-enter. Without that,
+/// the controllers persist across bottom-nav swaps and the user comes
+/// back to a half-filled form from a previous session.
+class LogMoodScreen extends ConsumerStatefulWidget {
   const LogMoodScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LogMoodScreen> createState() => _LogMoodScreenState();
+}
+
+class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Riverpod state persists across bottom-nav swaps because the
+    // navigation shell keeps every branch alive. Schedule a one-shot
+    // reset on the next frame so a fresh visit always starts blank —
+    // mood, intensity, note, attachments, AI suggestion, error banner.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _resetAll(ref);
+    });
+  }
+
+  static void _resetAll(WidgetRef ref) {
+    ref.read(logMoodControllerProvider.notifier).reset();
+    ref.read(aiSuggestionControllerProvider.notifier).clear();
+    ref.read(logMoodSubmissionControllerProvider.notifier).succeed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final draft = ref.watch(logMoodControllerProvider);
     final submission = ref.watch(logMoodSubmissionControllerProvider);
     final controller = ref.read(logMoodControllerProvider.notifier);
@@ -51,7 +76,7 @@ class LogMoodScreen extends ConsumerWidget {
                   MoodBloomSpacing.lg,
                 ),
                 children: [
-                  _Header(onBack: () => _onBack(context)),
+                  const _Header(),
                   const SizedBox(height: MoodBloomSpacing.lg),
                   const MbSectionLabel('Choose a feeling'),
                   const SizedBox(height: MoodBloomSpacing.sm),
@@ -111,17 +136,14 @@ class LogMoodScreen extends ConsumerWidget {
     );
   }
 
-  void _onBack(BuildContext context) {
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go('/home');
-    }
-  }
-
   Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     final entry = await ref.read(logMoodControllerProvider.notifier).save();
-    if (entry != null && context.mounted) {
+    if (entry == null) return;
+    // Belt-and-braces: the controller's `_onSaveOk` already empties the
+    // draft, but we also clear the AI pill and submission state so the
+    // user lands on /history with a clean slate behind them.
+    _resetAll(ref);
+    if (context.mounted) {
       context.go('/history');
     }
   }
@@ -144,32 +166,24 @@ class LogMoodScreen extends ConsumerWidget {
   }
 }
 
-/// Header row — back icon button + Fraunces 20/600 title.
+/// Header row — Fraunces 20/600 title only. The previous build had a
+/// back-arrow `MbIconButton`, which made no sense once Log moved into a
+/// permanent bottom-nav slot (there is nothing to "go back" to — the tab
+/// itself is the destination). Removing the button also bumps the title
+/// flush-left so it matches every other tab root in the app.
 class _Header extends StatelessWidget {
-  const _Header({required this.onBack});
-
-  final VoidCallback onBack;
+  const _Header();
 
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    return Row(
-      children: [
-        MbIconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: onBack,
-          semanticLabel: 'Back',
-        ),
-        const SizedBox(width: 10),
-        Text(
-          'How are you?',
-          style: MbFonts.fraunces(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: mb.text,
-          ),
-        ),
-      ],
+    return Text(
+      'How are you?',
+      style: MbFonts.fraunces(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: mb.text,
+      ),
     );
   }
 }
