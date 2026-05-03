@@ -112,7 +112,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<AppUser?>(null);
   ref.onDispose(refresh.dispose);
   ref.listen<AsyncValue<AppUser?>>(currentUserStreamProvider, (_, next) {
-    refresh.value = next.valueOrNull;
+    refresh.value = next.value;
   });
 
   return GoRouter(

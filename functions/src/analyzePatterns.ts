@@ -531,9 +531,15 @@ export async function handleAnalyzePatterns(
 }
 
 /**
- * The exported v2 callable. App Check is enforced (stricter than
- * analyzeMoodText, which stays at false until S5) — the kickoff Open
- * Question O-1 resolved to enable it on the new function from day one.
+ * The exported v2 callable.
+ *
+ * App Check enforcement is **temporarily disabled** for the Sprint 2 demo.
+ * The Flutter web client does not yet initialise `firebase_app_check`, so
+ * with `enforceAppCheck: true` browser preflight requests were failing and
+ * surfacing as opaque CORS errors. Re-enable once the client wires up
+ * `FirebaseAppCheck.instance.activate(...)` and a reCAPTCHA v3 site key is
+ * registered in Firebase Console → App Check. Tracked separately from the
+ * visual overhaul.
  */
 export const analyzePatterns = onCall(
   {
@@ -541,7 +547,7 @@ export const analyzePatterns = onCall(
     secrets: [GEMINI_API_KEY],
     timeoutSeconds: 30,
     memory: '256MiB',
-    enforceAppCheck: true,
+    enforceAppCheck: false,
   },
   handleAnalyzePatterns,
 );

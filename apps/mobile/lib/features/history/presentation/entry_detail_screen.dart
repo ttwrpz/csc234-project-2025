@@ -1,12 +1,17 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../mood/data/providers.dart';
 import '../../mood/domain/entities/mood_entry.dart';
+import '../../mood/presentation/widgets/mood_kind_adapter.dart';
 
 /// Read-only entry detail. Sprint 2 ships only the scaffold — edit/delete
 /// land in S3 along with the 24h immutability enforcement (WBS 3.5).
+/// Restyled to the Sprint 2 Prototype with a back-icon header, optional
+/// soft-coral lock banner, the entry body inside an [MbCard] with an
+/// emoji square + intensity dots, and a disabled Edit/Delete row.
 class EntryDetailScreen extends ConsumerWidget {
   const EntryDetailScreen({super.key, required this.id});
 
@@ -15,14 +20,73 @@ class EntryDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entryAsync = ref.watch(moodEntryByIdProvider(id));
+    final mb = Theme.of(context).extension<MbColors>()!;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Entry')),
-      body: entryAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => const _NotFound(),
-        data: (entry) =>
-            entry == null ? const _NotFound() : _Detail(entry: entry),
+      backgroundColor: mb.bg,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            MoodBloomSpacing.pagePadding,
+            MoodBloomSpacing.pagePadding,
+            MoodBloomSpacing.pagePadding,
+            MoodBloomSpacing.lg,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _Header(onBack: () => _onBack(context)),
+              const SizedBox(height: MoodBloomSpacing.md),
+              Expanded(
+                child: entryAsync.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => const _NotFound(),
+                  data: (entry) =>
+                      entry == null ? const _NotFound() : _Detail(entry: entry),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+
+  void _onBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/history');
+    }
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Row(
+      children: [
+        MbIconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: onBack,
+          semanticLabel: 'Back',
+        ),
+        const SizedBox(width: 10),
+        Text(
+          'Entry',
+          style: MbFonts.fraunces(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: mb.text,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -33,54 +97,197 @@ class _Detail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final created = entry.createdAt.toLocal();
-    final dateLabel =
-        '${created.year}-${created.month.toString().padLeft(2, '0')}-${created.day.toString().padLeft(2, '0')}';
+    final theme = Theme.of(context);
+    final mb = theme.extension<MbColors>()!;
+    final palette = theme.extension<MbMoodPalette>()!;
+    final mbKind = entry.mood.mbKind;
+    final color = palette.colorOf(mbKind);
+    final emoji = palette.emojiOf(mbKind);
+    final locked = entry.isLocked();
+
     return ListView(
-      padding: const EdgeInsets.all(MoodBloomSpacing.xl),
+      padding: EdgeInsets.zero,
       children: [
-        Text(
-          entry.mood.name,
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        const SizedBox(height: MoodBloomSpacing.sm),
-        Text(
-          dateLabel,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: MoodBloomColors.onSurfaceMuted,
+        if (locked) ...[
+          _LockBanner(),
+          const SizedBox(height: MoodBloomSpacing.md),
+        ],
+        MbCard(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: mb.card,
+            border: Border.all(color: mb.line),
+            borderRadius: BorderRadius.circular(20),
           ),
-        ),
-        const SizedBox(height: MoodBloomSpacing.xl),
-        Text('Intensity', style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: MoodBloomSpacing.sm),
-        Row(
-          children: List.generate(5, (i) {
-            return Padding(
-              padding: const EdgeInsets.only(right: MoodBloomSpacing.sm),
-              child: Container(
-                width: 14,
-                height: 14,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: color.withAlpha(0x33),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(emoji, style: const TextStyle(fontSize: 30)),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          entry.mood.name,
+                          style: MbFonts.fraunces(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: mb.text,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        MbIntensityDots(
+                          value: entry.intensity,
+                          color: color,
+                          dotSize: 7,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'intensity ${entry.intensity} / 5',
+                          style: MbFonts.nunito(
+                            fontSize: 11,
+                            color: mb.textDim,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: i < entry.intensity
-                      ? MoodBloomColors.seed
-                      : MoodBloomColors.outline,
+                  color: mb.bg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: entry.text.isEmpty
+                    ? Text(
+                        'No note.',
+                        style: MbFonts.nunito(
+                          fontSize: 14,
+                          color: mb.textDim,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      )
+                    : Text(
+                        entry.text,
+                        style: MbFonts.nunito(
+                          fontSize: 14,
+                          height: 1.6,
+                          color: mb.text,
+                        ),
+                      ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.only(top: 10),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: mb.line)),
+                ),
+                child: Text(
+                  '${_fullDate(entry.createdAt)} · '
+                  '${_formatTime(entry.createdAt)}',
+                  style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
                 ),
               ),
-            );
-          }),
+            ],
+          ),
         ),
-        if (entry.text.isNotEmpty) ...[
-          const SizedBox(height: MoodBloomSpacing.xl),
-          Text('Note', style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: MoodBloomSpacing.sm),
-          Text(entry.text, style: Theme.of(context).textTheme.bodyLarge),
+        const SizedBox(height: MoodBloomSpacing.md),
+        // Edit/Delete are deferred to Sprint 3. Buttons render in their
+        // visually-disabled state so the layout matches the prototype but
+        // taps go nowhere.
+        _ActionsRow(disabled: true),
+      ],
+    );
+  }
+}
+
+class _LockBanner extends StatelessWidget {
+  const _LockBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: mb.softCoral,
+        border: Border.all(color: MoodBloomColors.coral.withAlpha(0x55)),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.lock_outline, size: 16, color: mb.text),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Your history is a record, not a redo. '
+              "Add a note to today's entry instead.",
+              style: MbFonts.nunito(fontSize: 12, height: 1.5, color: mb.text),
+            ),
+          ),
         ],
-        const SizedBox(height: MoodBloomSpacing.xl),
-        Text(
-          'Edit and delete arrive in the next release.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: MoodBloomColors.onSurfaceMuted,
+      ),
+    );
+  }
+}
+
+class _ActionsRow extends StatelessWidget {
+  const _ActionsRow({required this.disabled});
+  final bool disabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final coral = MoodBloomColors.coral;
+    return Row(
+      children: [
+        Expanded(
+          child: MbPrimaryButton(
+            label: 'Edit',
+            onPressed: disabled ? null : () {},
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: SizedBox(
+            height: 44,
+            child: OutlinedButton(
+              onPressed: disabled ? null : () {},
+              style: OutlinedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                foregroundColor: disabled ? mb.textDim : coral,
+                disabledForegroundColor: mb.textDim,
+                side: BorderSide(
+                  color: disabled ? mb.line : coral.withAlpha(0x88),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    MoodBloomSpacing.radiusButton,
+                  ),
+                ),
+                textStyle: MbFonts.nunito(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              child: const Text('Delete'),
+            ),
           ),
         ),
       ],
@@ -93,15 +300,58 @@ class _NotFound extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(MoodBloomSpacing.xl),
         child: Text(
           "We couldn't find that entry.",
-          style: Theme.of(context).textTheme.bodyLarge,
+          style: MbFonts.nunito(fontSize: 14, color: mb.text),
           textAlign: TextAlign.center,
         ),
       ),
     );
   }
+}
+
+String _fullDate(DateTime t) {
+  final local = t.toLocal();
+  const weekdays = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  return '${weekdays[local.weekday - 1]}, '
+      '${months[local.month - 1]} ${local.day}';
+}
+
+String _formatTime(DateTime t) {
+  final local = t.toLocal();
+  final hour = local.hour;
+  final minute = local.minute.toString().padLeft(2, '0');
+  final h12 = hour == 0
+      ? 12
+      : hour > 12
+      ? hour - 12
+      : hour;
+  final ampm = hour < 12 ? 'AM' : 'PM';
+  return '$h12:$minute $ampm';
 }

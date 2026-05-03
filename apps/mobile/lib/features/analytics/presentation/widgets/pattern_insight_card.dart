@@ -10,8 +10,13 @@ import '../../../mood/domain/entities/mood_entry.dart';
 import '../../domain/entities/pattern_insight.dart';
 
 /// Pattern insights card slotted onto the analytics dashboard. Reads from
-/// `analyzePatterns` (Cloud Function) and renders 0..N rows, each with a
+/// `analyzePatterns` (Cloud Function) and renders 0..3 rows, each with a
 /// confidence chip + sample-size badge per ADR-0007.
+///
+/// Restyled to the Sprint 2 Prototype: header row carries a 26×26 sparkle
+/// avatar (linear primary→amber gradient) + "Insights" 13/600 + small
+/// "AI-assisted" caption, and each insight row is separated by a 1 px
+/// [MbColors.line] divider.
 ///
 /// Hides itself entirely when `ai_pattern_analysis_enabled` Remote Config
 /// is false — both as defence in depth and to power the demo kill-switch
@@ -62,13 +67,61 @@ final _patternInsightsProvider =
       return repo.analyzePatterns(history: entries);
     });
 
+/// Header bar shared by every state of the card.
+class _InsightsHeader extends StatelessWidget {
+  const _InsightsHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Row(
+      children: [
+        Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF6FA587), Color(0xFFE8A23B)],
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          alignment: Alignment.center,
+          child: const Icon(Icons.auto_awesome, size: 14, color: Colors.white),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'Insights',
+          style: MbFonts.nunito(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: mb.text,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          'AI-assisted',
+          style: MbFonts.nunito(fontSize: 10, color: mb.textDim),
+        ),
+      ],
+    );
+  }
+}
+
 class _LoadingCard extends StatelessWidget {
   const _LoadingCard();
   @override
   Widget build(BuildContext context) => const _CardShell(
-    child: SizedBox(
-      height: 64,
-      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+    child: Padding(
+      padding: EdgeInsets.symmetric(vertical: 12),
+      child: Center(
+        child: SizedBox(
+          height: 18,
+          width: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
     ),
   );
 }
@@ -77,12 +130,13 @@ class _ErrorCard extends StatelessWidget {
   const _ErrorCard();
   @override
   Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
     return _CardShell(
       child: Padding(
-        padding: const EdgeInsets.all(MoodBloomSpacing.md),
+        padding: const EdgeInsets.only(top: 10),
         child: Text(
           "We couldn't read your patterns just now.",
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
         ),
       ),
     );
@@ -93,12 +147,13 @@ class _EmptyCard extends StatelessWidget {
   const _EmptyCard();
   @override
   Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
     return _CardShell(
       child: Padding(
-        padding: const EdgeInsets.all(MoodBloomSpacing.md),
+        padding: const EdgeInsets.only(top: 10),
         child: Text(
           'Log a few more moods to see patterns.',
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
         ),
       ),
     );
@@ -111,25 +166,34 @@ class _DataCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Cap at 3 — anything more crowds the dashboard.
+    final visible = insights.take(3).toList();
     return _CardShell(
-      child: Padding(
-        padding: const EdgeInsets.all(MoodBloomSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Patterns we noticed',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: MoodBloomSpacing.sm),
-            for (final insight in insights) ...[
-              const SizedBox(height: MoodBloomSpacing.sm),
-              _InsightRow(insight: insight),
-            ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < visible.length; i++) ...[
+            if (i > 0) ...[
+              const SizedBox(height: 10),
+              const _RowDivider(),
+              const SizedBox(height: 10),
+            ] else
+              const SizedBox(height: 10),
+            _InsightRow(insight: visible[i]),
           ],
-        ),
+        ],
       ),
     );
+  }
+}
+
+class _RowDivider extends StatelessWidget {
+  const _RowDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Container(height: 1, color: mb.line);
   }
 }
 
@@ -139,9 +203,12 @@ class _CardShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: MoodBloomSpacing.sm),
-      child: child,
+    return MbCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [const _InsightsHeader(), child],
+      ),
     );
   }
 }
@@ -152,65 +219,32 @@ class _InsightRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final mb = Theme.of(context).extension<MbColors>()!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(insight.text, style: theme.textTheme.bodyMedium),
-        const SizedBox(height: MoodBloomSpacing.xs),
+        Text(
+          insight.text,
+          style: MbFonts.nunito(fontSize: 13, height: 1.5, color: mb.text),
+        ),
+        const SizedBox(height: 6),
         Row(
           children: [
-            _ConfidenceChip(confidence: insight.confidence),
-            const SizedBox(width: MoodBloomSpacing.sm),
+            MbConfidenceBadge(level: _bandFor(insight.confidence)),
+            const SizedBox(width: 8),
             Text(
               '${insight.sampleSize} samples',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
+              style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
             ),
           ],
         ),
       ],
     );
   }
-}
 
-class _ConfidenceChip extends StatelessWidget {
-  const _ConfidenceChip({required this.confidence});
-  final double confidence;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final band = _band(confidence);
-    return switch (band) {
-      _Band.low => Chip(
-        label: Text('low', style: TextStyle(color: MoodBloomColors.warning)),
-        side: BorderSide(color: MoodBloomColors.warning),
-        backgroundColor: Colors.transparent,
-        visualDensity: VisualDensity.compact,
-      ),
-      _Band.mid => Chip(
-        label: const Text('medium'),
-        backgroundColor: theme.colorScheme.surfaceContainerHighest,
-        visualDensity: VisualDensity.compact,
-      ),
-      _Band.high => Chip(
-        label: Text(
-          'high',
-          style: TextStyle(color: theme.colorScheme.onPrimary),
-        ),
-        backgroundColor: theme.colorScheme.primary,
-        visualDensity: VisualDensity.compact,
-      ),
-    };
-  }
-
-  static _Band _band(double c) {
-    if (c < 0.5) return _Band.low;
-    if (c < 0.8) return _Band.mid;
-    return _Band.high;
+  static MbConfidenceLevel _bandFor(double c) {
+    if (c < 0.5) return MbConfidenceLevel.low;
+    if (c < 0.8) return MbConfidenceLevel.medium;
+    return MbConfidenceLevel.high;
   }
 }
-
-enum _Band { low, mid, high }

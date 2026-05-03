@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,7 +12,7 @@ import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
 
 /// A long-lived stream backing the `myMoodsStreamProvider` override. We use a
 /// controller (not `Stream.value`) so the StreamProvider stays open and
-/// `valueOrNull` is populated by the time widget tree settles.
+/// `value` is populated by the time widget tree settles.
 Stream<List<MoodEntry>> _moodStream(List<MoodEntry> entries) {
   final controller = StreamController<List<MoodEntry>>();
   controller.add(entries);
@@ -51,7 +52,10 @@ Future<void> _pumpCalendar(
       overrides: [
         myMoodsStreamProvider.overrideWith((_) => _moodStream(entries)),
       ],
-      child: MaterialApp.router(routerConfig: _buildRouter(onGo: onGo)),
+      child: MaterialApp.router(
+        theme: buildLightTheme(),
+        routerConfig: _buildRouter(onGo: onGo),
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -167,8 +171,8 @@ void main() {
     ) async {
       await _pumpCalendar(tester, entries: const []);
 
-      final nextButton = tester.widget<IconButton>(
-        find.widgetWithIcon(IconButton, Icons.chevron_right),
+      final nextButton = tester.widget<MbIconButton>(
+        find.widgetWithIcon(MbIconButton, Icons.chevron_right),
       );
       expect(
         nextButton.onPressed,
@@ -203,7 +207,7 @@ void main() {
         final currentLabel = '${monthNames[now.month - 1]} ${now.year}';
         expect(find.text(currentLabel), findsOneWidget);
 
-        await tester.tap(find.widgetWithIcon(IconButton, Icons.chevron_left));
+        await tester.tap(find.widgetWithIcon(MbIconButton, Icons.chevron_left));
         await tester.pumpAndSettle();
 
         // Now showing the previous month.

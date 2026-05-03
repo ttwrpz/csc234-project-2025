@@ -12,6 +12,9 @@ class MoodLineChartTheme {
     this.axisLabelColor = const Color(0xFF6E6A60),
     this.lineWidth = 2.5,
     this.dotRadius = 3.0,
+    this.areaFillBelowGradient,
+    this.dashedGridLine = false,
+    this.tooltipBgColor = const Color(0xFF1F2937),
   });
 
   /// Falls back to plausible defaults for previewing without the design
@@ -40,4 +43,21 @@ class MoodLineChartTheme {
 
   /// Radius of the per-day dots drawn at each sample.
   final double dotRadius;
+
+  /// Optional gradient (expected `[topColor, bottomColor]` plus stops) to
+  /// shade the area beneath every category line. The chart draws this with
+  /// `LineChartBarData.belowBarData`. When `null`, lines render without
+  /// area fill — preserves the existing visual for callers that don't
+  /// opt in to the prototype look.
+  final List<Color>? areaFillBelowGradient;
+
+  /// When `true`, gridlines are dashed. The default (`false`) keeps the
+  /// existing solid line so existing goldens don't drift.
+  final bool dashedGridLine;
+
+  /// Background color for the hover tooltip bubble. Default is a near-black
+  /// slate that gives WCAG AA contrast against white tooltip text in light
+  /// mode. Callers in dark mode should pass a light value (e.g. `mb.card`)
+  /// — `MoodLineChart` auto-picks text color by luminance.
+  final Color tooltipBgColor;
 }

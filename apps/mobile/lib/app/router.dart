@@ -17,6 +17,8 @@ import '../features/mood/data/providers.dart' as mood_providers;
 import '../features/mood/presentation/log_mood_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
+import 'widgets/mb_bottom_nav.dart';
+import 'widgets/mb_side_nav.dart';
 
 const _onboardingCompleteKey = 'onboarding_complete';
 
@@ -120,12 +122,35 @@ final routerProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             _AppShell(navigationShell: navigationShell),
+        // Branch order matches the design's bottom-nav left-to-right layout:
+        // Garden / Log / Patterns / History / Settings. Route paths are
+        // unchanged — only the index-to-path mapping moves.
         branches: [
+          // 0 — Garden (🌱)
           StatefulShellBranch(
             routes: [
               GoRoute(path: '/home', builder: (c, s) => const GardenScreen()),
             ],
           ),
+          // 1 — Log mood (✏️)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/log-mood',
+                builder: (c, s) => const LogMoodScreen(),
+              ),
+            ],
+          ),
+          // 2 — Patterns / Analytics (📊)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/analytics',
+                builder: (c, s) => const AnalyticsScreen(),
+              ),
+            ],
+          ),
+          // 3 — History (📖)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -141,22 +166,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/log-mood',
-                builder: (c, s) => const LogMoodScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/analytics',
-                builder: (c, s) => const AnalyticsScreen(),
-              ),
-            ],
-          ),
+          // 4 — Settings (⚙️)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -175,41 +185,153 @@ class _AppShell extends StatelessWidget {
   const _AppShell({required this.navigationShell});
   final StatefulNavigationShell navigationShell;
 
+  /// Phone vs tablet vs desktop breakpoints. Below `tabletMin` we render
+  /// the prototype's phone shell verbatim (bottom nav, edge-to-edge page).
+  /// At `tabletMin..desktopMin` we keep the bottom nav but add comfortable
+  /// horizontal padding around a centred content column. At `desktopMin`
+  /// and above we switch to a 240 dp sidebar + flexible body that fills the
+  /// remaining width up to a generous reading cap.
+  static const double _tabletMin = 600;
+  static const double _desktopMin = 900;
+
+  /// Reading cap on very wide displays. A 22 sp paragraph stretched across
+  /// 2000 dp is unreadable; capping at 1280 keeps the chart cards a sane
+  /// width while still letting Garden / History breathe on a 1440+ monitor.
+  static const double _desktopBodyMax = 1280;
+
+  /// Tablets get a tighter content column so cards don't grow to half a
+  /// metre wide. ~840 mirrors common tablet "reader" widths.
+  static const double _tabletBodyMax = 840;
+
+  /// 5 nav items, in the same order as the [StatefulShellRoute.indexedStack]
+  /// branches above. Index here MUST match index there. Material icons
+  /// replace the prototype's emoji glyphs so the result is consistent across
+  /// platforms.
+  static const List<MbBottomNavItem> _items = [
+    MbBottomNavItem(icon: Icons.local_florist_outlined, label: 'Garden'),
+    MbBottomNavItem(icon: Icons.edit_outlined, label: 'Log'),
+    MbBottomNavItem(icon: Icons.insights_outlined, label: 'Patterns'),
+    MbBottomNavItem(icon: Icons.menu_book_outlined, label: 'History'),
+    MbBottomNavItem(icon: Icons.settings_outlined, label: 'Settings'),
+  ];
+
+  void _goBranch(int i) {
+    navigationShell.goBranch(
+      i,
+      initialLocation: i == navigationShell.currentIndex,
+    );
+  }
+
+  Widget _fadingBody() {
+    // 220 ms fade on every branch swap. Keying the inner widget by
+    // currentIndex restarts the tween whenever the active branch
+    // changes; same-branch route pushes (e.g. /history → /history/:id)
+    // keep the same key and don't re-fade.
+    return TweenAnimationBuilder<double>(
+      key: ValueKey(navigationShell.currentIndex),
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+      builder: (context, value, child) => Opacity(opacity: value, child: child),
+      child: navigationShell,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        if (w >= _desktopMin) return _buildDesktop(context, w);
+        if (w >= _tabletMin) return _buildTablet(context);
+        return _buildPhone(context);
+      },
+    );
+  }
+
+  /// Sidebar + flexible body. The body fills the remaining width up to
+  /// `_desktopBodyMax`, with internal horizontal padding that scales from
+  /// 24 dp at narrow desktop widths to 48 dp at wide ones. This is the
+  /// layout the user reported as "wasting space" — fixing the previous
+  /// hard 900 dp cap is the whole point of this method.
+  Widget _buildDesktop(BuildContext context, double availableWidth) {
+    final bodyAvailable = availableWidth - kMbSideNavWidth;
+    // Smooth ramp from 24 → 48 between 900 and 1400 dp body widths so the
+    // edges don't crowd the content on narrow desktop windows but also
+    // don't waste an extra centimetre on each side at 4K.
+    final hPadding = bodyAvailable < 1100
+        ? 24.0
+        : bodyAvailable < 1400
+        ? 32.0
+        : 48.0;
+
     return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (i) => navigationShell.goBranch(
-          i,
-          initialLocation: i == navigationShell.currentIndex,
-        ),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
+      body: Row(
+        children: [
+          MbSideNav(
+            currentIndex: navigationShell.currentIndex,
+            onTap: _goBranch,
+            items: _items,
           ),
-          NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
-            label: 'History',
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: _desktopBodyMax),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: hPadding),
+                  child: _fadingBody(),
+                ),
+              ),
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.add_circle_outline),
-            selectedIcon: Icon(Icons.add_circle),
-            label: 'Log',
+        ],
+      ),
+    );
+  }
+
+  /// Tablet: phone shell (bottom nav) but content column centred at a
+  /// comfortable reading width. Avoids the "single 22 sp paragraph spread
+  /// across 1024 dp" problem on iPad-class displays.
+  Widget _buildTablet(BuildContext context) =>
+      _buildPhoneOrTablet(context, contentMaxWidth: _tabletBodyMax);
+
+  /// Phone: edge-to-edge content under the bottom nav.
+  Widget _buildPhone(BuildContext context) =>
+      _buildPhoneOrTablet(context, contentMaxWidth: double.infinity);
+
+  Widget _buildPhoneOrTablet(
+    BuildContext context, {
+    required double contentMaxWidth,
+  }) {
+    final bottomSafe = MediaQuery.viewPaddingOf(context).bottom;
+    // Add bottom padding to the body so content isn't hidden under the
+    // translucent nav. The nav itself draws its own SafeArea on top of this.
+    final bodyBottomPad = kMbBottomNavHeight + bottomSafe;
+
+    return Scaffold(
+      // Stack lets the translucent + blurred nav layer over the body so the
+      // BackdropFilter has actual pixels to blur. Bottom-nav slot would clip
+      // those pixels away.
+      body: Stack(
+        children: [
+          Padding(
+            padding: EdgeInsets.only(bottom: bodyBottomPad),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                child: _fadingBody(),
+              ),
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.insights_outlined),
-            selectedIcon: Icon(Icons.insights),
-            label: 'Insights',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: MbBottomNav(
+              currentIndex: navigationShell.currentIndex,
+              onTap: _goBranch,
+              items: _items,
+            ),
           ),
         ],
       ),

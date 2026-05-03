@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,9 @@ Future<void> _pumpSignUp(
   WidgetTester tester, {
   required FakeAuthRepository repo,
 }) async {
+  await tester.binding.setSurfaceSize(const Size(420, 1300));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -20,7 +24,7 @@ Future<void> _pumpSignUp(
           (_) => Stream<AppUser?>.value(null),
         ),
       ],
-      child: const MaterialApp(home: SignUpScreen()),
+      child: MaterialApp(theme: buildLightTheme(), home: const SignUpScreen()),
     ),
   );
   await tester.pumpAndSettle();
@@ -39,7 +43,7 @@ void main() {
         await tester.enterText(find.byType(TextField).at(1), 'longenoughpw');
         await tester.enterText(find.byType(TextField).at(2), 'something-else');
 
-        await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
+        await tester.tap(find.widgetWithText(MbPrimaryButton, 'Create account'));
         await tester.pumpAndSettle();
 
         // Hard-coded message from sign_up_controller.dart line 28.
@@ -64,7 +68,7 @@ void main() {
         await tester.enterText(find.byType(TextField).at(1), 'longenoughpw');
         await tester.enterText(find.byType(TextField).at(2), 'longenoughpw');
 
-        await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
+        await tester.tap(find.widgetWithText(MbPrimaryButton, 'Create account'));
         await tester.pumpAndSettle();
 
         expect(

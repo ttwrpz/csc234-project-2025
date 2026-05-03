@@ -101,7 +101,7 @@ class LogMoodController extends _$LogMoodController {
 
   Future<MoodEntry?> save() async {
     final submission = ref.read(logMoodSubmissionControllerProvider.notifier);
-    final user = ref.read(currentUserStreamProvider).valueOrNull;
+    final user = ref.read(currentUserStreamProvider).value;
     if (user == null) {
       submission.fail('You need to be signed in.'); // defensive; router prevents
       return null;

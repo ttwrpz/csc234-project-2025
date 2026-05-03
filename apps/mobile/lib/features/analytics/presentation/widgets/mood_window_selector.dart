@@ -1,9 +1,13 @@
 import 'package:analytics_pkg/analytics_pkg.dart';
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
-/// Segmented button bound to a [MoodWindow]. Extracted so the analytics
-/// screen body stays focused and the selector can be reused if Settings ever
-/// exposes a default-window preference.
+/// Pill-segmented selector bound to a [MoodWindow]. Restyled to wrap the
+/// shared [MbSegmentedToggle] so the analytics screen visually matches
+/// the History list/calendar swap and the prototype.
+///
+/// Public API ([value], [onChanged]) is preserved so existing call sites
+/// keep compiling unchanged.
 class MoodWindowSelector extends StatelessWidget {
   const MoodWindowSelector({
     required this.value,
@@ -18,21 +22,14 @@ class MoodWindowSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       label: 'Mood chart window selector',
-      child: SegmentedButton<MoodWindow>(
-        segments: [
-          for (final w in MoodWindow.values)
-            ButtonSegment<MoodWindow>(
-              value: w,
-              label: Text(w.label),
-              tooltip: 'Show last ${w.days} days',
-            ),
+      child: MbSegmentedToggle<MoodWindow>(
+        items: const [
+          MbSegmentedItem(value: MoodWindow.week, label: '7 days'),
+          MbSegmentedItem(value: MoodWindow.month, label: '30 days'),
+          MbSegmentedItem(value: MoodWindow.quarter, label: '90 days'),
         ],
-        selected: {value},
-        onSelectionChanged: (selection) {
-          if (selection.isEmpty) return;
-          onChanged(selection.first);
-        },
-        showSelectedIcon: false,
+        value: value,
+        onChanged: onChanged,
       ),
     );
   }

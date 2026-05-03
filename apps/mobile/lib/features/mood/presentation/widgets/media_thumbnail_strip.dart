@@ -7,9 +7,10 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/mood_media.dart';
 
 /// Horizontal scrollable preview of media the user has picked but not yet
-/// uploaded. Each tile shows a small "remove" affordance.
+/// uploaded. Tiles are 60×60 r12 with a soft `mb.line` placeholder bg and a
+/// circular ✕ remove affordance per the Sprint 2 prototype.
 ///
-/// On Web, `Image.file` does not work (no `dart:io` File on the platform), so
+/// On Web `Image.file` does not work (no `dart:io` File on the platform), so
 /// we fall back to a generic icon — full Web image previews land in S4 if we
 /// ship Web GA.
 class MediaThumbnailStrip extends StatelessWidget {
@@ -22,13 +23,13 @@ class MediaThumbnailStrip extends StatelessWidget {
   final List<MoodMedia> media;
   final void Function(int index) onRemove;
 
-  static const double _tileSize = 72;
+  static const double _tileSize = 60;
 
   @override
   Widget build(BuildContext context) {
     if (media.isEmpty) return const SizedBox.shrink();
     return SizedBox(
-      height: _tileSize + MoodBloomSpacing.sm,
+      height: _tileSize + 8,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: media.length,
@@ -48,17 +49,17 @@ class _Thumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final mb = Theme.of(context).extension<MbColors>()!;
     return Stack(
       clipBehavior: Clip.none,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusSm),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
             width: MediaThumbnailStrip._tileSize,
             height: MediaThumbnailStrip._tileSize,
-            color: theme.colorScheme.surfaceContainerHighest,
-            child: _previewFor(media, theme),
+            color: mb.line,
+            child: _previewFor(media, mb),
           ),
         ),
         Positioned(
@@ -68,7 +69,7 @@ class _Thumbnail extends StatelessWidget {
             button: true,
             label: 'Remove attachment',
             child: Material(
-              color: theme.colorScheme.surface,
+              color: mb.card,
               shape: const CircleBorder(),
               elevation: 1,
               child: InkWell(
@@ -76,11 +77,7 @@ class _Thumbnail extends StatelessWidget {
                 onTap: onRemove,
                 child: Padding(
                   padding: const EdgeInsets.all(2),
-                  child: Icon(
-                    Icons.close,
-                    size: 16,
-                    color: theme.colorScheme.onSurface,
-                  ),
+                  child: Icon(Icons.close, size: 14, color: mb.text),
                 ),
               ),
             ),
@@ -90,30 +87,20 @@ class _Thumbnail extends StatelessWidget {
     );
   }
 
-  Widget _previewFor(MoodMedia m, ThemeData theme) {
+  Widget _previewFor(MoodMedia m, MbColors mb) {
     if (m.kind == MoodMediaKind.video) {
-      return Icon(
-        Icons.play_circle_outline,
-        size: 32,
-        color: theme.colorScheme.onSurfaceVariant,
-      );
+      return Icon(Icons.play_circle_outline, size: 28, color: mb.textDim);
     }
     if (kIsWeb) {
-      return Icon(
-        Icons.image_outlined,
-        size: 32,
-        color: theme.colorScheme.onSurfaceVariant,
-      );
+      return Icon(Icons.image_outlined, size: 28, color: mb.textDim);
     }
     return Image.file(
       File(m.localPath),
       fit: BoxFit.cover,
       width: MediaThumbnailStrip._tileSize,
       height: MediaThumbnailStrip._tileSize,
-      errorBuilder: (_, _, _) => Icon(
-        Icons.broken_image_outlined,
-        color: theme.colorScheme.onSurfaceVariant,
-      ),
+      errorBuilder: (_, _, _) =>
+          Icon(Icons.broken_image_outlined, color: mb.textDim),
     );
   }
 }

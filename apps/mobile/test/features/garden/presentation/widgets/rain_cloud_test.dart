@@ -1,78 +1,68 @@
-import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/garden/presentation/widgets/rain_cloud.dart';
+import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
 
 void main() {
   group('RainCloud', () {
-    testWidgets('renders Icons.cloud in the anxious-mood colour', (
+    testWidgets('animate: false → renders a CustomPaint with no timers', (
       tester,
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(body: RainCloud(entryId: 'e-1', animate: false)),
+          home: Scaffold(
+            body: RainCloud(
+              entryId: 'e-static',
+              mood: MoodType.anxious,
+              intensity: 4,
+              animate: false,
+            ),
+          ),
         ),
       );
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.cloud));
-      expect(icon.color, MoodBloomColors.moodAnxious);
+      // Pump well past the animation window — without controllers there
+      // are no scheduled timers to drain.
+      await tester.pump(const Duration(seconds: 30));
+      expect(find.byType(CustomPaint), findsWidgets);
     });
 
     testWidgets(
-      'animate: false → opacity stays at 1.0 across pumps (golden-friendly)',
+      'animate: true → drift cycle exposes a non-zero opacity envelope',
       (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
             home: Scaffold(
-              body: RainCloud(entryId: 'e-static', animate: false),
+              body: RainCloud(
+                entryId: 'fade-id',
+                mood: MoodType.angry,
+                intensity: 5,
+                indexInScene: 0,
+              ),
             ),
           ),
         );
 
-        await tester.pump(const Duration(seconds: 30));
-        final opacityWidget = tester.widget<Opacity>(find.byType(Opacity));
-        expect(opacityWidget.opacity, 1.0);
-      },
-    );
+        // Initial frame: just past t=0 — opacity envelope is starting
+        // to ramp up but the cloud is rendered.
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(find.byType(Opacity), findsWidgets);
 
-    testWidgets(
-      'animate: true → opacity decays toward 0 across the fade window',
-      (tester) async {
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(body: RainCloud(entryId: 'fade-id')),
-          ),
-        );
+        // Halfway through the 18-second period: envelope should be at
+        // 0.85 (the steady-state plateau).
+        await tester.pump(const Duration(seconds: 9));
+        final opacities = tester
+            .widgetList<Opacity>(find.byType(Opacity))
+            .map((o) => o.opacity)
+            .toList();
+        expect(opacities, isNotEmpty);
+        // At least one Opacity wrapping the cloud should be near the
+        // plateau value.
+        expect(opacities.any((o) => o >= 0.7), isTrue);
 
-        // Initial frame: full opacity.
-        Opacity opacityWidget = tester.widget<Opacity>(find.byType(Opacity));
-        expect(opacityWidget.opacity, closeTo(1.0, 0.01));
-
-        // Past the maximum 25-second window: cloud is fully faded.
-        await tester.pump(const Duration(seconds: 26));
-        opacityWidget = tester.widget<Opacity>(find.byType(Opacity));
-        expect(opacityWidget.opacity, 0.0);
-
-        // Stop the test cleanly: pumping a few more frames keeps the
-        // controller from leaking timers.
-        await tester.pump(const Duration(seconds: 1));
-      },
-    );
-
-    testWidgets(
-      'fade duration is deterministic per entryId (golden-stability)',
-      (tester) async {
-        // The same entryId must produce the same controller duration on
-        // every render so goldens (animate: false) plus runtime widgets
-        // can rely on the underlying timing.
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(body: RainCloud(entryId: 'cloud-A')),
-          ),
-        );
-        // Drain animation timers before tearing down to satisfy the
-        // tester's "no pending timers" check.
-        await tester.pump(const Duration(seconds: 26));
+        // Drain the rest of the period so the test ends without
+        // pending timers.
+        await tester.pump(const Duration(seconds: 10));
       },
     );
   });
