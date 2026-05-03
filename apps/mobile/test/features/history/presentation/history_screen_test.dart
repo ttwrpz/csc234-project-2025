@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +26,7 @@ Future<void> _pumpHistory(WidgetTester tester) async {
         myMoodsStreamProvider.overrideWith((_) => _moodStream(const [])),
       ],
       child: MaterialApp.router(
+        theme: buildLightTheme(),
         routerConfig: GoRouter(
           initialLocation: '/history',
           routes: [
@@ -57,8 +59,11 @@ void main() {
       'starts on the List tab — CalendarView is not in the foreground',
       (tester) async {
         await _pumpHistory(tester);
-        // The list-empty-state copy is visible.
-        expect(find.text('Your history starts here.'), findsOneWidget);
+        // The list-empty-state copy is visible (Sprint 2 prototype copy).
+        expect(
+          find.text('Your garden is just getting started.'),
+          findsOneWidget,
+        );
       },
     );
 

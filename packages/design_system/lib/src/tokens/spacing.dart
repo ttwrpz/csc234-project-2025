@@ -14,6 +14,13 @@ abstract final class MoodBloomSpacing {
   static const double radiusLg = 16;
   static const double radiusFull = 999;
 
+  // "Sprint 2 Prototype" additions — appended, not replaced.
+  static const double pagePadding = 18;
+  static const double radiusButton = 14;
+  static const double radiusCardLg = 20;
+  static const double radiusCluster = 26;
+  static const double radiusSky = 32;
+
   // A11y minimum tap target (Material guidance: 48dp)
   static const double tapTargetMin = 48;
 }

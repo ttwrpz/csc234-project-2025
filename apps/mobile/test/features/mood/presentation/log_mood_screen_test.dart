@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:core/core.dart';
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,12 +13,15 @@ import 'package:moodbloom/features/mood/domain/entities/mood_entry.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
 import 'package:moodbloom/features/mood/presentation/log_mood_screen.dart';
 import 'package:moodbloom/features/mood/presentation/widgets/mood_type_tile.dart';
+// MbPrimaryButton wraps a FilledButton internally; finders below match the
+// FilledButton + the prototype's "Save entry" / "Pick a feeling to continue"
+// labels.
 
 import '../domain/fakes/fake_mood_repository.dart';
 
 /// A stream that synchronously emits [user] on listen and stays open. Using
 /// `Stream.value` ends the stream and emits via a microtask, which means
-/// `StreamProvider.valueOrNull` may still be null at the moment a button tap
+/// `StreamProvider.value` may still be null at the moment a button tap
 /// reads it. Backing the override with a long-lived controller fixes that.
 Stream<AppUser?> _userStream(AppUser? user) {
   final controller = StreamController<AppUser?>();
@@ -49,6 +53,7 @@ Future<void> _pumpLogMood(
       // We also wire a tiny GoRouter so the screen's success-path
       // `context.go('/history')` finds a router and does not assert.
       child: MaterialApp.router(
+        theme: buildLightTheme(),
         routerConfig: GoRouter(
           initialLocation: '/log',
           routes: [
@@ -75,7 +80,12 @@ Future<void> _pumpLogMood(
 }
 
 /// Locates the Save FilledButton without depending on a Key in production.
-Finder _saveButton() => find.widgetWithText(FilledButton, 'Save');
+/// The button's label is "Save entry" once a mood is picked, and
+/// "Pick a feeling to continue" while the draft has no mood — the
+/// underlying [FilledButton] (wrapped by `MbPrimaryButton`) is the same
+/// instance either way, so we look up by widget type and pick the only
+/// one in the tree.
+Finder _saveButton() => find.byType(FilledButton);
 
 void main() {
   group('LogMoodScreen', () {

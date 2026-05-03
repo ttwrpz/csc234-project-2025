@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -69,7 +70,10 @@ Future<void> _pumpCard(
           ),
         ),
       ],
-      child: const MaterialApp(home: Scaffold(body: PatternInsightCard())),
+      child: MaterialApp(
+        theme: buildLightTheme(),
+        home: const Scaffold(body: PatternInsightCard()),
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -77,7 +81,7 @@ Future<void> _pumpCard(
 
 void main() {
   group('PatternInsightCard', () {
-    testWidgets('flag off → renders SizedBox.shrink (no Card, no copy)', (
+    testWidgets('flag off → renders SizedBox.shrink (no header, no copy)', (
       tester,
     ) async {
       await _pumpCard(
@@ -86,8 +90,10 @@ void main() {
         repo: FakeMoodRepository()..streamedEntries = [const []],
         aiRepo: FakeAiAnalysisRepository(),
       );
-      expect(find.byType(Card), findsNothing);
-      expect(find.text('Patterns we noticed'), findsNothing);
+      // The MbCard shell carries the "Insights" header. Flag off means no
+      // shell at all is rendered.
+      expect(find.byType(MbCard), findsNothing);
+      expect(find.text('Insights'), findsNothing);
     });
 
     testWidgets('flag on + empty entries → renders the empty-state copy', (
@@ -129,7 +135,9 @@ void main() {
           aiRepo: aiRepo,
         );
 
-        expect(find.text('Patterns we noticed'), findsOneWidget);
+        // Card shell carries the "Insights" header; the row text + sample
+        // size are the per-row signals.
+        expect(find.text('Insights'), findsOneWidget);
         expect(
           find.text(
             'Your Monday mood averages 1.8 lower than the rest of the week.',

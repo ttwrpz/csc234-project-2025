@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +17,11 @@ Future<void> _pumpSignIn(
   WidgetTester tester, {
   required FakeAuthRepository repo,
 }) async {
+  // Tall surface so every ListView item lays out at once. The default
+  // 800×600 viewport clips the Google sign-in button below the fold.
+  await tester.binding.setSurfaceSize(const Size(420, 1200));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -24,7 +30,7 @@ Future<void> _pumpSignIn(
           (_) => Stream<AppUser?>.value(null),
         ),
       ],
-      child: const MaterialApp(home: SignInScreen()),
+      child: MaterialApp(theme: buildLightTheme(), home: const SignInScreen()),
     ),
   );
   await tester.pumpAndSettle();
@@ -43,11 +49,11 @@ void main() {
         findsNWidgets(2),
         reason: 'sign-in form must expose exactly two text fields',
       );
-      // Labels come from the InputDecoration on each AuthTextField.
-      expect(find.text('Email'), findsOneWidget);
-      expect(find.text('Password'), findsOneWidget);
+      // Labels are rendered inside MbInputField as upper-cased dim text.
+      expect(find.text('EMAIL'), findsOneWidget);
+      expect(find.text('PASSWORD'), findsOneWidget);
       // Primary action.
-      expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
+      expect(find.widgetWithText(MbPrimaryButton, 'Sign in'), findsOneWidget);
       // Secondary actions.
       expect(
         find.widgetWithText(TextButton, 'Create an account'),
@@ -63,7 +69,7 @@ void main() {
         final repo = FakeAuthRepository();
         await _pumpSignIn(tester, repo: repo);
 
-        await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+        await tester.tap(find.widgetWithText(MbPrimaryButton, 'Sign in'));
         await tester.pumpAndSettle();
 
         // The use case rejects an empty email before hitting the repo.
@@ -88,7 +94,7 @@ void main() {
         // Fill email and password through the TextFields.
         await tester.enterText(find.byType(TextField).at(0), 'u@example.com');
         await tester.enterText(find.byType(TextField).at(1), 'longenoughpw');
-        await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+        await tester.tap(find.widgetWithText(MbPrimaryButton, 'Sign in'));
         await tester.pumpAndSettle();
 
         expect(

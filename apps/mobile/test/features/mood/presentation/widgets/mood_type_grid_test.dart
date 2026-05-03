@@ -1,3 +1,4 @@
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
@@ -15,6 +16,7 @@ Future<void> _pumpGrid(
 
   await tester.pumpWidget(
     MaterialApp(
+      theme: buildLightTheme(),
       home: Scaffold(
         body: Padding(
           padding: const EdgeInsets.all(16),

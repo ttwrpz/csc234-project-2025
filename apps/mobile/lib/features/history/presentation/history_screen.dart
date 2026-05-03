@@ -4,44 +4,188 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../mood/data/providers.dart';
+import '../../mood/domain/entities/mood_entry.dart';
+import '../../mood/domain/entities/mood_type.dart';
 import 'calendar_view.dart';
 import 'widgets/mood_entry_tile.dart';
 
-/// History screen — two tabs:
-///   1. List   — chronological list of mood entries (S2 walking skeleton).
-///   2. Calendar — month-grid with colored dots on days that have entries
-///      (S3 WBS 5.1).
-///
-/// Tab toggle lives entirely inside `/history`; no new routes are added.
-class HistoryScreen extends StatelessWidget {
+/// Two views the user can flip between with a pill-segmented toggle.
+enum HistoryView { list, calendar }
+
+/// Five filters available on the list view. Order matches the prototype's
+/// horizontal-scroll chip row.
+enum HistoryFilter { all, positive, negative, neutral, thisWeek }
+
+extension on HistoryFilter {
+  String get label => switch (this) {
+    HistoryFilter.all => 'All',
+    HistoryFilter.positive => 'Positive',
+    HistoryFilter.negative => 'Negative',
+    HistoryFilter.neutral => 'Neutral',
+    HistoryFilter.thisWeek => 'This Week',
+  };
+
+  /// Filter membership using the prototype's three-bucket valence model
+  /// (positive / negative / neutral). The domain `MoodCategory` lumps
+  /// "okay" into `negativeMild`; here we surface it as a neutral filter so
+  /// users can browse only the in-between days.
+  bool matches(MoodEntry entry, DateTime now) {
+    switch (this) {
+      case HistoryFilter.all:
+        return true;
+      case HistoryFilter.positive:
+        return entry.mood == MoodType.happy || entry.mood == MoodType.calm;
+      case HistoryFilter.negative:
+        return entry.mood == MoodType.sad ||
+            entry.mood == MoodType.angry ||
+            entry.mood == MoodType.anxious;
+      case HistoryFilter.neutral:
+        return entry.mood == MoodType.okay;
+      case HistoryFilter.thisWeek:
+        return now.difference(entry.createdAt).inDays <= 7;
+    }
+  }
+}
+
+/// History screen — pivot feature surface for the list ↔ calendar swap.
+/// Restyled to the Sprint 2 Prototype with [MbSegmentedToggle] for the
+/// view swap, a horizontal-scroll [MbFilterChip] row, and [MoodEntryTile]
+/// rows in [MbCard]s.
+class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
   @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
+  HistoryView _view = HistoryView.list;
+  HistoryFilter _filter = HistoryFilter.all;
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('History'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'List', icon: Icon(Icons.list)),
-              Tab(text: 'Calendar', icon: Icon(Icons.calendar_month)),
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Scaffold(
+      backgroundColor: mb.bg,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            MoodBloomSpacing.pagePadding,
+            MoodBloomSpacing.pagePadding,
+            MoodBloomSpacing.pagePadding,
+            0,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _Header(
+                view: _view,
+                onViewChanged: (v) => setState(() => _view = v),
+              ),
+              const SizedBox(height: MoodBloomSpacing.md),
+              _FilterChipRow(
+                value: _filter,
+                onChanged: (f) => setState(() => _filter = f),
+              ),
+              const SizedBox(height: MoodBloomSpacing.md),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  child: _view == HistoryView.list
+                      ? _HistoryListView(
+                          key: const ValueKey('list'),
+                          filter: _filter,
+                        )
+                      : const KeyedSubtree(
+                          key: ValueKey('calendar'),
+                          child: CalendarView(),
+                        ),
+                ),
+              ),
             ],
           ),
         ),
-        body: const TabBarView(children: [_HistoryListView(), CalendarView()]),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.view, required this.onViewChanged});
+
+  final HistoryView view;
+  final ValueChanged<HistoryView> onViewChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'History',
+            style: MbFonts.fraunces(
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              color: mb.text,
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 200,
+          child: MbSegmentedToggle<HistoryView>(
+            items: const [
+              MbSegmentedItem(value: HistoryView.list, label: 'List'),
+              MbSegmentedItem(value: HistoryView.calendar, label: 'Calendar'),
+            ],
+            value: view,
+            onChanged: onViewChanged,
+            height: 36,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FilterChipRow extends StatelessWidget {
+  const _FilterChipRow({required this.value, required this.onChanged});
+
+  final HistoryFilter value;
+  final ValueChanged<HistoryFilter> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 32,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: HistoryFilter.values.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 6),
+        itemBuilder: (context, index) {
+          final filter = HistoryFilter.values[index];
+          return MbFilterChip(
+            label: filter.label,
+            selected: filter == value,
+            onTap: () => onChanged(filter),
+          );
+        },
       ),
     );
   }
 }
 
 class _HistoryListView extends ConsumerWidget {
-  const _HistoryListView();
+  const _HistoryListView({super.key, required this.filter});
+
+  final HistoryFilter filter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final moods = ref.watch(myMoodsStreamProvider);
+    final mb = Theme.of(context).extension<MbColors>()!;
     return moods.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(
@@ -49,47 +193,33 @@ class _HistoryListView extends ConsumerWidget {
           padding: const EdgeInsets.all(MoodBloomSpacing.xl),
           child: Text(
             "We couldn't load your history right now.",
-            style: Theme.of(context).textTheme.bodyLarge,
+            style: MbFonts.nunito(fontSize: 13, color: mb.text),
             textAlign: TextAlign.center,
           ),
         ),
       ),
       data: (entries) {
-        if (entries.isEmpty) {
+        final now = DateTime.now();
+        final filtered = entries.where((e) => filter.matches(e, now)).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        if (filtered.isEmpty) {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(MoodBloomSpacing.xl),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.history_toggle_off_outlined,
-                    size: 96,
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-                  const SizedBox(height: MoodBloomSpacing.lg),
-                  Text(
-                    'Your history starts here.',
-                    style: Theme.of(context).textTheme.titleMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: MoodBloomSpacing.sm),
-                  Text(
-                    'Log a mood from the Log tab and it will show up here.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+              child: Text(
+                'Your garden is just getting started.',
+                style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
+                textAlign: TextAlign.center,
               ),
             ),
           );
         }
         return ListView.separated(
-          itemCount: entries.length,
+          itemCount: filtered.length,
           separatorBuilder: (_, _) =>
-              const Divider(height: 1, indent: 72, endIndent: 16),
+              const SizedBox(height: MoodBloomSpacing.sm),
           itemBuilder: (context, i) {
-            final entry = entries[i];
+            final entry = filtered[i];
             return MoodEntryTile(
               entry: entry,
               onTap: () => context.go('/history/${entry.id}'),

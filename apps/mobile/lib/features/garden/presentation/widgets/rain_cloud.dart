@@ -1,140 +1,233 @@
-import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
-/// One rain-cloud glyph in the garden canvas, used for negative moods at
-/// intensity 4–5 (per ADR-0006). Self-fades over 15–25 seconds without any
-/// user action — US-Som-1's "no user dismiss" criterion. Fade duration is
-/// deterministic per [entryId] so goldens (with [animate] set to `false`)
-/// produce stable images and the animation lifecycle never touches
-/// Firestore or Drift.
+import '../../../mood/domain/entities/mood_type.dart';
+
+/// Rain-cloud sprite for the garden canvas. Used for negative moods at
+/// intensity ≥ 4 (per ADR-0006). A Flutter port of the prototype's
+/// `RainCloud` SVG with three drifting cloud bobs and a ring of
+/// staggered rain drops.
 ///
-/// Animation lifecycle is purely visual sugar. If the user navigates away
-/// and back, the cloud restarts at full opacity — the underlying entry
-/// stays in history; the cloud is a rolling visualisation of recency.
+/// The cloud drifts horizontally across the sky header (-60 → +360 dp
+/// over `period`) on a repeating linear loop; each drop animates on its
+/// own faster sub-controller so rainfall appears continuous without all
+/// drops firing in lockstep.
 ///
-/// Decorative; the surrounding canvas exposes one aggregate Semantics
-/// label, so individual clouds are excluded from the a11y tree.
+/// Decorative — `SkyHeader` carries the aggregate Semantics announcement
+/// for the scene; individual clouds are excluded from the a11y tree.
 class RainCloud extends StatefulWidget {
   const RainCloud({
     super.key,
     required this.entryId,
-    this.size = _defaultSize,
+    required this.mood,
+    required this.intensity,
+    this.indexInScene = 0,
     this.animate = true,
+    this.size = 80,
   });
 
-  /// Stable identifier of the underlying [MoodEntry]. Used as the seed for
-  /// the per-cloud fade duration, so the same cloud renders with the same
-  /// timing on every build.
+  /// Stable identifier of the underlying entry. Drives the seed for the
+  /// per-cloud phase offset so two clouds with the same id render at the
+  /// same point in their drift cycle.
   final String entryId;
-  final double size;
+  final MoodType mood;
+  final int intensity;
 
-  /// When `false`, skips the [AnimationController] so the cloud renders at
-  /// full opacity. Two callers use this:
-  ///   * Golden tests, to freeze the silhouette at a deterministic frame.
-  ///   * `_GardenCanvas`, beyond the visible-cloud cap, to keep the
-  ///     controller budget bounded on long histories (per ADR-0006
-  ///     §performance).
+  /// Position of this cloud within the scene's cloud list. Period is
+  /// `18 + indexInScene * 4` seconds (see prototype `screens.jsx`).
+  final int indexInScene;
+
+  /// When `false`, the cloud renders at its starting position with no
+  /// timers. Used by the rain-cloud cap on long histories and by golden
+  /// tests that need a deterministic frame.
   final bool animate;
 
-  static const double _defaultSize = 28;
+  /// Logical box size; the painter draws into it. The cloud body itself
+  /// is roughly 60×30 dp; the rest is reserved for drops below.
+  final double size;
 
   @override
   State<RainCloud> createState() => _RainCloudState();
 }
 
-class _RainCloudState extends State<RainCloud>
-    with SingleTickerProviderStateMixin {
-  AnimationController? _controller;
-  late final Animation<double> _opacity;
+class _RainCloudState extends State<RainCloud> with TickerProviderStateMixin {
+  AnimationController? _drift;
+  late final List<AnimationController> _drops;
+
+  /// Number of rain drops in the cloud — `intensity + 2` per the prototype.
+  late final int _dropCount;
 
   @override
   void initState() {
     super.initState();
+    _dropCount = widget.intensity + 2;
     if (widget.animate) {
-      // 15..25 seconds inclusive, deterministic per entry id. The
-      // controller drives a single forward run; `onComplete` keeps the
-      // widget at opacity 0 so the cloud "stays gone" for the rest of
-      // the screen's lifetime.
-      final ms = 15000 + (widget.entryId.hashCode.abs() % 11) * 1000;
-      _controller = AnimationController(
+      final periodSec = 18 + widget.indexInScene * 4;
+      _drift = AnimationController(
         vsync: this,
-        duration: Duration(milliseconds: ms),
-      );
-      _opacity = Tween<double>(
-        begin: 1.0,
-        end: 0.0,
-      ).animate(CurvedAnimation(parent: _controller!, curve: Curves.easeOut));
-      _controller!.forward();
+        duration: Duration(seconds: periodSec),
+      )..repeat();
+      _drops = List.generate(_dropCount, (i) {
+        final ms = ((1.2 + (i % 3) * 0.2) * 1000).round();
+        return AnimationController(
+          vsync: this,
+          duration: Duration(milliseconds: ms),
+        )..repeat();
+      });
+      // Start each drop at a staggered phase (0.15 s apart) so the
+      // rainfall looks continuous from frame zero.
+      for (var i = 0; i < _drops.length; i += 1) {
+        _drops[i].value = ((i * 0.15) % 1.0).clamp(0.0, 1.0);
+      }
     } else {
-      // Static rendering — no controller, no listeners. Always renders
-      // at the cloud's start-of-life opacity.
-      _opacity = const AlwaysStoppedAnimation<double>(1.0);
+      _drops = const [];
     }
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _drift?.dispose();
+    for (final c in _drops) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = widget.size;
-    return ExcludeSemantics(
-      child: AnimatedBuilder(
-        animation: _opacity,
-        builder: (context, _) => Opacity(
-          opacity: _opacity.value,
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: Stack(
-              alignment: Alignment.topCenter,
-              children: [
-                Icon(
-                  Icons.cloud,
-                  color: MoodBloomColors.moodAnxious,
-                  size: size * 0.85,
+    final cloud = ExcludeSemantics(
+      child: SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: AnimatedBuilder(
+          // When animate is false, _drops is empty; we still want the
+          // CustomPaint to paint once.
+          animation: widget.animate
+              ? Listenable.merge([_drift!, ..._drops])
+              : const AlwaysStoppedAnimation<double>(0),
+          builder: (context, _) {
+            return CustomPaint(
+              painter: _CloudPainter(
+                mood: widget.mood,
+                drops: List<double>.generate(
+                  _dropCount,
+                  (i) => widget.animate ? _drops[i].value : 0.0,
                 ),
-                Positioned(
-                  bottom: 0,
-                  left: size * 0.18,
-                  child: _RainStreak(width: size * 0.08, height: size * 0.28),
-                ),
-                Positioned(
-                  bottom: 0,
-                  child: _RainStreak(width: size * 0.08, height: size * 0.34),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: size * 0.18,
-                  child: _RainStreak(width: size * 0.08, height: size * 0.28),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
+
+    if (!widget.animate) return cloud;
+
+    // Drift: translate x from -60 → +360 over the period; opacity envelope
+    // 0 → 0.85 (10%) → 0.85 (80%) → 0 (100%).
+    return AnimatedBuilder(
+      animation: _drift!,
+      builder: (context, child) {
+        final t = _drift!.value;
+        final dx = -60.0 + t * (360 - -60);
+        final opacity = _envelope(t);
+        return Transform.translate(
+          offset: Offset(dx, 0),
+          child: Opacity(opacity: opacity, child: child),
+        );
+      },
+      child: cloud,
+    );
+  }
+
+  /// Opacity envelope per the brief:
+  ///   0 → 0.85 over t∈[0, 0.1]
+  ///   0.85           t∈[0.1, 0.8]
+  ///   0.85 → 0       t∈[0.8, 1.0]
+  static double _envelope(double t) {
+    if (t < 0.1) return (t / 0.1) * 0.85;
+    if (t < 0.8) return 0.85;
+    return ((1.0 - t) / 0.2).clamp(0.0, 1.0) * 0.85;
   }
 }
 
-class _RainStreak extends StatelessWidget {
-  const _RainStreak({required this.width, required this.height});
+class _CloudPainter extends CustomPainter {
+  _CloudPainter({required this.mood, required this.drops});
 
-  final double width;
-  final double height;
+  final MoodType mood;
+
+  /// One value per drop in the cloud, each in [0, 1] driven by its
+  /// per-drop AnimationController. Used to fade + translate the drop
+  /// downward.
+  final List<double> drops;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: MoodBloomColors.moodAnxious.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(width),
-      ),
+  void paint(Canvas canvas, Size size) {
+    // Cloud center: just below the top of the box, horizontally centered.
+    final cx = size.width / 2;
+    final cy = size.height * 0.35;
+    final dark1 = mood == MoodType.angry
+        ? const Color(0xFF8A7A75)
+        : const Color(0xFFAEB6BD);
+    final dark2 = mood == MoodType.angry
+        ? const Color(0xFF6E5E59)
+        : const Color(0xFF8A949E);
+    final dropCol = mood == MoodType.angry
+        ? const Color(0xFFB79B8B)
+        : const Color(0xFF9EC3DB);
+
+    canvas.save();
+    canvas.translate(cx, cy);
+
+    // Three stacked ellipses for the cloud body.
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset.zero, width: 60, height: 28),
+      Paint()..color = dark1,
     );
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(-16, 4), width: 36, height: 24),
+      Paint()..color = dark2,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(16, 4), width: 40, height: 24),
+      Paint()..color = dark2,
+    );
+    // Highlight ellipse.
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(-4, -8), width: 32, height: 20),
+      Paint()..color = const Color(0xFFFFFFFF).withValues(alpha: 0.35),
+    );
+
+    // Drops — one short stroke per drop, fading + translating per its
+    // controller value.
+    final dropPaint = Paint()
+      ..color = dropCol
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    for (var i = 0; i < drops.length; i += 1) {
+      final t = drops[i];
+      // Per the brief: opacity 0 → 1 over [0, 0.4] then back to 0.
+      final opacity = t < 0.4 ? t / 0.4 : ((1 - t) / 0.6).clamp(0.0, 1.0);
+      // Drop slides downward: dy from -4 to 10 across the cycle.
+      final dy = -4 + t * 14;
+      dropPaint.color = dropCol.withValues(alpha: opacity);
+      final x = -22.0 + i * 7;
+      canvas.drawLine(
+        Offset(x, 12 + dy),
+        Offset(x - 2, 20 + (i % 2) * 4 + dy),
+        dropPaint,
+      );
+    }
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _CloudPainter oldDelegate) {
+    if (oldDelegate.mood != mood) return true;
+    if (oldDelegate.drops.length != drops.length) return true;
+    for (var i = 0; i < drops.length; i += 1) {
+      if (oldDelegate.drops[i] != drops[i]) return true;
+    }
+    return false;
   }
 }

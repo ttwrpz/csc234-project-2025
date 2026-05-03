@@ -1,8 +1,12 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
-/// Optional context note for a mood entry. Hard-capped at 500 characters by
-/// `TextField.maxLength`, which also surfaces the default `{n}/500` counter.
+/// Optional context note for a mood entry. Visually a 4-row borderless
+/// `TextField` inside an [MbCard] (the parent screen wraps in the card and
+/// places the attach buttons + counter below the field).
+///
+/// Hard-capped at 500 characters — the parent renders the "n/500" counter so
+/// we keep the field's chrome minimal.
 ///
 /// Stateful so we keep a single [TextEditingController] across rebuilds and
 /// can clear the field when the parent resets the draft to empty after a
@@ -17,7 +21,7 @@ class MoodTextField extends StatefulWidget {
   final String value;
   final ValueChanged<String> onChanged;
 
-  static const int _maxChars = 500;
+  static const int maxChars = 500;
 
   @override
   State<MoodTextField> createState() => _MoodTextFieldState();
@@ -53,19 +57,39 @@ class _MoodTextFieldState extends State<MoodTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
     return TextField(
       controller: _controller,
-      onChanged: widget.onChanged,
-      maxLength: MoodTextField._maxChars,
-      maxLines: null,
-      minLines: 3,
+      onChanged: (text) {
+        // Hard-clamp here as well as in the field's `maxLength` so paste
+        // operations can't sneak past the cap.
+        if (text.length > MoodTextField.maxChars) {
+          final clamped = text.substring(0, MoodTextField.maxChars);
+          _controller.value = TextEditingValue(
+            text: clamped,
+            selection: TextSelection.collapsed(offset: clamped.length),
+          );
+          widget.onChanged(clamped);
+          return;
+        }
+        widget.onChanged(text);
+      },
+      maxLength: MoodTextField.maxChars,
+      maxLines: 4,
+      minLines: 4,
       keyboardType: TextInputType.multiline,
       textCapitalization: TextCapitalization.sentences,
+      style: MbFonts.nunito(fontSize: 14, height: 1.5, color: mb.text),
       decoration: InputDecoration(
-        hintText: 'A line about your day, if you like.',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusMd),
-        ),
+        hintText: 'Optional — whatever feels true right now.',
+        hintStyle: MbFonts.nunito(fontSize: 14, color: mb.textDim),
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        isDense: true,
+        filled: false,
+        contentPadding: EdgeInsets.zero,
+        counterText: '',
       ),
     );
   }

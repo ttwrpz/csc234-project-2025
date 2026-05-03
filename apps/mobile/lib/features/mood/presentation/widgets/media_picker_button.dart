@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 
 import '../../domain/repositories/mood_media_repository.dart';
 
-/// Two-icon row that lets the user attach media from the gallery or camera.
-/// Stateless — the parent controller holds the picked list. Tapping invokes
-/// [onPick] with the chosen [MoodMediaSource]; the parent then runs the
-/// `PickMoodMedia` use case.
+/// 36×36 attach button used in the LogMood note card. Card-bg surface with a
+/// 1 px line border, r10. Three visual variants (`gallery`, `camera`, `mic`)
+/// map to the prototype's photo/video/mic glyphs — though only `gallery` and
+/// `camera` are wired to actual sources today (mic is decorative until S4
+/// audio capture lands).
 class MediaPickerButton extends StatelessWidget {
   const MediaPickerButton({super.key, required this.onPick});
 
@@ -15,52 +16,57 @@ class MediaPickerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
-          child: _PickerTile(
-            icon: Icons.photo_library_outlined,
-            label: 'From gallery',
-            onTap: () => onPick(MoodMediaSource.gallery),
-          ),
+        _AttachIcon(
+          icon: Icons.camera_alt_outlined,
+          semanticLabel: 'Add a photo from camera',
+          onTap: () => onPick(MoodMediaSource.camera),
         ),
-        const SizedBox(width: MoodBloomSpacing.sm),
-        Expanded(
-          child: _PickerTile(
-            icon: Icons.photo_camera_outlined,
-            label: 'From camera',
-            onTap: () => onPick(MoodMediaSource.camera),
-          ),
+        const SizedBox(width: 8),
+        _AttachIcon(
+          icon: Icons.photo_library_outlined,
+          semanticLabel: 'Pick a photo or video from gallery',
+          onTap: () => onPick(MoodMediaSource.gallery),
         ),
       ],
     );
   }
 }
 
-class _PickerTile extends StatelessWidget {
-  const _PickerTile({
+/// Single 36×36 r10 attach button. Card bg, 1 px line border, 18 px icon. Not
+/// exported — only the two-source row above is the public surface.
+class _AttachIcon extends StatelessWidget {
+  const _AttachIcon({
     required this.icon,
-    required this.label,
+    required this.semanticLabel,
     required this.onTap,
   });
 
   final IconData icon;
-  final String label;
+  final String semanticLabel;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
     return Semantics(
       button: true,
-      label: 'Add photo or video — $label',
-      child: SizedBox(
-        height: MoodBloomSpacing.tapTargetMin,
-        child: OutlinedButton.icon(
-          onPressed: onTap,
-          icon: Icon(icon),
-          label: Text(label),
-          style: OutlinedButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusMd),
+      label: semanticLabel,
+      child: ExcludeSemantics(
+        child: Material(
+          color: mb.bg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: BorderSide(color: mb.line),
+          ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: Center(child: Icon(icon, size: 18, color: mb.textDim)),
             ),
           ),
         ),

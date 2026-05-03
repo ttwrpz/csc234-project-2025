@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/providers.dart';
+import 'widgets/brand_mark.dart';
 
 /// Cold-boot biometric gate. Triggers the OS prompt on mount; on success
 /// flips [biometricUnlockedThisSessionProvider] to true and navigates to
@@ -62,29 +63,55 @@ class _BiometricGateScreenState extends ConsumerState<BiometricGateScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
     return Scaffold(
+      backgroundColor: mb.bg,
       body: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(MoodBloomSpacing.xl),
+            padding: const EdgeInsets.all(28),
             child: Semantics(
               liveRegion: true,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.fingerprint, size: 64),
-                  const SizedBox(height: MoodBloomSpacing.lg),
-                  Text(
-                    'Verify your identity',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: MoodBloomSpacing.sm),
-                  Text(
-                    'Use your fingerprint or face to continue.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+              child: MbCard(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const BrandMark(),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Verify your identity',
+                      style: MbFonts.fraunces(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        color: mb.text,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Use your fingerprint or face to continue.',
+                      style: MbFonts.nunito(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: mb.textDim,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    MbPrimaryButton(
+                      label: 'Try again',
+                      leading: const Icon(
+                        Icons.fingerprint,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        _started = false;
+                        _runPrompt();
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

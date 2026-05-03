@@ -1,87 +1,133 @@
 import 'package:design_system/design_system.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'controllers/sign_in_controller.dart';
-import 'widgets/auth_text_field.dart';
+import 'widgets/brand_mark.dart';
 import 'widgets/google_sign_in_button.dart';
 
-class SignInScreen extends ConsumerWidget {
+class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SignInScreen> createState() => _SignInScreenState();
+}
+
+class _SignInScreenState extends ConsumerState<SignInScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final controller = ref.read(signInControllerProvider.notifier);
+    _emailController.addListener(
+      () => controller.setEmail(_emailController.text),
+    );
+    _passwordController.addListener(
+      () => controller.setPassword(_passwordController.text),
+    );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(signInControllerProvider);
     final controller = ref.read(signInControllerProvider.notifier);
-    final showGoogle = !kIsWeb; // Web Google sign-in is gated on OAuth setup.
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Welcome back')),
+      backgroundColor: mb.bg,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: MoodBloomSpacing.xl),
+          padding: const EdgeInsets.all(28),
           child: AutofillGroup(
             child: ListView(
               children: [
-                const SizedBox(height: MoodBloomSpacing.xxl),
-                Text(
-                  'Sign in to keep tracking your moods.',
-                  style: Theme.of(context).textTheme.bodyLarge,
+                const SizedBox(height: 36),
+                Center(
+                  child: Column(
+                    children: [
+                      const BrandMark(),
+                      const SizedBox(height: 14),
+                      Text(
+                        'MoodBloom',
+                        style: MbFonts.fraunces(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.3,
+                          color: mb.text,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Sign in to tend your garden',
+                        style: MbFonts.nunito(fontSize: 14, color: mb.textDim),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: MoodBloomSpacing.xl),
-                AuthTextField(
+                const SizedBox(height: 36),
+                MbInputField(
                   label: 'Email',
+                  controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
                   textInputAction: TextInputAction.next,
-                  onChanged: controller.setEmail,
                 ),
-                AuthTextField(
+                const SizedBox(height: 10),
+                MbInputField(
                   label: 'Password',
+                  controller: _passwordController,
                   obscureText: true,
                   autofillHints: const [AutofillHints.password],
                   textInputAction: TextInputAction.done,
-                  onChanged: controller.setPassword,
                   onSubmitted: (_) => controller.submit(),
                 ),
                 if (state.errorMessage != null) ...[
-                  const SizedBox(height: MoodBloomSpacing.sm),
+                  const SizedBox(height: 8),
                   Text(
                     state.errorMessage!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                    style: MbFonts.nunito(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: theme.colorScheme.error,
                     ),
                   ),
                 ],
-                const SizedBox(height: MoodBloomSpacing.lg),
-                SizedBox(
-                  width: double.infinity,
-                  height: MoodBloomSpacing.tapTargetMin,
-                  child: FilledButton(
-                    onPressed: state.isSubmitting ? null : controller.submit,
-                    child: state.isSubmitting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Sign in'),
-                  ),
+                const SizedBox(height: 16),
+                MbPrimaryButton(
+                  label: 'Sign in',
+                  onPressed: state.isSubmitting ? null : controller.submit,
+                  loading: state.isSubmitting,
                 ),
-                if (showGoogle) ...[
-                  const SizedBox(height: MoodBloomSpacing.lg),
-                  GoogleSignInButton(
-                    onPressed: controller.submitGoogle,
-                    isLoading: state.isSubmitting,
-                  ),
-                ],
-                const SizedBox(height: MoodBloomSpacing.xl),
+                const SizedBox(height: 14),
+                _OrDivider(mb: mb),
+                const SizedBox(height: 14),
+                GoogleSignInButton(
+                  onPressed: controller.submitGoogle,
+                  isLoading: state.isSubmitting,
+                ),
+                const SizedBox(height: 24),
                 Center(
                   child: TextButton(
                     onPressed: () => context.push('/sign-up'),
                     child: const Text('Create an account'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: Text(
+                    'By continuing you agree to our gentle terms.',
+                    style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
                   ),
                 ),
               ],
@@ -89,6 +135,29 @@ class SignInScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Thin "—— or ——" separator. Matches the prototype's auth divider.
+class _OrDivider extends StatelessWidget {
+  const _OrDivider({required this.mb});
+  final MbColors mb;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: Container(height: 1, color: mb.line)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Text(
+            'or',
+            style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
+          ),
+        ),
+        Expanded(child: Container(height: 1, color: mb.line)),
+      ],
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/mood/presentation/widgets/intensity_slider.dart';
@@ -11,6 +12,7 @@ Future<void> _pumpSlider(
 }) async {
   await tester.pumpWidget(
     MaterialApp(
+      theme: buildLightTheme(),
       home: Scaffold(
         body: Center(
           child: IntensitySlider(intensity: intensity, onChanged: onChanged),

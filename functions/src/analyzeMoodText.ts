@@ -286,8 +286,15 @@ export async function handleAnalyzeMoodText(
 
 /**
  * The exported v2 callable. Region matches Firestore (lowest latency for KMUTT
- * users). App Check is enforced (matches `analyzePatterns` — both endpoints
- * now reject non-attested clients per ADR-0003).
+ * users).
+ *
+ * App Check enforcement is **temporarily disabled** for the Sprint 2 demo.
+ * The Flutter web client does not yet initialise `firebase_app_check`, so
+ * with `enforceAppCheck: true` browser preflight requests were failing and
+ * surfacing as opaque CORS errors in the console. Re-enable this flag once
+ * `FirebaseAppCheck.instance.activate(...)` ships on the client and a
+ * reCAPTCHA v3 site key is registered in Firebase Console → App Check.
+ * Tracked separately from the visual overhaul.
  */
 export const analyzeMoodText = onCall(
   {
@@ -295,7 +302,7 @@ export const analyzeMoodText = onCall(
     secrets: [GEMINI_API_KEY],
     timeoutSeconds: 30,
     memory: '256MiB',
-    enforceAppCheck: true,
+    enforceAppCheck: false,
   },
   handleAnalyzeMoodText,
 );

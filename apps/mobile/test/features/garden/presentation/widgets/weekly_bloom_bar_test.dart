@@ -9,33 +9,42 @@ import 'package:moodbloom/features/garden/presentation/widgets/weekly_bloom_bar.
 Future<void> _pumpBar(WidgetTester tester, WeeklyBloomBar bar) async {
   await tester.pumpWidget(
     MaterialApp(
+      theme: buildLightTheme(),
       home: Scaffold(body: Center(child: bar)),
     ),
   );
 }
 
 List<DayBloom> _days(List<DayBloomKind> kinds) {
-  // Anchor on a fixed reference day so weekday letters are deterministic.
   final today = DateTime(2026, 4, 29);
   return [
     for (var i = 0; i < kinds.length; i += 1)
-      DayBloom(
-        day: today.subtract(Duration(days: i)),
-        kind: kinds[i],
-      ),
+      DayBloom(day: today.subtract(Duration(days: i)), kind: kinds[i]),
   ];
 }
 
-/// Walks the painted Container decorations under the bar and pulls out the
-/// fill colors of cells whose height matches the bar cell height. Filters
-/// out outer/inner layout containers that don't carry a BoxDecoration.
-List<Color> _cellColors(WidgetTester tester) {
+/// Returns one cell descriptor per painted bar `Container` directly under a
+/// `_BloomColumn` (i.e. the data cells, not surrounding layout containers).
+/// We discriminate by whether the container has a non-null `borderRadius`
+/// matching the bloom-cell radius (`MoodBloomSpacing.radiusSm`).
+List<({Color? color, bool empty})> _cells(WidgetTester tester) {
   final containers = tester
       .widgetList<Container>(find.byType(Container))
-      .where((c) => c.decoration is BoxDecoration);
+      .where((c) {
+        final dec = c.decoration;
+        if (dec is! BoxDecoration) return false;
+        final br = dec.borderRadius;
+        return br is BorderRadius &&
+            br.topLeft.x == MoodBloomSpacing.radiusSm;
+      });
   return [
     for (final c in containers)
-      ((c.decoration as BoxDecoration).color ?? const Color(0x00000000)),
+      (
+        color: (c.decoration as BoxDecoration).color,
+        empty: ((c.decoration as BoxDecoration).color ?? Colors.transparent)
+            .a ==
+            0.0,
+      ),
   ];
 }
 
@@ -46,54 +55,48 @@ void main() {
         tester,
         WeeklyBloomBar(days: _days(List.filled(7, DayBloomKind.empty))),
       );
-      final colors = _cellColors(tester);
-      expect(colors, hasLength(7));
+      expect(_cells(tester), hasLength(7));
     });
 
-    testWidgets('all-bloom week → all cells use the happy mood color', (
-      tester,
-    ) async {
+    testWidgets('all-bloom week → every cell is non-empty', (tester) async {
       await _pumpBar(
         tester,
         WeeklyBloomBar(days: _days(List.filled(7, DayBloomKind.bloom))),
       );
-      final colors = _cellColors(tester);
-      expect(colors, everyElement(MoodBloomColors.moodHappy));
+      final cells = _cells(tester);
+      expect(cells, hasLength(7));
+      expect(cells.every((c) => !c.empty), isTrue);
     });
 
-    testWidgets('all-empty week → all cells use the dim surface color', (
+    testWidgets('all-empty week → every cell is empty (transparent fill)', (
       tester,
     ) async {
       await _pumpBar(
         tester,
         WeeklyBloomBar(days: _days(List.filled(7, DayBloomKind.empty))),
       );
-      final colors = _cellColors(tester);
-      expect(colors, everyElement(MoodBloomColors.surfaceDim));
+      final cells = _cells(tester);
+      expect(cells, hasLength(7));
+      expect(cells.every((c) => c.empty), isTrue);
     });
 
-    testWidgets('mixed week → exactly the bloom days carry the happy color', (
+    testWidgets('mixed week → exactly the bloom days carry a colored bar', (
       tester,
     ) async {
-      // Index 0 = today; we expect today and the day-before-yesterday to
-      // be blooms in this configuration.
       final kinds = <DayBloomKind>[
-        DayBloomKind.bloom, // today
-        DayBloomKind.empty, // yesterday
-        DayBloomKind.bloom, // 2 days ago
+        DayBloomKind.bloom,
+        DayBloomKind.empty,
+        DayBloomKind.bloom,
         DayBloomKind.empty,
         DayBloomKind.empty,
         DayBloomKind.empty,
         DayBloomKind.empty,
       ];
       await _pumpBar(tester, WeeklyBloomBar(days: _days(kinds)));
-      final colors = _cellColors(tester);
-      final blooms = colors.where((c) => c == MoodBloomColors.moodHappy).length;
-      final empties = colors
-          .where((c) => c == MoodBloomColors.surfaceDim)
-          .length;
-      expect(blooms, 2);
-      expect(empties, 5);
+      final cells = _cells(tester);
+      expect(cells, hasLength(7));
+      expect(cells.where((c) => !c.empty), hasLength(2));
+      expect(cells.where((c) => c.empty), hasLength(5));
     });
   });
 }

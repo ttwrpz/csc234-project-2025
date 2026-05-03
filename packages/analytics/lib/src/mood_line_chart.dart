@@ -64,12 +64,23 @@ class MoodLineChart extends StatelessWidget {
             p.meanIntensity,
           ),
       ];
+      final areaColors = theme.areaFillBelowGradient;
       lines.add(
         LineChartBarData(
           spots: spots,
           color: color,
           barWidth: theme.lineWidth,
           isCurved: false,
+          belowBarData: areaColors == null
+              ? BarAreaData(show: false)
+              : BarAreaData(
+                  show: true,
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: areaColors,
+                  ),
+                ),
           dotData: FlDotData(
             show: true,
             getDotPainter: (spot, percent, bar, idx) => FlDotCirclePainter(
@@ -97,8 +108,11 @@ class MoodLineChart extends StatelessWidget {
             show: true,
             drawVerticalLine: false,
             horizontalInterval: 1,
-            getDrawingHorizontalLine: (_) =>
-                FlLine(color: theme.gridColor, strokeWidth: 1),
+            getDrawingHorizontalLine: (_) => FlLine(
+              color: theme.gridColor,
+              strokeWidth: 1,
+              dashArray: theme.dashedGridLine ? const [2, 4] : null,
+            ),
           ),
           borderData: FlBorderData(
             show: true,
@@ -163,7 +177,43 @@ class MoodLineChart extends StatelessWidget {
               ),
             ),
           ),
-          lineTouchData: const LineTouchData(handleBuiltInTouches: true),
+          lineTouchData: LineTouchData(
+            handleBuiltInTouches: true,
+            touchTooltipData: LineTouchTooltipData(
+              // Theme-aware tooltip surface. fl_chart's default is a light
+              // grey that disappears in dark mode and washes out the value
+              // text in light mode. We use the chart theme's gridColor as
+              // the on-surface fallback when the caller hasn't supplied a
+              // tooltip color, then auto-pick text color by background
+              // luminance so contrast meets WCAG AA in both modes.
+              getTooltipColor: (_) => theme.tooltipBgColor,
+              tooltipPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 6,
+              ),
+              tooltipRoundedRadius: 8,
+              getTooltipItems: (touched) {
+                final fg =
+                    ThemeData.estimateBrightnessForColor(
+                          theme.tooltipBgColor,
+                        ) ==
+                        Brightness.dark
+                    ? Colors.white
+                    : const Color(0xFF1F2937);
+                return [
+                  for (final t in touched)
+                    LineTooltipItem(
+                      t.y.toStringAsFixed(1),
+                      TextStyle(
+                        color: fg,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ];
+              },
+            ),
+          ),
         ),
       ),
     );
