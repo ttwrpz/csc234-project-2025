@@ -1,3 +1,4 @@
+import 'package:core/core.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -217,12 +218,64 @@ class _Detail extends StatelessWidget {
           ),
         ),
         const SizedBox(height: MoodBloomSpacing.md),
-        // Edit/Delete are deferred to Sprint 3. Buttons render in their
-        // visually-disabled state so the layout matches the prototype but
-        // taps go nowhere.
-        _ActionsRow(disabled: true),
+        _ActionsRow(
+          // Lock predicate flips Edit + Delete off once the calendar
+          // day rolls over. Same-day entries are mutable.
+          locked: locked,
+          onEdit: locked
+              ? null
+              : () => context.go('/log-mood?edit=${entry.id}'),
+          onDelete: locked ? null : () => _confirmDelete(context, entry),
+        ),
       ],
     );
+  }
+
+  static Future<void> _confirmDelete(
+    BuildContext context,
+    MoodEntry entry,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete entry?'),
+        content: const Text(
+          'This entry will be removed from your history. '
+          'You can always log a new mood today.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: MoodBloomColors.coral,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    // We use a one-shot ProviderContainer read via the navigator's
+    // context — Riverpod's `ProviderScope.containerOf` would also
+    // work but pulling the repository directly through the
+    // providers is the same dependency edge.
+    final scope = ProviderScope.containerOf(context);
+    final repo = scope.read(moodRepositoryProvider);
+    final result = await repo.delete(userId: entry.userId, id: entry.id);
+    if (!context.mounted) return;
+    switch (result) {
+      case Ok():
+        context.go('/history');
+      case Err(:final failure):
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failure.message)));
+    }
   }
 }
 
@@ -258,19 +311,27 @@ class _LockBanner extends StatelessWidget {
 }
 
 class _ActionsRow extends StatelessWidget {
-  const _ActionsRow({required this.disabled});
-  final bool disabled;
+  const _ActionsRow({required this.locked, this.onEdit, this.onDelete});
+
+  /// True when the entry is past its same-day mutation window. Locked
+  /// rows render Edit/Delete in a visually-disabled state regardless
+  /// of whether the parent supplied callbacks.
+  final bool locked;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
     final coral = MoodBloomColors.coral;
+    final disabledEdit = locked || onEdit == null;
+    final disabledDelete = locked || onDelete == null;
     return Row(
       children: [
         Expanded(
           child: MbPrimaryButton(
             label: 'Edit',
-            onPressed: disabled ? null : () {},
+            onPressed: disabledEdit ? null : onEdit,
           ),
         ),
         const SizedBox(width: 8),
@@ -278,13 +339,13 @@ class _ActionsRow extends StatelessWidget {
           child: SizedBox(
             height: 44,
             child: OutlinedButton(
-              onPressed: disabled ? null : () {},
+              onPressed: disabledDelete ? null : onDelete,
               style: OutlinedButton.styleFrom(
                 backgroundColor: Colors.transparent,
-                foregroundColor: disabled ? mb.textDim : coral,
+                foregroundColor: disabledDelete ? mb.textDim : coral,
                 disabledForegroundColor: mb.textDim,
                 side: BorderSide(
-                  color: disabled ? mb.line : coral.withAlpha(0x88),
+                  color: disabledDelete ? mb.line : coral.withAlpha(0x88),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(

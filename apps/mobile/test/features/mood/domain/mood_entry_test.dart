@@ -132,33 +132,48 @@ void main() {
     });
   });
 
-  group('MoodEntry.isLocked 24h guard', () {
+  group('MoodEntry.isLocked midnight guard', () {
+    // Use local-time anchors so the test passes regardless of host TZ.
+    // The guard compares local calendar days, so we build a `createdAt`
+    // anchored on a fixed local-noon and probe around that day's
+    // midnight rollover.
+    final createdLocal = DateTime(2026, 4, 28, 12);
     final entry = MoodEntry(
       id: 'm1',
       userId: 'u1',
       mood: MoodType.happy,
       intensity: 3,
       text: '',
-      createdAt: createdAt,
+      createdAt: createdLocal,
     );
 
-    test('isLocked false at createdAt + 23h', () {
+    test('isLocked false earlier on the same local day', () {
       expect(
-        entry.isLocked(now: createdAt.add(const Duration(hours: 23))),
+        entry.isLocked(now: DateTime(2026, 4, 28, 7)),
         isFalse,
+        reason: 'editing the morning entry from later that morning is fine',
       );
     });
 
-    test('isLocked true at createdAt + 24h', () {
+    test('isLocked false later on the same local day (11:59pm)', () {
       expect(
-        entry.isLocked(now: createdAt.add(const Duration(hours: 24))),
+        entry.isLocked(now: DateTime(2026, 4, 28, 23, 59)),
+        isFalse,
+        reason: 'still the same calendar day — editable',
+      );
+    });
+
+    test('isLocked true at midnight of the next day', () {
+      expect(
+        entry.isLocked(now: DateTime(2026, 4, 29, 0, 0)),
         isTrue,
+        reason: 'lock kicks in the moment the calendar day rolls over',
       );
     });
 
-    test('isLocked true at createdAt + 25h', () {
+    test('isLocked true on a later day (next-day morning)', () {
       expect(
-        entry.isLocked(now: createdAt.add(const Duration(hours: 25))),
+        entry.isLocked(now: DateTime(2026, 4, 29, 9)),
         isTrue,
       );
     });

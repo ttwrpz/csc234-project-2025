@@ -2,10 +2,20 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /users/{uid}/media/{path=**} {
-      allow read, write: if request.auth != null
-                         && request.auth.uid == uid
-                         && request.resource.size < 25 * 1024 * 1024
-                         && request.resource.contentType.matches('image/.*|video/.*');
+      // Reads only need owner-auth. The previous rule lumped read +
+      // write together and required `request.resource.size` /
+      // `.contentType` — both of those are NULL on reads, so every
+      // image fetch returned 403 even though the upload had succeeded.
+      allow read: if request.auth != null
+                  && request.auth.uid == uid;
+
+      // Writes still enforce size + content-type. `delete` carries
+      // no `request.resource`, so we only check ownership for those.
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && (request.resource == null
+                       || (request.resource.size < 25 * 1024 * 1024
+                           && request.resource.contentType.matches('image/.*|video/.*')));
     }
     match /{path=**} {
       allow read, write: if false;

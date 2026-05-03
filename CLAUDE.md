@@ -177,7 +177,7 @@ users/{uid}/insights/{id}   → PatternInsight { window, text, confidence, sampl
 - Users can only read/write documents under `users/{request.auth.uid}/**`
 - `createdAt` must equal `request.time` on create (server-side timestamp validation)
 - `createdAt` is immutable on update
-- `updatedAt` must be within 24h of `createdAt` on any update (enforces 24h immutability at the rules level, in addition to the domain guard)
+- Edits/deletes are allowed only on the same UTC calendar day as `createdAt` (enforced via `request.time.year/month/day == resource.data.createdAt.year/month/day`). Domain `isLocked` mirrors this with local-time day comparison.
 - Field-level validation via `diff().affectedKeys()` — only specific fields may change on update
 - See `firebase/firestore.rules` for canonical rules
 
@@ -190,7 +190,7 @@ users/{uid}/insights/{id}   → PatternInsight { window, text, confidence, sampl
 3. **Analytics dashboard** with mood-over-time line chart (7/30/90-day windows)
 4. **Gemini pattern analysis** over history with explicit confidence labels
 5. **Cheer-up intervention** triggered by 5-of-7 negative days OR 3-consecutive same-type at intensity ≥ 4; 48h cooldown; 10-day escalation adds Thai Mental Health Hotline 1323 footer
-6. **24-hour entry immutability** — same-day edit/delete allowed; locked thereafter
+6. **Same-day entry immutability** — edits/deletes allowed until local midnight of the day the entry was created; locked thereafter
 7. **Compassionate reframing** — positive = flowers; negative intensity 1–3 = wilting plants; negative intensity 4–5 = rain clouds that fade on their own
 
 ## Copy rules (user-facing text)

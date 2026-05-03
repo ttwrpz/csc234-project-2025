@@ -21,8 +21,16 @@ service cloud.firestore {
 
         allow read: if isOwner(uid);
 
+        // Edits and deletes are allowed only on the same UTC calendar
+        // day as `createdAt`. (Firestore rules don't expose a local-time
+        // helper, so the boundary is UTC midnight here; the client uses
+        // local-midnight in `MoodEntry.isLocked` — close enough given
+        // the user is in Asia/Bangkok with no DST and writes use
+        // server-side `request.time` for `createdAt`.)
         allow update: if isOwner(uid)
-          && request.time.toMillis() - resource.data.createdAt.toMillis() < 86400000
+          && request.time.year() == resource.data.createdAt.year()
+          && request.time.month() == resource.data.createdAt.month()
+          && request.time.day() == resource.data.createdAt.day()
           && request.resource.data.createdAt == resource.data.createdAt
           && request.resource.data.updatedAt is timestamp
           && request.resource.data.updatedAt == request.time
@@ -36,7 +44,9 @@ service cloud.firestore {
           && request.resource.data.mood in ['happy','calm','okay','sad','angry','anxious'];
 
         allow delete: if isOwner(uid)
-          && request.time.toMillis() - resource.data.createdAt.toMillis() < 86400000;
+          && request.time.year() == resource.data.createdAt.year()
+          && request.time.month() == resource.data.createdAt.month()
+          && request.time.day() == resource.data.createdAt.day();
       }
 
       match /insights/{insightId} {
