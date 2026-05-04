@@ -19,7 +19,10 @@ List<DayBloom> _days(List<DayBloomKind> kinds) {
   final today = DateTime(2026, 4, 29);
   return [
     for (var i = 0; i < kinds.length; i += 1)
-      DayBloom(day: today.subtract(Duration(days: i)), kind: kinds[i]),
+      DayBloom(
+        day: today.subtract(Duration(days: i)),
+        kind: kinds[i],
+      ),
   ];
 }
 
@@ -28,21 +31,20 @@ List<DayBloom> _days(List<DayBloomKind> kinds) {
 /// We discriminate by whether the container has a non-null `borderRadius`
 /// matching the bloom-cell radius (`MoodBloomSpacing.radiusSm`).
 List<({Color? color, bool empty})> _cells(WidgetTester tester) {
-  final containers = tester
-      .widgetList<Container>(find.byType(Container))
-      .where((c) {
-        final dec = c.decoration;
-        if (dec is! BoxDecoration) return false;
-        final br = dec.borderRadius;
-        return br is BorderRadius &&
-            br.topLeft.x == MoodBloomSpacing.radiusSm;
-      });
+  final containers = tester.widgetList<Container>(find.byType(Container)).where(
+    (c) {
+      final dec = c.decoration;
+      if (dec is! BoxDecoration) return false;
+      final br = dec.borderRadius;
+      return br is BorderRadius && br.topLeft.x == MoodBloomSpacing.radiusSm;
+    },
+  );
   return [
     for (final c in containers)
       (
         color: (c.decoration as BoxDecoration).color,
-        empty: ((c.decoration as BoxDecoration).color ?? Colors.transparent)
-            .a ==
+        empty:
+            ((c.decoration as BoxDecoration).color ?? Colors.transparent).a ==
             0.0,
       ),
   ];

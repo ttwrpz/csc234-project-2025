@@ -44,7 +44,24 @@ const USER_B = "userB";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const TWENTY_FIVE_HOURS_MS = 25 * 60 * 60 * 1000;
-const TWENTY_THREE_HOURS_MS = 23 * 60 * 60 * 1000;
+
+/**
+ * Build a `createdAt` Timestamp guaranteed to fall on the same UTC
+ * calendar day as the rule's `request.time`. Uses today's UTC midnight
+ * + 1 hour so the timestamp is always after the day boundary,
+ * regardless of when CI runs. Replaces the previous "now - 23h"
+ * heuristic, which crossed the midnight boundary on roughly half the
+ * runs (CI machines run at all hours of the UTC day).
+ */
+function todayMidnightUtcPlus(hourOffsetMs: number): Timestamp {
+  const now = new Date();
+  const utcMidnight = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+  );
+  return Timestamp.fromMillis(utcMidnight + hourOffsetMs);
+}
 
 // ---------------------------------------------------------------------------
 // Test environment lifecycle
@@ -185,7 +202,7 @@ describe("Firestore rules — users/{uid}/moods", () => {
     );
   });
 
-  it("Case 7: update of entry with createdAt = now - 25h is denied (lock window)", async () => {
+  it("Case 7: update of an entry created on a previous day is denied", async () => {
     const lockedCreatedAt = Timestamp.fromMillis(
       Date.now() - TWENTY_FIVE_HOURS_MS,
     );
@@ -206,10 +223,12 @@ describe("Firestore rules — users/{uid}/moods", () => {
     );
   });
 
-  it("Case 8: update of entry with createdAt = now - 23h is allowed (within lock window)", async () => {
-    const recentCreatedAt = Timestamp.fromMillis(
-      Date.now() - TWENTY_THREE_HOURS_MS,
-    );
+  it("Case 8: update of entry created earlier the same UTC day is allowed", async () => {
+    // Anchor `createdAt` at today's UTC midnight + 1h. The rule
+    // permits updates when `request.time.year/month/day` equals
+    // `resource.data.createdAt.year/month/day`, so this is the test
+    // for "same day" — replacing the prior 24h-window semantics.
+    const recentCreatedAt = todayMidnightUtcPlus(ONE_HOUR_MS);
     await seedMoodEntry(USER_A, "m1", {
       mood: "okay",
       intensity: 2,
@@ -267,7 +286,7 @@ describe("Firestore rules — users/{uid}/moods", () => {
     );
   });
 
-  it("Case 11: delete of entry with createdAt = now - 25h is denied (lock window)", async () => {
+  it("Case 11: delete of an entry created on a previous day is denied", async () => {
     const lockedCreatedAt = Timestamp.fromMillis(
       Date.now() - TWENTY_FIVE_HOURS_MS,
     );
