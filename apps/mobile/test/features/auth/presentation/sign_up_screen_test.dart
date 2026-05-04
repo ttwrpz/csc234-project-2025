@@ -43,7 +43,9 @@ void main() {
         await tester.enterText(find.byType(TextField).at(1), 'longenoughpw');
         await tester.enterText(find.byType(TextField).at(2), 'something-else');
 
-        await tester.tap(find.widgetWithText(MbPrimaryButton, 'Create account'));
+        await tester.tap(
+          find.widgetWithText(MbPrimaryButton, 'Create account'),
+        );
         await tester.pumpAndSettle();
 
         // Hard-coded message from sign_up_controller.dart line 28.
@@ -68,7 +70,9 @@ void main() {
         await tester.enterText(find.byType(TextField).at(1), 'longenoughpw');
         await tester.enterText(find.byType(TextField).at(2), 'longenoughpw');
 
-        await tester.tap(find.widgetWithText(MbPrimaryButton, 'Create account'));
+        await tester.tap(
+          find.widgetWithText(MbPrimaryButton, 'Create account'),
+        );
         await tester.pumpAndSettle();
 
         expect(

@@ -172,10 +172,7 @@ void main() {
     });
 
     test('isLocked true on a later day (next-day morning)', () {
-      expect(
-        entry.isLocked(now: DateTime(2026, 4, 29, 9)),
-        isTrue,
-      );
+      expect(entry.isLocked(now: DateTime(2026, 4, 29, 9)), isTrue);
     });
   });
 }
