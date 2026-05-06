@@ -46,12 +46,18 @@ class NotificationsToggleState {
 }
 
 class NotificationsController extends Notifier<NotificationsToggleState> {
-  NotificationsPreferenceDatasource get _preference =>
+  /// Synchronous preference datasource if SharedPreferences has resolved,
+  /// `null` during the brief window between provider-scope init and the
+  /// FutureProvider's first emission. While null we treat the toggle as
+  /// `true` per O13.
+  NotificationsPreferenceDatasource? get _preference =>
       ref.read(notificationsPreferenceDatasourceProvider);
 
   @override
   NotificationsToggleState build() {
-    return NotificationsToggleState(enabled: _preference.isCheerUpEnabled());
+    return NotificationsToggleState(
+      enabled: _preference?.isCheerUpEnabled() ?? true,
+    );
   }
 
   /// Handles a user tap on the toggle.
@@ -66,10 +72,11 @@ class NotificationsController extends Notifier<NotificationsToggleState> {
   Future<void> setEnabled(bool enabled) async {
     final repo = ref.read(fcmTokenRepositoryProvider);
     final uid = ref.read(currentUserStreamProvider).value?.uid;
+    final preference = _preference;
     if (uid == null || uid.isEmpty) {
       // Not signed in — fall back to the local mirror only. The next
       // post-sign-in bootstrap will reconcile with Firestore.
-      await _preference.setCheerUpEnabled(enabled);
+      await preference?.setCheerUpEnabled(enabled);
       state = state.copyWith(enabled: enabled, clearError: true);
       return;
     }
@@ -85,7 +92,7 @@ class NotificationsController extends Notifier<NotificationsToggleState> {
             isPersisting: false,
             lastError: failure,
           );
-          await _preference.setCheerUpEnabled(false);
+          await preference?.setCheerUpEnabled(false);
           return;
         case Ok():
           break;
