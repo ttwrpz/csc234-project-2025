@@ -55,12 +55,21 @@ class NotificationsSettingsDto {
   /// without touching unrelated keys. Intentionally returns the full
   /// settings payload (including `cheerUpEnabled`) — callers that just
   /// want to refresh a token use [tokensArrayPayload].
+  ///
+  /// Empty token strings are dropped at this boundary (defense-in-depth
+  /// vs. the per-token shape gap noted in HB-003 OQ-A and the security
+  /// audit R-003): rules cap list size at 25 but cannot validate
+  /// elements, so the write side must reject malformed tokens before
+  /// they round-trip and surface as ghost records on read.
   static Map<String, Object?> toFirestoreMerge({
     required NotificationsSettings settings,
   }) {
     return {
       'cheerUpEnabled': settings.cheerUpEnabled,
-      'tokens': settings.tokens.map(_tokenToMap).toList(),
+      'tokens': settings.tokens
+          .where((r) => r.token.isNotEmpty)
+          .map(_tokenToMap)
+          .toList(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
