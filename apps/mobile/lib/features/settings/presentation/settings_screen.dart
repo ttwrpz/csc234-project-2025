@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/data/providers.dart';
 import '../../auth/presentation/widgets/biometric_settings_tile.dart';
 import '../../mood/data/sync/connectivity_provider.dart';
+import '../../notifications/presentation/widgets/notifications_toggle_tile.dart';
 import 'controllers/theme_mode_controller.dart';
 
 /// Settings screen — restyled in Phase C and re-grouped in this round so
@@ -248,6 +249,8 @@ class _PreferencesCluster extends ConsumerWidget {
               ],
             ),
           ),
+          const Divider(height: 1),
+          const NotificationsToggleTile(),
         ],
       ),
     );
