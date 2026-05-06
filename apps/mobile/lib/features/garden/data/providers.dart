@@ -10,6 +10,7 @@ import '../domain/entities/intervention_state.dart';
 import '../domain/intervention_state_repository.dart';
 import '../domain/pattern_detector.dart';
 import '../domain/usecases/compute_garden_state.dart';
+import 'datasources/intervention_state_firestore_datasource.dart';
 import 'intervention_state_repository_impl.dart';
 import 'intervention_state_storage.dart';
 
@@ -65,14 +66,26 @@ final interventionStateStorageProvider =
       return InterventionStateStorage(prefs);
     });
 
+/// Thin Firestore datasource for the
+/// `users/{uid}/interventionState/current` doc. Tests fake this
+/// provider via `overrideWithValue` to avoid spinning up a real
+/// `FirebaseFirestore`.
+final interventionStateFirestoreDatasourceProvider =
+    Provider<InterventionStateFirestoreDatasource>(
+      (ref) =>
+          InterventionStateFirestoreDatasource(ref.watch(firestoreProvider)),
+    );
+
 /// Firestore-primary [InterventionStateRepository] (per ADR-0008). The
 /// SharedPreferences storage above is wrapped as the offline mirror.
 final interventionStateRepositoryProvider =
     FutureProvider<InterventionStateRepository>((ref) async {
       final mirror = await ref.watch(interventionStateStorageProvider.future);
-      final firestore = ref.watch(firestoreProvider);
+      final datasource = ref.watch(
+        interventionStateFirestoreDatasourceProvider,
+      );
       return InterventionStateRepositoryImpl(
-        firestore: firestore,
+        datasource: datasource,
         mirror: mirror,
         uidGetter: () => ref.read(currentUserStreamProvider).value?.uid,
       );

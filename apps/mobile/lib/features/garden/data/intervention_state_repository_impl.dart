@@ -2,85 +2,61 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:core/core.dart';
 
 import '../domain/intervention_state_repository.dart';
+import 'datasources/intervention_state_firestore_datasource.dart';
 import 'intervention_state_storage.dart';
 
 /// Firestore-primary implementation of [InterventionStateRepository].
 ///
 /// Per ADR-0008, the cooldown / escalation anchors live in
-/// `users/{uid}/interventionState/current` (single doc, schemaV: 1):
-///
-/// ```
-/// {
-///   lastTriggeredAt: Timestamp | null,
-///   firstTriggeredAt: Timestamp | null,
-///   schemaV: 1,
-/// }
-/// ```
-///
-/// `InterventionStateStorage` (SharedPreferences) is the offline-read mirror.
+/// `users/{uid}/interventionState/current` (single doc, schemaV: 1).
+/// `InterventionStateStorage` (SharedPreferences) is the offline-read
+/// mirror.
 ///
 /// Read path:
-///  1. Try Firestore (server-or-cache). On success → mirror locally, return.
-///  2. On Firestore failure → fall back to the mirror, return its anchors.
-///  3. On both failing → `Err(InterventionStateFailure)`.
+///  1. Try Firestore (server-or-cache). On success → mirror locally,
+///     return the cloud copy.
+///  2. On Firestore failure → fall back to the mirror.
 ///
 /// Write path:
-///  1. Hit Firestore first (`set(merge: true)` for plain writes; transactions
-///     for the conditional `writeFirstTriggeredAtIfNull` so the read-then-
-///     write is race-free across multiple devices).
+///  1. Hit Firestore first (`set(merge: true)` for plain writes;
+///     transactions for the conditional `writeFirstTriggeredAtIfNull`
+///     so the read-then-write is race-free across multiple devices).
 ///  2. On success → mirror locally, return `Ok`.
-///  3. On Firestore failure → still mirror locally so the local detector is
-///     correct, return `Err(InterventionStateFailure.network())`. The next
-///     successful read will reconcile from cloud.
+///  3. On Firestore failure → still mirror locally so the local
+///     detector is correct, return `Err(InterventionStateFailure)`. The
+///     next successful read will reconcile from cloud.
 class InterventionStateRepositoryImpl implements InterventionStateRepository {
   InterventionStateRepositoryImpl({
-    required FirebaseFirestore firestore,
+    required InterventionStateFirestoreDatasource datasource,
     required InterventionStateStorage mirror,
     required String? Function() uidGetter,
     Logger logger = const Logger('garden.intervention.repo'),
-  }) : _firestore = firestore,
+  }) : _datasource = datasource,
        _mirror = mirror,
        _uidGetter = uidGetter,
        _logger = logger;
 
-  final FirebaseFirestore _firestore;
+  final InterventionStateFirestoreDatasource _datasource;
   final InterventionStateStorage _mirror;
   final String? Function() _uidGetter;
   final Logger _logger;
 
-  /// Schema version stamped on every write. Bump (and add a migration) only
-  /// when the document shape itself changes — not when fields are added in
-  /// a backwards-compatible way.
-  static const int _schemaV = 1;
-
-  static const String _docId = 'current';
-  static const String _kLast = 'lastTriggeredAt';
-  static const String _kFirst = 'firstTriggeredAt';
-  static const String _kSchemaV = 'schemaV';
-
-  DocumentReference<Map<String, dynamic>>? _docRefFor(String? uid) {
-    if (uid == null || uid.isEmpty) return null;
-    return _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('interventionState')
-        .doc(_docId);
-  }
-
   @override
   Future<Result<InterventionAnchors, InterventionStateFailure>> read() async {
     final uid = _uidGetter();
-    final ref = _docRefFor(uid);
-    if (ref == null) {
-      // No signed-in user → treat as fresh state (mirror is empty too on a
-      // first-launch / signed-out path). This avoids surfacing a noisy
+    if (uid == null || uid.isEmpty) {
+      // No signed-in user → treat as fresh state (mirror is empty too on
+      // a first-launch / signed-out path). This avoids surfacing a noisy
       // failure to the detector pipeline before auth completes.
       return Ok(_readMirror());
     }
 
     try {
-      final snap = await ref.get();
-      final anchors = _parseSnapshot(snap);
+      final pair = await _datasource.read(uid);
+      final anchors = InterventionAnchors(
+        lastTriggeredAt: pair.lastTriggeredAt,
+        firstTriggeredAt: pair.firstTriggeredAt,
+      );
       // Mirror so the offline-read path stays warm on next cold start.
       await _writeMirror(anchors);
       return Ok(anchors);
@@ -90,7 +66,7 @@ class InterventionStateRepositoryImpl implements InterventionStateRepository {
         data: e.code,
       );
       return Ok(_readMirror());
-    } catch (e) {
+    } catch (_) {
       _logger.warn('Unknown read failure; falling back to mirror');
       return Ok(_readMirror());
     }
@@ -101,19 +77,16 @@ class InterventionStateRepositoryImpl implements InterventionStateRepository {
     DateTime now,
   ) async {
     final uid = _uidGetter();
-    final ref = _docRefFor(uid);
-    // Mirror first when no uid (signed-out edge case): the local detector
-    // still functions across cold launches even without a cloud copy.
-    if (ref == null) {
+    if (uid == null || uid.isEmpty) {
+      // No uid → still mirror so the local detector keeps a valid
+      // cooldown anchor across cold launches; surface Err so the caller
+      // can decide whether to retry once auth resolves.
       await _mirror.writeLastTriggeredAt(now);
       return const Err(InterventionStateFailure.network());
     }
 
     try {
-      await ref.set({
-        _kLast: Timestamp.fromDate(now.toUtc()),
-        _kSchemaV: _schemaV,
-      }, SetOptions(merge: true));
+      await _datasource.writeLastTriggeredAt(uid, now);
       await _mirror.writeLastTriggeredAt(now);
       return const Ok(null);
     } on FirebaseException catch (e) {
@@ -132,10 +105,7 @@ class InterventionStateRepositoryImpl implements InterventionStateRepository {
     DateTime now,
   ) async {
     final uid = _uidGetter();
-    final ref = _docRefFor(uid);
-    if (ref == null) {
-      // No-op cloud-side; only mirror if not already set so we keep
-      // idempotency locally too.
+    if (uid == null || uid.isEmpty) {
       if (_mirror.readFirstTriggeredAt() == null) {
         await _mirror.writeFirstTriggeredAt(now);
       }
@@ -143,27 +113,12 @@ class InterventionStateRepositoryImpl implements InterventionStateRepository {
     }
 
     try {
-      // Transaction makes the read-then-write race-free: two devices both
-      // calling `writeFirstTriggeredAtIfNull` within the same trigger cycle
-      // will resolve to a single `firstTriggeredAt` value on the server.
-      await _firestore.runTransaction((tx) async {
-        final snap = await tx.get(ref);
-        final existing = snap.data()?[_kFirst];
-        if (existing is Timestamp) {
-          // Already set — no-op to preserve the original anchor.
-          return;
-        }
-        tx.set(ref, {
-          _kFirst: Timestamp.fromDate(now.toUtc()),
-          _kSchemaV: _schemaV,
-        }, SetOptions(merge: true));
-      });
-      // Mirror the post-write state. Reading the doc back keeps the mirror
-      // in step with whatever value won the transaction — that may NOT be
-      // `now` if a concurrent device anchored first.
-      final after = await ref.get();
-      final anchors = _parseSnapshot(after);
-      await _writeMirror(anchors);
+      final persisted = await _datasource.writeFirstTriggeredAtIfNull(uid, now);
+      // Mirror with whatever value won the transaction — that may NOT
+      // be `now` if a concurrent device anchored first.
+      if (persisted != null) {
+        await _mirror.writeFirstTriggeredAt(persisted);
+      }
       return const Ok(null);
     } on FirebaseException catch (e) {
       if (_mirror.readFirstTriggeredAt() == null) {
@@ -181,17 +136,13 @@ class InterventionStateRepositoryImpl implements InterventionStateRepository {
   @override
   Future<Result<void, InterventionStateFailure>> clearFirstTriggeredAt() async {
     final uid = _uidGetter();
-    final ref = _docRefFor(uid);
-    if (ref == null) {
+    if (uid == null || uid.isEmpty) {
       await _mirror.clearFirstTriggeredAt();
       return const Err(InterventionStateFailure.network());
     }
 
     try {
-      await ref.set({
-        _kFirst: null,
-        _kSchemaV: _schemaV,
-      }, SetOptions(merge: true));
+      await _datasource.clearFirstTriggeredAt(uid);
       await _mirror.clearFirstTriggeredAt();
       return const Ok(null);
     } on FirebaseException catch (e) {
@@ -206,19 +157,6 @@ class InterventionStateRepositoryImpl implements InterventionStateRepository {
   // ───────────────────────────────────────────────────────────────────────
   // Helpers
   // ───────────────────────────────────────────────────────────────────────
-
-  InterventionAnchors _parseSnapshot(
-    DocumentSnapshot<Map<String, dynamic>> snap,
-  ) {
-    final data = snap.data();
-    if (data == null) return const InterventionAnchors();
-    final last = data[_kLast];
-    final first = data[_kFirst];
-    return InterventionAnchors(
-      lastTriggeredAt: last is Timestamp ? last.toDate().toLocal() : null,
-      firstTriggeredAt: first is Timestamp ? first.toDate().toLocal() : null,
-    );
-  }
 
   InterventionAnchors _readMirror() => InterventionAnchors(
     lastTriggeredAt: _mirror.readLastTriggeredAt(),
