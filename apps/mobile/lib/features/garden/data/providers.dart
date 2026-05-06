@@ -1,12 +1,16 @@
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
+import '../../auth/data/providers.dart';
 import '../../mood/data/providers.dart';
 import '../../mood/domain/entities/mood_entry.dart';
 import '../domain/entities/garden_state.dart';
 import '../domain/entities/intervention_state.dart';
+import '../domain/intervention_state_repository.dart';
 import '../domain/pattern_detector.dart';
 import '../domain/usecases/compute_garden_state.dart';
+import 'intervention_state_repository_impl.dart';
 import 'intervention_state_storage.dart';
 
 /// Garden has no Firestore-backed data layer of its own — it is a derived
@@ -50,36 +54,67 @@ final gardenEntriesStreamProvider = Provider<AsyncValue<List<MoodEntry>>>(
 /// `sharedPreferencesProvider` does. Tests override the underlying
 /// `sharedPreferencesProvider` with a fake from
 /// `SharedPreferences.setMockInitialValues({...})`.
+///
+/// Per ADR-0008 this is the OFFLINE MIRROR for [InterventionAnchors],
+/// not the source of truth — the cloud doc at
+/// `users/{uid}/interventionState/current` is canonical. Read+write
+/// callers go through [interventionStateRepositoryProvider].
 final interventionStateStorageProvider =
     FutureProvider<InterventionStateStorage>((ref) async {
       final prefs = await ref.watch(sharedPreferencesProvider.future);
       return InterventionStateStorage(prefs);
     });
 
+/// Firestore-primary [InterventionStateRepository] (per ADR-0008). The
+/// SharedPreferences storage above is wrapped as the offline mirror.
+final interventionStateRepositoryProvider =
+    FutureProvider<InterventionStateRepository>((ref) async {
+      final mirror = await ref.watch(interventionStateStorageProvider.future);
+      final firestore = ref.watch(firestoreProvider);
+      return InterventionStateRepositoryImpl(
+        firestore: firestore,
+        mirror: mirror,
+        uidGetter: () => ref.read(currentUserStreamProvider).value?.uid,
+      );
+    });
+
+/// Cached read of the persisted [InterventionAnchors]. Recomputes
+/// whenever the upstream repository or auth state invalidates.
+///
+/// Returns the empty pair (`InterventionAnchors()`) on auth-pending /
+/// repo-loading paths so the detector can run without surfacing a
+/// loading flicker on Home.
+final interventionAnchorsProvider = FutureProvider<InterventionAnchors>((
+  ref,
+) async {
+  final repo = await ref.watch(interventionStateRepositoryProvider.future);
+  final result = await repo.read();
+  return switch (result) {
+    Ok(:final value) => value,
+    Err() => const InterventionAnchors(),
+  };
+});
+
 /// Pipes the live mood stream through [detectPattern], applying the
-/// persisted `last_triggered_at` / `first_triggered_at` anchors so the
-/// 48h cooldown and 10-day escalation rules are honoured across cold
+/// persisted `lastTriggeredAt` / `firstTriggeredAt` anchors so the 48h
+/// cooldown and 10-day escalation rules are honoured across cold
 /// launches.
 ///
-/// Sprint 4 is read-only on this provider — the garden screen does NOT
-/// render any UI for the result. Sprint 5's cheer-up banner reads this
-/// provider and owns the WRITE side (calling
-/// `storage.writeLastTriggeredAt(...)` when the user dismisses the
-/// banner). Keeping the writes out of S4 means a flaky detector cannot
-/// silently mutate user-visible state before the banner exists to
-/// explain it.
+/// External shape unchanged (an `AsyncValue<InterventionState>`) so the
+/// Garden screen and any existing tests keep working — the swap of the
+/// underlying storage to the Firestore-primary repository is internal.
 final interventionStateProvider = Provider<AsyncValue<InterventionState>>((
   ref,
 ) {
   final moodsAsync = ref.watch(myMoodsStreamProvider);
-  final storageAsync = ref.watch(interventionStateStorageProvider);
+  final anchorsAsync = ref.watch(interventionAnchorsProvider);
 
-  if (storageAsync.isLoading) return const AsyncValue.loading();
-  final storage = storageAsync.value;
-  if (storage == null) {
+  if (anchorsAsync.isLoading) return const AsyncValue.loading();
+  final anchors = anchorsAsync.value;
+  if (anchors == null) {
     return AsyncValue.error(
-      storageAsync.error ?? StateError('storage unavailable'),
-      storageAsync.stackTrace ?? StackTrace.current,
+      anchorsAsync.error ?? StateError('anchors unavailable'),
+      anchorsAsync.stackTrace ?? StackTrace.current,
     );
   }
 
@@ -87,8 +122,8 @@ final interventionStateProvider = Provider<AsyncValue<InterventionState>>((
     return detectPattern(
       entries,
       now: DateTime.now(),
-      lastTriggeredAt: storage.readLastTriggeredAt(),
-      firstTriggeredAt: storage.readFirstTriggeredAt(),
+      lastTriggeredAt: anchors.lastTriggeredAt,
+      firstTriggeredAt: anchors.firstTriggeredAt,
     );
   });
 });
