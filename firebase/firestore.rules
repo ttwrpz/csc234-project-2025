@@ -53,6 +53,38 @@ service cloud.firestore {
         allow read: if isOwner(uid);
         allow create, update, delete: if false; // Cloud Function admin SDK only — S4
       }
+
+      // Per-user notification preferences (WBS 6.3, HB-003).
+      // One doc per user at users/{uid}/settings/notifications carrying
+      // the cheer-up toggle and the FCM token fan-out list. Field-level
+      // validation via diff().affectedKeys() restricts updates to the
+      // canonical schema; Cloud Function reads use the admin SDK.
+      match /settings/{settingId} {
+        allow read: if isOwner(uid);
+
+        allow create: if isOwner(uid)
+          && settingId == 'notifications'
+          && request.resource.data.cheerUpEnabled is bool
+          && request.resource.data.tokens is list
+          && request.resource.data.tokens.size() <= 25
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.keys().hasOnly(
+              ['cheerUpEnabled','tokens','updatedAt']);
+
+        allow update: if isOwner(uid)
+          && settingId == 'notifications'
+          && request.resource.data.cheerUpEnabled is bool
+          && request.resource.data.tokens is list
+          && request.resource.data.tokens.size() <= 25
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['cheerUpEnabled','tokens','updatedAt']);
+
+        // Notification preferences are never deleted from the client —
+        // disabling cheer-up reminders mutates the doc instead. Account
+        // deletion (WBS 2.4) uses the admin SDK.
+        allow delete: if false;
+      }
     }
 
     match /rateLimits/{uid} {
