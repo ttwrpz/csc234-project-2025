@@ -485,6 +485,21 @@ describe("Firestore rules — users/{uid}/settings/notifications", () => {
       deleteDoc(doc(userA, `users/${USER_A}/settings/notifications`)),
     );
   });
+
+  it("Case 25 (audit R-002): userB cannot write to userA's notifications settings", async () => {
+    // Mirrors Case 1 for the moods collection. The outer `match
+    // /users/{uid}` block already gates this, but the new
+    // `match /settings/{settingId}` block re-grants per-document
+    // permissions and we want explicit regression coverage so a
+    // future drift on the parent rule cannot silently open a hole.
+    const userB = testEnv.authenticatedContext(USER_B).firestore();
+    await assertFails(
+      setDoc(
+        doc(userB, `users/${USER_A}/settings/notifications`),
+        validSettingsPayload(),
+      ),
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
