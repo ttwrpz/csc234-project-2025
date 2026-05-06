@@ -36,16 +36,13 @@ void main() {
       },
     );
 
-    testWidgets(
-      'Semantics label starts with the locked sentence '
-      '(3_consecutive_high_intensity)',
-      (tester) async {
-        await _pumpBanner(tester, reason: '3_consecutive_high_intensity');
+    testWidgets('Semantics label starts with the locked sentence '
+        '(3_consecutive_high_intensity)', (tester) async {
+      await _pumpBanner(tester, reason: '3_consecutive_high_intensity');
 
-        final semantics = tester.getSemantics(find.byType(CheerUpBanner));
-        expect(semantics.label, startsWith(_lockedSentence));
-      },
-    );
+      final semantics = tester.getSemantics(find.byType(CheerUpBanner));
+      expect(semantics.label, startsWith(_lockedSentence));
+    });
 
     testWidgets(
       'Semantics label starts with the locked sentence (unknown reason)',
