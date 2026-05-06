@@ -47,7 +47,12 @@ class CheerUpBanner extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: "It's been a heavy week. ${reasonCaption(reason)}",
+      // Full locked CLAUDE.md sentence + reason caption. Screen readers
+      // hear the complete prompt; HB-003 §5.5a parity test asserts the
+      // label `startsWith` the locked sentence.
+      label:
+          "It's been a heavy week. Want to try a two-minute breathing exercise? "
+          "${reasonCaption(reason)}",
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
