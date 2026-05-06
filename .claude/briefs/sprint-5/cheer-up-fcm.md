@@ -57,9 +57,9 @@ sequenceDiagram
     Repo->>Cloud: users/{uid}/interventionState (Firestore source-of-truth)
     Ctrl->>Cloud: users/{uid}/cheerUpEvents/{dayUtc}-{reason} (idempotent create)
     Note over Cloud,CF: onDocumentCreated trigger
-    CF->>Cloud: read users/{uid}/settings/notifications (enabled? tokens?)
+    CF->>Cloud: read users/{uid}/settings/notifications (cheerUpEnabled? tokens?)
     CF->>Cloud: rateLimits/cheerUp/{uid} consumeToken (24h, max 1)
-    alt allowed && enabled && tokens non-empty
+    alt allowed && cheerUpEnabled && tokens non-empty
         CF->>FCM: sendEachForMulticast(tokens, fixed payload, channelId='cheer_up')
         FCM-->>U: notification (platform delivers)
     else opted_out / rate_limited / no_tokens
@@ -230,13 +230,20 @@ The garden screen replaces `_bannerDismissed` (currently `garden_screen.dart:44`
 ```
 users/{uid}/settings/notifications  (single document, NOT a sub-collection)
 {
-  enabled: bool,
+  cheerUpEnabled: bool,
   tokens: [
-    { token: string, platform: 'android' | 'web', updatedAt: timestamp },
+    { token: string, platform: 'android' | 'web', lastSeenAt: timestamp },
     ...
-  ]
+  ],
+  updatedAt: timestamp,
 }
 ```
+
+**Field names reconciled vs. earlier brief draft (post PR #30 audit R-001):**
+the toggle field is `cheerUpEnabled` (not `enabled`) — the implementation uses
+the explicit name because the same `users/{uid}/settings/` collection may
+acquire other toggles in v1.6+. Per-token freshness is `lastSeenAt`, not
+`updatedAt`. Document-level `updatedAt` is server-stamped on every write.
 
 `tokens[]` is bounded by the number of devices the user has signed in on. The CF iterates `tokens[]` and calls `sendEachForMulticast`. Stale tokens that come back with `messaging/registration-token-not-registered` are pruned post-send by a follow-up update (not a separate trigger — keeps the CF self-contained).
 
@@ -307,15 +314,15 @@ match /settings/{settingId} {
          settingId == 'notifications'
            ? (resource == null ? {}.toMap() : resource.data)
            : {}.toMap()
-       ).affectedKeys().hasOnly(['enabled','tokens'])
-    && request.resource.data.enabled is bool
+       ).affectedKeys().hasOnly(['cheerUpEnabled','tokens','updatedAt'])
+    && request.resource.data.cheerUpEnabled is bool
     && request.resource.data.tokens is list
-    && request.resource.data.tokens.size() <= 10;
+    && request.resource.data.tokens.size() <= 25;
   allow delete: if false;
 }
 ```
 
-**Element-shape validation note:** Firestore rules cannot iterate list elements with arbitrary structure. The element-shape check `{ token, platform, updatedAt }` is enforced **in the client repository** (the only writer is `FcmTokenRepository`) and verified by an emulator test that asserts a malformed-element write is rejected by an additional defensive check: limiting `tokens.size() <= 10` in the rule (above) plus a server-side audit script that runs daily. If the security-reviewer judges 10 too generous as the only element-level guard, alternative is to model `tokens` as a sub-collection `users/{uid}/settings/notifications/tokens/{tokenId}` — flag this in the audit; default keeps the doc shape per O11.
+**Element-shape validation note:** Firestore rules cannot iterate list elements with arbitrary structure. The element-shape check `{ token, platform, lastSeenAt }` is enforced **in the client repository** (the only writer is `FcmTokenRepository`) and now also at the DTO write boundary (post PR #30 audit R-003: `notifications_dto.dart::toFirestoreMerge` filters empty token strings). The rule cap is 25 elements (revised up from the original 10 to accommodate users with many short-lived browser sessions; PR #30). If the security-reviewer judges 25 too generous as the only element-level guard, alternative is to model `tokens` as a sub-collection `users/{uid}/settings/notifications/tokens/{tokenId}` — flag this in the audit; default keeps the doc shape per O11.
 
 ### `sendCheerUpPush` Cloud Function — contract (canonical)
 
@@ -367,10 +374,10 @@ export const sendCheerUpPush = onDocumentCreated(
       .doc(`users/${uid}/settings/notifications`)
       .get();
     const settings = settingsSnap.data() as
-      | { enabled?: boolean; tokens?: Array<{ token: string; platform: string }> }
+      | { cheerUpEnabled?: boolean; tokens?: Array<{ token: string; platform: string }> }
       | undefined;
 
-    if (!settings || settings.enabled !== true) {
+    if (!settings || settings.cheerUpEnabled !== true) {
       logger.info({ event: 'cheerUpPush', requestId, uid, outcome: 'opted_out' });
       return;
     }
@@ -484,9 +491,9 @@ The Day-1 morning AndroidManifest bundle (per Sprint-5 plan §3) already adds `<
 
 Server suite — `functions/src/__tests__/sendCheerUpPush.test.ts` (clone shape from `analyzePatterns.test.ts`):
 
-1. **happy-path** — settings.enabled=true, 2 tokens, rate limit fresh → `sendEachForMulticast` called once with both tokens, payload matches `TITLE`/`BODY`, channelId is `cheer_up`, `outcome: 'sent'`, `deliveredCount: 2`.
-2. **opted_out** — settings.enabled=false → no FCM call, no rate-limit consumption, log `outcome: 'opted_out'`.
-3. **no_tokens** — settings.enabled=true, tokens=[] → no FCM call, no rate-limit consumption, log `outcome: 'no_tokens'`.
+1. **happy-path** — settings.cheerUpEnabled=true, 2 tokens, rate limit fresh → `sendEachForMulticast` called once with both tokens, payload matches `TITLE`/`BODY`, channelId is `cheer_up`, `outcome: 'sent'`, `deliveredCount: 2`.
+2. **opted_out** — settings.cheerUpEnabled=false → no FCM call, no rate-limit consumption, log `outcome: 'opted_out'`.
+3. **no_tokens** — settings.cheerUpEnabled=true, tokens=[] → no FCM call, no rate-limit consumption, log `outcome: 'no_tokens'`.
 4. **rate_limited** — second invocation within 24h → no FCM call, log `outcome: 'rate_limited'`, `retryAfterSec` populated.
 5. **dead-token pruning** — one of two tokens returns `registration-token-not-registered` → settings doc updated to drop that token, surviving tokens persist, `prunedCount: 1`.
 6. **PII canary** — across all five cases, capture logger calls; assert no payload contains the token strings, no payload contains the literal `BODY` string, no payload contains the literal `TITLE` string.
