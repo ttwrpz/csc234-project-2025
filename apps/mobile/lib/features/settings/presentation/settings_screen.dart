@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/data/providers.dart';
+import '../../auth/domain/auth_credentials.dart';
 import '../../auth/presentation/widgets/biometric_settings_tile.dart';
 import '../../mood/data/sync/connectivity_provider.dart';
+import 'controllers/delete_account_controller.dart';
 import 'controllers/theme_mode_controller.dart';
+import 'widgets/delete_account_modal.dart';
 
 /// Settings screen — restyled in Phase C and re-grouped in this round so
 /// related preferences live in clearly-zoned [MbCard] clusters: Profile,
@@ -120,6 +123,30 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
 
+            // ── Danger zone (account deletion — HB-004) ──
+            const SizedBox(height: 18),
+            const MbSectionLabel('DANGER ZONE'),
+            const SizedBox(height: 6),
+            MbCard(
+              clipBehavior: Clip.hardEdge,
+              padding: EdgeInsets.zero,
+              child: ListTile(
+                leading: Icon(
+                  Icons.delete_forever,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                title: Text(
+                  'Delete account',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: const Text('This cannot be undone.'),
+                onTap: () => _confirmDeleteAccount(context, ref),
+              ),
+            ),
+
             // ── About zone ──
             const SizedBox(height: 18),
             const MbSectionLabel('ABOUT'),
@@ -175,6 +202,120 @@ class SettingsScreen extends ConsumerWidget {
     );
     if (confirmed != true) return;
     await ref.read(signOutUseCaseProvider)();
+  }
+
+  /// HB-004 destructive flow: confirm modal → password reauth modal →
+  /// blocking spinner while the controller runs the use case → success
+  /// (router redirects via auth-state stream) or error UX (inline
+  /// message for wrongPassword, SnackBar for network/unknown).
+  ///
+  /// Biometric reauth is intentionally skipped: the data layer's
+  /// `reauthenticate(BiometricCredentials())` returns
+  /// `biometricUnavailable` because no platform-keystore-cached
+  /// Firebase credential exists in the S4 biometric setup. The
+  /// password modal IS the reauth gate today; biometric joins when
+  /// the cached-credential plumbing lands (out of scope for HB-004).
+  Future<void> _confirmDeleteAccount(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => const DeleteAccountModal(),
+    );
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+
+    final email = ref.read(currentUserStreamProvider).value?.email;
+    if (email == null) {
+      // Defensive guard — the row is only rendered when signed in, so
+      // a null email would only arrive if the auth-state stream
+      // emitted null between the modal opening and the user tapping
+      // confirm. Surface a benign SnackBar and abort.
+      _showSnack(context, 'Please sign in again to continue.');
+      return;
+    }
+
+    await _runPasswordReauthLoop(context, ref, email);
+  }
+
+  /// Loops the password modal until the user either cancels or the
+  /// controller reports a non-wrongPassword outcome. wrongPassword
+  /// re-opens the same modal with an inline error preserved by the
+  /// modal's own state; everything else exits the loop.
+  Future<void> _runPasswordReauthLoop(
+    BuildContext context,
+    WidgetRef ref,
+    String email,
+  ) async {
+    String? inlineError;
+    while (true) {
+      if (!context.mounted) return;
+      final password = await showDialog<String>(
+        context: context,
+        builder: (_) =>
+            _PasswordReauthDialog(email: email, inlineError: inlineError),
+      );
+      if (password == null) return; // user cancelled
+      if (!context.mounted) return;
+
+      // Spinner overlay — non-dismissible. Pop manually on settle.
+      final spinnerCompleter = _showSpinnerOverlay(context);
+      final controller = ref.read(deleteAccountControllerProvider.notifier);
+      final outcome = await controller.run(
+        creds: AuthCredentials.password(email: email, password: password),
+      );
+      spinnerCompleter();
+      if (!context.mounted) return;
+
+      switch (outcome) {
+        case DeleteAccountSuccess():
+          // Router handles the redirect via the auth-state stream.
+          // Reset the controller so a future re-entry starts fresh.
+          ref.read(deleteAccountControllerProvider.notifier).reset();
+          return;
+        case DeleteAccountErrored(:final reason):
+          if (reason == DeleteAccountErrorReason.wrongPassword) {
+            inlineError = 'That password did not match. Please try again.';
+            continue;
+          }
+          if (reason == DeleteAccountErrorReason.network) {
+            _showSnack(
+              context,
+              "We couldn't reach the server. Please try again.",
+            );
+            return;
+          }
+          _showSnack(context, 'Something went wrong. Please try again.');
+          return;
+        case DeleteAccountIdle():
+        case DeleteAccountRunning():
+          // Defensive — `run()` always settles into Success or Errored.
+          return;
+      }
+    }
+  }
+
+  /// Pushes a non-dismissible spinner dialog and returns a callable that
+  /// pops it. Centralised so both the password modal handler and any
+  /// future biometric handler can re-use.
+  void Function() _showSpinnerOverlay(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    return () {
+      if (Navigator.of(context, rootNavigator: true).canPop()) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    };
+  }
+
+  void _showSnack(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   static String _avatarInitial(String? displayName, String? email) {
@@ -323,6 +464,80 @@ class _DebugCluster extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Password reauth modal for the destructive delete-account flow. The
+/// outer Settings screen orchestrates the loop: on dismiss the future
+/// resolves to `null`; on submit the future resolves to the entered
+/// password. wrongPassword keeps the modal open via the [inlineError]
+/// argument; the screen re-shows the dialog with the prior message.
+class _PasswordReauthDialog extends StatefulWidget {
+  const _PasswordReauthDialog({required this.email, this.inlineError});
+  final String email;
+  final String? inlineError;
+
+  @override
+  State<_PasswordReauthDialog> createState() => _PasswordReauthDialogState();
+}
+
+class _PasswordReauthDialogState extends State<_PasswordReauthDialog> {
+  late final TextEditingController _controller = TextEditingController();
+  bool _obscure = true;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Confirm your password'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Re-enter the password for ${widget.email} to confirm '
+            'account deletion.',
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _controller,
+            obscureText: _obscure,
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: 'Password',
+              errorText: widget.inlineError,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscure ? Icons.visibility_outlined : Icons.visibility_off,
+                ),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
+            ),
+            onSubmitted: (value) =>
+                Navigator.of(context).pop(value.isEmpty ? null : value),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final value = _controller.text;
+            if (value.isEmpty) return;
+            Navigator.of(context).pop(value);
+          },
+          child: const Text('Confirm'),
+        ),
+      ],
     );
   }
 }
