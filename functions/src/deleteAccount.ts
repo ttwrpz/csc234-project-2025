@@ -117,9 +117,16 @@ export async function handleDeleteAccount(
 
   // Step 10: per-uid rate-limit docs. Best-effort — a missing doc is
   // not a cascade failure.
+  //
+  // NOTE on path shape: `rateLimits.cheerUp` and `rateLimits.patterns`
+  // are FLAT collection names with literal dots (see
+  // sendCheerUpPush.ts:53 and analyzePatterns.ts for the canonical
+  // collection literals), NOT sub-collections. A 3-segment path
+  // `rateLimits/cheerUp/${uid}` would have an odd component count
+  // which Firestore rejects as "must point to a document".
   await Promise.allSettled([
     db.doc(`rateLimits/${uid}`).delete(),
-    db.doc(`rateLimits/cheerUp/${uid}`).delete(),
+    db.doc(`rateLimits.cheerUp/${uid}`).delete(),
     db.doc(`rateLimits.patterns/${uid}`).delete(),
   ]);
 

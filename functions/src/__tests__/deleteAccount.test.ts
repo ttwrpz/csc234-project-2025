@@ -236,8 +236,15 @@ function seedFullUserState(uid: string): void {
   firestoreStore.set(`users/${uid}/settings/notifications`, {
     tokens: ['PII-FCM-TOKEN-1234567890', 'PII-FCM-TOKEN-OTHER'],
   });
+  // NOTE: `rateLimits.cheerUp` and `rateLimits.patterns` are flat
+  // collection names (literal dot in the collection id), NOT
+  // sub-collections. See sendCheerUpPush.ts:53 and analyzePatterns.ts.
+  // The 3-segment form `rateLimits/cheerUp/${uid}` would be an odd
+  // component count and Firestore rejects it as not pointing to a
+  // document. The CF and the emulator E2E spec both use the
+  // 2-segment form.
   firestoreStore.set(`rateLimits/${uid}`, { windowStartMs: 0, count: 0 });
-  firestoreStore.set(`rateLimits/cheerUp/${uid}`, { count: 0 });
+  firestoreStore.set(`rateLimits.cheerUp/${uid}`, { count: 0 });
   firestoreStore.set(`rateLimits.patterns/${uid}`, { count: 0 });
 
   // Storage — three media objects under users/{uid}/media/.
@@ -279,7 +286,7 @@ describe('deleteAccount handler', () => {
       expect(key.startsWith(`users/${uid}`)).toBe(false);
     }
     expect(firestoreStore.has(`rateLimits/${uid}`)).toBe(false);
-    expect(firestoreStore.has(`rateLimits/cheerUp/${uid}`)).toBe(false);
+    expect(firestoreStore.has(`rateLimits.cheerUp/${uid}`)).toBe(false);
     expect(firestoreStore.has(`rateLimits.patterns/${uid}`)).toBe(false);
 
     // Storage: prefix passed in, files gone.
