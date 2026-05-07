@@ -708,6 +708,30 @@ describe("Firestore rules — users/{uid}/interventionState/current", () => {
       deleteDoc(doc(userA, `users/${USER_A}/interventionState/current`)),
     );
   });
+
+  it("Case 38 (audit R-001): update mutating schemaV is denied (immutable post-creation)", async () => {
+    // PR #35 audit finding R-001: the update affectedKeys allowlist
+    // previously included `schemaV` without a type guard, letting a
+    // buggy or malicious client overwrite it with arbitrary values.
+    // The fix tightens affectedKeys to ['lastTriggeredAt','firstTriggeredAt']
+    // — schemaV is set on create and is immutable thereafter (a real
+    // schema migration runs in a Cloud Function under admin SDK,
+    // bypassing this rule). This test guards the invariant so a future
+    // permissive-allowlist regression fails CI.
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(
+        doc(adminDb, `users/${USER_A}/interventionState/current`),
+        validAnchorPayload(),
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      updateDoc(doc(userA, `users/${USER_A}/interventionState/current`), {
+        schemaV: 2,
+      }),
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
