@@ -5,6 +5,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -66,6 +67,30 @@ Future<void> main() async {
       );
       // Fire-and-forget — must not block app startup.
       unawaited(rc.fetchAndActivate());
+
+      // FCM cheer-up channel (HB-003 §5.5b R-001 closure). Without
+      // this, Android 8+ silently drops notifications attached to the
+      // `cheer_up` channel id — the FCM SDK falls back to the channel
+      // declared in AndroidManifest.xml, but only if it's been created
+      // by the app at least once. Channel id MUST match the manifest
+      // meta-data (`com.google.firebase.messaging.default_notification_channel_id`)
+      // and the Cloud Function payload (`functions/src/sendCheerUpPush.ts`)
+      // — all three are the literal string `'cheer_up'`. Skipped on
+      // Web because flutter_local_notifications has no Web impl; the
+      // browser FCM service worker handles its own notification UX.
+      if (!kIsWeb) {
+        const androidChannel = AndroidNotificationChannel(
+          'cheer_up',
+          'Cheer-up check-ins',
+          description: 'Gentle reminders during heavier stretches.',
+          importance: Importance.defaultImportance,
+        );
+        await FlutterLocalNotificationsPlugin()
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.createNotificationChannel(androidChannel);
+      }
 
       // google_sign_in 7.x requires `initialize()` to be called exactly
       // once before any other method, with its Future awaited. Skipped
