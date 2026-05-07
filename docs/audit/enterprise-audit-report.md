@@ -109,31 +109,124 @@ Full ADR text at `docs/adr/`; each follows the established voice (Status / Conte
 
 ## 3. Security posture
 
-*Section to be drafted from `docs/security/audit-2026-05-12-v1.0.md` plus the v1.5 supplement at `docs/audit/security-posture.md` (Sprint 5 Day 4 deliverable). Coverage:*
+Source documents: `docs/security/audit-2026-05-12-v1.0.md` (v1.0 audit, all 8 findings mitigated), the v1.5 supplement `docs/audit/security-posture.md` (Sprint 5 Day 4 deliverable — runtime numbers only), and the per-PR security-reviewer audits captured in PR #23 and PR #30 review threads.
 
-- *3.1 Authentication and authorization (Firebase Auth + biometric + reauth fence on destructive operations)*
-- *3.2 Firestore security rules (per-user RBAC, immutable createdAt, 24h mutability gate, field-level validation, 15+ emulator tests)*
-- *3.3 Cloud Functions hardening (App Check enforcement, region pinning, rate limiting, three-layer PII fence)*
-- *3.4 Secret management (Secret Manager binding via `defineSecret`, never `process.env`; pre-write hook + grep audit)*
-- *3.5 Account deletion cascade (ADR-0009; server-only privilege boundary; idempotent contract)*
-- *3.6 PII in logs (logger allowlist + canary tests; never mood text, never tokens, never Storage paths beyond user prefix)*
-- *3.7 Dependency hygiene (no HIGH/CRITICAL CVEs in npm audit or flutter pub deps at v1.5)*
-- *3.8 Open follow-ups for production deploy (R-M01 Firestore TTL, R-M02 IAM verification, R-3 rules deploy confirmation, App Check provider config)*
+### 3.1 Authentication and authorization
 
-**Status:** placeholder — populate Sprint 5 Day 4 from `security-reviewer`'s final v1.5 Security Posture Report.
+- **Firebase Auth + biometric.** Email/password and Google OAuth flows; biometric fallback gated by `local_auth` (Sprint 3) with the AndroidManifest `USE_BIOMETRIC` permission landed in S5 carry-over (PR #23).
+- **`MainActivity extends FlutterFragmentActivity`** (S5 PR #23) — required by `local_auth` for the AndroidX biometric prompt. Verified by security-reviewer to not regress `LaunchTheme` resolution.
+- **Reauth fence on destructive operations.** `DeleteAccountUseCase` (HB-004 step 1, PR #34) calls `AuthRepository.reauthenticate(creds)` before invoking the `deleteAccount` Cloud Function. `delete_account_test.dart` case 2 asserts the use case short-circuits on reauth failure — the admin-SDK CF would happily delete based on `context.auth.uid` alone, so the client-side reauth fence is the only thing protecting against stolen-token replay. ADR-0009 formalizes this trade-off.
+- **Sealed `AuthCredentials` envelope** (`auth_credentials.dart`, PR #34) — pure-Dart variants for password / google / biometric credentials, kept domain-side so use cases stay framework-free; data layer translates to `EmailAuthProvider.credential` / `GoogleAuthProvider.credential` at the repository boundary.
+
+### 3.2 Firestore security rules
+
+- **Per-user RBAC** — every `users/{uid}/...` rule guarded by `isOwner(uid)`. Cross-user reads and writes denied at every collection.
+- **Immutable `createdAt`** — server-stamped on create (`request.time` equality required); update rules deny mutation.
+- **24-hour mutability gate** — `users/{uid}/moods/{moodId}` updates allowed only when `request.time.year/month/day == resource.data.createdAt.year/month/day`. Enforces CLAUDE.md pivot feature #6 (same-day immutability).
+- **Field-level validation via `diff().affectedKeys()`** — only specific keys may change on update; an attempt to introduce an unknown key (e.g. `attackerControlled: true`) is denied.
+- **Emulator coverage at v1.5: 25 cases.** Started at 15 (Sprint 3 baseline), grew to 17 in S4 (cases 16-17 from R-1 / R-2 audit), grew to 24 with the 6.3 settings/notifications cases (PR #30), grew to 25 with the audit R-002 follow-up case 25 cross-user write to settings. The pattern-intervention rules cases (cheerUpEvents + interventionState) land with HB-003 5.5b.
+- **`users/{uid}/settings/notifications` cap** — `tokens.size() <= 25`. Per-token shape (token / platform / lastSeenAt) is enforced client-side at the DTO write boundary via `notifications_dto.dart::toFirestoreMerge` filtering empty token strings (audit R-003 follow-up, PR #30 commit `86f2b81d`). This is the documented compromise from HB-003 OQ-A: rules can't iterate list elements, so the size cap + client-side validation form the defense-in-depth pair.
+
+### 3.3 Cloud Functions hardening
+
+Pattern: every callable function in `functions/src/` follows the same shape established by `analyzeMoodText` (ADR-0003) and `analyzePatterns` (ADR-0007).
+
+- **`enforceAppCheck: true`** on every callable. v1.0.1 commit `d1eaa1df` raised `analyzeMoodText` to enforcement parity with `analyzePatterns`. New v1.5 functions (`sendCheerUpPush` Firestore-trigger; `deleteAccount` callable) inherit the posture.
+- **Region pinning** — `asia-southeast1` on every function; rejects clients calling other regions.
+- **Rate limiting** — `consumeToken({ collection, windowMs, max })` parameterised in S4 (`rateLimit.ts:#16`). Per-endpoint document families: `rateLimits/{uid}` (analyzeMoodText, 10/60s), `rateLimits.patterns/{uid}` (analyzePatterns, 1/30s), `rateLimits/cheerUp/{uid}` (sendCheerUpPush, 1/24h, lands with HB-003 5.5b). Separate doc families so a user hitting two endpoints in the same minute is rate-limited per-endpoint, not per-app.
+- **Three-layer PII fence** (canonical pattern, reused twice in S5):
+  1. **Client datasource projection.** The client never sends fields the function doesn't need (`analyze_patterns_functions_datasource.dart::projectEntry` strips `text` and `mediaRefs`; `notifications_dto.dart::toFirestoreMerge` filters empty tokens).
+  2. **Server Zod `.strict()` schema.** `AnalyzePatternsRequestSchema` rejects unknown keys at the boundary; `AnalyzeMoodTextRequestSchema` does the same.
+  3. **Server logger allowlist.** `handleAnalyzePatterns` writes a single `logger.info` line per request with an enumerated field set: `event, requestId, uid, outcome, windowDays, historyLen, insightCount, statisticalInsightCount, geminiSkipped, geminiSkipReason, latencyTotalMs, rateLimit.{remaining, retryAfterSec}`. Forbidden: `history`, `history[].date`, insight body text, `text`, `mediaRefs`. The PII canary test in case #10 of `analyzePatterns.test.ts` asserts no log payload contains a date prefix or insight body string. The same canary pattern lands with `sendCheerUpPush.test.ts` case 6 (HB-003 §5.5b).
+
+### 3.4 Secret management
+
+- **`defineSecret('GEMINI_API_KEY')`** in `geminiClient.ts:23`. The Gemini API key is bound at function init, never read from `process.env`. `analyzeMoodText.test.ts` case #14 explicitly asserts this.
+- **Pre-write hook** — `.claude/hooks/settings.json` runs a secret scanner on every Write/Edit; commits with `AKIA|ghp_|sk-|AIza|pgsql:|mongodb:` strings are blocked at write time.
+- **Repo-wide grep** — manual grep against the v1.5 candidate produced no hits.
+- **IAM scoping** — `gcloud secrets versions access GEMINI_API_KEY` from a non-runtime principal must return 403. Code-side closed via App Check enforcement; IAM verification remains a DevOps step (R-M02 IAM half, tracked in `docs/runbooks/devops-followups.md`).
+
+### 3.5 Account deletion cascade (ADR-0009)
+
+- **Server-cascade via admin-SDK Cloud Function** — `deleteAccount` (`functions/src/deleteAccount.ts`, lands with HB-004 step 2) recursively deletes Firestore at `users/{uid}/**`, deletes Storage at the `users/{uid}/media/` prefix, deletes the Auth user, then best-effort cleans the per-uid rate-limit docs. Order is fixed: children before parents, Storage before root, Auth last (deleting the auth user revokes the caller's token).
+- **Idempotent contract** — re-running on a uid whose root doc and auth user are both absent returns `{ ok: true, alreadyDeleted: true }`. Crash-recovery friendly per ADR-0009.
+- **Reauth fence at the client** — see §3.1; the use case orchestrates the sequencing.
+- **Why server-only** — Firestore rules deny client-side deletes outside the same-day mutability window (preserves the journal-not-redo invariant). Bypassing rules via the admin SDK is the only path that doesn't require permanently relaxing them. Alternatives rejected in ADR-0009: client-driven batched writes (would weaken rules), per-doc onDelete triggers (fan-out cost + orphan exposure).
+
+### 3.6 PII in logs
+
+Categorical guarantees enforced by allowlist + canary tests:
+
+- **Mood text never reaches Gemini.** `analyze_patterns_functions_datasource.dart::projectEntry` strips it client-side; the Zod `.strict()` schema rejects it server-side; the logger allowlist excludes it. 18 unit tests across `analyze_patterns_functions_datasource_test.dart` and `analyzePatterns.test.ts` cover the fence.
+- **FCM token strings never appear in logs.** `notifications/data/fcm_token_repository_impl.dart` `_logger.warn('FCM did not produce a token')` and the Firebase-error logs use `e.code` only — no token value, no UID-with-token pairing. Verified by security-reviewer in PR #30 audit (R-001 cleared).
+- **Storage object paths never appear beyond the user prefix.** `deleteAccount.ts` (HB-004 step 2) logs `event, requestId, uid, outcome, latencyTotalMs, errorReason` only. Forbidden: any field from any user document, any Storage object name, any token string. Canary test in `deleteAccount.test.ts` (HB-004 §"Tests" case 12).
+
+### 3.7 Dependency hygiene
+
+- **`npm audit` clean** for `functions/package.json` at v1.5 candidate. SDK bumps verified across the 27-case Jest suite (analyzeMoodText 14 + analyzePatterns 11 + the new sendCheerUpPush + deleteAccount cases that land in HB-003 5.5b / HB-004 step 2).
+- **`flutter pub deps` clean** for `apps/mobile/pubspec.yaml` at v1.5 candidate. New v1.5 deps: `firebase_messaging: ^16.0.2` (matrix-aligned with `firebase_core: ^4.x`), `flutter_local_notifications` (lands with HB-003 5.5b for the channel registration). One discontinued package: `golden_toolkit ^0.15.0` — flagged by Pub but no security advisory; replacement deferred to v2.0 since the test API is stable.
+- **Repo-wide secret scan** clean (see §3.4).
+
+### 3.8 Open follow-ups for production deploy
+
+Tracked in `docs/runbooks/devops-followups.md` (PR #29). All four items must close before any production deploy; none block the v1.5 academic release.
+
+| ID | Item | Severity | Status |
+|---|---|---|---|
+| R-M01 | Firestore TTL on `rateLimits` + `rateLimits.patterns` + `rateLimits/cheerUp` collections | MEDIUM | Open (DevOps console step) |
+| R-M02-IAM | Secret Manager IAM scoping for `GEMINI_API_KEY` (non-runtime SA returns 403) | MEDIUM | Code-side ✅; IAM half open |
+| R-3 | `firebase deploy --only firestore:rules` push confirmation | HIGH (deploy-only) | Open (every rules change) |
+| AC-PROV | App Check provider config (Play Integrity / reCAPTCHA Enterprise) | HIGH (deploy-only) | Open (per-environment) |
+
+Closure protocol: update row to `Closed (date)` + one-line note; never delete the row (audit history matters).
 
 ---
 
 ## 4. Quality gates
 
-*Section to be drafted from CI evidence + coverage tooling + Sprint 5 Day 3+4 QA deliverables. Coverage:*
+CLAUDE.md mandates four quality gates before any release tag. v1.5 status against each:
 
-- *4.1 Correctness — `flutter test` count at v1.5 (target 400+); `flutter test --tags=golden` count (target ≥9 per S5 plan §3a.2 closure); domain coverage report from `apps/mobile/tool/check_domain_coverage.dart`; functions Jest count*
-- *4.2 Security — re-audit summary referencing §3*
-- *4.3 Accessibility — WCAG 2.2 AA contrast verified across every screen; Semantics labels on every interactive widget; dynamic type to 200% renders legibly; `docs/qa/a11y-sweep-20260515.md` evidence*
-- *4.4 Performance — cold start <2s on mid-range Android emulator (Pixel 6 API 34); no frame >16ms on analytics scroll; memory <150MB on 200-entry history; `docs/qa/perf-20260518.md` evidence*
+### 4.1 Correctness
 
-**Status:** placeholder — populate Sprint 5 Day 4 from qa-engineer's matrix docs.
+- **`flutter test` count at v1.5 candidate: 382 / 382 green** (verified on `feat/5.5a-cheer-up-controller` HEAD `efc82ecc` 2026-05-07). Up from 354 at v1.0 (a +28 delta from 5.5a domain + repo + controller + dispatch tests). Subsequent S5 work adds another ~40 cases queued in open PRs:
+  - +24 notifications tests (PR #30)
+  - +9 banner Semantics + interactions (PR #28)
+  - +5 hotline footer visibility (PR #32)
+  - +5 DeleteAccountUseCase (PR #34)
+  - +2 ai-override integration (PR #33)
+  - +missing 5.5b sendCheerUpPush.test.ts (7 cases) and HB-004 step 2 deleteAccount.test.ts (5 cases) when those PRs land
+- **`flutter test --tags=golden` count.** Started at 3 (S4 carry-over miss documented in §3a.2 of S5 plan). Day 3 qa-engineer adds the 4 missing S4 scenarios (empty garden, flower garden, wilting-plant garden, analytics dashboard) plus 3 new S5 scenarios (banner, breathing overlay, hotline footer). Target ≥ 9 at v1.5.
+- **Domain coverage.** v1.0 baseline: 94.6% repo-wide, every feature ≥ 80% per `apps/mobile/tool/check_domain_coverage.dart`. v1.5 not yet recomputed — Day 4 qa-engineer runs `flutter test --coverage` + the coverage tool and writes the baseline into `docs/qa/perf-20260518.md` appendix.
+- **Functions Jest count.** v1.0: 27 cases (analyzeMoodText 14 + analyzePatterns 11 + helper tests 2). v1.5: +7 cases for sendCheerUpPush (HB-003 §5.5b) + 5 cases for deleteAccount (HB-004 §"Tests"). Target 39 at v1.5.
+- **Firestore rules emulator count.** v1.0: 17 cases. v1.5 candidate: 25 cases (added cases 18-24 for `users/{uid}/settings/notifications` per WBS 6.3, plus case 25 cross-user write per PR #30 audit R-002). The cheerUpEvents + interventionState rules cases land with HB-003 5.5b — target 30 at v1.5.
+
+### 4.2 Security
+
+Re-audit summary referencing §3:
+
+- 0 CRITICAL, 0 HIGH unmitigated findings at v1.5 candidate.
+- All v1.0 audit findings (`docs/security/audit-2026-05-12-v1.0.md`, 8 items) closed — most via the v1.0.1 commit `d1eaa1df`, the rest as DevOps follow-ups in §3.8.
+- All S5 audit findings closed: PR #23 (R-001 channel registration) tracked for HB-003 5.5b PR; PR #30 (R-001/R-002/R-003) addressed in commits `86f2b81d` (rules + DTO) and `a41dc991` (HB-003 reconciliation).
+- Pattern reuse: the three-layer PII fence (§3.3) lands twice more in v1.5 (sendCheerUpPush + deleteAccount), with a dedicated PII canary test in each.
+
+### 4.3 Accessibility
+
+- **Semantics labels on every interactive widget.** S4 baseline: 31 `Semantics(` usages across 20 presentation files. v1.5 additions:
+  - `cheer_up_banner.dart` — fixed in PR #28 to include the full locked CLAUDE.md sentence ("It's been a heavy week. Want to try a two-minute breathing exercise?") in the `Semantics.label`. The 9-case parity test asserts `startsWith` so future regressions surface immediately.
+  - `notifications_toggle_tile.dart` (PR #30) — Switch carries the toggle title and current state.
+  - `hotline_footer.dart` — locked Semantics label "A gentle note. If it helps to talk, the Thai Mental Health Hotline is free at 1323, 24 hours."
+- **WCAG 2.2 AA contrast.** Day 3 sweep documents every (fg, bg) pair across the screens and flags any below 4.5:1. Known risk: the cheer-up banner foreground `_fg = Color(0xFF5A3A2E)` against the coral→amber gradient (S5 plan §11 risk #5). If contrast fails, swap `_fg` to a darker design-system token and re-run goldens.
+- **Dynamic type at 200%.** Day 3 sweep verifies every screen renders legibly at 200% accessibility text scale.
+- **Evidence file:** `docs/qa/a11y-sweep-20260515.md` (Day 3 deliverable).
+
+### 4.4 Performance
+
+Acceptance bars (CLAUDE.md Quality Gate 4): cold start < 2s on mid-range Android, no `ListView` unbounded, images cached via `cached_network_image`. Day 4 perf profile measures:
+
+- **Cold start** — target < 2s on Pixel 6 API 34 emulator. Measured via `flutter run --profile --trace-startup`. v1.5 baseline TBD; v1.0 met the bar.
+- **Frame budget on analytics scroll** — target no frame > 16ms (60fps). Captured via DevTools Timeline.
+- **Memory at 200-entry history** — target < 150MB. Captured via DevTools Memory tab.
+- **Evidence file:** `docs/qa/perf-20260518.md` (Day 4 deliverable). Raw timeline JSON paths cited in the appendix.
 
 ---
 
