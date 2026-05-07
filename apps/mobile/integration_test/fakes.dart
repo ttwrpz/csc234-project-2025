@@ -9,10 +9,15 @@ import 'package:moodbloom/features/mood/data/datasources/mood_firestore_datasour
 import 'package:moodbloom/features/mood/data/dtos/mood_entry_dto.dart';
 import 'package:moodbloom/features/mood/data/local/mood_database.dart';
 import 'package:moodbloom/features/mood/data/mappers/mood_entry_mapper.dart';
+import 'package:moodbloom/features/analytics/domain/entities/pattern_insight.dart';
 import 'package:moodbloom/features/mood/data/sync/mood_sync_manager.dart';
+import 'package:moodbloom/features/mood/domain/ai_analysis_failure.dart';
+import 'package:moodbloom/features/mood/domain/entities/ai_suggestion.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_entry.dart';
+import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
 import 'package:moodbloom/features/mood/domain/mood_failure.dart';
 import 'package:moodbloom/features/mood/domain/mood_repository.dart';
+import 'package:moodbloom/features/mood/domain/repositories/ai_analysis_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Integration-test stand-in for [AuthRepository]. Driven by tests via
@@ -285,5 +290,66 @@ class FakeSyncManager extends MoodSyncManager {
     await shutdown();
     await _connectivity.close();
     await _db.close();
+  }
+}
+
+/// Integration-test [AIAnalysisRepository]. Drives the AI suggestion
+/// pill from a per-test scripted result so the override flow is
+/// exercised without hitting Cloud Functions. Captures every call for
+/// assertion. Defaults to `isEnabled: true` and a single `nextSuggestion`
+/// hook the test can rewrite.
+///
+/// `analyzePatterns` is a no-op for the AI-override flow but is
+/// implemented so the same fake can later back the pattern-intervention
+/// flow without a second class. Returns an empty list by default.
+class IntegrationAiAnalysisRepository implements AIAnalysisRepository {
+  IntegrationAiAnalysisRepository({this.isEnabledOverride = true});
+
+  /// Backing for `isEnabled`. The Remote Config flag would set this in
+  /// production; tests can flip it to drive the disabled branch.
+  bool isEnabledOverride;
+
+  /// Result returned by the next [analyzeMoodText] call. Tests rewrite
+  /// this between assertions to simulate latency, low-confidence, or
+  /// safety-flag suggestions.
+  Result<AiSuggestion, AiAnalysisFailure>? nextSuggestion;
+
+  /// Captures the text of every [analyzeMoodText] call.
+  final List<String> analyzeMoodTextCalls = [];
+
+  /// Result returned by the next [analyzePatterns] call. Tests for the
+  /// pattern-intervention flow override this; AI-override tests leave
+  /// it null so the default empty-list response wins.
+  Result<List<PatternInsight>, AiAnalysisFailure>? nextPatternsResult;
+
+  @override
+  bool get isEnabled => isEnabledOverride;
+
+  @override
+  Future<Result<AiSuggestion, AiAnalysisFailure>> analyzeMoodText({
+    required String text,
+    String? locale,
+  }) async {
+    analyzeMoodTextCalls.add(text);
+    return nextSuggestion ??
+        // Default: a high-confidence "anxious" suggestion. Lets the
+        // override flow demo the path where the user disagrees with a
+        // confident model — the worst-case ergonomic test.
+        Ok(
+          const AiSuggestion(
+            mood: MoodType.anxious,
+            confidence: 0.86,
+            rationale: 'Mentions "long day" and worry',
+            latency: Duration(milliseconds: 220),
+          ),
+        );
+  }
+
+  @override
+  Future<Result<List<PatternInsight>, AiAnalysisFailure>> analyzePatterns({
+    required List<MoodEntry> history,
+    int windowDays = 90,
+  }) async {
+    return nextPatternsResult ?? const Ok(<PatternInsight>[]);
   }
 }
