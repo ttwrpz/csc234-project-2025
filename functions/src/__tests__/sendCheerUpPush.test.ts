@@ -68,6 +68,12 @@ interface DocRefMock {
 
 let txChain: Promise<unknown> = Promise.resolve();
 
+// Test-only escape hatch — when set, the next runTransaction call
+// rejects with this error and the flag is consumed. Used by the
+// `internal/rate_limit_tx_failed` PII canary case (PR #35 audit
+// R-004) to drive the CF's catch branch.
+let txThrowOnNextCall: Error | null = null;
+
 function makeDocRef(path: string): DocRefMock {
   const ref: DocRefMock = {
     _path: path,
@@ -104,6 +110,11 @@ const firestoreMock = {
       update: (ref: { _key: string }, patch: Partial<RLDoc>) => void;
     }) => Promise<T>,
   ): Promise<T> {
+    if (txThrowOnNextCall) {
+      const err = txThrowOnNextCall;
+      txThrowOnNextCall = null;
+      return Promise.reject(err);
+    }
     const next = txChain.then(async (): Promise<T> => {
       const writes = new Map<string, RLDoc>();
       const tx = {
@@ -386,7 +397,10 @@ describe('sendCheerUpPush trigger', () => {
   });
 
   test('6. PII canary — across all cases, no log payload contains token strings, BODY, or TITLE', async () => {
-    // Drive each branch once: opted_out, no_tokens, sent, rate_limited.
+    // Drive each branch once: opted_out, no_tokens, sent,
+    // rate_limited, AND internal/rate_limit_tx_failed (PR #35 audit
+    // R-004 — the catch branch around consumeToken logs at level
+    // `error` with `cause: e.name`, must still respect the allowlist).
     seedSettings('uid-A', {
       cheerUpEnabled: false,
       tokens: [{ token: 'tok-A1', platform: 'android' }],
@@ -405,9 +419,28 @@ describe('sendCheerUpPush trigger', () => {
     // Re-invoke uid-C → rate_limited path.
     await invoke('uid-C', '2026-05-13-3_consecutive_high_intensity');
 
+    // R-004: drive the internal/rate_limit_tx_failed branch by
+    // forcing the next runTransaction call to reject. The CF's catch
+    // logs `outcome: 'internal'` + `errorReason: 'rate_limit_tx_failed'`
+    // + `cause: e.name`. None of those should ever leak a token, the
+    // BODY, or the TITLE.
+    seedSettings('uid-D', {
+      cheerUpEnabled: true,
+      tokens: [{ token: 'tok-D1', platform: 'android' }],
+    });
+    txThrowOnNextCall = new Error(
+      // The error MESSAGE should never reach the log payload — only
+      // the error NAME does — but include the forbidden strings here
+      // so we'd catch a regression that started logging `e.message`.
+      "tok-D1 leaked: Noticing you've had a rough stretch. We're here.",
+    );
+    txThrowOnNextCall.name = 'FakeFirestoreError';
+    await invoke('uid-D');
+
     const FORBIDDEN = [
       'tok-A1',
       'tok-C1',
+      'tok-D1',
       "Noticing you've had a rough stretch. We're here.",
       'A gentle check-in',
     ];
@@ -417,6 +450,20 @@ describe('sendCheerUpPush trigger', () => {
         expect(dump).not.toContain(needle);
       }
     }
+
+    // Defense-in-depth: confirm the internal branch actually fired —
+    // a regression that turned the catch into a no-op would silently
+    // make the PII canary above vacuous on the new uid.
+    const internalErrors = loggerCalls.filter(
+      (c) =>
+        c.level === 'error' &&
+        typeof c.payload === 'object' &&
+        c.payload !== null &&
+        (c.payload as { outcome?: string }).outcome === 'internal' &&
+        (c.payload as { errorReason?: string }).errorReason ===
+          'rate_limit_tx_failed',
+    );
+    expect(internalErrors).toHaveLength(1);
   });
 
   test('7. channel-id literal — multicast payload always uses cheer_up exactly', async () => {
