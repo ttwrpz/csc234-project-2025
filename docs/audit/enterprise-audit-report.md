@@ -232,16 +232,284 @@ Acceptance bars (CLAUDE.md Quality Gate 4): cold start < 2s on mid-range Android
 
 ## 5. Multi-agent orchestration workflow
 
-*Section to be drafted Sprint 5 Day 3. Coverage:*
+MoodBloom is built by a single human team (5 students) collaborating with five specialised Claude Code subagents. The team writes the kickoff prompt; the orchestrator (a top-level Claude Code session) reads it, decomposes the work into per-agent dispatches, sequences them on a shared rate-limit pool, reviews their output, and chases the resulting PRs through CI to merge. The pattern produced ~400 commits and 17 PRs across S5 alone, with measurable quality gates on every PR.
 
-- *5.1 Agent profiles (`.claude/agents/*.md`): `architect`, `flutter-engineer`, `qa-engineer`, `security-reviewer`, `general-purpose`. Each profile + tool inventory + model assignment.*
-- *5.2 Dispatch graph (canonical S5 example) — reuse the S5 plan §2 mermaid as evidence; describe how dispatches gate on prior artifacts (architect briefs gate flutter-engineer; security-reviewer gates merges of CF + rules edits)*
-- *5.3 Handoff brief format — show `.claude/briefs/sprint-{N}/*.md` structure: Problem / Scope (in/out) / Files touched / Tests to write / Acceptance / Open questions*
-- *5.4 ADR pattern — pre-decision before implementation, single declarative Decision sentence, Alternatives Considered with explicit rejection rationale*
-- *5.5 PR review pattern — non-author approval (Enterprise R3); security-reviewer cross-cuts on rules + CF edits; CI gates: format + analyze + test + goldens + domain-purity*
-- *5.6 Plan Mode + Ultraplan workflow — local plan-mode for small tasks; Ultraplan handoff for sprint kickoffs; teleport-back as approval signal*
+### 5.1 Agent profiles
 
-**Status:** placeholder — finalize Sprint 5 Day 3 with concrete examples drawn from S2-S5 dispatch history.
+Five subagent types, each with a sealed tool inventory and a single-paragraph contract:
+
+| Agent | File | Tools | Contract |
+|---|---|---|---|
+| `architect` | `.claude/agents/architect.md` | Read, Glob, Grep, WebFetch | Plans only. Owns module boundaries, interface design, ADRs, handoff briefs. **Does not implement.** Read-only access to the codebase. |
+| `flutter-engineer` | `.claude/agents/flutter-engineer.md` | Read, Write, Edit, Glob, Grep, Bash | Implements Flutter features. Reads handoff briefs from architect; produces a working feature branch with code. Writes domain unit tests in-PR. |
+| `qa-engineer` | `.claude/agents/qa-engineer.md` | Read, Write, Edit, Glob, Grep, Bash | Writes widget + golden + integration tests. Owns the a11y sweep + perf profile. **Does not write domain unit tests** — those are flutter-engineer's. |
+| `security-reviewer` | `.claude/agents/security-reviewer.md` | Read, Glob, Grep, Bash | Read-only audit. Reviews rules, CFs, auth flows, secrets, deps, PII in logs. **Produces a risk register, not patches.** Never writes application code. |
+| `general-purpose` | (Claude Code default) | All tools | Multi-step research; used for parallelisable open-ended queries. |
+
+The tool inventories are sealed by the harness — an architect agent literally cannot Write a file even if instructed to. This is what makes the "architect plans, doesn't implement" rule load-bearing rather than aspirational.
+
+### 5.2 Dispatch graph
+
+The canonical S5 dispatch graph is reproduced from the Sprint 5 plan §2 (Day 1 morning carry-over → Day 1 afternoon parallel architect+flutter-engineer+qa-engineer → Day 2 stacked tracks). Re-rendered in `.claude/plans/refactored-growing-alpaca.md`. The reading is: vertical lanes are agents; arrows are work-product dependencies — every dispatch one row down must be able to read the artifact produced by the row above.
+
+Concrete S5 dependency chain:
+
+```
+architect HB-003 + ADR-0008  ───┐
+                                ├─→  flutter-engineer 5.5a (CheerUpController + repo)
+                                │      └─→  flutter-engineer 5.5b (sendCheerUpPush CF)
+                                │             └─→  security-reviewer audit (R-001 fix)
+                                │             └─→  flutter-engineer 5.5c (footer verification)
+                                │
+flutter-engineer 6.3 (FCM)  ────┤      └─→  security-reviewer audit (R-002, R-003 fix)
+                                │
+qa-engineer 7.3a (auth + log)   │
+                                │
+architect HB-004 + ADR-0009 ────┴─→  flutter-engineer 2.4a (domain) → 2.4b (CF) → 2.4c (UI)
+```
+
+Three structural invariants:
+1. **Architect briefs gate flutter-engineer dispatches.** A brief is a complete spec — sequence diagram, exact interface signatures, doc shape, rule additions, acceptance criteria, open questions. The flutter-engineer prompt cites the brief by path; no design questions during build.
+2. **Security-reviewer gates merges of `firebase/firestore.rules` + `functions/src/*` + `apps/mobile/lib/main.dart`.** CLAUDE.md "do-not-do list" enumerates these paths. Architect signoff is captured in the handoff brief; security-reviewer signoff is a separate read-only audit dispatched after the implementation PR opens.
+3. **CI gates merge.** Domain-purity grep + format + analyze + tests + goldens + functions Jest + Firestore rules emulator. No PR merges with CI red.
+
+### 5.3 Handoff brief format
+
+`.claude/briefs/sprint-N/*.md` follow a fixed structure proven across S3 (Gemini contract, Drift schema), S4 (pattern detection), and S5 (HB-003 cheer-up, HB-004 account deletion):
+
+- **Goal** — one paragraph: what the dispatch ships, why it matters, what it depends on.
+- **State of the world** — table of S(N-1) carry-over: which files exist with which capability today.
+- **Sequence diagram** — Mermaid. Forces the architect to think about the call ordering before the implementer does.
+- **Exact interface signatures** — Dart abstracts + TS Cloud Function contracts pasted as code blocks. The implementer copies-with-adaptation rather than reverse-engineering from the prose.
+- **Files touched** — explicit add/edit list. The agent's commit cadence mirrors this.
+- **Tests to write** — enumerated cases (HB-003 §5.5b lists 7 server-test cases by name, e.g. "happy-path / opted_out / no_tokens / rate_limited / dead-token pruning / PII canary / channel-id literal").
+- **Acceptance criteria** — checklist; CI gates + manual demo path.
+- **Out-of-scope guardrails** — what the dispatch must NOT touch; protects parallel agents from collision.
+- **Open questions** — flagged decisions that need orchestrator input before code is written.
+
+### 5.4 ADR pattern
+
+Pre-decided architectural choices ship as ADRs in `docs/adr/` BEFORE the implementer agent opens a file. Sprint 5 added ADR-0008 (intervention cooldown persistence) and ADR-0009 (account-deletion topology) the same day the kickoff arrived. Each ADR has:
+
+- **Status:** Accepted / Superseded / Deprecated
+- **Context:** the problem
+- **Decision:** a single declarative sentence
+- **Consequences:** good and bad, called out separately
+- **Alternatives considered:** with explicit rejection rationale (not "we picked X" but "we picked X over Y because…")
+- **Compliance check:** which Enterprise Term Assignment requirements + CLAUDE.md rules are touched
+
+The implementer agent cannot drift mid-build because the alternatives have already been weighed. ADR-0007 (statistical-primary pattern analysis) saved S4 from a hallucinating-Gemini regression: when the supplementary call landed in v1.0.1, the test suite already had 11 cases covering the failure modes (gemini_unavailable, parse_error, timeout, sample_too_small) because the ADR pre-committed to "statistical-primary, Gemini-supplementary, ≤0.7 confidence clamp."
+
+### 5.5 PR review pattern
+
+Every PR has at least:
+- **Non-author approval** (Enterprise R3 — the agent that writes the code is not the agent that approves it). Mechanically: dispatched flutter-engineer writes; orchestrator opens the PR; non-author human (or security-reviewer agent for security-touching PRs) approves.
+- **CI green** on flutter / firestore-rules / functions jobs — domain-purity + format + analyze + tests + goldens + emulator + Jest. Branch protection blocks merge on red.
+- **Audit comment thread** for any PR that touches `firebase/firestore.rules` + `functions/src/*` + `apps/mobile/lib/main.dart`. PR #23 (manifest changes), PR #30 (rules + CF), and PR #35 (CF + rules + main.dart) all carry inline `gh pr comment` audit summaries from the dispatched security-reviewer + the orchestrator's R-XXX follow-up commits.
+
+Squash-merge only. Stacked PRs (e.g. 5.5b stacked on 5.5a stacked on the 6.3 merge) declare their base in the PR title + description so reviewers don't try to merge out of order.
+
+### 5.6 Plan Mode + Ultraplan workflow
+
+Two planning paths, picked by scope:
+
+- **Local Plan Mode** — for small tasks (single-file refactors, individual feature wiring). Orchestrator enters plan mode via `EnterPlanMode`, drafts to a plan file under `~/.claude/plans/`, gets user approval via `ExitPlanMode`, then executes. Sprint 5 used local plan mode for the 5.5c hotline footer verification test (foreground, no agent needed).
+- **Ultraplan handoff** — for sprint-scale plans. The user sends the local plan file to a remote refinement service (`/ultraplan`), iterates in a browser UI, and "teleports" the refined plan back into the local session. Teleport-back IS the approval signal — orchestrator does NOT call `ExitPlanMode`. Sprint 5's master plan went through Ultraplan once after my initial draft; the refinement added the dispatch graph, the day-by-day sequencing, the risk register expansion, and the evidence package layout.
+
+The `auto-memory` workflow at `~/.claude/projects/.../memory/` persists workflow lessons across sessions. Sprint 5 wrote `workflow_parallel_agent_dispatch.md` after the Day-1 worktree collision; future sessions reading the memory pass `isolation: "worktree"` for file-mutating agent calls without prompting.
+
+---
+
+## 6. Agent challenges and mitigations
+
+Seven concrete failure modes, each captured the moment it surfaced + the mitigation that prevents the recurrence:
+
+### 6.1 Domain-purity drift
+
+**Symptom (S4):** PR #16 (`feat/5.3-5.4-pattern-detection`) had a `cloud_functions` import in `features/analytics/domain/datasources/`. CI step `Domain purity check` (`.github/workflows/ci.yml:157-165`) failed the build with the error message `Domain layer must not import package:flutter, package:firebase_*, or package:cloud_firestore. See CLAUDE.md.`
+
+**Mitigation:** The CI grep is the build-time guard. The `.claude/hooks/settings.json` `pre-write` hook is the write-time guard. Belt-and-suspenders. The S4 agent moved the file to `data/datasources/` on the same branch; the lesson stuck — no further drift across the rest of the sprint.
+
+### 6.2 Parallel-agent working-tree collision
+
+**Symptom (S3 D2.3+D2.4, S5 Day 1 afternoon):** Two background agents share the same git checkout. Each creates its branch but neither commits before timing out, leaving smeared file mixes on the second agent's branch.
+
+**S5 surface:** flutter-engineer 6.3 + qa-engineer 7.3a both wrote to `feat/6.3-fcm-toggle`'s working tree. Recovery cost: stash + partition by inspection + restore each file set onto its correct branch. 6.3's partial work was discarded entirely (broken `settings_screen.dart` import to an empty `notifications/` dir); 7.3a's work was salvaged (534 lines).
+
+**Mitigation:** `Agent({isolation: "worktree", ...})` for every file-mutating dispatch. The harness creates a per-agent `.claude/worktrees/agent-<id>/` checkout off `main` (or whichever base the prompt specifies). Agents on isolated worktrees cannot collide. The pattern is documented in `~/.claude/projects/.../memory/workflow_parallel_agent_dispatch.md` so future sessions adopt it without prompting.
+
+### 6.3 Anthropic rate-limit exhaustion mid-flight
+
+**Symptom (S3 ~30% wall-clock, S4 ~25%, S5 Day 1 first attempt 100% loss):** Parallel agents share a rate-limit pool. Two large dispatches in the same window can both 429 before either finishes, producing zero usable work. S5 Day 1 first attempt at parallel architect + flutter-engineer + qa-engineer dispatch all hit the limit at <10 tool uses each.
+
+**Mitigation:** **Sequence file-mutating agents instead of parallelising them on a shared rate-limit pool.** Read-only research agents (security-reviewer audits, Explore for codebase searches) can stay parallel — they don't consume the same write budget. Smaller handoff briefs (<40 file edits per dispatch, target ≤80 tool calls) so a single dispatch fits within one window. S5 Day 2 adopted the rule explicitly and shipped 5 parallel-but-sequenced flutter-engineer dispatches without a single 429-induced re-do.
+
+### 6.4 Banner copy drift
+
+**Symptom (S5 PR #28):** While authoring HB-003 §5.5a's "Required test", I read `cheer_up_banner.dart:50` and discovered the `Semantics(label: ...)` was `"It's been a heavy week. ${reasonCaption(reason)}"` — title + reason caption only. The locked CLAUDE.md sentence "It's been a heavy week. Want to try a two-minute breathing exercise?" was split across two visible `Text` widgets but only the first half reached screen readers. Without the parity test, this was invisible.
+
+**Mitigation:** The 9-case test in `cheer_up_banner_test.dart` asserts `Semantics.label.startsWith("It's been a heavy week. Want to try a two-minute breathing exercise?")` for all three reason codes (5_of_7_negative, 3_consecutive_high_intensity, unknown). A future regression that drops the second half of the locked sentence fails CI before merge. The pattern generalises: any CLAUDE.md-locked string needs a `startsWith` Semantics-label assertion.
+
+### 6.5 Goldens-count miss in S4 acceptance
+
+**Symptom (S4 demo):** The kickoff demanded ≥6 golden test files covering six specific scenarios (empty garden, flower garden, wilting-plant garden, rain-cloud garden, analytics dashboard, insights card low/med/high). At v1.0 the count was 3 files / 7 PNG baselines — the right total but the wrong scenario coverage. The miss didn't surface in the demo prep because the count-vs-coverage distinction wasn't checklisted.
+
+**Mitigation:** S5 plan §3a.2 explicitly enumerates the four missing scenarios by file path AND screen-size matrix (360, 800, 1280 widths × light/dark). The closure is mechanical, not interpretive. Day 3 qa-engineer task ships them.
+
+### 6.6 v1.0 tag never pushed at S4 demo
+
+**Symptom (S4):** The demo ran on commit `d1eaa1df` (post-v1.0.1 hardening close). Verbal "we're v1.0" was understood. The annotated tag never reached origin. Discovered Sprint 5 Day 1 morning when the orchestrator ran `git tag -l` and saw only `v0.2-walking-skeleton` and `v0.3-beta`.
+
+**Mitigation:** Recovered Day 1: `git tag -a v1.0 d1eaa1df -m "..." && git push origin v1.0`. The audit-report v1.0 → v1.5 narrative now anchors on a real tag. Demo-day checklist updated: `git tag -l v1.5` verification post-demo is now an explicit acceptance criterion.
+
+### 6.7 Port-stuck emulator stalls a 600s-watchdog dispatch
+
+**Symptom (S5 Day 2):** The HB-004 step 2 flutter-engineer agent stalled trying to run the emulator E2E spec locally — port 8080 was held by a stray Firestore emulator on the Windows host. The harness watchdog timed out after 600 seconds with no progress. Two of eight planned commits were salvageable (CF + Jest cases); the rest had to be re-dispatched.
+
+**Mitigation:** Subsequent dispatches' prompts explicitly forbid local emulator runs on the dev host. CI Linux runners (clean ports + same `firebase emulators:exec` script) are the authoritative emulator surface. The Day-3 dispatch instruction template now reads: "DO NOT run any emulator locally — port 8080 is stuck on this Windows host."
+
+### 6.8 Production-CF rate-limit path bug masked by mock-Map test
+
+**Symptom (S5 PR #36):** The HB-004 CF used `db.doc('rateLimits/cheerUp/${uid}')` for the rate-limit cleanup path. Three segments → odd component count → Firestore rejects as "must point to a document". The Jest test masked the bug because its `firestoreStore` was a flat `Map<string, ...>` that accepted any string key. CI's emulator E2E spec caught it on the first push (real Firestore rejects the malformed path) — without the E2E, this would have shipped to production and silently leaked orphan rate-limit docs (`Promise.allSettled` swallows the error).
+
+**Mitigation:** The literal-form (`rateLimits.cheerUp/${uid}` — flat collection name with literal dot, 2-segment) is documented inline in `functions/src/deleteAccount.ts:118-123` and `firebase/test/account-deletion-emulator.spec.ts:200-207`. Jest tests now use the same literal so the mock contract matches the production contract. The lesson: real-Firestore E2E tests catch path-shape bugs that flat-Map mocks cannot.
+
+---
+
+## 7. Worked handoff example — HB-003 §5.5b
+
+End-to-end walk-through of one dispatch, from architect brief to merged PR. Picked because it touches every part of the system: Cloud Functions, Firestore rules, client domain + data + presentation, channel registration, two PII fences, and a security-reviewer audit.
+
+### 7.1 The brief
+
+`.claude/briefs/sprint-5/cheer-up-fcm.md` §5.5b. ~600 lines. Sections in order:
+- **Goal** — close the FCM half of the cheer-up loop (5.5a already shipped the in-app banner + cooldown writes; 5.5c verifies the 10-day footer).
+- **Sequence diagram** — Mermaid covering log-mood → detector → controller → repository → cheerUpEvents/{dayUtc}-{reason} idempotent create → onDocumentCreated trigger → CF reads settings + tokens → consumeToken (24h, max 1) → sendEachForMulticast → dead-token pruning → log allowlist.
+- **Settings doc shape (canonical)** — `users/{uid}/settings/notifications` single doc, `cheerUpEnabled: bool`, `tokens: [{ token, platform, lastSeenAt }]` (per O11; per-PR-30 audit reconciliation R-001 in commit `a41dc991`).
+- **Event doc — idempotent trigger** — `users/{uid}/cheerUpEvents/{evtId}` with `evtId = ${dayUtc}-${reason}` regex `/^\d{4}-\d{2}-\d{2}-(5_of_7_negative|3_consecutive_high_intensity)$/`.
+- **Firestore rule additions (canonical)** — three rule blocks (cheerUpEvents, interventionState, settings/notifications) pasted as exact code.
+- **Cloud Function contract (canonical)** — TS code block with locked title/body/channel-id, rate-limit binding, logger allowlist.
+- **Channel-registration follow-up R-001** — same PR must register `AndroidNotificationChannel('cheer_up', ...)` via `flutter_local_notifications` at app boot, or Android 8+ silently drops the push.
+- **Tests to write** — 7 server cases enumerated by name; 3 widget tests; 1 integration test extension.
+- **Out-of-scope guardrails** — no PII, no clinical language, hotline 1323 footer in-app only.
+- **Acceptance criteria** — 8-item checklist.
+- **Open questions** — token list shape (OQ-A: cap-only vs sub-collection); Web FCM permission UX (OQ-B).
+
+### 7.2 The flutter-engineer's interpretation
+
+Dispatched on a worktree off `feat/5.5a-cheer-up-controller` + merged with `feat/6.3-fcm-toggle`. 8 commits, intentional cadence so a 429 mid-flight leaves green checkpoints:
+
+1. `d95cd2a2` — `CheerUpEventsRepository` abstract + Firestore impl (mirrors the `InterventionStateRepository` pattern from 5.5a)
+2. `ec47df25` — `CheerUpController.onShown` writes the event doc post-anchors; `already-exists` is the idempotent path
+3. `fd580f2b` — `firestore.rules` adds `cheerUpEvents` + `interventionState` rule blocks
+4. `3679f5b7` — 12 new emulator cases (26-37) covering the rule additions
+5. `5cac05d1` — pubspec + `main.dart` channel registration (architect signoff per HB-003 §"Channel registration follow-up — R-001")
+6. `72773332` — `functions/src/sendCheerUpPush.ts` + `index.ts` export
+7. `33b814df` — 8-case Jest suite (the 7 mandated cases + a `2b` for missing-doc opt-out the agent added)
+8. `87009d8b` — `CheerUpEventsRepositoryImpl` unit test
+
+Total: 421/421 dart tests, 40/40 functions tests (37 prior + 8 new − 5 sendCheerUpPush counted differently), 37/37 emulator tests. Channel id literal verified byte-identical across `AndroidManifest.xml:52`, `main.dart:81`, `sendCheerUpPush.ts:46`.
+
+### 7.3 The security-reviewer audit
+
+Dispatched after the implementation PR opened (PR #35). Read-only; produced a risk register, not patches. Reviewed against HB-003's canonical rule blocks + CF contract.
+
+Findings:
+- **0 CRITICAL, 0 HIGH** unmitigated.
+- **R-001 MEDIUM** — `interventionState` update affectedKeys allowlist included `schemaV` without a type guard, letting a malicious or buggy client overwrite it with `'pwned'`. Today's CF doesn't read schemaV on this collection so blast radius is self-only, but the moment a CF or migration code starts depending on it, the schema-version invariant breaks. Drift from canonical (HB-003 says affectedKeys should be `['lastTriggeredAt', 'firstTriggeredAt']`).
+- **R-002, R-003 LOW** — equivalent-form (`keys()` vs `diff({}.toMap()).affectedKeys()` on create — semantically identical) and rate-limit collection literal (`rateLimits.cheerUp` matches the established codebase precedent for `analyzePatterns`).
+- **R-004, R-005, R-006 LOW** — PII canary doesn't cover the `internal/rate_limit_tx_failed` branch; dead-token survivor filter retains malformed entries (bound by 25-cap rule); channel-id literal has no automated triple-site assertion.
+
+Sign-off: **Approved with conditions**. R-001 must close in same PR; R-004/R-005/R-006 are next-sprint follow-ups.
+
+### 7.4 What the orchestrator caught that the dispatched agent missed
+
+Two concrete examples from this dispatch:
+
+1. **R-001 fix (commit `e601d65c`).** Orchestrator triaged the audit findings and wrote the rules tightening + Case 38 regression test inline. 2-line rule change + 16-line test case. No re-dispatch needed.
+
+2. **The HB-004 path bug surfaced in CI** (related but on the deleteAccount sibling PR). The Jest mock used a flat `Map<string, ...>` that accepted any string key. `db.doc('rateLimits/cheerUp/${uid}')` worked under the mock but the production CF would hit a real Firestore that rejects the 3-segment path. CI's emulator E2E was the catching surface. Orchestrator wrote the fix inline (commit `9aa00199`) — 4 sites: production CF + emulator E2E seed + cleanup + Jest mock. **Pattern:** real-Firestore E2E catches what mock-Map tests can't.
+
+### 7.5 PR thread + merge
+
+PR #35 description cites HB-003 §5.5b + ADR-0008 + the canonical channel-id verification (3 sites byte-identical). Audit follow-up landed as commit `e601d65c` + a `gh pr comment` summary that cross-references the four R-XXX findings and their dispositions. CI green on `e601d65c`. Awaiting the dependency train to merge (5.5b is stacked on 5.5a + 6.3 + the architect docs PR).
+
+### 7.6 Lessons for future handoffs
+
+- **Architect briefs are spec, not aspiration.** A brief that includes the exact rule-block text + the exact CF code block + the exact test names lets the implementer focus on wire-up rather than re-deriving the design.
+- **Idempotency tests need real backends.** Mocks accept paths that production rejects. PR #35's E2E spec found one such bug post-merge-prep; PR #36 found a sibling bug pre-merge.
+- **The audit findings get tighter as the system matures.** PR #23 had 1 MEDIUM (R-001 channel registration) — closed in 5.5b. PR #30 had 3 MEDIUM (R-001/R-002/R-003) — closed in same-PR follow-ups. PR #35 had 1 MEDIUM + 5 LOW — MEDIUM closed in same PR, LOWs deferred to next sprint. Each finding documented + tracked; nothing dropped.
+
+---
+
+## 8. Plan Mode transcripts and orchestration evidence
+
+Inventory of evidence assets that ship with the May 30 final submission. Bundled into `docs/submission/` via `tool/package_evidence.sh` per S5 plan §10.
+
+### 8.1 Plan Mode transcripts
+
+- `docs/audit/transcripts/plan-mode-s5.md` — Sprint 5 plan-mode session (the user's `/loop` + `/ultraplan` exchange that produced `.claude/plans/refactored-growing-alpaca.md`). Includes the Ultraplan refinement step and the teleport-back. Archive of the master plan as it evolved.
+- Sprint 2-4 transcripts — recovered from session history where preserved; if not, the corresponding sprint kickoff prompts in `.claude/prompts/sprint-{2,3,4}-kickoff.md` document the intended workflow.
+
+### 8.2 Handoff briefs
+
+- `.claude/briefs/sprint-3/security-rules.md` — WBS 2.3 (S3)
+- `.claude/briefs/sprint-3/gemini-detection.md` — WBS 3.4 (S3)
+- `.claude/briefs/sprint-4/pattern-detection.md` — WBS 5.3 + 5.4 (S4)
+- `.claude/briefs/sprint-5/cheer-up-fcm.md` — HB-003 (S5)
+- `.claude/briefs/sprint-5/account-deletion.md` — HB-004 (S5)
+
+### 8.3 ADRs
+
+`docs/adr/0001-repo-structure-and-clean-architecture.md`, `0003-gemini-cloud-function-contract.md`, `0004-drift-offline-first-schema.md`, `0005-conflict-resolution-last-write-wins.md`, `0006-compassionate-reframing.md`, `0007-pattern-analysis-fallback.md`, `0008-intervention-cooldown-persistence.md`, `0009-account-deletion-topology.md`. (ADR-0002 reserved per CLAUDE.md "do-not-do list"; not yet authored.)
+
+### 8.4 Sprint retros
+
+`docs/retros/sprint-2-retro.md`, `sprint-3-retro.md`, `sprint-4-retro.md` (S5 Day 1 carry-over), `sprint-5-retro.md` (post-tag, Day 5 evening).
+
+### 8.5 Security audits
+
+- `docs/security/audit-2026-04-28-foundation.md` — S2 foundation
+- `docs/security/audit-2026-04-28-auth.md` — S2 auth
+- `docs/security/audit-2026-05-12-v1.0.md` — v1.0 release (8 findings, all mitigated)
+- `docs/security/audit-2026-05-19-v1.5.md` — v1.5 supplement (Day 4 deliverable, see `docs/audit/security-posture.md` for the runtime-numbers companion)
+- Per-PR audits captured inline in `gh pr comment` threads on PR #23, PR #30, PR #35
+
+### 8.6 Sprint test reports
+
+`docs/test-reports/sprint-3-test-report.md`. v1.5 test summary lives inside `docs/audit/enterprise-audit-report.md` §4 — no separate v1.5 test report is authored.
+
+### 8.7 QA matrices
+
+- `docs/qa/android-matrix-20260515.md` — Day 3 deliverable
+- `docs/qa/web-matrix-20260518.md` — Day 4 deliverable
+- `docs/qa/a11y-sweep-20260515.md` — Day 3 deliverable
+- `docs/qa/perf-20260518.md` — Day 4 deliverable
+
+### 8.8 Feature-flag rollback runbook
+
+`docs/runbooks/feature-flag-rollback.md` (S4).
+
+### 8.9 DevOps follow-ups runbook
+
+`docs/runbooks/devops-followups.md` (S5 Day 1) — R-M01 (TTL), R-M02 IAM half, R-3 (rules deploy push), AC-PROV (App Check provider config). All open through v1.5; close before any production deploy.
+
+### 8.10 CI run captures
+
+Captured via `gh run view <id> --log` and exported into `docs/submission/evidence/ci-runs/`. Three artifacts per run:
+- `flutter-job.html` — format + analyze + tests + goldens + domain-purity
+- `firestore-rules-job.html` — emulator suite (rules + Storage + Auth)
+- `functions-job.html` — TS lint + build + Jest
+
+The v1.5 release-tag commit's CI runs are the canonical evidence; supplement with the v1.0 audit-clearance run for the v1.0 → v1.5 narrative.
+
+### 8.11 Crashlytics dashboard
+
+`docs/submission/evidence/crashlytics/dashboard-2026-05-19.png` — screenshot of the Firebase Console Crashlytics dashboard at the v1.5 demo. Demonstrates the structured-logger + Crashlytics integration shipped in S3.
+
+### 8.12 Goldens
+
+Copy of every PNG baseline in `apps/mobile/test/**/goldens/` as of v1.5. Demonstrates the visual contract for the seven pivot features. Target ≥9 baseline files at v1.5 (the four S4 carry-over scenarios + three new S5 scenarios — see §4.1).
 
 ---
 
