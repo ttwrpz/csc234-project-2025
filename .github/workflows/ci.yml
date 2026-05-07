@@ -135,7 +135,7 @@ jobs:
       # ------------------------------------------------------------------
       - name: flutter test (apps/mobile)
         working-directory: apps/mobile
-        run: flutter test
+        run: flutter test --coverage
 
       - name: flutter test --tags=golden (apps/mobile)
         working-directory: apps/mobile
@@ -163,6 +163,42 @@ jobs:
             exit 1
           fi
           echo "Domain purity: OK"
+
+      # ------------------------------------------------------------------
+      # gh CLI: smoke + PR coverage comment (S5 carry-over). The smoke
+      # step verifies gh is available + authenticated. The comment step
+      # posts a one-line coverage summary on PRs; continue-on-error keeps
+      # CI green if gh hits a transient error or runs from a fork without
+      # write access.
+      # ------------------------------------------------------------------
+      - name: gh CLI smoke check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh --version
+          gh auth status
+
+      - name: Post coverage comment on PR
+        if: github.event_name == 'pull_request'
+        working-directory: apps/mobile
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if [ ! -f coverage/lcov.info ]; then
+            echo "No coverage/lcov.info — skipping comment."
+            exit 0
+          fi
+          TOTAL=$(grep -c "^DA:" coverage/lcov.info || true)
+          HIT=$(awk -F',' '/^DA:/ && $2 != 0' coverage/lcov.info | wc -l)
+          if [ "$TOTAL" -gt 0 ]; then
+            PCT=$(awk "BEGIN { printf \"%.1f\", ${HIT} * 100 / ${TOTAL} }")
+          else
+            PCT="n/a"
+          fi
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --body "📊 **Coverage:** ${PCT}% (${HIT} / ${TOTAL} lines hit) — _from CI run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})_"
 
   firestore-rules:
     name: Firestore + Storage rules emulator tests
