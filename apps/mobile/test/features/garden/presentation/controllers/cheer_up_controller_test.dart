@@ -2,6 +2,7 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/garden/data/providers.dart';
+import 'package:moodbloom/features/garden/domain/cheer_up_events_repository.dart';
 import 'package:moodbloom/features/garden/domain/intervention_state_repository.dart';
 import 'package:moodbloom/features/garden/presentation/controllers/cheer_up_controller.dart';
 
@@ -46,16 +47,38 @@ class _FakeRepo implements InterventionStateRepository {
   }
 }
 
+/// Recording fake of [CheerUpEventsRepository]. Captures the (reason,
+/// dayUtc-via-now) pair for every successful create attempt so the
+/// 5.5b dispatch can be asserted alongside the anchor writes.
+class _FakeEventsRepo implements CheerUpEventsRepository {
+  final List<({String reason, DateTime now})> calls =
+      <({String reason, DateTime now})>[];
+
+  Result<void, CheerUpEventsFailure> nextResult = const Ok(null);
+
+  @override
+  Future<Result<void, CheerUpEventsFailure>> createEvent({
+    required String reason,
+    required DateTime now,
+  }) async {
+    calls.add((reason: reason, now: now));
+    return nextResult;
+  }
+}
+
 void main() {
   group('CheerUpController', () {
     late _FakeRepo repo;
+    late _FakeEventsRepo eventsRepo;
     late ProviderContainer container;
 
     setUp(() {
       repo = _FakeRepo();
+      eventsRepo = _FakeEventsRepo();
       container = ProviderContainer(
         overrides: [
           interventionStateRepositoryProvider.overrideWith((_) async => repo),
+          cheerUpEventsRepositoryProvider.overrideWithValue(eventsRepo),
         ],
       );
       addTearDown(container.dispose);
@@ -67,18 +90,24 @@ void main() {
       expect(state.onShownDispatched, isFalse);
     });
 
-    test('onShown() writes both anchors on first call', () async {
-      await container
-          .read(cheerUpControllerProvider.notifier)
-          .onShown(reason: '5_of_7_negative');
+    test(
+      'onShown() writes both anchors AND the event doc on first call',
+      () async {
+        await container
+            .read(cheerUpControllerProvider.notifier)
+            .onShown(reason: '5_of_7_negative');
 
-      expect(repo.writeLastCalls, 1);
-      expect(repo.writeFirstIfNullCalls, 1);
-      expect(
-        container.read(cheerUpControllerProvider).onShownDispatched,
-        isTrue,
-      );
-    });
+        expect(repo.writeLastCalls, 1);
+        expect(repo.writeFirstIfNullCalls, 1);
+        // 5.5b — event-doc create runs alongside the anchor writes.
+        expect(eventsRepo.calls, hasLength(1));
+        expect(eventsRepo.calls.single.reason, '5_of_7_negative');
+        expect(
+          container.read(cheerUpControllerProvider).onShownDispatched,
+          isTrue,
+        );
+      },
+    );
 
     test('onShown() is idempotent — second call is a no-op', () async {
       await container
@@ -90,6 +119,41 @@ void main() {
 
       expect(repo.writeLastCalls, 1);
       expect(repo.writeFirstIfNullCalls, 1);
+      // Event-doc create also collapses to a single attempt — the
+      // CF would also dedupe via already-exists, but we'd rather not
+      // round-trip at all on the second call.
+      expect(eventsRepo.calls, hasLength(1));
+    });
+
+    test(
+      'onShown() still attempts event-doc create when anchor writes Err',
+      () async {
+        // Cloud unreachable for anchors but reachable for the event doc:
+        // unusual in practice but the contract is "independent paths".
+        repo.nextWriteLast = const Err(InterventionStateFailure.network());
+        repo.nextWriteFirstIfNull = const Err(
+          InterventionStateFailure.network(),
+        );
+
+        await container
+            .read(cheerUpControllerProvider.notifier)
+            .onShown(reason: '3_consecutive_high_intensity');
+
+        expect(repo.writeLastCalls, 1);
+        expect(repo.writeFirstIfNullCalls, 1);
+        // Event-doc create still attempted — independence is the
+        // contract. CF only needs the event doc.
+        expect(eventsRepo.calls, hasLength(1));
+        expect(eventsRepo.calls.single.reason, '3_consecutive_high_intensity');
+      },
+    );
+
+    test('onShown() reason flows through to the event doc unchanged', () async {
+      await container
+          .read(cheerUpControllerProvider.notifier)
+          .onShown(reason: '3_consecutive_high_intensity');
+
+      expect(eventsRepo.calls.single.reason, '3_consecutive_high_intensity');
     });
 
     test(
@@ -125,6 +189,7 @@ void main() {
       expect(container.read(cheerUpControllerProvider).bannerDismissed, isTrue);
       expect(repo.writeLastCalls, 0);
       expect(repo.writeFirstIfNullCalls, 0);
+      expect(eventsRepo.calls, isEmpty);
       expect(
         container.read(cheerUpControllerProvider).onShownDispatched,
         isFalse,
