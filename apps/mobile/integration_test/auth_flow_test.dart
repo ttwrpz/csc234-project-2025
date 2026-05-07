@@ -18,6 +18,12 @@ import 'fakes.dart';
 /// Must pass on Android emulator AND `flutter test integration_test/auth_flow_test.dart -d chrome`
 /// per WBS 7.3 acceptance. Web parity is part of the Sprint 5 cross-platform
 /// QA matrix.
+///
+/// Conflict-resolution note (post-#25 + post-#34 rebase, 2026-05-08):
+/// PR #25 replaced the file-local `_IntegrationAuthRepository` with the
+/// shared `IntegrationAuthRepository` in `fakes.dart`. PR #34's stub
+/// additions for `reauthenticate` + `deleteAccount` therefore live in
+/// `fakes.dart::IntegrationAuthRepository` instead of here.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
