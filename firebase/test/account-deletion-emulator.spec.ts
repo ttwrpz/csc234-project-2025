@@ -137,7 +137,7 @@ async function runDeletionCascade(uid: string): Promise<{ alreadyDeleted: boolea
 
   await Promise.allSettled([
     db.doc(`rateLimits/${uid}`).delete(),
-    db.doc(`rateLimits/cheerUp/${uid}`).delete(),
+    db.doc(`rateLimits.cheerUp/${uid}`).delete(),
     db.doc(`rateLimits.patterns/${uid}`).delete(),
   ]);
 
@@ -200,9 +200,15 @@ async function seedFullUserState(): Promise<string> {
     });
   }
 
-  // Three rate-limit docs.
+  // Three rate-limit docs. Each is a flat collection (the dot in
+  // `rateLimits.cheerUp` and `rateLimits.patterns` is part of the
+  // collection name, not a sub-collection separator) — see
+  // sendCheerUpPush.ts:53 and analyzePatterns.ts for the canonical
+  // collection literals. A 3-segment path `rateLimits/cheerUp/${uid}`
+  // would be `[rateLimits/cheerUp/uid]`, an odd component count which
+  // Firestore rejects as "must point to a document".
   await db.doc(`rateLimits/${uid}`).set({ windowStartMs: 0, count: 0 });
-  await db.doc(`rateLimits/cheerUp/${uid}`).set({ count: 0 });
+  await db.doc(`rateLimits.cheerUp/${uid}`).set({ count: 0 });
   await db.doc(`rateLimits.patterns/${uid}`).set({ count: 0 });
 
   return uid;
@@ -277,7 +283,7 @@ describe("account deletion — emulator E2E (HB-004 case 13)", () => {
     // Rate-limit docs — all three known paths gone.
     const db = admin.firestore();
     expect((await db.doc(`rateLimits/${uid}`).get()).exists).toBe(false);
-    expect((await db.doc(`rateLimits/cheerUp/${uid}`).get()).exists).toBe(false);
+    expect((await db.doc(`rateLimits.cheerUp/${uid}`).get()).exists).toBe(false);
     expect((await db.doc(`rateLimits.patterns/${uid}`).get()).exists).toBe(false);
   });
 
