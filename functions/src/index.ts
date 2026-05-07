@@ -17,3 +17,4 @@ initializeApp();
 
 export { analyzeMoodText } from './analyzeMoodText.js';
 export { analyzePatterns } from './analyzePatterns.js';
+export { deleteAccount } from './deleteAccount.js';
