@@ -1,3 +1,6 @@
+// Hide cloud_functions' `Result` to avoid colliding with core's sealed
+// `Result<T, F>` (the one we use across every repository return).
+import 'package:cloud_functions/cloud_functions.dart' hide Result;
 import 'package:core/core.dart';
 
 import '../domain/auth_credentials.dart';
@@ -10,13 +13,16 @@ import 'mappers/app_user_mapper.dart';
 class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
     required FirebaseAuthDatasource datasource,
+    required FirebaseFunctions functions,
     AppUserMapper mapper = const AppUserMapper(),
     Logger logger = const Logger('auth.repo'),
   }) : _datasource = datasource,
+       _functions = functions,
        _mapper = mapper,
        _logger = logger;
 
   final FirebaseAuthDatasource _datasource;
+  final FirebaseFunctions _functions;
   final AppUserMapper _mapper;
   final Logger _logger;
 
@@ -93,18 +99,77 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Result<void, AuthFailure>> reauthenticate(
     AuthCredentials creds,
   ) async {
-    // Stub for HB-004 step 1 — the real Firebase Auth wiring lands in
-    // step 2 (HB-004 brief §"Data shape"). Returns a marker failure so
-    // any caller that hits this path before step 2 ships fails loudly.
-    _logger.warn('reauthenticate not yet implemented (HB-004 step 2)');
-    return const Err(AuthFailure.unknown('reauthenticate: not implemented'));
+    try {
+      switch (creds) {
+        case PasswordCredentials(:final email, :final password):
+          await _datasource.reauthenticateWithPassword(
+            email: email,
+            password: password,
+          );
+        case GoogleCredentials(:final idToken):
+          await _datasource.reauthenticateWithGoogle(idToken: idToken);
+        case BiometricCredentials():
+          // No platform-keystore-cached Firebase credential exists in the
+          // S4 biometric setup — local_auth only confirms presence; it
+          // does not mint a Firebase Auth credential. Until that lands
+          // (out of scope for HB-004), biometric reauth is unavailable
+          // and the controller falls back to the password modal. This
+          // is the documented degradation per the brief.
+          _logger.warn(
+            'biometric reauth requested but no cached credential available',
+          );
+          return const Err(AuthFailure.biometricUnavailable());
+      }
+      return const Ok(null);
+    } on AuthDatasourceException catch (e) {
+      _logger.warn('reauthenticate failed: ${e.failure.runtimeType}');
+      return Err(e.failure);
+    }
   }
 
   @override
   Future<Result<void, AuthFailure>> deleteAccount() async {
-    // Stub for HB-004 step 1 — the Cloud Function call + local
-    // currentUser.delete() land in step 2.
-    _logger.warn('deleteAccount not yet implemented (HB-004 step 2)');
-    return const Err(AuthFailure.unknown('deleteAccount: not implemented'));
+    final uid = _datasource.currentUser?.uid;
+    try {
+      // 1. Server cascade — admin SDK callable per ADR-0009. The CF reads
+      //    context.auth.uid; no body required. Region must match deploy
+      //    target (asia-southeast1) — see firebaseFunctionsProvider in
+      //    mood/data/providers.dart.
+      final callable = _functions.httpsCallable('deleteAccount');
+      await callable.call<Object?>(<String, Object?>{});
+    } on FirebaseFunctionsException catch (e) {
+      _logger.warn('deleteAccount CF failed code=${e.code}');
+      switch (e.code) {
+        case 'unauthenticated':
+          return const Err(AuthFailure.unknown('unauthenticated'));
+        case 'unavailable':
+        case 'deadline-exceeded':
+          return const Err(AuthFailure.network());
+        default:
+          return Err(AuthFailure.unknown(e.code));
+      }
+    } catch (e) {
+      _logger.warn('deleteAccount CF failed runtimeType=${e.runtimeType}');
+      return Err(AuthFailure.unknown(e));
+    }
+
+    // 2. Local Auth user delete. The CF has already cascaded server-side
+    //    (Firestore + Storage + Auth user via admin SDK), so a stale
+    //    `requires-recent-login` here is non-fatal — the data is gone
+    //    regardless and the upstream signOut() will tear down the
+    //    session. Catch it via the typed exception and proceed.
+    try {
+      await _datasource.deleteCurrentUser();
+    } on RequiresRecentLoginException {
+      _logger.info('deleteAccount: local delete needed recent login; ignored');
+    } on AuthDatasourceException catch (e) {
+      _logger.warn(
+        'deleteAccount local delete failed: ${e.failure.runtimeType}',
+      );
+      return Err(e.failure);
+    }
+
+    _logger.info('deleteAccount ok uid=${uid ?? 'null'} outcome=deleted');
+    return const Ok(null);
   }
 }

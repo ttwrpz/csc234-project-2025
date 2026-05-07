@@ -8,6 +8,7 @@ import '../domain/entities/biometric_capability.dart';
 import '../domain/repositories/biometric_repository.dart';
 import '../domain/usecases/authenticate_with_biometric.dart';
 import '../domain/usecases/check_biometric_capability.dart';
+import '../domain/usecases/delete_account.dart';
 import '../domain/usecases/register_with_email.dart';
 import '../domain/usecases/set_biometric_opt_in.dart';
 import '../domain/usecases/sign_in_with_email.dart';
@@ -27,6 +28,7 @@ final firebaseAuthDatasourceProvider = Provider<FirebaseAuthDatasource>((ref) {
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl(
     datasource: ref.watch(firebaseAuthDatasourceProvider),
+    functions: ref.watch(firebaseFunctionsProvider),
   );
 });
 
@@ -61,6 +63,13 @@ final signOutUseCaseProvider = Provider<SignOutUseCase>((ref) {
 
 final watchAuthStateUseCaseProvider = Provider<WatchAuthStateUseCase>((ref) {
   return WatchAuthStateUseCase(ref.watch(authRepositoryProvider));
+});
+
+/// Account-deletion orchestration use case (HB-004 step 1 + step 3).
+/// Composes reauth → CF → signOut. Settings consumes this via
+/// `deleteAccountControllerProvider`.
+final deleteAccountUseCaseProvider = Provider<DeleteAccountUseCase>((ref) {
+  return DeleteAccountUseCase(ref.watch(authRepositoryProvider));
 });
 
 // ────────────────────────────────────────────────────────────────────────

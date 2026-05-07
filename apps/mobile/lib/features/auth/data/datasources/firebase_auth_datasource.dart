@@ -171,6 +171,97 @@ class FirebaseAuthDatasource {
     }
   }
 
+  /// Reauthenticates the currently signed-in user with email + password.
+  /// Required by Firebase Auth before destructive operations like
+  /// `currentUser.delete()` (HB-004 + ADR-0009 — recent-login window).
+  ///
+  /// Throws [AuthDatasourceException] on the same Firebase code mapping
+  /// as [signInWithEmail] (`wrong-password`/`invalid-credential` →
+  /// `wrongPassword`, etc.). Throws an `AuthFailure.unknown` envelope
+  /// when no user is signed in — callers should never reach this without
+  /// an active session, but we surface it loudly rather than silently
+  /// returning success.
+  Future<void> reauthenticateWithPassword({
+    required String email,
+    required String password,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw AuthDatasourceException(
+        const AuthFailure.unknown('reauthenticate: no current user'),
+      );
+    }
+    try {
+      final credential = fb.EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(credential);
+    } on fb.FirebaseAuthException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } on PlatformException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } catch (e) {
+      throw AuthDatasourceException(AuthFailure.unknown(e));
+    }
+  }
+
+  /// Reauthenticates the currently signed-in user with a fresh Google
+  /// ID token (the data layer mints the token via the platform sign-in
+  /// flow). Mirrors [signInWithGoogle]'s credential shape — only
+  /// `idToken` is required because that's what `GoogleAuthProvider`
+  /// accepts. `accessToken` is intentionally omitted to keep parity
+  /// with the sign-in path (no second consent screen).
+  Future<void> reauthenticateWithGoogle({required String idToken}) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw AuthDatasourceException(
+        const AuthFailure.unknown('reauthenticate: no current user'),
+      );
+    }
+    try {
+      final credential = fb.GoogleAuthProvider.credential(idToken: idToken);
+      await user.reauthenticateWithCredential(credential);
+    } on fb.FirebaseAuthException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } on PlatformException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } catch (e) {
+      throw AuthDatasourceException(AuthFailure.unknown(e));
+    }
+  }
+
+  /// Deletes the local Firebase Auth user record. The server-side
+  /// cascade (Firestore + Storage + Auth) is owned by the
+  /// `deleteAccount` Cloud Function — this call only revokes the local
+  /// Auth user. Idempotent: returns silently when `currentUser` is
+  /// already null.
+  ///
+  /// Catches `requires-recent-login` and rethrows as a typed
+  /// exception the repository can ignore — the CF has already wiped
+  /// the server, so a stale local-session-only error is non-fatal.
+  Future<void> deleteCurrentUser() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    try {
+      await user.delete();
+    } on fb.FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        // Per HB-004 + ADR-0009: the CF is admin-SDK and has already
+        // cascaded server-side. The recent-login window only guards
+        // the local session, which the upstream signOut() will tear
+        // down anyway. Surface as a typed exception so the repo can
+        // ignore it without swallowing other Firebase codes.
+        throw const RequiresRecentLoginException();
+      }
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } on PlatformException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } catch (e) {
+      throw AuthDatasourceException(AuthFailure.unknown(e));
+    }
+  }
+
   AuthFailure _codeToFailure(String code, Object cause) {
     switch (code) {
       case 'invalid-email':
@@ -200,4 +291,13 @@ class FirebaseAuthDatasource {
 class AuthDatasourceException implements Exception {
   AuthDatasourceException(this.failure);
   final AuthFailure failure;
+}
+
+/// Thrown by [FirebaseAuthDatasource.deleteCurrentUser] when Firebase
+/// Auth requires a fresher sign-in than the user currently has. The
+/// repository swallows this in the account-deletion path because the CF
+/// has already cascaded server-side; the local session will be torn
+/// down by the upstream signOut() regardless.
+class RequiresRecentLoginException implements Exception {
+  const RequiresRecentLoginException();
 }

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
@@ -19,6 +20,15 @@ final firestoreProvider = Provider<FirebaseFirestore>(
 );
 final firebaseStorageProvider = Provider<FirebaseStorage>(
   (ref) => FirebaseStorage.instance,
+);
+
+/// Cloud Functions client pinned to the project's deploy region. Lifted
+/// from `mood/data/providers.dart` (where it originally lived alongside
+/// `analyzeMoodText`) so multiple features — auth's `deleteAccount`,
+/// mood's AI analysis, analytics' pattern analysis — can share a single
+/// provider without cross-feature import cycles.
+final firebaseFunctionsProvider = Provider<FirebaseFunctions>(
+  (ref) => FirebaseFunctions.instanceFor(region: 'asia-southeast1'),
 );
 
 /// Shared preferences singleton. Resolved on first read; tests override with a

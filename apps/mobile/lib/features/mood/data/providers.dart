@@ -1,4 +1,3 @@
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:core/core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -180,10 +179,9 @@ final moodEntryByIdProvider = FutureProvider.family<MoodEntry?, String>((
 
 // AI analysis providers (WBS 3.4 — analyzeMoodText proxy per ADR-0003).
 // Region must match the function's deploy target (asia-southeast1).
-
-final firebaseFunctionsProvider = Provider<FirebaseFunctions>(
-  (ref) => FirebaseFunctions.instanceFor(region: 'asia-southeast1'),
-);
+// `firebaseFunctionsProvider` was lifted to `app/providers.dart` (HB-004
+// step 3) so auth's `deleteAccount` callable could share the same
+// client without a cross-feature import cycle.
 
 final aiAnalysisFunctionsDatasourceProvider =
     Provider<AiAnalysisFunctionsDatasource>(
