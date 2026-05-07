@@ -94,10 +94,19 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(
               ['lastTriggeredAt','firstTriggeredAt','schemaV']);
 
+        // Update affectedKeys explicitly excludes `schemaV` so the field
+        // is immutable post-creation. PR #35 audit R-001: prior allowlist
+        // included schemaV without a type guard, which let a buggy or
+        // malicious client overwrite it with arbitrary values. Today's
+        // CF doesn't read schemaV on this collection, but the moment it
+        // does the schema-version invariant must hold. Drop it here
+        // rather than add a type guard — the value is set on create and
+        // only changes via a deliberate migration (which would land in
+        // a Cloud Function under admin SDK, bypassing this rule).
         allow update: if isOwner(uid)
           && docId == 'current'
           && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['lastTriggeredAt','firstTriggeredAt','schemaV'])
+             .hasOnly(['lastTriggeredAt','firstTriggeredAt'])
           && (request.resource.data.lastTriggeredAt is timestamp
               || request.resource.data.lastTriggeredAt == null)
           && (request.resource.data.firstTriggeredAt is timestamp
