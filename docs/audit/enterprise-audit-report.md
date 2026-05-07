@@ -195,10 +195,18 @@ CLAUDE.md mandates four quality gates before any release tag. v1.5 status agains
   - +5 DeleteAccountUseCase (PR #34)
   - +2 ai-override integration (PR #33)
   - +missing 5.5b sendCheerUpPush.test.ts (7 cases) and HB-004 step 2 deleteAccount.test.ts (5 cases) when those PRs land
-- **`flutter test --tags=golden` count.** Started at 3 (S4 carry-over miss documented in §3a.2 of S5 plan). Day 3 qa-engineer adds the 4 missing S4 scenarios (empty garden, flower garden, wilting-plant garden, analytics dashboard) plus 3 new S5 scenarios (banner, breathing overlay, hotline footer). Target ≥ 9 at v1.5.
+- **`flutter test --tags=golden` count.** Started at 3 files / 7 PNG baselines (S4 carry-over miss documented in §3a.2 of S5 plan). PR #43 closes the gap: **9 files / 16 PNG baselines** at v1.5 candidate. New scenarios:
+  - `cheer_up_banner_*.png` — 3 baselines (5_of_7_negative, 3_consecutive_high_intensity, unknown fallback) covering the reason-caption fan-out
+  - `breathing_overlay_initial.png` — 4-7-8 overlay frame 0 (in-breath phase)
+  - `hotline_footer_{light,dark}.png` — light + dark theme; `MbColors.softCoral` differs by brightness
+  - `garden_screen_empty.png` — cold-start visual (no entries)
+  - `garden_screen_flowers.png` — 3 positive entries → blooming flora
+  - `garden_screen_wilting.png` — 3 negativeMild (intensity 1–3) → wilting flora per ADR-0006
+  Out of scope: `analytics_screen` golden — depends on `AIAnalysisRepository` + feature flags + several other providers; scaffolding from scratch is deeper-than-budget. Existing `pattern_insight_card_*.png` (4 baselines) covers the dashboard's most variable visual component. Filed as v1.6 carry-over.
 - **Domain coverage.** v1.0 baseline: 94.6% repo-wide, every feature ≥ 80% per `apps/mobile/tool/check_domain_coverage.dart`. v1.5 not yet recomputed — Day 4 qa-engineer runs `flutter test --coverage` + the coverage tool and writes the baseline into `docs/qa/perf-20260518.md` appendix.
-- **Functions Jest count.** v1.0: 27 cases (analyzeMoodText 14 + analyzePatterns 11 + helper tests 2). v1.5: +7 cases for sendCheerUpPush (HB-003 §5.5b) + 5 cases for deleteAccount (HB-004 §"Tests"). Target 39 at v1.5.
-- **Firestore rules emulator count.** v1.0: 17 cases. v1.5 candidate: 25 cases (added cases 18-24 for `users/{uid}/settings/notifications` per WBS 6.3, plus case 25 cross-user write per PR #30 audit R-002). The cheerUpEvents + interventionState rules cases land with HB-003 5.5b — target 30 at v1.5.
+- **Functions Jest count.** v1.0: 27 cases (analyzeMoodText 14 + analyzePatterns 11 + helper tests 2). v1.5 candidate: **40 cases** (analyzeMoodText 14 + analyzePatterns 18 + sendCheerUpPush 8). The deleteAccount Jest cases (5) land in PR #36; the v1.5-final count after PR #36 merges will be **45**.
+- **Firestore rules emulator count.** v1.0: 17 cases. v1.5 candidate: **38 cases** post-PR #41 — added Cases 18-25 for `users/{uid}/settings/notifications` (8 new), Cases 26-32 for `users/{uid}/cheerUpEvents` (7 new), Cases 33-37 for `users/{uid}/interventionState/current` (5 new), plus Case 38 for the schemaV-immutability regression guard from PR #35 audit R-001 (1 new). The deleteAccount emulator E2E adds 3 more cases when PR #36 merges → final **41**.
+- **Production-build verification.** PR #41 commit `6b1ea0ad` adds core library desugaring for `flutter_local_notifications` — without this, `:app:checkDebugAarMetadata` fails and **no Android build of v1.5 succeeds**. The desugar fix surfaced when the Sprint 5 Day 3 Android matrix run executed `flutter test integration_test/auth_flow_test.dart -d <samsung-s24-ultra>` against a real device; the agent that authored 5.5b reported "421 dart tests pass" but those are JIT/host tests that don't exercise Gradle. Documented in `docs/qa/android-matrix-20260515.md` Run 2.
 
 ### 4.2 Security
 
@@ -206,8 +214,15 @@ Re-audit summary referencing §3:
 
 - 0 CRITICAL, 0 HIGH unmitigated findings at v1.5 candidate.
 - All v1.0 audit findings (`docs/security/audit-2026-05-12-v1.0.md`, 8 items) closed — most via the v1.0.1 commit `d1eaa1df`, the rest as DevOps follow-ups in §3.8.
-- All S5 audit findings closed: PR #23 (R-001 channel registration) tracked for HB-003 5.5b PR; PR #30 (R-001/R-002/R-003) addressed in commits `86f2b81d` (rules + DTO) and `a41dc991` (HB-003 reconciliation).
-- Pattern reuse: the three-layer PII fence (§3.3) lands twice more in v1.5 (sendCheerUpPush + deleteAccount), with a dedicated PII canary test in each.
+- All S5 audit findings closed:
+  - PR #23 R-001 (channel registration) → closed by PR #35 5.5b registering `AndroidNotificationChannel('cheer_up', ...)` in `main.dart`
+  - PR #30 R-001/R-002/R-003 → closed in commits `86f2b81d` (rules cases + DTO write-side empty-token guard) and `a41dc991` (HB-003 field-name reconciliation `enabled` → `cheerUpEnabled`)
+  - PR #35 R-001 (`interventionState` schemaV mutation) → closed in commit `e601d65c` on the same PR + Case 38 emulator regression guard
+  - PR #35 R-004 (PII canary on `internal/rate_limit_tx_failed` branch), R-005 (dead-token survivor hygiene), R-006 (channel-id static check across 3 sites) → all closed in PR #41
+  - PR #36 path-shape bug (`rateLimits/cheerUp/{uid}` vs flat `rateLimits.cheerUp/{uid}`) caught by CI Linux emulator → closed in commit `9aa00199` across 4 sites
+- Pattern reuse: the three-layer PII fence (§3.3) lands twice more in v1.5 (`sendCheerUpPush` + `deleteAccount`), with a dedicated PII canary test in each. The `sendCheerUpPush` canary now covers all five outcome branches including `internal/rate_limit_tx_failed` (PR #41 R-004).
+- Channel-id `cheer_up` consistency: enforced by an automated Dart unit test in PR #41 (`apps/mobile/test/app/cheer_up_channel_id_consistency_test.dart`) that reads the AndroidManifest + main.dart + sendCheerUpPush.ts and asserts the literal at all three sites. Drift fails CI before merge.
+- v1.5 Security Posture Report supplement: `docs/security/audit-2026-05-19-v1.5.md` (PR #44) consolidates the inline per-PR audits.
 
 ### 4.3 Accessibility
 
