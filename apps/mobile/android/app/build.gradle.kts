@@ -16,6 +16,14 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Required by `flutter_local_notifications` ^17+ (added in
+        // PR #35 5.5b for the cheer_up channel registration). Without
+        // this, AAR-metadata check fails the build with:
+        //   "Dependency ':flutter_local_notifications' requires core
+        //    library desugaring to be enabled for :app."
+        // The library uses java.time APIs (e.g. ZonedDateTime) that
+        // need desugar support on minSdk < 26.
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -44,4 +52,11 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Pairs with `isCoreLibraryDesugaringEnabled = true` above. Pinned
+    // to the version range `flutter_local_notifications` documents as
+    // compatible (≥ 2.1.4 per the package's INSTALL.md as of v17+).
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

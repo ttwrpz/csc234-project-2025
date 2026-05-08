@@ -5,11 +5,14 @@ import '../../../app/providers.dart';
 import '../../auth/data/providers.dart';
 import '../../mood/data/providers.dart';
 import '../../mood/domain/entities/mood_entry.dart';
+import '../domain/cheer_up_events_repository.dart';
 import '../domain/entities/garden_state.dart';
 import '../domain/entities/intervention_state.dart';
 import '../domain/intervention_state_repository.dart';
 import '../domain/pattern_detector.dart';
 import '../domain/usecases/compute_garden_state.dart';
+import 'cheer_up_events_repository_impl.dart';
+import 'datasources/cheer_up_events_firestore_datasource.dart';
 import 'datasources/intervention_state_firestore_datasource.dart';
 import 'intervention_state_repository_impl.dart';
 import 'intervention_state_storage.dart';
@@ -90,6 +93,27 @@ final interventionStateRepositoryProvider =
         uidGetter: () => ref.read(currentUserStreamProvider).value?.uid,
       );
     });
+
+/// Thin Firestore datasource for the
+/// `users/{uid}/cheerUpEvents/{evtId}` audit log. Tests fake this
+/// provider via `overrideWithValue` to avoid spinning up a real
+/// `FirebaseFirestore`.
+final cheerUpEventsFirestoreDatasourceProvider =
+    Provider<CheerUpEventsFirestoreDatasource>(
+      (ref) => CheerUpEventsFirestoreDatasource(ref.watch(firestoreProvider)),
+    );
+
+/// [CheerUpEventsRepository] for the cheer-up audit log (HB-003 §5.5b).
+/// Idempotent doc-create at `users/{uid}/cheerUpEvents/{dayUtc}-{reason}`;
+/// the Cloud Function `sendCheerUpPush` triggers on the create.
+final cheerUpEventsRepositoryProvider = Provider<CheerUpEventsRepository>((
+  ref,
+) {
+  return CheerUpEventsRepositoryImpl(
+    datasource: ref.watch(cheerUpEventsFirestoreDatasourceProvider),
+    uidGetter: () => ref.read(currentUserStreamProvider).value?.uid,
+  );
+});
 
 /// Cached read of the persisted [InterventionAnchors]. Recomputes
 /// whenever the upstream repository or auth state invalidates.

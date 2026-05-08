@@ -365,6 +365,376 @@ describe("Firestore rules — users/{uid}/moods", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Cases 18-23 — users/{uid}/settings/notifications (WBS 6.3, HB-003)
+// ---------------------------------------------------------------------------
+
+describe("Firestore rules — users/{uid}/settings/notifications", () => {
+  /** Seed a notifications-settings doc bypassing rules. */
+  async function seedSettings(
+    uid: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, `users/${uid}/settings/notifications`), data);
+    });
+  }
+
+  /** Build a valid notifications-settings payload for create. */
+  function validSettingsPayload(
+    overrides: Partial<Record<string, unknown>> = {},
+  ): Record<string, unknown> {
+    return {
+      cheerUpEnabled: true,
+      tokens: [
+        {
+          token: "device-token-1",
+          platform: "android",
+          lastSeenAt: Timestamp.now(),
+        },
+      ],
+      updatedAt: serverTimestamp(),
+      ...overrides,
+    };
+  }
+
+  it("Case 18: owner can create users/{uid}/settings/notifications", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(
+        doc(userA, `users/${USER_A}/settings/notifications`),
+        validSettingsPayload(),
+      ),
+    );
+  });
+
+  it("Case 19: userB cannot read userA's notifications settings", async () => {
+    await seedSettings(USER_A, {
+      cheerUpEnabled: true,
+      tokens: [],
+      updatedAt: Timestamp.now(),
+    });
+    const userB = testEnv.authenticatedContext(USER_B).firestore();
+    await assertFails(
+      getDoc(doc(userB, `users/${USER_A}/settings/notifications`)),
+    );
+  });
+
+  it("Case 20: create at /settings/{otherDocId} is denied (only 'notifications')", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(
+        doc(userA, `users/${USER_A}/settings/other`),
+        validSettingsPayload(),
+      ),
+    );
+  });
+
+  it("Case 21: create with non-bool cheerUpEnabled is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(
+        doc(userA, `users/${USER_A}/settings/notifications`),
+        validSettingsPayload({ cheerUpEnabled: "yes" }),
+      ),
+    );
+  });
+
+  it("Case 22: update flipping cheerUpEnabled is allowed", async () => {
+    await seedSettings(USER_A, {
+      cheerUpEnabled: true,
+      tokens: [],
+      updatedAt: Timestamp.now(),
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      updateDoc(doc(userA, `users/${USER_A}/settings/notifications`), {
+        cheerUpEnabled: false,
+        tokens: [],
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("Case 23: update introducing an unknown field is denied (affectedKeys)", async () => {
+    await seedSettings(USER_A, {
+      cheerUpEnabled: true,
+      tokens: [],
+      updatedAt: Timestamp.now(),
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      updateDoc(doc(userA, `users/${USER_A}/settings/notifications`), {
+        cheerUpEnabled: true,
+        tokens: [],
+        updatedAt: serverTimestamp(),
+        // Unknown field outside the affectedKeys whitelist.
+        attackerControlled: true,
+      }),
+    );
+  });
+
+  it("Case 24: client delete of notifications settings is denied", async () => {
+    await seedSettings(USER_A, {
+      cheerUpEnabled: true,
+      tokens: [],
+      updatedAt: Timestamp.now(),
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      deleteDoc(doc(userA, `users/${USER_A}/settings/notifications`)),
+    );
+  });
+
+  it("Case 25 (audit R-002): userB cannot write to userA's notifications settings", async () => {
+    // Mirrors Case 1 for the moods collection. The outer `match
+    // /users/{uid}` block already gates this, but the new
+    // `match /settings/{settingId}` block re-grants per-document
+    // permissions and we want explicit regression coverage so a
+    // future drift on the parent rule cannot silently open a hole.
+    const userB = testEnv.authenticatedContext(USER_B).firestore();
+    await assertFails(
+      setDoc(
+        doc(userB, `users/${USER_A}/settings/notifications`),
+        validSettingsPayload(),
+      ),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cases 26-32 — users/{uid}/cheerUpEvents (HB-003 §5.5b)
+// ---------------------------------------------------------------------------
+
+describe("Firestore rules — users/{uid}/cheerUpEvents", () => {
+  /** Build a valid cheerUpEvents payload for create. */
+  function validEventPayload(
+    overrides: Partial<Record<string, unknown>> = {},
+  ): Record<string, unknown> {
+    return {
+      reason: "5_of_7_negative",
+      dayUtc: "2026-05-13",
+      createdAt: serverTimestamp(),
+      schemaV: 1,
+      ...overrides,
+    };
+  }
+
+  it("Case 26: owner creates cheerUpEvents with canonical id format", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(
+        doc(userA, `users/${USER_A}/cheerUpEvents/2026-05-13-5_of_7_negative`),
+        validEventPayload(),
+      ),
+    );
+  });
+
+  it("Case 27: create with malformed id (unknown reason) is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    // The reason segment fails the regex alternation in the rule.
+    await assertFails(
+      setDoc(
+        doc(userA, `users/${USER_A}/cheerUpEvents/2026-05-13-invalid_reason`),
+        validEventPayload({ reason: "invalid_reason" }),
+      ),
+    );
+  });
+
+  it("Case 28: create with malformed id (bad date format) is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    // Date segment is not YYYY-MM-DD.
+    await assertFails(
+      setDoc(
+        doc(userA, `users/${USER_A}/cheerUpEvents/2026-5-13-5_of_7_negative`),
+        validEventPayload(),
+      ),
+    );
+  });
+
+  it("Case 29: create with client-supplied past createdAt is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    // Rule requires createdAt == request.time — any client Timestamp must fail.
+    const backdated = Timestamp.fromMillis(Date.now() - ONE_HOUR_MS);
+    await assertFails(
+      setDoc(
+        doc(userA, `users/${USER_A}/cheerUpEvents/2026-05-13-5_of_7_negative`),
+        validEventPayload({ createdAt: backdated }),
+      ),
+    );
+  });
+
+  it("Case 30: update on cheerUpEvents is denied (append-only audit log)", async () => {
+    // Seed an event bypassing rules so we can attempt to mutate it.
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(
+        doc(adminDb, `users/${USER_A}/cheerUpEvents/2026-05-13-5_of_7_negative`),
+        {
+          reason: "5_of_7_negative",
+          dayUtc: "2026-05-13",
+          createdAt: Timestamp.now(),
+          schemaV: 1,
+        },
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      updateDoc(
+        doc(userA, `users/${USER_A}/cheerUpEvents/2026-05-13-5_of_7_negative`),
+        { reason: "3_consecutive_high_intensity" },
+      ),
+    );
+  });
+
+  it("Case 31: client delete of cheerUpEvents is denied", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(
+        doc(adminDb, `users/${USER_A}/cheerUpEvents/2026-05-13-5_of_7_negative`),
+        {
+          reason: "5_of_7_negative",
+          dayUtc: "2026-05-13",
+          createdAt: Timestamp.now(),
+          schemaV: 1,
+        },
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      deleteDoc(
+        doc(userA, `users/${USER_A}/cheerUpEvents/2026-05-13-5_of_7_negative`),
+      ),
+    );
+  });
+
+  it("Case 32 (regression analog of Case 25): userB cannot write to userA's cheerUpEvents", async () => {
+    // Mirrors Case 25 for the new collection — the outer per-user
+    // RBAC gate and the new match block must both deny cross-user
+    // creates, with explicit coverage so future drift cannot silently
+    // open a hole.
+    const userB = testEnv.authenticatedContext(USER_B).firestore();
+    await assertFails(
+      setDoc(
+        doc(userB, `users/${USER_A}/cheerUpEvents/2026-05-13-5_of_7_negative`),
+        validEventPayload(),
+      ),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cases 33-37 — users/{uid}/interventionState/current (HB-003 §5.5a/b, ADR-0008)
+// ---------------------------------------------------------------------------
+
+describe("Firestore rules — users/{uid}/interventionState/current", () => {
+  /** Build a valid interventionState/current payload for create. */
+  function validAnchorPayload(
+    overrides: Partial<Record<string, unknown>> = {},
+  ): Record<string, unknown> {
+    return {
+      lastTriggeredAt: Timestamp.fromMillis(Date.now()),
+      firstTriggeredAt: Timestamp.fromMillis(Date.now()),
+      schemaV: 1,
+      ...overrides,
+    };
+  }
+
+  it("Case 33: owner creates interventionState/current with canonical shape", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(
+        doc(userA, `users/${USER_A}/interventionState/current`),
+        validAnchorPayload(),
+      ),
+    );
+  });
+
+  it("Case 34: create at /interventionState/{otherDocId} is denied (only 'current')", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(
+        doc(userA, `users/${USER_A}/interventionState/other`),
+        validAnchorPayload(),
+      ),
+    );
+  });
+
+  it("Case 35: update with disallowed field is denied (affectedKeys guard)", async () => {
+    // Seed an existing anchor doc bypassing rules.
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(
+        doc(adminDb, `users/${USER_A}/interventionState/current`),
+        validAnchorPayload(),
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      updateDoc(doc(userA, `users/${USER_A}/interventionState/current`), {
+        // Unknown field outside the affectedKeys whitelist.
+        attackerControlled: true,
+      }),
+    );
+  });
+
+  it("Case 36: update setting lastTriggeredAt to non-timestamp is denied", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(
+        doc(adminDb, `users/${USER_A}/interventionState/current`),
+        validAnchorPayload(),
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      updateDoc(doc(userA, `users/${USER_A}/interventionState/current`), {
+        // Rule allows timestamp OR null; a string must fail.
+        lastTriggeredAt: "now",
+      }),
+    );
+  });
+
+  it("Case 37: client delete of interventionState/current is denied", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(
+        doc(adminDb, `users/${USER_A}/interventionState/current`),
+        validAnchorPayload(),
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      deleteDoc(doc(userA, `users/${USER_A}/interventionState/current`)),
+    );
+  });
+
+  it("Case 38 (audit R-001): update mutating schemaV is denied (immutable post-creation)", async () => {
+    // PR #35 audit finding R-001: the update affectedKeys allowlist
+    // previously included `schemaV` without a type guard, letting a
+    // buggy or malicious client overwrite it with arbitrary values.
+    // The fix tightens affectedKeys to ['lastTriggeredAt','firstTriggeredAt']
+    // — schemaV is set on create and is immutable thereafter (a real
+    // schema migration runs in a Cloud Function under admin SDK,
+    // bypassing this rule). This test guards the invariant so a future
+    // permissive-allowlist regression fails CI.
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(
+        doc(adminDb, `users/${USER_A}/interventionState/current`),
+        validAnchorPayload(),
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      updateDoc(doc(userA, `users/${USER_A}/interventionState/current`), {
+        schemaV: 2,
+      }),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Cases 13-15 — Storage rules
 // ---------------------------------------------------------------------------
 
