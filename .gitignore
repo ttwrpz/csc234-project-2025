@@ -114,3 +114,9 @@ functions/.runtimeconfig.json
 # tracked.
 /android/
 /ios/
+
+# Claude Code agent worktrees (harness-managed, isolated checkouts).
+# Per S5 retro §6.2 — file-mutating agents run with isolation:"worktree"
+# which materialises temporary trees here. They're harness state, not
+# repo content.
+/.claude/worktrees/
