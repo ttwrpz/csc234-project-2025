@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/auth/data/providers.dart';
 import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
 import 'package:moodbloom/features/garden/data/providers.dart';
+import 'package:moodbloom/features/garden/domain/cheer_up_events_repository.dart';
 import 'package:moodbloom/features/garden/domain/intervention_state_repository.dart';
 import 'package:moodbloom/features/garden/presentation/garden_screen.dart';
 import 'package:moodbloom/features/mood/data/providers.dart';
@@ -51,6 +52,24 @@ class _RecordingRepo implements InterventionStateRepository {
   }
 }
 
+/// Recording fake of [CheerUpEventsRepository] for the screen test.
+/// The 5.5b dispatch path requires this provider to be overridden too;
+/// without it, the controller tries to read a real
+/// `CheerUpEventsRepositoryImpl` that depends on FirebaseFirestore.
+class _RecordingEventsRepo implements CheerUpEventsRepository {
+  final List<({String reason, DateTime now})> calls =
+      <({String reason, DateTime now})>[];
+
+  @override
+  Future<Result<void, CheerUpEventsFailure>> createEvent({
+    required String reason,
+    required DateTime now,
+  }) async {
+    calls.add((reason: reason, now: now));
+    return const Ok(null);
+  }
+}
+
 Stream<AppUser?> _userStream(AppUser? user) {
   final controller = StreamController<AppUser?>();
   controller.add(user);
@@ -85,7 +104,7 @@ List<MoodEntry> _fiveOfSevenNegative() {
 void main() {
   group('GardenScreen cheer-up dispatch', () {
     testWidgets(
-      'detector triggered → CheerUpController.onShown writes both anchors via repo',
+      'detector triggered → CheerUpController.onShown writes both anchors AND the event doc',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(800, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -93,6 +112,7 @@ void main() {
         final moodRepo = FakeMoodRepository()
           ..streamedEntries = [_fiveOfSevenNegative()];
         final stateRepo = _RecordingRepo();
+        final eventsRepo = _RecordingEventsRepo();
 
         await tester.pumpWidget(
           ProviderScope(
@@ -106,6 +126,7 @@ void main() {
               interventionStateRepositoryProvider.overrideWith(
                 (_) async => stateRepo,
               ),
+              cheerUpEventsRepositoryProvider.overrideWithValue(eventsRepo),
             ],
             child: MaterialApp(
               theme: buildLightTheme(),
@@ -124,48 +145,55 @@ void main() {
         // guarantees no double-fire even if the listen rebuilds.
         expect(stateRepo.writeLastCalls, 1);
         expect(stateRepo.writeFirstIfNullCalls, 1);
+        // 5.5b — event-doc create dispatched alongside the anchors.
+        expect(eventsRepo.calls, hasLength(1));
+        expect(eventsRepo.calls.single.reason, '5_of_7_negative');
       },
     );
 
-    testWidgets('detector NOT triggered → no anchor writes are dispatched', (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(800, 1600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+    testWidgets(
+      'detector NOT triggered → no anchor writes and no event-doc create',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      // A single positive entry today → detector reports triggered=false.
-      final moodRepo = FakeMoodRepository()
-        ..streamedEntries = [
-          [_entry(MoodType.happy, DateTime.now(), id: 'p1')],
-        ];
-      final stateRepo = _RecordingRepo();
+        // A single positive entry today → detector reports triggered=false.
+        final moodRepo = FakeMoodRepository()
+          ..streamedEntries = [
+            [_entry(MoodType.happy, DateTime.now(), id: 'p1')],
+          ];
+        final stateRepo = _RecordingRepo();
+        final eventsRepo = _RecordingEventsRepo();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            moodRepositoryProvider.overrideWithValue(moodRepo),
-            currentUserStreamProvider.overrideWith(
-              (_) => _userStream(
-                const AppUser(uid: 'u-1', email: 'u@example.com'),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              moodRepositoryProvider.overrideWithValue(moodRepo),
+              currentUserStreamProvider.overrideWith(
+                (_) => _userStream(
+                  const AppUser(uid: 'u-1', email: 'u@example.com'),
+                ),
               ),
+              interventionStateRepositoryProvider.overrideWith(
+                (_) async => stateRepo,
+              ),
+              cheerUpEventsRepositoryProvider.overrideWithValue(eventsRepo),
+            ],
+            child: MaterialApp(
+              theme: buildLightTheme(),
+              home: const GardenScreen(),
             ),
-            interventionStateRepositoryProvider.overrideWith(
-              (_) async => stateRepo,
-            ),
-          ],
-          child: MaterialApp(
-            theme: buildLightTheme(),
-            home: const GardenScreen(),
           ),
-        ),
-      );
+        );
 
-      for (var i = 0; i < 8; i += 1) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
+        for (var i = 0; i < 8; i += 1) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
 
-      expect(stateRepo.writeLastCalls, 0);
-      expect(stateRepo.writeFirstIfNullCalls, 0);
-    });
+        expect(stateRepo.writeLastCalls, 0);
+        expect(stateRepo.writeFirstIfNullCalls, 0);
+        expect(eventsRepo.calls, isEmpty);
+      },
+    );
   });
 }
