@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 
+import 'auth_credentials.dart';
 import 'auth_failure.dart';
 import 'entities/app_user.dart';
 
@@ -39,4 +40,28 @@ abstract class AuthRepository {
 
   /// Signs out of any currently authenticated session.
   Future<Result<void, AuthFailure>> signOut();
+
+  /// Reauthenticates the currently signed-in user against [creds]. Required
+  /// by Firebase Auth before `currentUser.delete()` will accept the
+  /// operation — see HB-004 + ADR-0009 for the recent-login window
+  /// rationale. On success the authenticated session has a fresh
+  /// sign-in timestamp.
+  ///
+  /// Returns `AuthFailure.wrongPassword()` for password mismatches,
+  /// `AuthFailure.network()` for transport failures, and
+  /// `AuthFailure.unknown(cause)` for everything else. Implementations
+  /// must NOT throw — every Firebase error code maps to a sealed
+  /// variant before crossing the data/domain boundary.
+  Future<Result<void, AuthFailure>> reauthenticate(AuthCredentials creds);
+
+  /// Calls the `deleteAccount` Cloud Function (admin-SDK cascade across
+  /// Firestore + Storage + Auth per ADR-0009) and then deletes the
+  /// local Firebase Auth user record. Idempotent: a re-run on an
+  /// already-deleted uid returns `Ok(null)` because the CF returns
+  /// `{ ok: true, alreadyDeleted: true }` and the local Auth user is
+  /// already null.
+  ///
+  /// Reauth must precede this call — the use case orchestrates that
+  /// sequencing via [DeleteAccountUseCase].
+  Future<Result<void, AuthFailure>> deleteAccount();
 }
