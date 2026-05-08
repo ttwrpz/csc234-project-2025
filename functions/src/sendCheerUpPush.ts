@@ -64,6 +64,23 @@ interface NotificationsSettings {
 }
 
 /**
+ * Returns `true` if the doc carries any token record with an empty/
+ * non-string `token` field or an invalid `platform`. Per PR #35 audit
+ * R-005 — the survivor filter at step 4 drops these defensively, but
+ * we only trigger an `update` when something would actually change,
+ * so a quiet day with all-good tokens doesn't bump the doc's
+ * updatedAt. Pure helper; no side effects.
+ */
+function hasMalformedEntries(tokens: TokenRecord[] | undefined): boolean {
+  if (!tokens) return false;
+  for (const t of tokens) {
+    if (typeof t.token !== 'string' || t.token.length === 0) return true;
+    if (t.platform !== 'android' && t.platform !== 'web') return true;
+  }
+  return false;
+}
+
+/**
  * Outcome enum logged on every invocation. Allowlisted in the log
  * payload schema below — never widen this without auditing the PII
  * canary tests.
@@ -201,9 +218,19 @@ export const sendCheerUpPush = onDocumentCreated(
       }
     });
 
-    if (dead.length > 0) {
+    // Survivors: drop dead tokens AND any malformed entries that may
+    // have crept in from older clients. Per PR #35 audit R-005 — the
+    // rule cap (tokens.size <= 25) is the only server-side guard on
+    // element shape, so this filter is the canonical hygiene pass.
+    // Triggers an update only when something would actually change,
+    // so a quiet day with all-good tokens does not bump updatedAt.
+    if (dead.length > 0 || hasMalformedEntries(settings.tokens)) {
       const survivors = (settings.tokens ?? []).filter(
-        (t) => !dead.includes(t.token),
+        (t) =>
+          typeof t.token === 'string' &&
+          t.token.length > 0 &&
+          (t.platform === 'android' || t.platform === 'web') &&
+          !dead.includes(t.token),
       );
       await settingsRef.update({ tokens: survivors });
     }
