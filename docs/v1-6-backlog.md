@@ -18,16 +18,13 @@ If you close one of these in v1.6, mark `Closed (date)` + a one-line note. Do no
 
 **Background:** A local branch `chore/web-build-conditional-drift` (S3-era, two commits: `2ac4d0f1` conditional connector + `e4000869` Crashlytics `!kIsWeb` gate) carries the fix but **was never merged**. Cherry-pick onto v1.5 head produced 8 file conflicts because S4's wilting / rain-cloud refactor deleted `garden_flower.dart` that the S3 fix touched.
 
-**Approach:** **Re-create** the fix on the v1.5 head, don't cherry-pick. Two semantic changes:
+**Approach:** ~~Re-create the fix on the v1.5 head, don't cherry-pick.~~
 
-1. Make the Drift connector conditional in `apps/mobile/lib/features/mood/data/local/mood_database.dart` — swap in a stub on `kIsWeb` or use `dart.library.io` vs `dart.library.html` conditional imports.
-2. Wrap Crashlytics calls in `if (!kIsWeb)` per the second S3 commit's pattern.
+**✅ Closed (2026-05-08).** While preparing the re-creation, discovered the conditional-import scaffolding was **already on `origin/main`** post-Wave-1 merge train — `mood_database.dart` carries the conditional import (`'mood_database_web.dart' if (dart.library.io) 'mood_database_native.dart'`); `mood_database_native.dart` + `mood_database_web.dart` exist with the canonical native-FFI / throwing-stub pair. `flutter build web --no-tree-shake-icons` completes in ~245s on `origin/main` at `47b15b59` with `√ Built build\web`. The fix landed via a carry-over wrapped into one of the merged PRs without being explicitly called out as an S3 import.
 
-**Risk:** Incorrect resolution risks the offline-first invariant (Drift carries the local mood store + sync queue + intervention anchors mirror).
+**Reference:** `docs/qa/web-matrix-20260518.md` Run 2; `apps/mobile/lib/features/mood/data/local/mood_database{,_native,_web}.dart` on `origin/main`.
 
-**Estimate:** 4–6 hours by someone who knows the current Drift wiring (Kraiwich). Architect + security-reviewer co-sign for the rules + offline-first interaction.
-
-**Reference:** `docs/qa/web-matrix-20260518.md` Run 1 + cherry-pick attempt section.
+**Remaining v1.6 work** — the build compiles but `flutter drive -d chrome` for the four integration flows is still blocked by **B2 (harness real-device hardening)** below — same SharedPrefs / real-Firebase / real-platform-channels divergence that the Android matrix Run 2 surfaced. Closing B1 unblocks the v1.5 tag's "Chrome web" acceptance bar (build compiles); B2 unblocks the actual flow-level verification on Chrome + Android emulator.
 
 ---
 
