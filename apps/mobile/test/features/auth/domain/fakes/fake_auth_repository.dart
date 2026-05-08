@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:moodbloom/features/auth/domain/auth_credentials.dart';
 import 'package:moodbloom/features/auth/domain/auth_failure.dart';
 import 'package:moodbloom/features/auth/domain/auth_repository.dart';
 import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
@@ -11,16 +12,22 @@ class FakeAuthRepository implements AuthRepository {
     this.registerResult,
     this.googleResult,
     this.signOutResult,
+    this.reauthenticateResult,
+    this.deleteAccountResult,
   });
 
   Result<AppUser, AuthFailure>? signInResult;
   Result<AppUser, AuthFailure>? registerResult;
   Result<AppUser, AuthFailure>? googleResult;
   Result<void, AuthFailure>? signOutResult;
+  Result<void, AuthFailure>? reauthenticateResult;
+  Result<void, AuthFailure>? deleteAccountResult;
   final List<({String email, String password})> signInCalls = [];
   final List<({String email, String password})> registerCalls = [];
+  final List<AuthCredentials> reauthenticateCalls = [];
   int googleCalls = 0;
   int signOutCalls = 0;
+  int deleteAccountCalls = 0;
 
   @override
   AppUser? get currentUser => null;
@@ -59,5 +66,19 @@ class FakeAuthRepository implements AuthRepository {
   Future<Result<void, AuthFailure>> signOut() async {
     signOutCalls += 1;
     return signOutResult ?? const Ok(null);
+  }
+
+  @override
+  Future<Result<void, AuthFailure>> reauthenticate(
+    AuthCredentials creds,
+  ) async {
+    reauthenticateCalls.add(creds);
+    return reauthenticateResult ?? const Ok(null);
+  }
+
+  @override
+  Future<Result<void, AuthFailure>> deleteAccount() async {
+    deleteAccountCalls += 1;
+    return deleteAccountResult ?? const Ok(null);
   }
 }

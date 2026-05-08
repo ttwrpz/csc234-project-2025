@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:core/core.dart';
 import 'package:drift/native.dart';
+import 'package:moodbloom/features/auth/domain/auth_credentials.dart';
 import 'package:moodbloom/features/auth/domain/auth_failure.dart';
 import 'package:moodbloom/features/auth/domain/auth_repository.dart';
 import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
@@ -87,6 +88,20 @@ class IntegrationAuthRepository implements AuthRepository {
     setUser(null);
     return const Ok(null);
   }
+
+  // PR #34 (HB-004 step 1) added these to the AuthRepository abstract.
+  // The integration-test fake returns Ok by default — the v1.5 Settings
+  // Danger zone flow is exercised at the use-case level by
+  // delete_account_test.dart, not via this integration fake. Step 2
+  // (PR #36 + PR #37) adds the real wiring against a Cloud Functions
+  // emulator; the integration tests don't cover that path.
+  @override
+  Future<Result<void, AuthFailure>> reauthenticate(
+    AuthCredentials creds,
+  ) async => const Ok(null);
+
+  @override
+  Future<Result<void, AuthFailure>> deleteAccount() async => const Ok(null);
 
   Future<void> dispose() async => _controller.close();
 }

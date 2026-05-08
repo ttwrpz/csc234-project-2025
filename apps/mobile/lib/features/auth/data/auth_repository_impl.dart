@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 
+import '../domain/auth_credentials.dart';
 import '../domain/auth_failure.dart';
 import '../domain/auth_repository.dart';
 import '../domain/entities/app_user.dart';
@@ -86,5 +87,24 @@ class AuthRepositoryImpl implements AuthRepository {
       _logger.warn('sign-out failed: ${e.failure.runtimeType}');
       return Err(e.failure);
     }
+  }
+
+  @override
+  Future<Result<void, AuthFailure>> reauthenticate(
+    AuthCredentials creds,
+  ) async {
+    // Stub for HB-004 step 1 — the real Firebase Auth wiring lands in
+    // step 2 (HB-004 brief §"Data shape"). Returns a marker failure so
+    // any caller that hits this path before step 2 ships fails loudly.
+    _logger.warn('reauthenticate not yet implemented (HB-004 step 2)');
+    return const Err(AuthFailure.unknown('reauthenticate: not implemented'));
+  }
+
+  @override
+  Future<Result<void, AuthFailure>> deleteAccount() async {
+    // Stub for HB-004 step 1 — the Cloud Function call + local
+    // currentUser.delete() land in step 2.
+    _logger.warn('deleteAccount not yet implemented (HB-004 step 2)');
+    return const Err(AuthFailure.unknown('deleteAccount: not implemented'));
   }
 }
