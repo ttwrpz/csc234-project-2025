@@ -12,23 +12,23 @@ import 'widgets/mood_entry_tile.dart';
 /// Two views the user can flip between with a pill-segmented toggle.
 enum HistoryView { list, calendar }
 
-/// Five filters available on the list view. Order matches the prototype's
-/// horizontal-scroll chip row.
-enum HistoryFilter { all, positive, negative, neutral, thisWeek }
+/// Four filters available on the list view. Order matches the prototype's
+/// horizontal-scroll chip row. `okay` rolls up under Negative since the
+/// domain `MoodCategory` lumps it into `negativeMild`.
+enum HistoryFilter { all, positive, negative, thisWeek }
 
 extension on HistoryFilter {
   String get label => switch (this) {
     HistoryFilter.all => 'All',
     HistoryFilter.positive => 'Positive',
     HistoryFilter.negative => 'Negative',
-    HistoryFilter.neutral => 'Neutral',
     HistoryFilter.thisWeek => 'This Week',
   };
 
-  /// Filter membership using the prototype's three-bucket valence model
-  /// (positive / negative / neutral). The domain `MoodCategory` lumps
-  /// "okay" into `negativeMild`; here we surface it as a neutral filter so
-  /// users can browse only the in-between days.
+  /// Filter membership using the two-bucket valence model
+  /// (positive / negative). The domain `MoodCategory` lumps "okay" into
+  /// `negativeMild`, so it surfaces under the Negative filter alongside
+  /// sad / angry / anxious.
   bool matches(MoodEntry entry, DateTime now) {
     switch (this) {
       case HistoryFilter.all:
@@ -36,11 +36,10 @@ extension on HistoryFilter {
       case HistoryFilter.positive:
         return entry.mood == MoodType.happy || entry.mood == MoodType.calm;
       case HistoryFilter.negative:
-        return entry.mood == MoodType.sad ||
+        return entry.mood == MoodType.okay ||
+            entry.mood == MoodType.sad ||
             entry.mood == MoodType.angry ||
             entry.mood == MoodType.anxious;
-      case HistoryFilter.neutral:
-        return entry.mood == MoodType.okay;
       case HistoryFilter.thisWeek:
         return now.difference(entry.createdAt).inDays <= 7;
     }
