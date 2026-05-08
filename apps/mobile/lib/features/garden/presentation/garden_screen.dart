@@ -11,6 +11,7 @@ import '../../mood/domain/entities/mood_entry.dart';
 import '../data/providers.dart';
 import '../domain/entities/garden_state.dart';
 import '../domain/entities/intervention_state.dart';
+import 'controllers/cheer_up_controller.dart';
 import 'widgets/cheer_up_banner.dart';
 import 'widgets/hotline_footer.dart';
 import 'widgets/sky_header.dart';
@@ -37,12 +38,6 @@ class GardenScreen extends ConsumerStatefulWidget {
 }
 
 class _GardenScreenState extends ConsumerState<GardenScreen> {
-  /// Session-scoped flag the cheer-up banner toggles when the user taps
-  /// "Not now". The pattern detector continues to report `triggered:
-  /// true` (cooldown writes are a Sprint-5 storage concern), so we hide
-  /// the banner locally for the rest of this app launch.
-  bool _bannerDismissed = false;
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(gardenStateStreamProvider);
@@ -50,8 +45,35 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
     final intervention = ref.watch(interventionStateProvider);
     final user = ref.watch(currentUserStreamProvider).value;
     final allEntries = ref.watch(myMoodsStreamProvider).value ?? const [];
+    // The cheer-up controller owns the banner's session-scoped dismissal
+    // and the onShown idempotency guard. We watch the bool field so the
+    // banner re-renders when "Not now" is tapped.
+    final cheerUp = ref.watch(cheerUpControllerProvider);
+
     final mb = Theme.of(context).extension<MbColors>()!;
     final theme = Theme.of(context);
+
+    // Whenever the detector flips to `triggered: true`, dispatch
+    // `onShown` exactly once per app launch. The controller itself
+    // no-ops on repeat calls via its `onShownDispatched` flag, but we
+    // still scope the listen to triggered-true transitions to avoid
+    // unnecessary controller hits during steady-state.
+    ref.listen<AsyncValue<InterventionState>>(interventionStateProvider, (
+      previous,
+      next,
+    ) {
+      final value = next.value;
+      if (value == null) return;
+      if (!value.triggered) return;
+      // Fire after the current frame so the controller's setState
+      // doesn't race with the build that triggered this listen.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref
+            .read(cheerUpControllerProvider.notifier)
+            .onShown(reason: value.reason);
+      });
+    });
 
     return Scaffold(
       backgroundColor: mb.bg,
@@ -84,8 +106,9 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
           allEntries: allEntries,
           intervention: intervention.value,
           greetingName: _firstName(user?.displayName, user?.email),
-          bannerDismissed: _bannerDismissed,
-          onDismissBanner: () => setState(() => _bannerDismissed = true),
+          bannerDismissed: cheerUp.bannerDismissed,
+          onDismissBanner: () =>
+              ref.read(cheerUpControllerProvider.notifier).onDismissed(),
         ),
       ),
     );
