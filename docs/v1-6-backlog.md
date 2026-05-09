@@ -134,6 +134,26 @@ If you close one of these in v1.6, mark `Closed (date)` + a one-line note. Do no
 
 ---
 
+## Feature gaps (≥ 1 day) — added v1.5 polish round
+
+### B9 · Biometric gate on History view + WebAuthn fallback for web
+
+**Trigger:** v1.5 user testing (2026-05-09). Mood entries are personal — the user opened History on a shared device and felt exposed. WBS 2.2 already wires `local_auth` for sign-in; that capability isn't surfaced anywhere else in the app.
+
+**Two parts:**
+
+1. **Per-feature biometric guard on `/history` (and `/history/:id`)** — opt-in toggle in Settings → Privacy zone (new). When enabled, opening the History tab from the bottom nav routes through `BiometricGateScreen` first (re-using the existing widget); a session-scoped unlocked flag (similar to `biometricUnlockedThisSessionProvider`) prevents repeated prompts within the same app launch but rolls back on tab-switch-away (configurable: "always require" vs "session"). Calendar view + entry detail follow the same gate.
+
+2. **WebAuthn for web platforms** — `local_auth` is Android/iOS only. Web needs an equivalent: WebAuthn (`navigator.credentials.create/get`) using a platform authenticator (Touch ID on macOS/iOS Safari, Windows Hello on Edge, fingerprint on Chrome Android). Cross-platform package candidates: [`webauthn_dart`](https://pub.dev/packages/webauthn_dart) or a thin `dart:js_interop` wrapper around the browser API. Server-side credential registration would write to `users/{uid}/webauthnCredentials/{credId}` with `{publicKey, createdAt, transports[]}`; rules deny client-side reads of `publicKey` (read-only metadata).
+
+**Risk:** WebAuthn registration needs a real RP ID (`csc234-user-centric-mobile-app.web.app` or the custom domain). Stage: capture in an ADR before any code lands. Also: per CLAUDE.md "Do-not-do list", changes to auth surface require security-reviewer + architect sign-off.
+
+**Estimate:** 1 day flutter-engineer (history gate + Settings toggle + ADR) + 1 day flutter-engineer (WebAuthn integration) + 0.5 day security-reviewer.
+
+**Reference:** v1.5 user testing 2026-05-09 feedback round; WBS 2.2 biometric setup; HB-004 (account-deletion reauth) for the parallel local_auth integration.
+
+---
+
 ## Cross-references
 
 - Sprint 5 plan: `.claude/plans/refactored-growing-alpaca.md`
