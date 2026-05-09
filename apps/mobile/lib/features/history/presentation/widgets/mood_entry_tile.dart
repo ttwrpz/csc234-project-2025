@@ -1,6 +1,8 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
+import '../../../garden/domain/entities/flower_species.dart';
+import '../../../garden/presentation/widgets/flower_sprite.dart';
 import '../../../mood/domain/entities/mood_entry.dart';
 import '../../../mood/presentation/widgets/mood_kind_adapter.dart';
 
@@ -31,15 +33,47 @@ class MoodEntryTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
+          // 40×40 mood-tinted square. The emoji stays as the primary
+          // glyph and a small per-mood `FlowerSprite` is overlaid in
+          // the bottom-right corner so the user sees both: the
+          // existing mood-emoji language and the new species-as-cue
+          // visual vocabulary.
+          SizedBox(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
-              color: color.withAlpha(0x33),
-              borderRadius: BorderRadius.circular(12),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withAlpha(0x33),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(emoji, style: const TextStyle(fontSize: 20)),
+                ),
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: mb.card,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: mb.line, width: 1),
+                    ),
+                    alignment: Alignment.center,
+                    child: FlowerSprite(
+                      species: FlowerSpecies.forMood(entry.mood),
+                      size: 14,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            alignment: Alignment.center,
-            child: Text(emoji, style: const TextStyle(fontSize: 20)),
           ),
           const SizedBox(width: 12),
           Expanded(
