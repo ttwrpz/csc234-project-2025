@@ -1,9 +1,11 @@
 # ADR-0006 — Compassionate Reframing of Negative Moods (Wilting + Rain Cloud)
 
-**Status:** Proposed (Sprint 4)
+**Status:** Superseded by ADR-0010 (2026-05-09)
 **Date:** 2026-05-01
 **Deciders:** orchestrator + architect
 **Related:** ADR-0001 (repo structure & Clean Architecture); CLAUDE.md pivot feature #7 ("compassionate reframing"); user story US-Som-1 ("no user action to clean up a rain cloud")
+
+> **Superseded.** The intensity-split visual taxonomy (wilting plants for negative intensity 1–3, rain clouds for 4–5) is replaced by the ecosystem model in ADR-0010 (Plants Never Die). The wilting silhouette and the rain-cloud-as-mood widget no longer ship in v1.0; their files and tests are deleted on the Sprint 4 redesign branch. This ADR is preserved as a record of *why* the design moved on — the rationale around US-Som-1 (no dismiss action, autonomous fade) carries forward to the new Atmosphere overlay even though the visual taxonomy does not. See `docs/audit/sprint-4-redesign-audit.md` for the full triage.
 
 ## Context
 
