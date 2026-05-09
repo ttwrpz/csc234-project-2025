@@ -10,6 +10,9 @@ import '../../history/presentation/calendar_view.dart' show DayEntriesSheet;
 import '../../history/presentation/widgets/mood_entry_tile.dart';
 import '../../mood/data/providers.dart';
 import '../../mood/domain/entities/mood_entry.dart';
+import '../../tokens/data/providers.dart';
+import '../../tokens/presentation/controllers/token_visibility_controller.dart';
+import '../../tokens/presentation/widgets/token_balance_chip.dart';
 import '../data/providers.dart';
 import '../domain/entities/garden_state.dart';
 import '../domain/entities/intervention_state.dart';
@@ -187,57 +190,88 @@ class _GardenView extends StatelessWidget {
 
     return SafeArea(
       bottom: false,
-      child: SingleChildScrollView(
-        // Extra bottom padding clears both the bottom nav AND the FAB.
-        padding: const EdgeInsets.only(bottom: 140),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SkyHeader(state: state, greetingName: greetingName),
-            if (triggered && !bannerDismissed)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
-                child: CheerUpBanner(
-                  reason: reason,
-                  onDismiss: onDismissBanner,
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
-              child: MbCard(
-                child: DailyScoreStrip(
-                  last7Days: state.last7Days,
-                  // Tap a cell → bottom-sheet listing every entry on
-                  // that day. Reuses the calendar's DayEntriesSheet so
-                  // the UX is the same in both surfaces.
-                  onDayTap: (day) => DayEntriesSheet.show(context, day),
-                ),
-              ),
-            ),
-            if (preview.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(18, 0, 18, 0),
-                child: MbSectionLabel('RECENT MOODS'),
-              ),
-              const SizedBox(height: 8),
-              for (final e in preview)
+      child: Stack(
+        children: [
+          SingleChildScrollView(
+            // Extra bottom padding clears both the bottom nav AND the FAB.
+            padding: const EdgeInsets.only(bottom: 140),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SkyHeader(state: state, greetingName: greetingName),
+                if (triggered && !bannerDismissed)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
+                    child: CheerUpBanner(
+                      reason: reason,
+                      onDismiss: onDismissBanner,
+                    ),
+                  ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
-                  child: MoodEntryTile(
-                    entry: e,
-                    onTap: () => context.go('/history/${e.id}'),
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
+                  child: MbCard(
+                    child: DailyScoreStrip(
+                      last7Days: state.last7Days,
+                      // Tap a cell → bottom-sheet listing every entry on
+                      // that day. Reuses the calendar's DayEntriesSheet so
+                      // the UX is the same in both surfaces.
+                      onDayTap: (day) => DayEntriesSheet.show(context, day),
+                    ),
                   ),
                 ),
-            ],
-            if (escalated)
-              const Padding(
-                padding: EdgeInsets.fromLTRB(18, 16, 18, 0),
-                child: HotlineFooter(),
-              ),
-          ],
-        ),
+                if (preview.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(18, 0, 18, 0),
+                    child: MbSectionLabel('RECENT MOODS'),
+                  ),
+                  const SizedBox(height: 8),
+                  for (final e in preview)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+                      child: MoodEntryTile(
+                        entry: e,
+                        onTap: () => context.go('/history/${e.id}'),
+                      ),
+                    ),
+                ],
+                if (escalated)
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(18, 16, 18, 0),
+                    child: HotlineFooter(),
+                  ),
+              ],
+            ),
+          ),
+          // Floating token-balance chip — overlaid on the SkyHeader,
+          // top-right BELOW the existing entries pill so the two pills
+          // stack vertically without restructuring the SkyHeader's own
+          // top-bar Row (HB-005 Track 6.2). Hidden via the "Show token
+          // balance" toggle in Settings; never forced.
+          const Positioned(
+            top: 56,
+            right: MoodBloomSpacing.pagePadding,
+            child: _GardenTokenChip(),
+          ),
+        ],
       ),
     );
+  }
+}
+
+/// Watches `tokenVisibilityProvider` + `tokenBalanceStreamProvider` and
+/// renders a `TokenBalanceChip` only when the user has the toggle on
+/// AND a balance is available. Hidden state collapses to a zero-sized
+/// box so the SkyHeader's existing top-bar layout is undisturbed.
+class _GardenTokenChip extends ConsumerWidget {
+  const _GardenTokenChip();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final visible = ref.watch(tokenVisibilityProvider);
+    if (!visible) return const SizedBox.shrink();
+    final balance = ref.watch(tokenBalanceStreamProvider).value;
+    if (balance == null) return const SizedBox.shrink();
+    return TokenBalanceChip(balance: balance.balance);
   }
 }

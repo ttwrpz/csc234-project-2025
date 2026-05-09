@@ -19,6 +19,11 @@ import 'package:moodbloom/features/pattern_engine/domain/entities/pattern_result
 import 'package:moodbloom/features/pattern_engine/domain/pattern_failure.dart';
 import 'package:moodbloom/features/pattern_engine/domain/repositories/pattern_repository.dart';
 import 'package:moodbloom/features/pattern_engine/domain/usecases/run_pattern_engine.dart';
+import 'package:moodbloom/features/tokens/data/providers.dart';
+import 'package:moodbloom/features/tokens/domain/entities/token_award.dart';
+import 'package:moodbloom/features/tokens/domain/entities/token_balance.dart';
+import 'package:moodbloom/features/tokens/domain/repositories/token_repository.dart';
+import 'package:moodbloom/features/tokens/domain/token_failure.dart';
 
 /// HB-006 sub-track B verification — the post-save Pattern Engine
 /// wire-up in `LogMoodController._runPatternEngine`. We use a
@@ -101,6 +106,38 @@ class _FakePatternRepo implements PatternRepository {
   }) => const Stream<PatternResult?>.empty();
 }
 
+class _FakeTokenRepo implements TokenRepository {
+  final List<({String userId})> calls = [];
+
+  TokenFailure? nextFailure;
+
+  @override
+  Future<Result<TokenAward, TokenFailure>> awardForLog({
+    required String userId,
+  }) async {
+    calls.add((userId: userId));
+    final f = nextFailure;
+    if (f != null) {
+      nextFailure = null;
+      return Err(f);
+    }
+    return Ok(
+      TokenAward(
+        award: 5,
+        updated: TokenBalance(
+          balance: 5,
+          earnedToday: 5,
+          lastEarnedDate: DateTime(2026, 5, 9),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Stream<TokenBalance> watchBalance({required String userId}) =>
+      const Stream<TokenBalance>.empty();
+}
+
 class _RecordingUseCase implements RunPatternEngineUseCase {
   int callCount = 0;
   List<MoodEntry>? lastEntries;
@@ -138,9 +175,11 @@ void main() {
   group('LogMoodController post-save Pattern Engine wire-up', () {
     late _StubMoodRepository moodRepo;
     late _FakePatternRepo patternRepo;
+    late _FakeTokenRepo tokenRepo;
     late _RecordingUseCase engine;
 
     setUp(() {
+      tokenRepo = _FakeTokenRepo();
       moodRepo = _StubMoodRepository(
         savedEntry: MoodEntry(
           id: 'm1',
@@ -163,6 +202,8 @@ void main() {
       );
       patternRepo = _FakePatternRepo();
       engine = _RecordingUseCase();
+      // tokenRepo is constructed at the top of setUp so each test
+      // starts with an empty call list — avoids cross-test bleed.
     });
 
     /// Pumps a minimal widget tree that subscribes to all the providers
@@ -183,6 +224,7 @@ void main() {
             ),
             runPatternEngineUseCaseProvider.overrideWithValue(engine),
             patternRepositoryProvider.overrideWithValue(patternRepo),
+            tokenRepositoryProvider.overrideWithValue(tokenRepo),
           ],
           // Watch all the upstream providers so they're subscribed before
           // we call `save()` — otherwise the first emission could be
@@ -267,5 +309,53 @@ void main() {
         expect(json.containsKey('email'), isFalse);
       },
     );
+
+    // ── HB-005 Track 6.2 — token award post-save wire-up ──
+
+    testWidgets(
+      'tokenRepository.awardForLog is called after a successful save',
+      (tester) async {
+        final container = await pumpHarness(tester);
+        final saved = await doSave(container);
+        await tester.pumpAndSettle();
+        expect(saved, isNotNull);
+        // Token award attempted exactly once with the signed-in uid.
+        expect(tokenRepo.calls, hasLength(1));
+        expect(tokenRepo.calls.single.userId, 'uid-1');
+      },
+    );
+
+    testWidgets(
+      'TokenFailure (network) does NOT propagate to the mood-save UI surface',
+      (tester) async {
+        tokenRepo.nextFailure = const TokenFailure.network();
+        final container = await pumpHarness(tester);
+        final saved = await doSave(container);
+        await tester.pumpAndSettle();
+        // Mood save still completes successfully — token failure is
+        // best-effort, never blocks the user-facing success surface.
+        expect(saved, isNotNull);
+        expect(tokenRepo.calls, hasLength(1));
+        final submissionState = container.read(
+          logMoodSubmissionControllerProvider,
+        );
+        expect(submissionState.errorMessage, isNull);
+        expect(submissionState.isSubmitting, isFalse);
+      },
+    );
+
+    testWidgets('TokenFailure (permissionDenied) is also swallowed silently', (
+      tester,
+    ) async {
+      tokenRepo.nextFailure = const TokenFailure.permissionDenied();
+      final container = await pumpHarness(tester);
+      final saved = await doSave(container);
+      await tester.pumpAndSettle();
+      expect(saved, isNotNull);
+      final submissionState = container.read(
+        logMoodSubmissionControllerProvider,
+      );
+      expect(submissionState.errorMessage, isNull);
+    });
   });
 }

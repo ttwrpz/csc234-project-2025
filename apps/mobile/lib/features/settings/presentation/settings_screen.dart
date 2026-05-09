@@ -7,6 +7,7 @@ import '../../auth/data/providers.dart';
 import '../../auth/presentation/widgets/biometric_settings_tile.dart';
 import '../../mood/data/sync/connectivity_provider.dart';
 import '../../notifications/presentation/widgets/notifications_toggle_tile.dart';
+import '../../tokens/presentation/controllers/token_visibility_controller.dart';
 import '../domain/entities/theme_mode_preference.dart';
 import 'controllers/theme_mode_controller.dart';
 
@@ -224,6 +225,7 @@ class _PreferencesCluster extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final showTokens = ref.watch(tokenVisibilityProvider);
     return MbCard(
       clipBehavior: Clip.hardEdge,
       padding: EdgeInsets.zero,
@@ -262,6 +264,22 @@ class _PreferencesCluster extends ConsumerWidget {
                 _ThemeRadioTile(option: ThemeModePreference.dark),
               ],
             ),
+          ),
+          const Divider(height: 1),
+          // Anti-pattern guardrail (HB-005 Track 6.2, ADR-0010 §7):
+          // visibility toggle, NEVER an opt-out of earning. Tokens
+          // still accumulate in the background when this is off — only
+          // the chip render on the garden home is suppressed.
+          SwitchListTile(
+            secondary: const Icon(Icons.local_florist_outlined),
+            title: const Text('Show token balance'),
+            subtitle: const Text(
+              'Display the small flower-token chip on the garden home.',
+            ),
+            value: showTokens,
+            onChanged: (v) => ref
+                .read(tokenVisibilityProvider.notifier)
+                .setVisible(visible: v),
           ),
           const Divider(height: 1),
           const NotificationsToggleTile(),

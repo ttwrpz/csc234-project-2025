@@ -5,6 +5,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../auth/data/providers.dart';
 import '../../../pattern_engine/data/providers.dart';
+import '../../../tokens/data/providers.dart';
+import '../../../tokens/domain/token_failure.dart';
 import '../../data/providers.dart';
 import '../../domain/entities/mood_draft.dart';
 import '../../domain/entities/mood_entry.dart';
@@ -220,6 +222,12 @@ class LogMoodController extends _$LogMoodController {
     // also runs on edits — desired behaviour: an edited entry can
     // change today's `avgScore` and therefore today's tier.
     unawaited(_runPatternEngine(entry.userId));
+    // Best-effort post-save token award. Mood-agnostic — the
+    // repository's `awardForLog` takes only the userId. Failures are
+    // logged (failure runtimeType only — no userId, no balance, no
+    // award value, no PII) and swallowed so they cannot block the
+    // user's save success surfacing (HB-005 Track 6.2).
+    unawaited(_awardTokens(entry.userId));
     return entry;
   }
 
@@ -260,6 +268,36 @@ class LogMoodController extends _$LogMoodController {
       // (e.g. a transient Firestore unavailability mid-flight) must
       // not bubble out of a fire-and-forget save hook.
       logger.warn('pattern_engine_save_failed failure=${e.runtimeType}');
+    }
+  }
+
+  /// Awards tokens for a successful log via the token repository.
+  /// Best-effort: failures are logged once with the failure
+  /// runtimeType only (no userId, no balance, no award value — PII
+  /// + signal-leakage free) and never propagate to the UI surface.
+  ///
+  /// Mood-agnostic by construction: the repository's `awardForLog`
+  /// accepts only the userId. Logging a sad-5 entry earns the same
+  /// as logging a joy-5 entry — pivot feature #10 (CLAUDE.md),
+  /// ADR-0010 §7.
+  Future<void> _awardTokens(String userId) async {
+    const logger = Logger('mood.tokens');
+    try {
+      final outcome = await ref
+          .read(tokenRepositoryProvider)
+          .awardForLog(userId: userId);
+      outcome.fold(
+        ok: (_) {},
+        err: (failure) =>
+            logger.warn('token_award_failed failure=${failure.runtimeType}'),
+      );
+    } on TokenFailure catch (failure) {
+      // Defense in depth — the repository is contract-bound to return
+      // `Result`, but a misbehaving fake or partial impl could throw.
+      // Log + swallow.
+      logger.warn('token_award_failed failure=${failure.runtimeType}');
+    } catch (e) {
+      logger.warn('token_award_failed failure=${e.runtimeType}');
     }
   }
 }

@@ -62,7 +62,7 @@ final class LogMoodControllerProvider
   }
 }
 
-String _$logMoodControllerHash() => r'817bb5081856f183dd09e611e724ade48c84b579';
+String _$logMoodControllerHash() => r'fe645b2fcb2e0237964cfb198bd832eb8f77342b';
 
 /// Controller for `LogMoodScreen`. State is [MoodDraft] directly — it is the
 /// canonical in-progress entry shape and does not need a wrapper.
