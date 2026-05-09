@@ -238,11 +238,14 @@ class _AppShell extends StatelessWidget {
     MbBottomNavItem(icon: Icons.settings_outlined, label: 'Settings'),
   ];
 
+  /// Tapping any nav item always resets that branch to its initial route —
+  /// so the user never lands mid-stack on a tab they didn't expect to be
+  /// in. Combined with `StatefulShellRoute.indexedStack` keeping the
+  /// branch's State alive, this means scroll position resets to top on
+  /// every tap (the route rebuilds), which is what the "nav always lands
+  /// on top of the page" feedback boils down to. v1.5 polish fix.
   void _goBranch(int i) {
-    navigationShell.goBranch(
-      i,
-      initialLocation: i == navigationShell.currentIndex,
-    );
+    navigationShell.goBranch(i, initialLocation: true);
   }
 
   /// Index to highlight in the nav. Normally just `currentIndex`, but
