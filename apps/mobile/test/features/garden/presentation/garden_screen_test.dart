@@ -7,8 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/auth/data/providers.dart';
 import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
 import 'package:moodbloom/features/garden/presentation/garden_screen.dart';
-import 'package:moodbloom/features/garden/presentation/widgets/flora_sprite.dart';
-import 'package:moodbloom/features/garden/presentation/widgets/rain_cloud.dart';
+import 'package:moodbloom/features/garden/presentation/widgets/daily_score_strip.dart';
+import 'package:moodbloom/features/garden/presentation/widgets/plant_tier_group.dart';
+import 'package:moodbloom/features/garden/presentation/widgets/sky_header.dart';
 import 'package:moodbloom/features/mood/data/providers.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_entry.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
@@ -47,9 +48,10 @@ Future<void> _pumpGarden(
       ),
     ),
   );
-  // The garden-state stream emits asynchronously; flora sprites animate
-  // continuously so `pumpAndSettle` would loop forever. Pump enough
-  // frames to let the providers settle but stop before animations matter.
+  // The garden-state stream emits asynchronously; atmosphere overlay
+  // animates continuously so `pumpAndSettle` would loop forever. Pump
+  // a few frames to let the providers settle, then stop before
+  // animations matter.
   for (var i = 0; i < 6; i++) {
     await tester.pump(const Duration(milliseconds: 50));
   }
@@ -72,32 +74,38 @@ MoodEntry _entry(
 }
 
 void main() {
-  group('GardenScreen', () {
-    testWidgets('empty state renders no flora sprites', (tester) async {
+  group('GardenScreen — ADR-0010 ecosystem refactor', () {
+    testWidgets('empty state still mounts the canvas (PlantTierGroup) and the '
+        'daily-score strip', (tester) async {
       final repo = FakeMoodRepository()..streamedEntries = [const []];
       await _pumpGarden(tester, repo: repo);
 
-      expect(find.byType(Flower), findsNothing);
-      expect(find.byType(Bud), findsNothing);
-      expect(find.byType(WiltingPlant), findsNothing);
-      expect(find.byType(RainCloud), findsNothing);
+      // The canvas always renders — no per-entry sprite dispatch.
+      expect(find.byType(SkyHeader), findsOneWidget);
+      expect(find.byType(PlantTierGroup), findsOneWidget);
+      expect(find.byType(DailyScoreStrip), findsOneWidget);
     });
 
-    testWidgets('positive entries render Flower sprites', (tester) async {
+    testWidgets('positive entries today drive a thriving/flourishing tier', (
+      tester,
+    ) async {
       final today = DateTime.now();
       final entries = [
-        for (var i = 0; i < 5; i += 1) _entry(MoodType.happy, today, id: 'e$i'),
+        for (var i = 0; i < 5; i += 1)
+          _entry(MoodType.happy, today, id: 'e$i', intensity: 5),
       ];
       final repo = FakeMoodRepository()..streamedEntries = [entries];
       await _pumpGarden(tester, repo: repo);
 
-      // Each happy@i=3 maps to a Flower (Bud is reserved for intensity 1).
-      expect(find.byType(Flower), findsNWidgets(5));
+      // The tier picker is the use case's job; from the screen's side
+      // we just verify the canvas keeps mounting and the entries
+      // pill reflects the live count (today is in this week).
+      expect(find.byType(PlantTierGroup), findsOneWidget);
+      expect(find.text('5 entries this week'), findsOneWidget);
     });
 
     testWidgets(
-      'negative-only history (S4) → wilting plants for i ≤ 3, rain clouds '
-      'for i ≥ 4; no flowers',
+      'negative-only history mounts the canvas with no per-entry sprites',
       (tester) async {
         final today = DateTime.now();
         final repo = FakeMoodRepository()
@@ -110,39 +118,16 @@ void main() {
           ];
         await _pumpGarden(tester, repo: repo);
 
-        expect(find.byType(Flower), findsNothing);
-        expect(find.byType(WiltingPlant), findsNWidgets(2));
-        expect(find.byType(RainCloud), findsOneWidget);
+        // No per-entry sprites — just the tier group + atmosphere
+        // overlay. Plants stay alive in every tier per ADR-0010 §1.
+        expect(find.byType(PlantTierGroup), findsOneWidget);
+        expect(find.byType(DailyScoreStrip), findsOneWidget);
       },
     );
-
-    testWidgets('mixed canvas: positives + negatives render side by side', (
-      tester,
-    ) async {
-      final today = DateTime.now();
-      final repo = FakeMoodRepository()
-        ..streamedEntries = [
-          [
-            _entry(MoodType.happy, today, id: 'p1'),
-            _entry(MoodType.sad, today, id: 'w1', intensity: 1),
-            _entry(MoodType.calm, today, id: 'p2'),
-            _entry(MoodType.angry, today, id: 'r1', intensity: 5),
-            _entry(MoodType.anxious, today, id: 'r2', intensity: 4),
-          ],
-        ];
-      await _pumpGarden(tester, repo: repo);
-
-      expect(find.byType(Flower), findsNWidgets(2));
-      expect(find.byType(WiltingPlant), findsOneWidget);
-      expect(find.byType(RainCloud), findsNWidgets(2));
-    });
 
     testWidgets('"Log mood" CTA (FAB) is reachable from the home page', (
       tester,
     ) async {
-      // The inline "Log today's mood" button was retired once the FAB
-      // and the centred bottom-nav slot covered the same action. The
-      // FAB stays — it's the primary mood-logging affordance on Home.
       final repo = FakeMoodRepository()..streamedEntries = [const []];
       await _pumpGarden(tester, repo: repo);
 

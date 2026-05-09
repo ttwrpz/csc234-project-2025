@@ -34,16 +34,40 @@ final computeGardenStateUseCaseProvider = Provider<ComputeGardenStateUseCase>((
 /// We watch the upstream `AsyncValue<List<MoodEntry>>` directly (not via the
 /// deprecated `.stream` accessor) and map each non-loading state through the
 /// pure use case. `DateTime.now()` is captured on every recompute so the
-/// bloom bar / streak roll forward when the underlying stream re-emits (e.g.
-/// a fresh mood log). Crossing midnight without a new emission is
-/// acceptable — the bar refreshes on the next interaction.
+/// daily-score strip + atmosphere roll forward when the underlying stream
+/// re-emits (e.g. a fresh mood log). Crossing midnight without a new
+/// emission is acceptable — the strip refreshes on the next interaction.
+///
+/// `weekStart` is the local-midnight `DateTime` of the current week's
+/// Monday. `H_t` resets to 0 on every fresh week (weekly harvest cycle —
+/// ADR-0010 §3).
 final gardenStateStreamProvider = Provider<AsyncValue<GardenState>>((ref) {
   final useCase = ref.watch(computeGardenStateUseCaseProvider);
   final moods = ref.watch(myMoodsStreamProvider);
-  return moods.whenData(
-    (entries) => useCase(entries: entries, now: DateTime.now()),
-  );
+  return moods.whenData((entries) {
+    final now = DateTime.now();
+    return useCase(
+      entries: entries,
+      now: now,
+      weekStart: _localMondayMidnight(now),
+    );
+  });
 });
+
+/// Local-midnight `DateTime` of the Monday of the week containing [now].
+/// Pure helper colocated with the provider — kept private because the
+/// domain layer should not own week-start semantics (those are presentation /
+/// product policy: Monday vs Sunday vs ISO weeks).
+DateTime _localMondayMidnight(DateTime now) {
+  final local = now.toLocal();
+  final daysFromMonday = local.weekday - DateTime.monday;
+  final monday = DateTime(
+    local.year,
+    local.month,
+    local.day,
+  ).subtract(Duration(days: daysFromMonday));
+  return monday;
+}
 
 /// Underlying mood entries the garden canvas iterates to render per-entry
 /// glyphs (flower / wilting plant / rain cloud). Mirrors

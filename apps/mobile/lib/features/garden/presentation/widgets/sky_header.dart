@@ -4,116 +4,53 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../mood/domain/entities/mood_entry.dart';
-import '../../../mood/domain/entities/mood_type.dart';
-import 'flora_sprite.dart';
-import 'rain_cloud.dart';
+import '../../domain/entities/atmosphere.dart';
+import '../../domain/entities/garden_state.dart';
+import '../../domain/entities/plant_tier.dart';
+import 'atmosphere_overlay.dart';
+import 'plant_tier_group.dart';
 
 /// 320 dp gradient sky header that doubles as the garden canvas.
-/// Hosts the greeting + streak pill (top), sun (right), `CustomPaint`
-/// ground (bottom 60 dp), positioned flora and rain-cloud sprites, and
-/// the "View patterns →" footer row.
+/// Hosts the greeting + entries pill (top), sun (right), `CustomPaint`
+/// ground (bottom 60 dp), the [PlantTierGroup] driven by
+/// [GardenState.plantTier], an [AtmosphereOverlay] driven by
+/// [GardenState.atmosphere], and the "View patterns →" footer row.
 ///
-/// All entry → sprite mapping happens here (the previous
-/// `_GardenCanvas` dispatcher is folded in). The screen passes the raw
-/// entry list and a few aggregate caps; the header owns the layout.
+/// ADR-0010 redesign: the previous per-entry sprite dispatch (flowers /
+/// buds / wilting plants / rain clouds) is gone. The canvas now reads
+/// two signals on different timescales — the slow weekly EWMA (plant
+/// tier) and the fast today-only mood mean (atmosphere overlay).
+/// Plants are alive in every tier; rain belongs to the atmosphere
+/// layer, not the plant layer.
 class SkyHeader extends StatelessWidget {
-  const SkyHeader({
-    super.key,
-    required this.entries,
-    required this.streakDays,
-    required this.greetingName,
-    this.maxPlants = 8,
-    this.maxClouds = 3,
-  });
+  const SkyHeader({super.key, required this.state, required this.greetingName});
 
-  /// Most-recent-first list of entries to render. Caller is responsible
-  /// for filtering by recency window (e.g. last 7 days) and total cap.
-  final List<MoodEntry> entries;
-  final int streakDays;
+  /// Computed garden snapshot — drives both the plant tier and the
+  /// atmosphere overlay.
+  final GardenState state;
 
   /// First-name used in the greeting. Falls back to a friendly default
   /// when the user has not set a display name.
   final String greetingName;
 
-  /// Cap on the number of flowers/buds/wilting plants positioned in
-  /// the scene. Beyond this they're dropped (never crowded).
-  final int maxPlants;
-
-  /// Cap on the number of drifting rain clouds. The fourth-and-up
-  /// cloud is dropped — three clouds is already a heavy sky.
-  final int maxClouds;
-
   static const double _height = 320;
 
-  /// Fixed plant-row y position — anchors the sprites' bottom-center
-  /// pivot to the soil line.
-  static const double _plantY = 258;
+  /// Height of the plant row anchored above the ground line.
+  static const double _plantRowHeight = 100;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mb = theme.extension<MbColors>()!;
 
-    final plants = <_PositionedSprite>[];
-    final clouds = <_PositionedSprite>[];
-
-    for (final e in entries) {
-      final seed = e.id.hashCode.abs();
-      // Negative @ intensity ≥ 4 → rain cloud.
-      final isNegative =
-          e.mood.category != MoodCategory.positive && e.mood != MoodType.okay;
-      if (isNegative && e.intensity >= 4) {
-        if (clouds.length >= maxClouds) continue;
-        final idx = clouds.length;
-        clouds.add(
-          _PositionedSprite(
-            x: (60 + (idx * 120) % 320).toDouble(),
-            y: 80 + idx * 20,
-            child: RainCloud(
-              entryId: e.id,
-              mood: e.mood,
-              intensity: e.intensity,
-              indexInScene: idx,
-            ),
-          ),
-        );
-        continue;
-      }
-      // Otherwise a plant of some kind.
-      if (plants.length >= maxPlants) continue;
-      final idx = plants.length;
-      // x = 30 + (idx*50 + (seed*13)%340) % 340 — port of the
-      // prototype's deterministic positioning.
-      final x = (30 + (idx * 50 + (seed * 13) % 340) % 340).toDouble();
-      final kind = floraKindFor(e.mood, e.intensity);
-      late final Widget sprite;
-      switch (kind) {
-        case FloraKind.flower:
-          sprite = Flower(
-            mood: moodKindOf(e.mood),
-            intensity: e.intensity,
-            seed: seed,
-          );
-        case FloraKind.bud:
-          sprite = Bud(mood: moodKindOf(e.mood), seed: seed);
-        case FloraKind.wilt:
-          sprite = WiltingPlant(
-            mood: moodKindOf(e.mood),
-            intensity: e.intensity.clamp(1, 3),
-            seed: seed,
-          );
-      }
-      plants.add(_PositionedSprite(x: x, y: _plantY, child: sprite));
-    }
-
     final dateLabel = _humanDate(DateTime.now());
+    final entriesThisWeek = _countEntriesThisWeek(state.last7Days);
 
     return Semantics(
       container: true,
       label:
-          'Sky header. ${plants.length} plants and ${clouds.length} '
-          'passing clouds.',
+          'Garden canvas — ${state.plantTier.name} tier, '
+          '${state.atmosphere.name} sky.',
       child: SizedBox(
         height: _height,
         child: ClipRRect(
@@ -136,18 +73,26 @@ class SkyHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              // Sun, top-right.
+              // Sun, top-right. Dimmed under rain/storm so the weather
+              // treatment reads. Plants stay vivid in every tier.
               Positioned(
                 top: 60,
                 right: 34,
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [mb.sun1, mb.sun2, mb.sun2.withValues(alpha: 0)],
-                      stops: const [0, 0.7, 1],
+                child: Opacity(
+                  opacity: _sunOpacity(state.atmosphere),
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          mb.sun1,
+                          mb.sun2,
+                          mb.sun2.withValues(alpha: 0),
+                        ],
+                        stops: const [0, 0.7, 1],
+                      ),
                     ),
                   ),
                 ),
@@ -162,19 +107,24 @@ class SkyHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              // Rain clouds layer.
-              for (final c in clouds)
-                Positioned(left: c.x, top: c.y, child: c.child),
-              // Plant layer — sprites are 100×100 logical, anchor at
-              // their bottom-center, so we left-shift by 50 to center on
-              // their target x.
-              for (final p in plants)
-                Positioned(
-                  left: p.x - 50,
-                  top: p.y - 100,
-                  child: SizedBox(width: 100, height: 100, child: p.child),
+              // Plant tier wrapped in atmosphere overlay. The plant
+              // group is the bottom layer; the overlay paints rain /
+              // sun rays above it. Plants are NOT children of the
+              // overlay so rain visually falls AROUND them.
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 30,
+                height: _plantRowHeight,
+                child: AtmosphereOverlay(
+                  atmosphere: state.atmosphere,
+                  child: PlantTierGroup(
+                    tier: state.plantTier,
+                    entryCount: entriesThisWeek,
+                  ),
                 ),
-              // Top bar: greeting + streak pill.
+              ),
+              // Top bar: greeting + entries-this-week pill.
               Positioned(
                 top: 16,
                 left: MoodBloomSpacing.pagePadding,
@@ -208,7 +158,7 @@ class SkyHeader extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    _StreakPill(streakDays: streakDays),
+                    _EntriesPill(entriesThisWeek: entriesThisWeek),
                   ],
                 ),
               ),
@@ -222,9 +172,7 @@ class SkyHeader extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        '${plants.length} plant${plants.length == 1 ? '' : 's'}'
-                        ' · ${clouds.length} passing '
-                        'cloud${clouds.length == 1 ? '' : 's'}',
+                        _tierTagline(state),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: mb.textDim,
                           fontSize: 11,
@@ -240,6 +188,38 @@ class SkyHeader extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static int _countEntriesThisWeek(List<DayScore> last7Days) {
+    var total = 0;
+    for (final d in last7Days) {
+      total += d.entryCount;
+    }
+    return total;
+  }
+
+  /// Sun visibility tapers in rainy atmospheres so the weather
+  /// treatment reads. Plants stay visible in every tier — only the
+  /// sun fades.
+  static double _sunOpacity(Atmosphere a) => switch (a) {
+    Atmosphere.calmSunny || Atmosphere.brightSunny => 1.0,
+    Atmosphere.lightRain => 0.55,
+    Atmosphere.storm => 0.20,
+  };
+
+  /// Compassionate, no-streak-shaming caption per the plant tier and
+  /// total entry count. Empty-state copy ("plant your first mood")
+  /// kicks in when the user has logged nothing at all. Matches the
+  /// no-wilt copy rule in CLAUDE.md.
+  static String _tierTagline(GardenState state) {
+    if (state.isEmpty) return 'Plant your first mood — a fresh canvas awaits.';
+    return switch (state.plantTier) {
+      PlantTier.flourishing => 'A flourishing week.',
+      PlantTier.thriving => 'Thriving — the garden has grown.',
+      PlantTier.resting => 'Resting — quiet days for the soil.',
+      PlantTier.weathering => 'Weathering a soft week — roots hold.',
+      PlantTier.stormSeason => 'Storms pass. The roots hold.',
+    };
   }
 
   static String _humanDate(DateTime now) {
@@ -271,27 +251,18 @@ class SkyHeader extends StatelessWidget {
   }
 }
 
-class _PositionedSprite {
-  const _PositionedSprite({
-    required this.x,
-    required this.y,
-    required this.child,
-  });
+class _EntriesPill extends StatelessWidget {
+  const _EntriesPill({required this.entriesThisWeek});
 
-  final double x;
-  final double y;
-  final Widget child;
-}
-
-class _StreakPill extends StatelessWidget {
-  const _StreakPill({required this.streakDays});
-
-  final int streakDays;
+  final int entriesThisWeek;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
+    final label = entriesThisWeek == 1
+        ? '1 entry this week'
+        : '$entriesThisWeek entries this week';
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
@@ -313,7 +284,7 @@ class _StreakPill extends StatelessWidget {
               const Text('🌿', style: TextStyle(fontSize: 14)),
               const SizedBox(width: 6),
               Text(
-                '$streakDays day${streakDays == 1 ? '' : 's'}',
+                label,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: primary,
                   fontWeight: FontWeight.w600,
@@ -387,10 +358,6 @@ class _GroundPainter extends CustomPainter {
     final scale = size.width / 400.0;
     canvas.save();
     canvas.scale(scale, scale);
-    // Vertical: prototype paints into a 320-tall box that matches our
-    // SkyHeader height; if the rendered height differs we still paint
-    // at the prototype's y coordinates (the gradient + sun absorb any
-    // letterboxing).
 
     // Ground layer 1.
     final p1 = Path()
@@ -424,13 +391,7 @@ class _GroundPainter extends CustomPainter {
       canvas.drawLine(Offset(x, y), Offset(x + 2, y - 8), grassPaint);
     }
     canvas.restore();
-
-    // Suppress lint about unused import for ui.ImageFilter (we use it
-    // in the streak pill above; no-op here).
-    assert(_groundHeight == 60);
   }
-
-  static const double _groundHeight = 60;
 
   @override
   bool shouldRepaint(covariant _GroundPainter old) =>

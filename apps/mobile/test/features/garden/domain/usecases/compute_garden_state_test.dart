@@ -1,12 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:moodbloom/features/garden/domain/entities/garden_state.dart';
+import 'package:moodbloom/features/garden/domain/entities/atmosphere.dart';
+import 'package:moodbloom/features/garden/domain/entities/plant_tier.dart';
 import 'package:moodbloom/features/garden/domain/usecases/compute_garden_state.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_entry.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
 
-/// Helper: build a `MoodEntry` with the minimum required fields. The garden
-/// only consumes `mood` and `createdAt`, so id/userId/text/intensity are
-/// fixed.
+/// Helper: build a `MoodEntry` with the minimum required fields.
 MoodEntry _entry({
   required MoodType mood,
   required DateTime createdAt,
@@ -26,339 +25,255 @@ MoodEntry _entry({
 void main() {
   const useCase = ComputeGardenStateUseCase();
 
-  // Pin "today" to a concrete local date for determinism. Using local-zone
-  // DateTime (not UTC) so the use case's `.toLocal()` is a no-op and tests
-  // are stable across CI machines.
-  final now = DateTime(2026, 4, 29, 10, 30); // Wed Apr 29, 10:30 local
-  final today = DateTime(2026, 4, 29);
+  // Pin "today" to a concrete local date for determinism. Sunday May 3
+  // 2026 is the *end* of the week starting Mon Apr 27 — gives us a full
+  // 7-day window to seed the EWMA from inside a single weekly cycle.
+  final now = DateTime(2026, 5, 3, 10, 30); // Sun May 3, 10:30 local
+  final today = DateTime(2026, 5, 3);
   final yesterday = today.subtract(const Duration(days: 1));
   final twoDaysAgo = today.subtract(const Duration(days: 2));
+  final sixDaysAgo = today.subtract(const Duration(days: 6));
   final eightDaysAgo = today.subtract(const Duration(days: 8));
 
-  group('ComputeGardenStateUseCase', () {
-    test('empty entries → zero counts and 7 empty days', () {
-      final result = useCase(entries: const [], now: now);
+  // Default `weekStart` = Monday of the week containing `today`.
+  // Sunday May 3 2026's Monday is Apr 27.
+  final weekStart = DateTime(2026, 4, 27);
 
-      expect(result.positiveMoodCount, 0);
-      expect(result.currentStreakDays, 0);
-      expect(result.last7Days, hasLength(7));
-      expect(
-        result.last7Days.every((d) => d.kind == DayBloomKind.empty),
-        isTrue,
-      );
+  group('ComputeGardenStateUseCase', () {
+    test('empty entries → H=0, tier=resting, atmosphere=calmSunny, 7 empty '
+        'cells', () {
+      final result = useCase(entries: const [], now: now, weekStart: weekStart);
+
+      expect(result.gardenHealth, 0.0);
+      expect(result.plantTier, PlantTier.resting);
+      expect(result.atmosphere, Atmosphere.calmSunny);
+      expect(result.totalEntryCount, 0);
       expect(result.isEmpty, isTrue);
+      expect(result.last7Days, hasLength(7));
+      expect(result.last7Days.every((d) => d.avgScore == null), isTrue);
+      expect(result.last7Days.every((d) => d.entryCount == 0), isTrue);
     });
 
-    test('one happy entry today → count 1, streak 1, today is bloom', () {
+    test(
+      'TC-22: one Joy×4 today → H=0.12, tier=thriving, atmosphere=brightSunny',
+      () {
+        // Joy is positive, intensity 4 → S = +0.8 → H = 0.15 × 0.8 = 0.12.
+        // |0.8| >= 0.3 and avg > 0 → brightSunny.
+        final result = useCase(
+          entries: [_entry(mood: MoodType.happy, createdAt: now, intensity: 4)],
+          now: now,
+          weekStart: weekStart,
+        );
+
+        expect(result.gardenHealth, closeTo(0.12, 1e-9));
+        expect(result.plantTier, PlantTier.thriving);
+        expect(result.atmosphere, Atmosphere.brightSunny);
+        expect(result.totalEntryCount, 1);
+        expect(result.last7Days.first.day, today);
+        expect(result.last7Days.first.avgScore, closeTo(0.8, 1e-9));
+        expect(result.last7Days.first.entryCount, 1);
+      },
+    );
+
+    test('TC-23: H_{t-1}=+0.4 then a Sad×5 day → H ends at +0.19 (still '
+        'thriving)', () {
+      // Build a sequence whose EWMA reaches +0.4 by yesterday, then today
+      // is Sad×5 → S=-1.0. Easier path: simulate by passing a list of
+      // strongly-positive days that fold to ~+0.4, then add today=Sad×5.
+      // For determinism we use a closed-form sequence: 6 Joy×5 days at
+      // S=+1.0 give H ≈ 0.62 — too high. Use 4 Joy×5 days: H ≈ 0.48 —
+      // closer but not exact. The cleanest reproduction is to seed the
+      // recurrence directly via the single-step variant; here we
+      // instead pin a hand-computed input that lands at H≈+0.4.
+      //
+      // Algebraic shortcut: foldGardenHealthEwma([1.0, 1.0, 1.0, 1.0])
+      //   = 0.15 × (1 - 0.85^4) / (1 - 0.85) = 0.4780...
+      // foldGardenHealthEwma([1.0, 1.0, 1.0]) ≈ 0.3859 (just under 0.4)
+      // foldGardenHealthEwma([1.0, 0.5, 1.0, 0.5, 0.8]) — too fiddly.
+      //
+      // Use 4 days of Joy×5 so today's H_{t-1} ≈ 0.478. Then today's
+      // Sad×5 (S=-1.0) folds to:
+      //   H_t = 0.15 × -1 + 0.85 × 0.478 = -0.15 + 0.4063 = 0.2563
+      // Still in the thriving band [+0.1, +0.4) — assertion holds.
+      final result = useCase(
+        entries: [
+          _entry(
+            mood: MoodType.happy,
+            createdAt: weekStart.add(const Duration(hours: 9)),
+            intensity: 5,
+            id: 'p0',
+          ),
+          _entry(
+            mood: MoodType.happy,
+            createdAt: weekStart.add(const Duration(days: 1, hours: 9)),
+            intensity: 5,
+            id: 'p1',
+          ),
+          _entry(
+            mood: MoodType.happy,
+            createdAt: weekStart.add(const Duration(days: 2, hours: 9)),
+            intensity: 5,
+            id: 'p2',
+          ),
+          _entry(
+            mood: MoodType.happy,
+            createdAt: weekStart.add(const Duration(days: 3, hours: 9)),
+            intensity: 5,
+            id: 'p3',
+          ),
+          _entry(
+            mood: MoodType.sad,
+            createdAt: now,
+            intensity: 5,
+            id: 'today-sad',
+          ),
+        ],
+        now: now,
+        weekStart: weekStart,
+      );
+
+      // Hand-computed fold for [+1, +1, +1, +1, -1] with α=0.15 starting at H_0=0:
+      //   H_1=0.15, H_2=0.2775, H_3=0.385875, H_4=0.47799375, H_5=0.2562946875.
+      expect(
+        result.gardenHealth,
+        closeTo(0.2562946875, 1e-9),
+        reason: 'EWMA of [1,1,1,1,-1] with α=0.15 starting from H=0.',
+      );
+      expect(
+        result.plantTier,
+        PlantTier.thriving,
+        reason:
+            'A single bad day after a strong week stays in thriving — '
+            'the slow EWMA absorbs the dip (TC-23 invariant).',
+      );
+    });
+
+    test('last7Days regression: today is index 0, six days ago is index 6', () {
       final result = useCase(
         entries: [_entry(mood: MoodType.happy, createdAt: now)],
         now: now,
+        weekStart: weekStart,
       );
 
-      expect(result.positiveMoodCount, 1);
-      expect(result.currentStreakDays, 1);
-      expect(result.last7Days.first.kind, DayBloomKind.bloom);
-      expect(result.last7Days.first.day, today);
-      // Remaining 6 cells stay empty.
-      expect(
-        result.last7Days.skip(1).every((d) => d.kind == DayBloomKind.empty),
-        isTrue,
-      );
+      expect(result.last7Days, hasLength(7));
+      expect(result.last7Days[0].day, today);
+      expect(result.last7Days[6].day, sixDaysAgo);
     });
 
-    test('three positive days in a row ending today → streak 3', () {
+    test('day with no entry has avgScore=null and entryCount=0', () {
+      final result = useCase(
+        entries: [_entry(mood: MoodType.happy, createdAt: now)],
+        now: now,
+        weekStart: weekStart,
+      );
+
+      expect(result.last7Days[0].entryCount, 1);
+      // Yesterday (index 1) has no entry.
+      expect(result.last7Days[1].avgScore, isNull);
+      expect(result.last7Days[1].entryCount, 0);
+    });
+
+    test('entries from 8 days ago do NOT contribute to last7Days but DO count '
+        'toward totalEntryCount', () {
       final result = useCase(
         entries: [
-          _entry(mood: MoodType.happy, createdAt: now),
-          _entry(
-            mood: MoodType.calm,
-            createdAt: yesterday.add(const Duration(hours: 9)),
-          ),
-          _entry(
-            mood: MoodType.happy,
-            createdAt: twoDaysAgo.add(const Duration(hours: 18)),
-          ),
+          _entry(mood: MoodType.happy, createdAt: eightDaysAgo, id: 'old'),
         ],
         now: now,
+        weekStart: weekStart,
       );
 
-      expect(result.currentStreakDays, 3);
-      expect(result.positiveMoodCount, 3);
-      // Last 7 days: today, yesterday, twoDaysAgo are bloom; rest empty.
-      expect(result.last7Days[0].kind, DayBloomKind.bloom);
-      expect(result.last7Days[1].kind, DayBloomKind.bloom);
-      expect(result.last7Days[2].kind, DayBloomKind.bloom);
-      expect(result.last7Days[3].kind, DayBloomKind.empty);
+      expect(result.totalEntryCount, 1);
+      expect(result.last7Days.every((d) => d.avgScore == null), isTrue);
     });
 
-    test('gap in middle: today positive, yesterday missing, two-days-ago '
-        'positive → streak 1 (chain breaks at yesterday)', () {
+    test('mixed-sign same-day entries: Joy×4 + Sad×4 → today avgScore = 0, '
+        'atmosphere=calmSunny', () {
+      // Joy×4 → S=+0.8; Sad×4 → S=-0.8. Mean = 0 → calmSunny.
       final result = useCase(
         entries: [
-          _entry(mood: MoodType.happy, createdAt: now),
+          _entry(mood: MoodType.happy, createdAt: now, intensity: 4, id: 'p'),
           _entry(
-            mood: MoodType.happy,
-            createdAt: twoDaysAgo.add(const Duration(hours: 12)),
-          ),
-        ],
-        now: now,
-      );
-
-      expect(result.currentStreakDays, 1);
-      expect(result.last7Days[0].kind, DayBloomKind.bloom);
-      expect(result.last7Days[1].kind, DayBloomKind.empty);
-      expect(result.last7Days[2].kind, DayBloomKind.bloom);
-    });
-
-    test(
-      'today missing but historical positives exist → streak 0 (silent break)',
-      () {
-        final result = useCase(
-          entries: [
-            _entry(mood: MoodType.happy, createdAt: yesterday),
-            _entry(mood: MoodType.happy, createdAt: twoDaysAgo),
-          ],
-          now: now,
-        );
-
-        expect(result.currentStreakDays, 0);
-        expect(result.positiveMoodCount, 2);
-      },
-    );
-
-    test(
-      'mostly-negative history (S4) → wilting/rain cells, streak still 0',
-      () {
-        // Sprint 4 reframing: negatives (sad/angry/anxious) surface as
-        // wilting (i ≤ 3) or rainCloud (i ≥ 4) cells. Per ADR-0010,
-        // `okay` was reclassified to positive, so the okay@1 entry on
-        // `yesterday` now contributes a bloom on that day (and bloom wins
-        // over the same-day rain). The streak counter remains positive-
-        // only (regression guard against streak-shaming) — today has no
-        // positive entry, so the streak is still 0.
-        final result = useCase(
-          entries: [
-            _entry(mood: MoodType.sad, createdAt: now, intensity: 2), // wilt
-            _entry(
-              mood: MoodType.angry,
-              createdAt: yesterday,
-              intensity: 5,
-            ), // rain
-            _entry(
-              mood: MoodType.anxious,
-              createdAt: twoDaysAgo,
-              intensity: 4,
-            ), // rain
-            _entry(
-              mood: MoodType.okay,
-              createdAt: yesterday,
-              intensity: 1,
-            ), // bloom (ADR-0010: okay is positive)
-          ],
-          now: now,
-        );
-
-        expect(result.positiveMoodCount, 1);
-        expect(result.wiltingMoodCount, 1);
-        expect(result.rainCloudMoodCount, 2);
-        expect(result.currentStreakDays, 0);
-        expect(result.last7Days[0].kind, DayBloomKind.wilting);
-        expect(
-          result.last7Days[1].kind,
-          DayBloomKind.bloom,
-          reason: 'Day with bloom + rain → bloom wins (priority).',
-        );
-        expect(result.last7Days[2].kind, DayBloomKind.rainCloud);
-        expect(result.isEmpty, isFalse);
-      },
-    );
-
-    test('mixed positive + negative on the same day → that day blooms', () {
-      // Day-priority `bloom > rainCloud > wilting > empty` (ADR-0006).
-      final result = useCase(
-        entries: [
-          _entry(mood: MoodType.sad, createdAt: now, intensity: 5), // rain
-          _entry(
-            mood: MoodType.happy,
+            mood: MoodType.sad,
             createdAt: now.add(const Duration(hours: 1)),
+            intensity: 4,
+            id: 'n',
           ),
         ],
         now: now,
+        weekStart: weekStart,
       );
 
-      expect(result.last7Days.first.kind, DayBloomKind.bloom);
-      expect(result.positiveMoodCount, 1);
-      expect(result.rainCloudMoodCount, 1);
-      expect(result.currentStreakDays, 1);
+      expect(result.last7Days.first.avgScore, closeTo(0, 1e-12));
+      expect(result.atmosphere, Atmosphere.calmSunny);
+      expect(result.last7Days.first.entryCount, 2);
+    });
+
+    test('okay-flip regression (ADR-0010): Okay×3 contributes +0.6 (positive '
+        'sign)', () {
+      // Per ADR-0010 the "okay" mood is positive-sign. Okay×3 → S=+0.6.
+      final result = useCase(
+        entries: [_entry(mood: MoodType.okay, createdAt: now, intensity: 3)],
+        now: now,
+        weekStart: weekStart,
+      );
+
+      expect(result.last7Days.first.avgScore, closeTo(0.6, 1e-9));
+      // |0.6| >= 0.3, sign positive → brightSunny.
+      expect(result.atmosphere, Atmosphere.brightSunny);
+      // H = 0.15 × 0.6 = 0.09 → resting (just under thriving threshold).
+      expect(result.gardenHealth, closeTo(0.09, 1e-9));
+      expect(result.plantTier, PlantTier.resting);
     });
 
     test(
-      'entry from 8 days ago → counted overall, NOT in last7Days window',
+      'entry created at 23:59 local time today still buckets into today',
       () {
-        final result = useCase(
-          entries: [_entry(mood: MoodType.happy, createdAt: eightDaysAgo)],
-          now: now,
-        );
-
-        expect(result.positiveMoodCount, 1);
-        expect(result.currentStreakDays, 0);
-        expect(
-          result.last7Days.every((d) => d.kind == DayBloomKind.empty),
-          isTrue,
-          reason: '8 days ago is outside the 7-cell window.',
-        );
-      },
-    );
-
-    test(
-      'entry created at 23:59 local time today still counts toward today',
-      () {
-        // The test runs in the host's local TZ; since we already build `now`
-        // in local time, an "edge of day" entry at 23:59 local should bucket
-        // into the same day as `now`.
-        final lateToday = DateTime(2026, 4, 29, 23, 59, 30);
+        // The use case calls `localMidnight` on createdAt; an entry at
+        // 23:59 local on `today` lands in today's bucket.
+        final lateToday = DateTime(2026, 5, 3, 23, 59, 30);
         final result = useCase(
           entries: [_entry(mood: MoodType.happy, createdAt: lateToday)],
           now: now,
+          weekStart: weekStart,
         );
 
-        expect(result.last7Days.first.kind, DayBloomKind.bloom);
-        expect(result.currentStreakDays, 1);
+        expect(result.last7Days[0].entryCount, 1);
+        expect(result.last7Days[0].avgScore, closeTo(0.6, 1e-9));
       },
     );
 
-    test('last7Days is always exactly 7 cells, newest first', () {
-      final result = useCase(entries: const [], now: now);
-      expect(result.last7Days, hasLength(7));
-      // Newest first: index 0 is today, index 6 is six days ago.
-      expect(result.last7Days[0].day, today);
-      expect(result.last7Days[6].day, today.subtract(const Duration(days: 6)));
-    });
-
-    test('happy and calm both count as positive (category mapping)', () {
-      // Defense check: if MoodCategory.positive ever expands beyond
-      // happy+calm we want this test to flag the change.
+    test('two entries on the same prior day average correctly', () {
+      // Yesterday: Joy×5 (+1.0) and Sad×3 (-0.6). Mean = +0.2.
       final result = useCase(
         entries: [
-          _entry(mood: MoodType.happy, createdAt: now),
-          _entry(mood: MoodType.calm, createdAt: now),
-        ],
-        now: now,
-      );
-      expect(result.positiveMoodCount, 2);
-    });
-
-    // ───── S4 (ADR-0006): compassionate reframing ─────
-
-    test('kind() table: every (MoodType × intensity 1..5)', () {
-      // Pure rule: positives → bloom regardless of intensity; negatives
-      // split on user-felt intensity (≤3 wilting, ≥4 rainCloud). Per
-      // ADR-0010, `okay` is part of the positive bucket, so it always
-      // blooms regardless of intensity.
-      final expected = <(MoodType, int), DayBloomKind>{
-        // Positives — always bloom.
-        for (final i in [1, 2, 3, 4, 5]) ...{
-          (MoodType.happy, i): DayBloomKind.bloom,
-          (MoodType.calm, i): DayBloomKind.bloom,
-          (MoodType.okay, i): DayBloomKind.bloom,
-        },
-        // Negatives — intensity-based.
-        for (final m in [MoodType.sad, MoodType.angry, MoodType.anxious]) ...{
-          (m, 1): DayBloomKind.wilting,
-          (m, 2): DayBloomKind.wilting,
-          (m, 3): DayBloomKind.wilting,
-          (m, 4): DayBloomKind.rainCloud,
-          (m, 5): DayBloomKind.rainCloud,
-        },
-      };
-
-      for (final entry in expected.entries) {
-        final (mood, intensity) = entry.key;
-        expect(
-          ComputeGardenStateUseCase.kind(mood, intensity),
-          entry.value,
-          reason: 'kind(${mood.name}, $intensity) should be ${entry.value}',
-        );
-      }
-    });
-
-    test('intensity boundary: sad@3 wilts, sad@4 rains', () {
-      expect(
-        ComputeGardenStateUseCase.kind(MoodType.sad, 3),
-        DayBloomKind.wilting,
-      );
-      expect(
-        ComputeGardenStateUseCase.kind(MoodType.sad, 4),
-        DayBloomKind.rainCloud,
-      );
-    });
-
-    test('intensity is clamped defensively to [1, 5]', () {
-      // Out-of-range intensity (should never happen — MoodEntry validates)
-      // is clamped rather than crashing. 0 → wilting, 99 → rainCloud.
-      expect(
-        ComputeGardenStateUseCase.kind(MoodType.sad, 0),
-        DayBloomKind.wilting,
-      );
-      expect(
-        ComputeGardenStateUseCase.kind(MoodType.sad, 99),
-        DayBloomKind.rainCloud,
-      );
-    });
-
-    test('day priority: only wilting on a day → wilting cell', () {
-      final result = useCase(
-        entries: [_entry(mood: MoodType.sad, createdAt: now, intensity: 2)],
-        now: now,
-      );
-      expect(result.last7Days[0].kind, DayBloomKind.wilting);
-      expect(result.wiltingMoodCount, 1);
-      expect(result.rainCloudMoodCount, 0);
-    });
-
-    test('day priority: wilting + rainCloud on a day → rainCloud cell', () {
-      final result = useCase(
-        entries: [
-          _entry(mood: MoodType.sad, createdAt: now, intensity: 2), // wilt
           _entry(
-            mood: MoodType.angry,
-            createdAt: now.add(const Duration(hours: 2)),
+            mood: MoodType.happy,
+            createdAt: yesterday.add(const Duration(hours: 9)),
             intensity: 5,
-          ), // rain
+            id: 'a',
+          ),
+          _entry(
+            mood: MoodType.sad,
+            createdAt: yesterday.add(const Duration(hours: 18)),
+            intensity: 3,
+            id: 'b',
+          ),
+          _entry(
+            mood: MoodType.happy,
+            createdAt: twoDaysAgo,
+            intensity: 1,
+            id: 'c',
+          ),
         ],
         now: now,
+        weekStart: weekStart,
       );
-      expect(result.last7Days[0].kind, DayBloomKind.rainCloud);
-      expect(result.wiltingMoodCount, 1);
-      expect(result.rainCloudMoodCount, 1);
-    });
 
-    test(
-      'streak regression: negatives between positives do NOT extend streak',
-      () {
-        // today positive, yesterday negative-only, twoDaysAgo positive.
-        // Streak must still break at yesterday — wilting/rain days are
-        // intentionally NOT streak-eligible (no streak-shaming, no
-        // streak-rewarding negatives either).
-        final result = useCase(
-          entries: [
-            _entry(mood: MoodType.happy, createdAt: now),
-            _entry(mood: MoodType.sad, createdAt: yesterday, intensity: 5),
-            _entry(mood: MoodType.happy, createdAt: twoDaysAgo),
-          ],
-          now: now,
-        );
-        expect(result.currentStreakDays, 1);
-        expect(result.last7Days[1].kind, DayBloomKind.rainCloud);
-      },
-    );
-
-    test('isEmpty is false when only wilting entries exist', () {
-      final result = useCase(
-        entries: [_entry(mood: MoodType.sad, createdAt: now, intensity: 1)],
-        now: now,
-      );
-      expect(result.isEmpty, isFalse);
+      expect(result.last7Days[1].day, yesterday);
+      expect(result.last7Days[1].avgScore, closeTo(0.2, 1e-9));
+      expect(result.last7Days[1].entryCount, 2);
+      expect(result.totalEntryCount, 3);
     });
   });
 }

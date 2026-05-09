@@ -3,27 +3,28 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/garden_state.dart';
 
-/// "This week's bloom" — a 7-day mood strip rendered as vertical bars
-/// inside an `MbCard`. Today is on the right, six days ago on the left.
+/// 7-day mood-score strip rendered as horizontal cells inside an
+/// `MbCard`. Replaces the legacy `WeeklyBloomBar`. Driven by
+/// [GardenState.last7Days] (newest first); cells are displayed
+/// oldest-on-the-left so today sits at the right edge — matches the
+/// reading direction of the previous bar.
 ///
-/// Spec (per prototype):
-///  * Header row: "This week's bloom" left, "mood strip" right (dim).
-///  * Each day cell is a flexed column { coloured bar, weekday letter }.
-///  * Bar height: `6` if the day is empty, otherwise `10 + |score| * 14`
-///    where score is +1 for bloom, -1 for any negative kind. We
-///    approximate "score magnitude" from `DayBloomKind` since the
-///    pre-aggregated `DayBloom` does not carry intensity.
-///  * Bar colour: primary for bloom, amber for any negative; both at
-///    85% opacity. Empty days render as a 1px dashed-border placeholder.
-class WeeklyBloomBar extends StatelessWidget {
-  const WeeklyBloomBar({super.key, required this.days, this.onDayTap});
+/// Each cell carries a continuous signed magnitude (`avgScore`) so the
+/// fill opacity scales with intensity rather than collapsing to a
+/// fixed enum step. Empty days render as a faint outlined placeholder.
+///
+/// Semantics labels are descriptive (e.g. "Monday, positive day,
+/// intensity 0.4") and never use the legacy "wilting" / "rain cloud"
+/// vocabulary — see CLAUDE.md copy rules.
+class DailyScoreStrip extends StatelessWidget {
+  const DailyScoreStrip({super.key, required this.last7Days, this.onDayTap});
 
-  /// Newest-first list of cells (today, yesterday, …). Always length 7.
-  final List<DayBloom> days;
+  /// Newest-first list of cells (today, yesterday, …, 6 days ago).
+  /// Always length 7 (the use case guarantees this).
+  final List<DayScore> last7Days;
 
-  /// Optional tap handler — called with the local-midnight `DateTime` of
-  /// the tapped column. Home wires this to open a bottom-sheet listing
-  /// the day's entries; the bar still renders read-only when null.
+  /// Optional tap handler — called with the cell's local-midnight
+  /// `DateTime`. Empty cells stay non-interactive.
   final ValueChanged<DateTime>? onDayTap;
 
   // SMTWTFS — index by `DateTime.weekday % 7` so Sunday=0.
@@ -37,15 +38,25 @@ class WeeklyBloomBar extends StatelessWidget {
     'S',
   ];
 
+  static const List<String> _weekdayNames = <String>[
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+  ];
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mb = theme.extension<MbColors>()!;
     // Display oldest-first (left to right).
-    final displayed = days.reversed.toList(growable: false);
+    final displayed = last7Days.reversed.toList(growable: false);
 
     return Semantics(
-      label: 'Weekly bloom bar — last 7 days',
+      label: 'Daily score strip — last 7 days',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -55,7 +66,7 @@ class WeeklyBloomBar extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                "This week's bloom",
+                "This week",
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: mb.text,
                   fontWeight: FontWeight.w600,
@@ -63,7 +74,7 @@ class WeeklyBloomBar extends StatelessWidget {
                 ),
               ),
               Text(
-                'mood strip',
+                'mood scores',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: mb.textDim,
                   fontSize: 11,
@@ -80,7 +91,7 @@ class WeeklyBloomBar extends StatelessWidget {
                 for (var i = 0; i < displayed.length; i += 1) ...[
                   if (i > 0) const SizedBox(width: 6),
                   Expanded(
-                    child: _BloomColumn(
+                    child: _ScoreCell(
                       day: displayed[i],
                       onTap: onDayTap == null
                           ? null
@@ -104,10 +115,10 @@ DateTime _truncateToLocalDay(DateTime t) {
   return DateTime(l.year, l.month, l.day);
 }
 
-class _BloomColumn extends StatelessWidget {
-  const _BloomColumn({required this.day, this.onTap});
+class _ScoreCell extends StatelessWidget {
+  const _ScoreCell({required this.day, this.onTap});
 
-  final DayBloom day;
+  final DayScore day;
   final VoidCallback? onTap;
 
   @override
@@ -115,26 +126,21 @@ class _BloomColumn extends StatelessWidget {
     final theme = Theme.of(context);
     final mb = theme.extension<MbColors>()!;
 
-    final isEmpty = day.kind == DayBloomKind.empty;
-    final isBloom = day.kind == DayBloomKind.bloom;
-    final isNegative =
-        day.kind == DayBloomKind.wilting || day.kind == DayBloomKind.rainCloud;
+    final score = day.avgScore;
+    final isEmpty = score == null;
+    final magnitude = isEmpty ? 0.0 : score.abs();
+    final isPositive = !isEmpty && score >= 0;
 
-    // Heights: empty = 6 (a thin bar), bloom = +1 magnitude, wilting =
-    // -1, rainCloud = -2 (visually heavier).
-    final magnitude = switch (day.kind) {
-      DayBloomKind.empty => 0.0,
-      DayBloomKind.bloom => 1.0,
-      DayBloomKind.wilting => 1.0,
-      DayBloomKind.rainCloud => 2.0,
-    };
-    final height = isEmpty ? 6.0 : (10.0 + magnitude * 14.0).clamp(10.0, 60.0);
-    final color = isBloom
-        ? theme.colorScheme.primary
-        : isNegative
-        ? MoodBloomColors.amber
-        : mb.line;
-    final opacity = isEmpty ? 0.3 : 0.85;
+    // Cell bar height. Bounded so the column (bar + 4 dp gap + ~12 dp
+    // label) fits inside the parent's 60 dp `SizedBox`. Empty days
+    // render as a thin 6 dp placeholder; logged days scale 10..38 dp
+    // with magnitude.
+    final height = isEmpty ? 6.0 : (10.0 + magnitude * 28.0).clamp(10.0, 38.0);
+
+    final fillColor = isEmpty
+        ? Colors.transparent
+        : (isPositive ? theme.colorScheme.primary : MoodBloomColors.moodSad)
+              .withValues(alpha: 0.35 + magnitude * 0.5);
 
     final col = Column(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -143,16 +149,14 @@ class _BloomColumn extends StatelessWidget {
           height: height,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: isEmpty
-                ? Colors.transparent
-                : color.withValues(alpha: opacity),
+            color: fillColor,
             borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusSm),
             border: isEmpty ? Border.all(color: mb.line, width: 1) : null,
           ),
         ),
         const SizedBox(height: 4),
         Text(
-          WeeklyBloomBar._weekdayLetters[day.day.weekday % 7],
+          DailyScoreStrip._weekdayLetters[day.day.weekday % 7],
           style: theme.textTheme.labelSmall?.copyWith(
             color: mb.textDim,
             fontSize: 10,
@@ -161,15 +165,12 @@ class _BloomColumn extends StatelessWidget {
       ],
     );
 
-    final semanticLabel = switch (day.kind) {
-      DayBloomKind.bloom => 'Bloom day',
-      DayBloomKind.rainCloud => 'A heavier day',
-      DayBloomKind.wilting => 'A gentler day',
-      DayBloomKind.empty => 'Empty day',
-    };
+    final dayName = DailyScoreStrip._weekdayNames[day.day.weekday % 7];
+    final semanticLabel = isEmpty
+        ? '$dayName, no entries'
+        : '$dayName, ${isPositive ? 'positive' : 'gentler'} day, '
+              'intensity ${magnitude.toStringAsFixed(1)}';
 
-    // Empty days have nothing to show in the sheet, so they stay
-    // non-interactive even when the parent supplied an `onTap`.
     if (onTap == null || isEmpty) {
       return Semantics(label: semanticLabel, child: col);
     }
