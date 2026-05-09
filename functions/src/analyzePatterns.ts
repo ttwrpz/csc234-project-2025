@@ -40,9 +40,11 @@ const GEMINI_TIMEOUT_MS = 5_000;
  */
 const PATTERNS_GEMINI_SAMPLE_FLOOR = 30;
 
-/** Mood codes that are NOT positive. Mirrors `MoodType.category` on Dart. */
+/** Mood codes that are NOT positive. Mirrors `MoodType.category` on Dart.
+ *  Per ADR-0010, `okay` was reclassified to positive (sign +1), so it is
+ *  excluded here to keep the server's negativity bucket aligned with the
+ *  client. */
 const NEGATIVE_MOOD_CODES = new Set<HistoryEntryWire['moodCode']>([
-  'okay',
   'sad',
   'angry',
   'anxious',

@@ -11,8 +11,8 @@ void main() {
       expect(MoodType.calm.category, MoodCategory.positive);
     });
 
-    test('okay maps to negativeMild', () {
-      expect(MoodType.okay.category, MoodCategory.negativeMild);
+    test('okay maps to positive', () {
+      expect(MoodType.okay.category, MoodCategory.positive);
     });
 
     test('sad maps to negativeMild', () {

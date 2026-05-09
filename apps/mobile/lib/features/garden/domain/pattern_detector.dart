@@ -15,6 +15,11 @@ import 'entities/intervention_state.dart';
 ///  * **3-consecutive ≥4 negative**: the last 3 distinct days each
 ///    contain ≥1 entry with `mood.category != positive` AND
 ///    `intensity ≥ 4`. Mixed neg types count.
+///
+/// Note (ADR-0010): `okay` was reclassified from `negativeMild` → `positive`
+/// in `MoodType.category`. The `mood.category != positive` predicate below is
+/// unchanged but its behaviour shifted accordingly — `okay` entries no longer
+/// contribute to the 5-of-7 or 3-consecutive counts.
 ///  * **48h cooldown**: if `lastTriggeredAt` is within 48h of `now`,
 ///    suppress (`triggered: false`, `reason: 'cooldown'`).
 ///  * **10-day escalation**: if currently triggering AND

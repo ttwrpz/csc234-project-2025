@@ -8,12 +8,13 @@ enum MoodType {
   angry,
   anxious;
 
-  /// Visual category used by the S3 line chart and the S4 garden mapping:
-  /// positive → flowers, negativeMild → wilting plants, negativeStrong → rain
-  /// clouds.
+  /// Sign bucket for `computeMoodScore` (ADR-0010, spec §2.1). Joy/Calm/Okay
+  /// sit in `positive` (sign +1); Sadness/Anger/Anxiety sit in negativeMild /
+  /// negativeStrong (both sign -1; the strong/mild distinction is a holdover
+  /// for legacy callers and is deprecated for new code).
   MoodCategory get category => switch (this) {
-    MoodType.happy || MoodType.calm => MoodCategory.positive,
-    MoodType.okay || MoodType.sad => MoodCategory.negativeMild,
+    MoodType.happy || MoodType.calm || MoodType.okay => MoodCategory.positive,
+    MoodType.sad => MoodCategory.negativeMild,
     MoodType.angry || MoodType.anxious => MoodCategory.negativeStrong,
   };
 }

@@ -126,45 +126,52 @@ void main() {
       },
     );
 
-    test('negative-only history (S4) → wilting/rain cells, streak still 0', () {
-      // Sprint 4 reframing: negatives surface as wilting (i ≤ 3) or
-      // rainCloud (i ≥ 4) cells. The streak counter remains
-      // positive-only (regression guard against streak-shaming).
-      final result = useCase(
-        entries: [
-          _entry(mood: MoodType.sad, createdAt: now, intensity: 2), // wilt
-          _entry(
-            mood: MoodType.angry,
-            createdAt: yesterday,
-            intensity: 5,
-          ), // rain
-          _entry(
-            mood: MoodType.anxious,
-            createdAt: twoDaysAgo,
-            intensity: 4,
-          ), // rain
-          _entry(
-            mood: MoodType.okay,
-            createdAt: yesterday,
-            intensity: 1,
-          ), // wilt (but rain wins on the day)
-        ],
-        now: now,
-      );
+    test(
+      'mostly-negative history (S4) → wilting/rain cells, streak still 0',
+      () {
+        // Sprint 4 reframing: negatives (sad/angry/anxious) surface as
+        // wilting (i ≤ 3) or rainCloud (i ≥ 4) cells. Per ADR-0010,
+        // `okay` was reclassified to positive, so the okay@1 entry on
+        // `yesterday` now contributes a bloom on that day (and bloom wins
+        // over the same-day rain). The streak counter remains positive-
+        // only (regression guard against streak-shaming) — today has no
+        // positive entry, so the streak is still 0.
+        final result = useCase(
+          entries: [
+            _entry(mood: MoodType.sad, createdAt: now, intensity: 2), // wilt
+            _entry(
+              mood: MoodType.angry,
+              createdAt: yesterday,
+              intensity: 5,
+            ), // rain
+            _entry(
+              mood: MoodType.anxious,
+              createdAt: twoDaysAgo,
+              intensity: 4,
+            ), // rain
+            _entry(
+              mood: MoodType.okay,
+              createdAt: yesterday,
+              intensity: 1,
+            ), // bloom (ADR-0010: okay is positive)
+          ],
+          now: now,
+        );
 
-      expect(result.positiveMoodCount, 0);
-      expect(result.wiltingMoodCount, 2);
-      expect(result.rainCloudMoodCount, 2);
-      expect(result.currentStreakDays, 0);
-      expect(result.last7Days[0].kind, DayBloomKind.wilting);
-      expect(
-        result.last7Days[1].kind,
-        DayBloomKind.rainCloud,
-        reason: 'Day with both wilting and rain → rain wins (priority).',
-      );
-      expect(result.last7Days[2].kind, DayBloomKind.rainCloud);
-      expect(result.isEmpty, isFalse);
-    });
+        expect(result.positiveMoodCount, 1);
+        expect(result.wiltingMoodCount, 1);
+        expect(result.rainCloudMoodCount, 2);
+        expect(result.currentStreakDays, 0);
+        expect(result.last7Days[0].kind, DayBloomKind.wilting);
+        expect(
+          result.last7Days[1].kind,
+          DayBloomKind.bloom,
+          reason: 'Day with bloom + rain → bloom wins (priority).',
+        );
+        expect(result.last7Days[2].kind, DayBloomKind.rainCloud);
+        expect(result.isEmpty, isFalse);
+      },
+    );
 
     test('mixed positive + negative on the same day → that day blooms', () {
       // Day-priority `bloom > rainCloud > wilting > empty` (ADR-0006).
@@ -245,20 +252,18 @@ void main() {
 
     test('kind() table: every (MoodType × intensity 1..5)', () {
       // Pure rule: positives → bloom regardless of intensity; negatives
-      // split on user-felt intensity (≤3 wilting, ≥4 rainCloud).
+      // split on user-felt intensity (≤3 wilting, ≥4 rainCloud). Per
+      // ADR-0010, `okay` is part of the positive bucket, so it always
+      // blooms regardless of intensity.
       final expected = <(MoodType, int), DayBloomKind>{
         // Positives — always bloom.
         for (final i in [1, 2, 3, 4, 5]) ...{
           (MoodType.happy, i): DayBloomKind.bloom,
           (MoodType.calm, i): DayBloomKind.bloom,
+          (MoodType.okay, i): DayBloomKind.bloom,
         },
         // Negatives — intensity-based.
-        for (final m in [
-          MoodType.okay,
-          MoodType.sad,
-          MoodType.angry,
-          MoodType.anxious,
-        ]) ...{
+        for (final m in [MoodType.sad, MoodType.angry, MoodType.anxious]) ...{
           (m, 1): DayBloomKind.wilting,
           (m, 2): DayBloomKind.wilting,
           (m, 3): DayBloomKind.wilting,
