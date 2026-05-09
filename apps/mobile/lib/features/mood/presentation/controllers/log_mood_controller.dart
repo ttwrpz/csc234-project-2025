@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:core/core.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../auth/data/providers.dart';
+import '../../../pattern_engine/data/providers.dart';
 import '../../data/providers.dart';
 import '../../domain/entities/mood_draft.dart';
 import '../../domain/entities/mood_entry.dart';
@@ -205,11 +208,58 @@ class LogMoodController extends _$LogMoodController {
   MoodEntry _onSaveOk(LogMoodSubmissionController submission, MoodEntry entry) {
     submission.succeed();
     state = MoodDraft.empty();
+    // Best-effort post-save Pattern Engine run. Failures are logged
+    // (no PII) and swallowed so they cannot block the user's save
+    // success surfacing — see HB-006 sub-track B.
+    //
+    // The brief named `log_mood_submission_controller.dart` as the
+    // edit site, but that controller only holds transient submission
+    // flags (no `Ok` branch). The actual `Ok` branch lives here, so
+    // the wire-up follows the success path instead. Both `save()` and
+    // `updateExisting()` route through `_onSaveOk`, so the engine
+    // also runs on edits — desired behaviour: an edited entry can
+    // change today's `avgScore` and therefore today's tier.
+    unawaited(_runPatternEngine(entry.userId));
     return entry;
   }
 
   Null _onSaveErr(LogMoodSubmissionController submission, MoodFailure failure) {
     submission.fail(failure.message);
     return null;
+  }
+
+  /// Aggregates the user's mood history through the Pattern Engine and
+  /// upserts the per-day `PatternResult`. Best-effort; failures are
+  /// logged once with the dateId + failure type only (no PII).
+  ///
+  /// History source: `myMoodsStreamProvider` (the canonical newest-first
+  /// stream used by History, Garden, and Analytics). Read once via
+  /// `.future` — the controller doesn't watch the stream because the
+  /// engine should reflect the state at save-time, not chase further
+  /// emissions.
+  Future<void> _runPatternEngine(String userId) async {
+    const logger = Logger('mood.pattern_engine');
+    try {
+      final entries = await ref.read(myMoodsStreamProvider.future);
+      final result = ref.read(runPatternEngineUseCaseProvider)(
+        entries,
+        now: DateTime.now(),
+      );
+      final saveOutcome = await ref
+          .read(patternRepositoryProvider)
+          .save(userId: userId, result: result);
+      saveOutcome.fold(
+        ok: (_) {},
+        err: (failure) => logger.warn(
+          'pattern_engine_save_failed dateId=${result.dateId} '
+          'failure=${failure.runtimeType}',
+        ),
+      );
+    } catch (e) {
+      // Defense in depth — anything thrown by the upstream stream
+      // (e.g. a transient Firestore unavailability mid-flight) must
+      // not bubble out of a fire-and-forget save hook.
+      logger.warn('pattern_engine_save_failed failure=${e.runtimeType}');
+    }
   }
 }
