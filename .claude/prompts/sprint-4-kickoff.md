@@ -1,130 +1,156 @@
-# Sprint 4 Kickoff — v1.0: Compassionate Reframing + Pattern Detection + Test Suite
+# Sprint 4 Kickoff — v1.0: Mood Score + Garden Ecosystem + Pattern Engine + Tokens
 
 **Sprint window:** May 6 – May 12, 2026 (5 working days)
-**Sprint goal:** Ship the compassionate reframing (wilting plants + rain clouds), Gemini-powered pattern analysis with confidence warnings, the repeat-pattern detector, the feature flag infrastructure, dark mode, and the full widget + golden + integration test suite. By end-of-sprint the app is the **v1.0 release**: all seven pivot features are feature-complete except the cheer-up intervention itself (Sprint 5).
+**Sprint goal:** Ship the ecosystem redesign foundation. Mood Score formula, Garden Health EWMA, Daily Atmosphere, Day/Night theme, Pattern Engine (5 algorithms), Weekly Harvest cycle, Token economy. By end-of-sprint the app is **v1.0**: pattern detection runs on every entry but does NOT fire interventions yet (that's S5). Plants NEVER die; harvest cycle works; tokens earned per log.
 
 **Release target:** v1.0 tag after Sprint 4 presentation on May 12.
 
 ---
 
-## Paste this prompt into the main Claude Code session at the start of Sprint 4
+## Paste this prompt into Claude Code at start of Sprint 4
 
-Orchestrator, your Sprint 4 plan is below. Enter Plan Mode. Produce the decomposition, then wait for my approval before delegating.
+Orchestrator, your Sprint 4 plan is below. Enter Plan Mode. Produce the decomposition, then wait for my approval.
+
+### Required reading before you plan
+
+1. `CLAUDE.md` (root) — confirms the new ecosystem philosophy and copy rules.
+2. `.claude/specs/sprint-4-5-spec.md` — the authoritative source for all formulas, data model, copy rules, and 41 test cases. **Read this in full before producing any plan.**
+3. `docs/architecture/` — the updated conceptual + implementation diagrams showing the new Domain Engines layer.
 
 ### Context recap from Sprint 3
 
-We tagged `v0.3-beta` at the Sprint 3 demo. Gemini mood detection works, offline-first is reliable, Firestore rules pass emulator tests, biometric fallback works on Android, analytics line chart is live, calendar view is live. Domain unit-test coverage ≥80% achieved. The team is tired — Kraiwich and Theerawat are near the top of their sprint capacity.
+We tagged `v0.3-beta` at the Sprint 3 demo. Gemini mood detection works, offline-first reliable, Firestore rules pass emulator tests, biometric works on Android, line chart and calendar live. The OLD Sprint 3 design used "wilting plants for negative intensity 1–3 / rain clouds 4–5" — **this is replaced by the ecosystem model in S4–S5**.
 
-Sprint 4 is where the **app becomes compassionate**. Wilting plants and rain clouds replace any "neutral" negative-mood treatment. Pattern analysis arrives with explicit confidence labels. The full widget + golden + integration test suite catches up to the feature surface.
+**You (the team) already implemented most of Sprint 4 with Claude Code before the professor approved this redesign.** Your day-1 task is therefore: re-audit the existing S4 work against this new spec, identify what conforms and what needs revision, and triage the delta. Many bits of code may be reusable; the visual treatment is what changes most.
+
+Sprint 4 is where the **ecosystem foundation lands**. Pattern Engine fires triggers internally but the user sees no notifications yet — Sprint 5 wires the Tiered Intervention dispatcher to FCM.
 
 ### Sprint 4 committed backlog (WBS IDs)
 
-**Bucket 4 — Compassionate reframing:**
-- 4.2 Wilting plants for negative intensity 1–3 (must, user-facing differentiator)
-- 4.3 Rain clouds for negative intensity 4–5 + self-fade animation (must)
+**Bucket 3 — Mood scoring:**
+- 3.6 Mood Score formula `S_t = v × i/5` (pure-Dart domain function + unit tests)
+
+**Bucket 4 — Garden ecosystem:**
+- 4.2 Garden Health EWMA + 5 plant-state tiers (NEVER dead) — H_t = 0.15·S_t + 0.85·H_{t-1}
+- 4.3 Daily Atmosphere system (avg_S_today → sunny/calm/light-rain/storm — plants always sheltered)
+- 4.4 Day/Night theme setting (Follow device theme / Follow device time)
 
 **Bucket 5 — Pattern detection:**
-- 5.3 Gemini pattern analysis + confidence labels on dashboard (highest-risk of S4)
-- 5.4 Repeat-pattern detector (5-of-7 OR 3-consecutive ≥ intensity 4) + 48h cooldown
+- 5.3 Pattern Engine: 5 algorithms (Mann-Kendall, sliding 5-of-7, 3-consecutive, Z-score, CUSUM)
 
-**Bucket 6 — Settings polish:**
-- 6.2 Dark mode toggle (system default)
+**Bucket 6 — Garden mechanics:**
+- 6.1 Weekly Harvest cycle: archive garden, weekly summary screen, history page
+- 6.2 Token system (5–10/day cap, mood-agnostic, never lost, cosmetic-only)
 
-**Bucket 7 — Test suite:**
-- 7.2 Widget + golden tests for major screens (Auth, Garden, Log, Intensity Slider, History, Analytics)
-- 7.3 Integration tests for critical flows (login→log→history→detail, AI override, pattern intervention stub) — starts S4, finishes S5
+**Bucket 7 — UI:**
+- 7.2 Dark mode toggle (system default)
 
-**Bucket 8 — Reporting:**
-- 8.1 Enterprise Audit & Orchestration Report draft (parallel with tests, runs in background through to S5)
+**Bucket 8 — Testing:**
+- 8.2 Widget + golden tests for major screens (incl. all atmosphere states, plant tiers)
 
-**Cross-cutting (Remote Config gate):**
-- Wire `ai_pattern_analysis_enabled` Remote Config flag → `AIAnalysisRepository.isEnabled` getter → graceful UI fallback when disabled.
+**Bucket 9 — Reporting:**
+- 9.1 Enterprise Audit Report draft (Theerawat, parallel)
 
 ### Sprint 4 critical path (from PDM)
 
-P (Pattern Analysis, 2.5d) → Q (Repeat-Pattern Detector, 1.5d) → [carries into S5 testing chain]
+O (Mood Score, 0.5d) → R (Pattern Engine, 2.5d) → [carries into S5]
 
-Calendar-paired parallel tracks:
-- O (Wilting + Rain Clouds, 2.5d) on Napat
-- R (Widget + Golden Tests, 2.5d) on Teerin
+Parallel tracks:
+- P (Garden Health EWMA, 1.5d) and Q (Atmosphere, 1.5d) both depend on O and run in parallel.
+- S (Weekly Harvest, 2.0d) depends on P + Q.
+- T (Tokens, 1.0d) depends on S.
+- U (Day/Night + Dark mode, 1.0d) is independent.
 
-**Dependency warning:** P (Pattern Analysis) depends on J (Gemini Detection, done in S3) and L (Line Chart, done in S3). If either had defects from Sprint 3 review, address them day 1 before starting P.
+### Day-by-day plan
 
-### Your orchestration plan
+**Day 1 (May 6) — re-audit + Mood Score**
+- Day-0 0.5-day spike: `architect` audits existing S4 code against `.claude/specs/sprint-4-5-spec.md`. Output: triage list (keep / revise / delete).
+- `architect` writes ADR-0006 on the ecosystem model decision (cite Neff 2003, Linehan 1993, Hayes 1999, White 1990).
+- `flutter-engineer` implements Mood Score `S_t = v × i/5` (3.6) — pure-Dart in `features/mood/domain/`. Write 4 unit tests covering examples in spec section 2.1.
+- `architect` writes handoff brief for Pattern Engine (5.3) — must cover all 5 algorithms with formulas from spec section 2.4.
 
-**Day 1 (May 6)** —
-- `architect` writes ADR-0006 on the reframing mechanism: why intensity-based split (not mood-type split), how the metaphor maps visually, how time-based fade works. Reference Som's Journey Map scenarios.
-- `architect` writes a handoff brief for Pattern Detection (5.3, 5.4). Specify: 5-of-7 rule OR 3-consecutive rule, 48h cooldown, 10-day escalation trigger, confidence label thresholds (low <0.5, medium 0.5–0.8, high >0.8, plus sample-size floor).
-- `flutter-engineer` starts wilting plant widget (4.2) — Napat's day.
-- `qa-engineer` starts widget tests for existing screens (7.2) — 3-day task running through the sprint.
+**Day 2 (May 7) — EWMA + Atmosphere**
+- `flutter-engineer` implements Garden Health EWMA (4.2): pure-Dart in `features/garden/domain/`, α=0.15, weekly H_0 reset. Maps H_t to 5 plant tiers (Flourishing/Thriving/Resting/Weathering/Storm Season — ALL alive).
+- `flutter-engineer` implements Atmosphere engine (4.3) in parallel: pure-Dart, computes avg_S_today, maps to weather. Resets midnight.
+- `flutter-engineer` writes widget tests for plant tier rendering — golden tests for all 5 tiers showing plants visibly alive in every one.
+- `flutter-engineer` starts Pattern Engine algorithms 1–2 (Mann-Kendall + Sliding 5-of-7).
 
-**Day 2 (May 7)** —
-- `flutter-engineer` implements rain cloud widget (4.3) and fade animation. Animation uses `AnimatedPositioned` + `Opacity`, drifts 15–25s across the garden, no user action required.
-- `flutter-engineer` wires the Remote Config flag `ai_pattern_analysis_enabled` (already scaffolded in S3) → `AIAnalysisRepository.isEnabled` getter → graceful UI fallback in the Insights area.
-- `architect` reviews wilting plant + rain cloud against Som's acceptance criterion (no user action required to clean up a rain cloud).
-- `qa-engineer` writes golden tests for: empty garden, garden with flowers, garden with wilting plants, garden with rain cloud.
+**Day 3 (May 8) — Pattern Engine completion**
+- `flutter-engineer` finishes Pattern Engine: 3-consecutive, Z-score, CUSUM (algorithms 3–5).
+- `qa-engineer` writes unit tests for all 5 algorithms — must cover the worked examples in spec section 2.4. Critical: assert algorithm outputs match expected Z values to 2 decimal places.
+- `flutter-engineer` implements Daily Atmosphere visual (4.3) — 4 weather states. Plants always sheltered in storm.
 
-**Day 3 (May 8)** —
-- `flutter-engineer` starts Gemini pattern-analysis Cloud Function (5.3). Function accepts 30/90-day mood history, returns `PatternInsight[]` with explicit confidence + sample size.
-- `security-reviewer` audits the new Cloud Function: rate limiting, input validation (reject if history > 500 entries), PII stripping (mood text not sent to Gemini, only numeric mood codes + dates).
-- `flutter-engineer` starts the client-side repeat-pattern detector (5.4). Pure domain function in `features/garden/domain/pattern_detector.dart` — no Flutter imports, easy to unit-test.
-- `flutter-engineer` implements dark mode (6.2) in parallel — Teerin's day.
+**Day 4 (May 11) — Harvest + Tokens + Day/Night**
+- `flutter-engineer` implements Weekly Harvest cycle (6.1): archive logic, weekly summary screen, history page. **Strict copy review:** never use "delete," "clear," "reset" — only "harvest," "complete," "new chapter."
+- `flutter-engineer` implements Token system (6.2) in parallel: 5–10/day cap, mood-agnostic earning, never-lost. Test: logging "Sad intensity 5" earns same as "Joy intensity 5."
+- `flutter-engineer` implements Day/Night theme + Dark mode (4.4, 7.2).
+- `Theerawat` (Project Lead) starts Enterprise Audit Report draft (9.1) in parallel.
 
-**Day 4 (May 11)** —
-- `flutter-engineer` implements Pattern Insights UI on the Analytics dashboard. Confidence badge visible on every insight; sample size shown.
-- `flutter-engineer` completes the repeat-pattern detector and wires it into the Garden screen — detector returns `InterventionState { triggered, escalated, reason }`. Garden watches this state via Riverpod but does NOT show any UI yet (banner + notification are S5).
-- `qa-engineer` starts integration tests (7.3) — login flow, mood log + history + detail flow.
-- `Theerawat` starts drafting the Enterprise Audit Report (8.1) in parallel — this parallelism keeps the project on the 20-day envelope.
-
-**Day 5 (May 12 — presentation day)** —
-- `flutter-engineer` completes any remaining integration-test scaffolding to unblock qa-engineer's S5 work.
-- `security-reviewer` produces a Security Posture Report for v1.0: Cloud Functions hardened, Firestore rules cover all collections, no HIGH/CRITICAL deps, no secrets in source, no PII in logs.
+**Day 5 (May 12 — presentation day)**
+- `qa-engineer` runs the Sprint 4 test suite. All 25 of the Token/Harvest/Atmosphere/EWMA/Pattern test cases (spec section 7, items 1–5 + 11–30) must pass.
+- `security-reviewer` audits: no Gemini calls in pattern-detection path (algorithms run client-side); Firestore rules updated for new collections (`weeklyGardens`, `patterns`, `cooldowns`).
 - Merge everything green. Tag `v1.0`.
-- Sprint 4 demo: log a sad mood at intensity 3 → wilting plant. Log an anxious mood at intensity 5 → rain cloud drifts away. Open analytics → see "Your Monday mood averages 1.8 lower than Thursday — high confidence, 42 Monday samples". Flip the feature flag → Insights card hides gracefully. Dark mode toggle works.
+- Demo: log a sad mood at intensity 4 → S_t = -0.8 → atmosphere becomes light rain → plants stay sheltered. Day 5 of week → tap History → see week's harvest archive. Token balance shows accumulated. Pattern Engine has fired internal triggers (logged but not surfaced — Tier 1 ready to dispatch in S5).
 
 ### High-risk items requiring your attention
 
-1. **Pattern Detection Cloud Function (5.3)** — wide PERT spread (O=2.0, M=3.0, P=4.5). If Gemini's pattern output is inconsistent (hallucinated insights), fall back to statistical patterns computed server-side (e.g., z-scores over weekdays) and document in ADR-0007. The user sees confidence labels either way.
+1. **Pattern Engine (5.3)** — widest PERT spread. 5 algorithms with academic-grade math. Errors here cascade into wrong intervention triggers. Mitigation: pair Kraiwich + Theerawat day-1 spike to validate each formula's output against spec section 2.4 worked examples.
 
-2. **Reframing test coverage (4.2, 4.3)** — these are the pivot's most visible features. Ensure golden tests capture every intensity × mood-type combination. If the wilting plant looks identical to a flower in grayscale, the design is wrong — bring it back to Napat.
+2. **Plants-never-die compliance** — every visual asset and animation must be reviewed. If anything in any tier looks wilting, dying, or destroyed → reject and redesign. The "Storm Season" tier especially: rain falls, but plants are sheltered — lanterns brighter, leaves intact.
 
-3. **Feature flag rollback rehearsal** — before the S4 demo, rehearse the kill-switch live. Flip the flag during the demo, show the graceful degradation, flip it back. This is required Enterprise Term Assignment evidence.
+3. **Copy rule enforcement on Harvest** — `qa-engineer` greps every user-facing string in `features/harvest/` before merge. Any occurrence of "delete," "clear," "reset" is a blocker.
 
-### Acceptance criteria for Sprint 4 presentation
+### Acceptance criteria (Sprint 4 demo)
 
-- [ ] Negative mood intensity 1–3 renders as a wilting plant; intensity 4–5 renders as a rain cloud
-- [ ] Rain clouds fade on their own within 15–25s (no user action required) — Som's US-Som-1 acceptance criterion
-- [ ] Analytics dashboard shows at least one Pattern Insight with visible confidence label and sample size
-- [ ] Flipping `ai_pattern_analysis_enabled` to `false` in Firebase Console hides the Insights card within 60s; mood logging and history are unaffected
-- [ ] Feature flag rollback plan documented in `docs/runbooks/feature-flag-rollback.md`
-- [ ] Dark mode toggle works; every screen respects it; tokens correctly swap
-- [ ] Widget tests pass for Auth, Log Mood, Intensity Slider, History, Analytics, Settings (≥ 6 widget test files)
-- [ ] Golden tests committed for: empty garden, flower garden, wilting-plant garden, rain-cloud garden, analytics dashboard, insights card (low/med/high confidence) — ≥ 6 golden files
-- [ ] Integration test for login flow passes on both Android emulator and Chrome web
-- [ ] Enterprise Audit Report draft started (covers Sections 1–4)
-- [ ] Tag `v1.0` pushed after demo
+From `.claude/specs/sprint-4-5-spec.md` Part 7. The following test cases must all pass before merging the v1.0 tag:
+
+**Token System (TC 1–5):**
+- [ ] TC-1: User logs mood → receives 5–10 tokens within daily cap.
+- [ ] TC-2: "Joy intensity 5" earns same tokens as "Sad intensity 5" (mood-agnostic).
+- [ ] TC-3: 10 tokens reached → additional logs earn no more.
+- [ ] TC-4: Token counter resets at midnight.
+- [ ] TC-5: Missed day → no tokens lost, no streak broken.
+
+**Weekly Harvest (TC 11–15):**
+- [ ] TC-11: After 7 days → garden archives, new garden starts H_0 = 0.
+- [ ] TC-12: Archived garden viewable in History.
+- [ ] TC-13: Tap a flower in archived garden → original mood entry shown.
+- [ ] TC-14: Weekly Summary screen appears with correct stats.
+- [ ] TC-15: User-facing copy NEVER says "delete/clear/reset."
+
+**Atmosphere (TC 16–20):**
+- [ ] TC-16: 1 positive (S=+0.8) + 1 negative (S=-0.4) → avg=+0.2 → positive atmosphere.
+- [ ] TC-17: Atmosphere resets at midnight.
+- [ ] TC-18: Storm shows plants sheltered, NEVER dead.
+- [ ] TC-19: Day/night theme matches device when "Follow device theme" selected.
+- [ ] TC-20: Day/night theme matches local time when "Follow device time" selected.
+
+**Garden Health EWMA (TC 21–24):**
+- [ ] TC-21: H starts at 0 for new week.
+- [ ] TC-22: Joy intensity 4 → H = 0.12.
+- [ ] TC-23: One bad day from H=+0.4 → H still +0.19, NOT crashed.
+- [ ] TC-24: Plants alive in EVERY tier including Storm Season.
+
+**Pattern Detection (TC 25–30):**
+- [ ] TC-25: 5/7 negative days → Tier 2 trigger fires (logged, not surfaced this sprint).
+- [ ] TC-26: 3 consecutive S ≤ -0.6 → Tier 3 trigger fires.
+- [ ] TC-27: Mann-Kendall on declining 5-day window → Z = -2.21 → Tier 1 trigger.
+- [ ] TC-28: Z-score: μ_30=+0.3, today=-0.9 → z_day flagged.
+- [ ] TC-29: CUSUM crosses threshold → Tier 3 trigger.
+- [ ] TC-30: Pattern detection works across week boundaries (sliding windows do NOT reset on harvest).
 
 ### Out of scope for Sprint 4 (do not start these)
 
-- Cheer-up intervention UI banner / FCM notification (S5)
-- Hotline 1323 escalation footer (S5)
-- FCM notification toggle (S5)
-- Breathing exercise screen (S5)
+- Tiered Intervention dispatcher (S5)
+- FCM notification dispatch on triggers (S5)
+- Quote Library (S5)
+- Bipolar disclaimer service (S5)
+- Insights screen (S5)
+- Skin system (S5)
 - Account deletion (S5)
-- Cross-platform Android + Web test execution documentation (S5)
-- Accessibility sweep (S5)
-- Performance profile (S5)
+- Cross-platform QA, a11y, performance (S5)
 - Final reports (S5)
-
-### Copy rule reminder
-
-All new user-facing text goes through the copy rules in CLAUDE.md:
-- No clinical language
-- No streak-shaming
-- Compassionate imperatives only
-
-Specifically for this sprint: the Pattern Insights copy must surface "explicit confidence + sample size + nothing dramatic". Never say "We detected a concerning pattern" — say "Your Monday mood averages 1.8 lower than Thursday (87 Monday samples, high confidence)". Let the user draw the conclusion.
 
 ### Now enter Plan Mode
 
-Produce the plan, ADR-0006 (reframing mechanism), ADR-0007 (pattern analysis fallback strategy), and the handoff brief for Pattern Detection. Wait for my approval. Do not write production code until I approve.
+Produce the plan, ADR-0006 (ecosystem decision with citations), and the handoff brief for Pattern Engine. Wait for my approval. Do not write production code until I approve.

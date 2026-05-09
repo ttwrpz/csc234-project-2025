@@ -82,6 +82,7 @@ moodbloom/
 ├── .claude/
 │   ├── agents/                     (subagent prompts)
 │   ├── prompts/                    (per-sprint orchestration prompts)
+│   ├── specs/                      (Sprint 4–5 ecosystem spec — formulas, data model, test cases, citations)
 │   └── hooks/settings.json         (format + analyze + secret scan)
 ├── .github/workflows/ci.yml
 ├── apps/mobile/
@@ -94,7 +95,13 @@ moodbloom/
 │   │       ├── auth/               (presentation/domain/data)
 │   │       ├── mood/               (presentation/domain/data)
 │   │       ├── garden/             (presentation/domain/data)
+│   │       ├── pattern_engine/     (S4 — pure-Dart 5-algorithm engine)
+│   │       ├── intervention/       (S5 — Tiered Intervention + Quote Library)
+│   │       ├── tokens/             (S4 — token economy)
+│   │       ├── harvest/            (S4 — weekly harvest cycle)
+│   │       ├── disclaimer/         (S5 — bipolar/medical disclaimer service)
 │   │       ├── analytics/          (presentation/domain/data)
+│   │       ├── insights/           (S5 — pattern insights screen w/ disclaimer ack)
 │   │       ├── history/            (presentation/domain/data)
 │   │       └── settings/           (presentation/domain/data)
 │   ├── test/                       (unit + widget + golden)
@@ -106,7 +113,8 @@ moodbloom/
 ├── functions/                      (TypeScript Cloud Functions — Gemini proxy)
 │   └── src/
 │       ├── analyzeMoodText.ts
-│       └── analyzePatterns.ts
+│       ├── analyzePatterns.ts      (S3 — original; superseded by client-side Pattern Engine in S4)
+│       └── suggestQuote.ts         (S5 — Tier 1/2 ONLY; Tier 3 never calls this)
 └── firebase/
     ├── firestore.rules
     └── storage.rules
@@ -168,42 +176,80 @@ abstract class MoodRepository {
 ## Firestore data model
 
 ```
-users/{uid}                 → UserProfile { displayName, photoUrl, createdAt }
-users/{uid}/moods/{moodId}  → MoodEntry  { mood, intensity, text, createdAt, updatedAt, mediaRefs[] }
-users/{uid}/insights/{id}   → PatternInsight { window, text, confidence, sampleSize, generatedAt }
+users/{uid}                          → UserProfile {
+                                          displayName, photoUrl, createdAt,
+                                          tokenBalance: int (default 0),
+                                          tokensEarnedToday: int (resets midnight),
+                                          lastTokenEarnedDate: date,
+                                          unlockedSkins: map<emotion, [skinId]>,
+                                          gardenSettings: { dayNightMode },
+                                          insightsDisclaimerAcked: bool (default false)
+                                       }
+users/{uid}/moods/{moodId}           → MoodEntry { mood, intensity, text, score, createdAt, updatedAt, mediaRefs[], selectedSkinId, weekId }
+users/{uid}/weeklyGardens/{weekId}   → WeeklyGarden { weekStart, weekEnd, entries[], healthHistory[], summary, archivedAt }
+users/{uid}/patterns/{date}          → PatternResult { mannKendallZ, slidingNegCount, consecutiveHighIntensity, zScoreToday, cusumC, triggeredTier }
+users/{uid}/interventions/{id}       → InterventionRecord { tier, dispatchedAt, cooldownUntil, optedOut, quoteId }
+users/{uid}/cooldowns/{type}         → { lastDispatchedAt, cooldownUntil }
 ```
 
 ### Security rules (non-negotiable)
 - Users can only read/write documents under `users/{request.auth.uid}/**`
 - `createdAt` must equal `request.time` on create (server-side timestamp validation)
 - `createdAt` is immutable on update
-- Edits/deletes are allowed only on the same UTC calendar day as `createdAt` (enforced via `request.time.year/month/day == resource.data.createdAt.year/month/day`). Domain `isLocked` mirrors this with local-time day comparison.
+- `updatedAt` must be within 24h of `createdAt` on any update (enforces 24h immutability at the rules level, in addition to the domain guard)
+- `tokenBalance` may only increase (or decrease via skin purchase atomic write); never reset on missed days
+- `weeklyGardens/{weekId}` is write-once-on-archive, then read-only (history is a record, not a redo)
 - Field-level validation via `diff().affectedKeys()` — only specific fields may change on update
 - See `firebase/firestore.rules` for canonical rules
 
 ---
 
-## The seven pivot features (what this app IS)
+## The pivot features (what this app IS — Sprint 4–5 ecosystem model)
 
-1. **Intensity slider 1–5** on every entry (domain field: `int intensity`)
-2. **Gemini AI mood detection** from text via Cloud Function proxy
-3. **Analytics dashboard** with mood-over-time line chart (7/30/90-day windows)
-4. **Gemini pattern analysis** over history with explicit confidence labels
-5. **Cheer-up intervention** triggered by 5-of-7 negative days OR 3-consecutive same-type at intensity ≥ 4; 48h cooldown; 10-day escalation adds Thai Mental Health Hotline 1323 footer
-6. **Same-day entry immutability** — edits/deletes allowed until local midnight of the day the entry was created; locked thereafter
-7. **Compassionate reframing** — positive = flowers; negative intensity 1–3 = wilting plants; negative intensity 4–5 = rain clouds that fade on their own
+**Core philosophy:** Plants are NEVER destroyed/wilting/dying in any state. Every mood is weather; the ecosystem holds. This redesign is grounded in self-compassion (Neff 2003), DBT validation (Linehan 1993), ACT "emotions as weather" (Hayes 1999), and narrative externalization (White & Epston 1990). For full citations and formula derivations see `.claude/specs/sprint-4-5-spec.md`.
 
-## Copy rules (user-facing text)
+1. **Intensity slider 1–5** on every entry (domain field: `int intensity`).
+2. **Mood Score `S_t = v × i/5`** — pure-Dart domain function, range [-1, +1]. Joy/Calm/Okay are positive; Sadness/Anger/Anxiety are negative.
+3. **Gemini AI mood detection** from text via Cloud Function proxy (S3, unchanged).
+4. **Garden Health EWMA** — `H_t = 0.15·S_t + 0.85·H_{t-1}`, H_0 = 0 (resets weekly). Maps to 5 plant tiers: Flourishing / Thriving / Resting / Weathering / Storm Season — all alive in every tier.
+5. **Daily Atmosphere** — `avg_S_today` drives weather (sunny / calm / light-rain / storm). Resets midnight. Plants stay sheltered in storm.
+6. **Pattern Engine — 5 algorithms running on every entry:**
+   - **Mann-Kendall trend test** (14-day window) — Z_trend < -1.96 → Tier 1.
+   - **Sliding 5-of-7** — 5+ negative days in last 7 → Tier 2.
+   - **3-consecutive S ≤ -0.6** → Tier 3.
+   - **Z-score** (today vs personal 30-day baseline) — `z_day < -2.5` → Tier 3.
+   - **CUSUM** change-point — sustained drops → Tier 3.
+7. **Tiered Intervention** — Tier 1 = 2-min breathing; Tier 2 = journaling prompt; Tier 3 = crisis resources + Hotline 1323. **Strict cooldown:** max 1 notification/day, 48h between notifications, opt-out always available.
+8. **Personalized quote library** — Tier 1/2 use Gemini hybrid (Gemini suggests, but the Quote Safety Filter only allows pre-approved phrases through; if Gemini output contains anything off-script, fall back to the curated phrase pool). **Tier 3 NEVER calls Gemini** — quotes are CURATED ONLY for deterministic safety.
+9. **Bipolar/medical disclaimer** — onboarding slide + mandatory ack-on-first-use of Insights screen + footer line on every intervention notification + Settings restate. Wording: "MoodBloom is not a medical device. It cannot diagnose conditions like bipolar disorder, depression, or anxiety. Consult a qualified professional."
+10. **Token economy** — 5–10/day cap, mood-agnostic (logging "Sad intensity 5" earns same as "Joy intensity 5"), never lost on missed days, cosmetic-only (flower skins), never unlocks therapeutic features.
+11. **Weekly Harvest cycle** — garden archives every 7 days to History. H_0 resets to 0. Past weeks fully preserved and browsable.
+12. **24-hour entry immutability** — same-day edit/delete allowed; locked thereafter (S3, unchanged).
 
-These apply to all user-visible strings. Reviewer agents check for violations.
+## Copy rules (user-facing text — non-negotiable, reviewer agents check)
 
-- **No clinical language.** Never use "depression", "anxiety disorder", "symptom", "diagnosis".
-- **No streak-shaming.** Missed days are empty slots, never "you broke your streak".
-- **No fix-your-mood verbs.** Prefer "notice", "explore", "care for", "pause" over "improve", "boost", "overcome".
-- **Compassionate imperatives.** "Want to…?" / "If it helps…" instead of "You should" / "You must".
-- **Hotline 1323 is footer-only**, only after the 10-day escalation threshold, never as a primary CTA.
-- **Intervention banner text (5-of-7):** "It's been a heavy week. Want to try a two-minute breathing exercise?"
-- **Immutability lock text:** "Your history is a record, not a redo. Add a note to today's entry instead."
+### NEVER use these words for the garden:
+- "delete," "clear," "reset," "lost," "destroyed," "wilted," "wilting," "dead," "dying"
+
+### ALWAYS use these instead:
+- "harvest," "complete," "new chapter," "fresh week," "sheltered," "resting"
+
+### Other rules:
+- **No clinical language.** Never use "depression," "anxiety disorder," "symptom," "diagnosis," "bipolar" *as a label for the user*. Use "bipolar" only in the disclaimer.
+- **No streak-shaming.** Missed days are empty slots, never "you broke your streak."
+- **No fix-your-mood verbs.** Prefer "notice," "explore," "care for," "pause" over "improve," "boost," "overcome."
+- **No mood-contingent rewards.** Never "earn by feeling better." Tokens are for showing up, not for mood content.
+- **Compassionate imperatives.** "Want to…?" / "If it helps…" instead of "You should" / "You must."
+- **Hotline 1323 footer** appears on Tier 3 only, never as a primary CTA. (Keeps the Sprint 1–3 wording for backward compatibility — but now triggered by Tier 3, not by 10-day escalation.)
+
+### Pre-approved intervention phrasing (Tier copy):
+- **Tier 1:** "It looks like your garden has had some rainy days. Would you like a 2-minute breathing exercise?"
+- **Tier 2:** "Would you like to write about what's been on your mind?"
+- **Tier 3:** "We care about you. Here are some resources that might help." + crisis line links + Hotline 1323.
+- **Storm atmosphere captions:** "Storms pass. The roots hold." / "Rain helps the soil."
+- **Weekly harvest banner:** "Your garden this week has been harvested and saved to your history. A new week begins — a fresh canvas for your story."
+- **Disclaimer footer (every notification):** "MoodBloom is not a medical device. Not a substitute for professional care."
+- **Disclaimer ack dialog (first Insights view):** "MoodBloom is not a medical device. It cannot diagnose conditions like bipolar disorder, depression, or anxiety. Consult a qualified professional. [I understand]"
 
 ---
 
@@ -218,7 +264,21 @@ All four must pass before any release tag:
 
 ## Feature flag (rollback plan)
 
-`ai_pattern_analysis_enabled` (Remote Config, default `true`). If Gemini misbehaves, disable this flag in Firebase console — clients pick up within 60 minutes. Pattern Insights UI gracefully hides. Mood logging and history are unaffected.
+`ai_pattern_analysis_enabled` (Remote Config, default `true`). Originally for the S3 Gemini pattern-analysis function. In S4–S5 the Pattern Engine moved to client-side pure-Dart code (5 algorithms), so this flag now gates **the Tier 1/2 Gemini quote suggestion path** (S5 feature 8). If Gemini misbehaves on quote generation, disable this flag — Tier 1/2 falls back to curated phrases. Mood logging, history, pattern detection, and Tier 3 are unaffected (Tier 3 was never Gemini-driven).
+
+## Sprint 4–5 ecosystem spec
+
+The full Sprint 4–5 specification — formulas with worked examples, data model, all 35 test cases, copy guidelines, and academic citations — lives at `.claude/specs/sprint-4-5-spec.md`. **All agents must read this spec before working on any S4–S5 task.** It is the authoritative source for:
+
+- Mood Score formula and intensity sign mapping
+- Garden Health EWMA derivation (why α=0.15)
+- All 5 pattern detection algorithms with worked examples
+- Tiered Intervention dosing rules and cooldown logic
+- Quote Library tier-3-curated-only safety rule
+- Bipolar/medical disclaimer placement and exact wording
+- Token economy guardrails
+- Weekly Harvest cycle copy rules
+- 35 acceptance test cases (Part 7 of the spec)
 
 ---
 
@@ -234,7 +294,6 @@ Paths that agents must NOT edit without explicit orchestrator approval:
 - `.claude/agents/*.md` — agent definitions; changes require team meeting
 - `android/app/build.gradle`, `android/app/src/main/AndroidManifest.xml` — platform config; changes require `architect` + `security-reviewer`
 - Any file with `*.g.dart` or `*.freezed.dart` extension — these are generated; run `flutter pub run build_runner build --delete-conflicting-outputs` instead of hand-editing
-- `apps/mobile/lib/firebase_options.dart` — generated by `flutterfire configure`; never `Write`, only re-run `flutterfire configure` (denied by hook — architect + security-reviewer waiver required, per ADR-0001 and the future ADR-0002). To strip stale fields, use `Edit` (which does not trigger the secret-scan preWrite hook).
 
 ## Branching & PR rules
 
