@@ -979,3 +979,132 @@ describe("Sprint-4 S5-stub collections (ADR-0011)", () => {
     );
   });
 });
+
+/**
+ * v1.0-polish — `users/{uid}.insightsDisclaimerAcked` field-level guard.
+ *
+ * Spec §4 + ADR-0010: the bipolar/medical disclaimer ack is one-way
+ * (false → true). The user-doc rule splits read / create / update so
+ * the update path can reject any client write that flips the field
+ * back from `true` to `false` (or to absent, which evaluates as
+ * `false` via `get(field, false)`). Admin SDK writes bypass these
+ * rules and remain free to reset the field if S5 ever needs a re-ack
+ * flow.
+ */
+describe("v1.0-polish users/{uid}.insightsDisclaimerAcked one-way guard", () => {
+  it("create with insightsDisclaimerAcked: false is allowed", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(doc(userA, `users/${USER_A}`), {
+        displayName: "Alice",
+        insightsDisclaimerAcked: false,
+      }),
+    );
+  });
+
+  it("create with insightsDisclaimerAcked: true is allowed (eager ack)", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(doc(userA, `users/${USER_A}`), {
+        displayName: "Alice",
+        insightsDisclaimerAcked: true,
+      }),
+    );
+  });
+
+  it("update from false → true is allowed (the canonical ack path)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `users/${USER_A}`), {
+        displayName: "Alice",
+        insightsDisclaimerAcked: false,
+      });
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      updateDoc(doc(userA, `users/${USER_A}`), {
+        insightsDisclaimerAcked: true,
+      }),
+    );
+  });
+
+  it("update from missing → true is allowed (legacy doc upgrades)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `users/${USER_A}`), {
+        displayName: "Alice",
+        // insightsDisclaimerAcked field absent — legacy doc shape.
+      });
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      updateDoc(doc(userA, `users/${USER_A}`), {
+        insightsDisclaimerAcked: true,
+      }),
+    );
+  });
+
+  it("update from true → false is DENIED (the one-way guard)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `users/${USER_A}`), {
+        displayName: "Alice",
+        insightsDisclaimerAcked: true,
+      });
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      updateDoc(doc(userA, `users/${USER_A}`), {
+        insightsDisclaimerAcked: false,
+      }),
+    );
+  });
+
+  it("update from true → field deleted is DENIED (no ack-revert via deletion)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `users/${USER_A}`), {
+        displayName: "Alice",
+        insightsDisclaimerAcked: true,
+      });
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    // Deleting the field is equivalent to setting it to absent →
+    // `get(field, false)` returns false, which the rule treats as the
+    // forbidden true→false transition.
+    await assertFails(
+      // Equivalent to deleting via FieldValue.delete; we approximate
+      // here by passing a bare empty merge that drops the prior value.
+      // (Direct FieldValue.delete API not used to keep the test
+      // assertion-form consistent with the rest of the file.)
+      setDoc(
+        doc(userA, `users/${USER_A}`),
+        { displayName: "Alice" },
+        { merge: false },
+      ),
+    );
+  });
+
+  it("update with field unchanged (still true) is allowed", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `users/${USER_A}`), {
+        displayName: "Alice",
+        insightsDisclaimerAcked: true,
+      });
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    // The `displayName` change touches only that field; the
+    // `insightsDisclaimerAcked` value remains `true` in the resulting
+    // doc, satisfying the second arm of the rule.
+    await assertSucceeds(
+      updateDoc(doc(userA, `users/${USER_A}`), { displayName: "Alice II" }),
+    );
+  });
+
+  it("non-owner cannot read another user's profile", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `users/${USER_A}`), {
+        displayName: "Alice",
+        insightsDisclaimerAcked: true,
+      });
+    });
+    const userB = testEnv.authenticatedContext(USER_B).firestore();
+    await assertFails(getDoc(doc(userB, `users/${USER_A}`)));
+  });
+});

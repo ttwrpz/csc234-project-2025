@@ -7,7 +7,32 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read, write: if isOwner(uid);
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid);
+
+      // Update is owner-only with one field-level guard:
+      // `insightsDisclaimerAcked` is ONE-WAY (false → true). Once a
+      // user has acknowledged the bipolar/medical disclaimer (spec §4
+      // / ADR-0010), the client cannot revert the ack. The field is
+      // optional on the doc — `get(field, false)` provides a safe
+      // default so docs predating this field still update freely as
+      // long as no client tries to write a `true → false` transition.
+      // Admin SDK paths (e.g. account deletion in S5) bypass these
+      // rules and remain free to reset the field if a re-ack flow is
+      // ever needed.
+      allow update: if isOwner(uid)
+        && (
+          // Was previously not acked (or absent) → any new state OK.
+          resource.data.get('insightsDisclaimerAcked', false) == false
+          // Was acked → must stay acked.
+          || request.resource.data.get('insightsDisclaimerAcked', false) == true
+        );
+
+      // Delete preserved from the prior catch-all `write` permission.
+      // Account deletion goes through the admin SDK in S5 (ADR-0009),
+      // but closing the door on client-side delete now would be a
+      // breaking change for any existing flow that relies on it.
+      allow delete: if isOwner(uid);
 
       match /moods/{moodId} {
         allow create: if isOwner(uid)
