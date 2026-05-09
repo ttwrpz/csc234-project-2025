@@ -4,21 +4,6 @@
 
 This folder is what you drop into your MoodBloom Flutter repository root. Once in place, Claude Code sessions run with a consistent multi-agent workflow across Sprints 2–5.
 
-## Layout (post-Sprint-2)
-
-The Flutter app lives at `apps/mobile/`. Run commands from there:
-
-```bash
-cd apps/mobile
-flutter pub get
-flutter pub run build_runner build --delete-conflicting-outputs
-flutter run -d chrome           # web
-flutter run -d android          # android emulator
-flutter test
-```
-
-Cross-cutting Dart packages live at `packages/{core,design_system,analytics}/`. Cloud Functions (S3 onward) at `functions/`. Firebase rules at `firebase/`. Architecture decisions at `docs/adr/`.
-
 ## Starting state of the repo
 
 Sprint 1 (before Apr 21 – Apr 21) produced **agile planning artifacts only — no Flutter code**. At the start of Sprint 2, the repo contains only:

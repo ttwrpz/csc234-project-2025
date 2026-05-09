@@ -1,137 +1,163 @@
-# Sprint 5 Kickoff — v1.5: Cheer-Up Intervention + Cross-Platform QA + Release
+# Sprint 5 Kickoff — v1.5: Tiered Intervention + Quote Library + Disclaimer + Final QA
 
 **Sprint window:** May 13 – May 19, 2026 (5 working days)
-**Sprint goal:** Ship the cheer-up intervention (gentle banner + FCM + breathing exercise + 10-day Hotline 1323 escalation), complete integration tests, run accessibility + performance sweeps, execute cross-platform QA on Android and Web, finalize the Enterprise Audit Report and both course reports. By end-of-sprint MoodBloom is **v1.5 — final release**, ready to present and submit.
+**Sprint goal:** Wire the safety net live. Tiered Intervention dispatcher (Tier 1/2/3 with cooldown + opt-out), personalized Quote Library (Tier 3 = curated only, deterministic), Bipolar/medical disclaimer service, Insights screen with mandatory ack, FCM toggle, Skin system, account deletion, full cross-platform QA + accessibility + performance + final reports. v1.5 is the final release.
 
-**Release target:** v1.5 tag after Sprint 5 presentation on May 19. Report submissions follow on May 26 (CSC231) and May 28 (CSC234); final submission May 30.
+**Release target:** v1.5 tag after Sprint 5 presentation on May 19.
 
 ---
 
-## Paste this prompt into the main Claude Code session at the start of Sprint 5
+## Paste this prompt into Claude Code at start of Sprint 5
 
-Orchestrator, your Sprint 5 plan is below. Enter Plan Mode. Produce the decomposition, then wait for my approval before delegating.
+Orchestrator, your Sprint 5 plan is below. Enter Plan Mode. This is the highest-stakes sprint of the project — Tier 3 messages must be byte-for-byte deterministic. Read carefully.
+
+### Required reading before you plan
+
+1. `.claude/specs/sprint-4-5-spec.md` — sections 3 (Quote Library Architecture), 4 (Bipolar Disclaimer), 7 (Test Cases — items 31–41 are S5-critical).
+2. `CLAUDE.md` — confirms Tier 3 NEVER calls Gemini and disclaimer placement (b)+(c) combined.
+3. `docs/architecture/` — implementation diagram showing the Tier 3 → Quote Library DIRECT path and the Quote Safety Filter as a fail-closed chokepoint for Tier 1/2.
 
 ### Context recap from Sprint 4
 
-We tagged `v1.0` at the Sprint 4 demo. Wilting plants and rain clouds landed (Som's scenario works end-to-end visually). Pattern analysis with confidence labels is live. Feature flag rollback rehearsed successfully on stage. Dark mode works. ≥6 widget tests and ≥6 golden tests committed.
+We tagged `v1.0` at the Sprint 4 demo. Mood Score formula works. Garden Health EWMA shifts smoothly (≤0.15/day). Atmosphere weather-states render correctly with plants always alive. Pattern Engine fires triggers internally on every entry — but no notifications surface yet. Weekly Harvest cycle archives gardens with strict "harvest/complete/new chapter" copy. Token economy works mood-agnostic. Day/night theme + dark mode work.
 
-Two items entering S5:
-- The pattern detector (5.4) fires a state update but **does not yet surface any UI** — no banner, no notification. That's S5 work.
-- The Enterprise Audit Report draft (8.1) is mid-progress. S5 finalizes it.
+**Sprint 5 wires the safety net live.** This is where the app becomes therapeutically functional.
 
-Sprint 5 is where the **safety net goes live and the ship gets polished**. QA dominates this sprint, and `qa-engineer` is the bottleneck.
+### The Tier 3 absolute rule — read this carefully
+
+**Tier 3 messages NEVER call Gemini. EVER.**
+
+Tier 3 fires when the user is at their most vulnerable: 3 consecutive S ≤ -0.6, or a Z-score crash (z_day < -2.5), or a CUSUM change-point breach. At that moment, a wrong message could cause real harm. Determinism is non-negotiable.
+
+Implementation rule: the `TieredInterventionDispatcher` has a hard branch on `tier == InterventionTier.tier3`. The tier-3 branch goes to `QuoteLibrary.curatedTier3Pool` directly — no `AIQuoteRepository`, no Cloud Function call, no Gemini. Test 40 in the spec asserts this with a Gemini-mock that fails the test if invoked from Tier 3.
+
+Tier 1 and Tier 2 are different — they use the Gemini hybrid path, but every Gemini suggestion goes through the `QuoteSafetyFilter` first. Filter is fail-closed: any forbidden word, length over cap, or off-script phrasing → reject Gemini, fall back to curated phrase.
 
 ### Sprint 5 committed backlog (WBS IDs)
 
 **Bucket 2 — Security cleanup:**
 - 2.4 Account deletion with full Firestore + Storage cleanup
 
-**Bucket 5 — Intervention:**
-- 5.5 Cheer-up intervention: gentle FCM notification + compassionate home banner + 10-day escalation with Thai Hotline 1323 (the flagship pivot feature)
+**Bucket 5 — Tiered Intervention + Quote Library + Insights:**
+- 5.4 Tiered Intervention dispatcher (Tier 1 breathing / Tier 2 journaling / Tier 3 crisis) + cooldown + opt-out
+- 5.5 Personalized quote library + Gemini hybrid for Tier 1/2 ONLY (Tier 3 = curated only, deterministic)
+- 5.6 Insights screen with pattern visualizations + bipolar disclaimer ack-on-first-use
 
-**Bucket 6 — Settings completion:**
-- 6.3 FCM notification toggle + permission request flow
+**Bucket 6 — Skin system:**
+- 6.3 Flower skin system + per-flower modal + spend confirmation
 
-**Bucket 7 — QA sweep:**
-- 7.3 Integration tests (completes: AI override scenario, intervention flow)
-- 7.4 Cross-platform QA (Android + Web) + accessibility sweep (WCAG 2.2 AA) + performance profile
+**Bucket 7 — Notifications + Disclaimer:**
+- 7.3 FCM notification toggle + permissions + per-tier opt-out
+- 7.4 Bipolar/medical disclaimer service: notification footer + Insights ack dialog + Settings restate
 
-**Bucket 8 — Reporting:**
-- 8.1 Enterprise Audit & Orchestration Report finalize
-- 8.2 Compile CSC231 Project Report + CSC234 UI Report + evidence package
+**Bucket 8 — QA:**
+- 8.3 Integration tests (login, mood, AI override, harvest, all 3 intervention tiers)
+- 8.4 Cross-platform QA (Android+Web) + a11y + performance
+
+**Bucket 9 — Reports:**
+- 9.1 Enterprise Audit Report finalize
+- 9.2 CSC231 + CSC234 reports + evidence package
 
 ### Sprint 5 critical path (from PDM)
 
-U (Integration Tests, 2.0d) → X (Cross-Platform QA + a11y + Performance, 2.0d) → Y (Finalize Reports, 1.0d) → [day 19.5 of 20]
+W (Tiered Intervention, 1.5d) → X (Quote Library, 1.0d) → Y (Disclaimer + FCM, 1.0d) → AC (Integration tests, 2.0d) → AD (Cross-platform QA, 1.5d) → AE (Reports, 1.0d) → [day 19.5 of 20]
 
-Parallel tracks converging on X:
-- V (Cheer-up Intervention, 1.5d) on Theerawat
-- W (FCM Toggle + Account Deletion, 1.5d) on Jedsarit + Theerawat
+Parallel tracks:
+- AA (Skin system, 1.5d) on Napat in parallel with W/X/Y.
+- AB (Account deletion + Audit draft) carries over from S4.
 
-**Project finishes day 19.5 of 20 — half a day buffer.** Treat every day as precious.
+### Day-by-day plan
 
-### Your orchestration plan
+**Day 1 (May 13) — Tiered Intervention dispatcher**
+- `architect` writes the canonical handoff brief for Tiered Intervention (5.4). Specify: dispatcher state machine, cooldown persistence (`users/{uid}/cooldowns/{type}` Firestore), opt-out flow, "I'm okay" button, three tier paths.
+- `flutter-engineer` implements `TieredInterventionDispatcher` in `features/intervention/domain/`. Must be pure-Dart. Hard branch on `tier == tier3 → curated path`.
+- `flutter-engineer` implements `CooldownGuard` — 48h between dispatches, max 1/day. Persist to Firestore.
+- `flutter-engineer` (Napat) implements Skin system (6.3) in parallel — token spending, modal UI.
 
-**Day 1 (May 13)** —
-- `architect` writes the final handoff brief for the cheer-up intervention (5.5). Specify: banner component shape, FCM payload format, breathing exercise screen state machine, 48h cooldown persistence (Firestore `users/{uid}/cooldowns` sub-doc), 10-day escalation trigger + Hotline 1323 footer rendering rules.
-- `flutter-engineer` starts FCM toggle + permission request (6.3) — depends on nothing, low risk.
-- `flutter-engineer` starts the breathing exercise overlay + 4-7-8 rhythm animation.
-- `qa-engineer` completes integration tests (7.3): AI override scenario test and intervention flow test (latter requires a seeded 5-of-7 dataset fixture).
+**Day 2 (May 14) — Quote Library + Disclaimer + FCM**
+- `flutter-engineer` implements `QuoteLibrary` with curated Tier 3 pool (8–12 entries, team-reviewed). Tier 1 + Tier 2 curated pools (12 entries each).
+- `flutter-engineer` implements `QuoteSafetyFilter`: whitelist-based + forbidden-word blacklist + length cap. Fail-closed.
+- `flutter-engineer` implements `AIQuoteRepository` for Tier 1/2 hybrid path. Calls Cloud Function `suggestQuote.ts`. Routes Gemini output through Safety Filter before returning.
+- `flutter-engineer` implements Bipolar Disclaimer Service (7.4): footer attachment, ack dialog component, Settings restate page.
+- `flutter-engineer` implements FCM toggle (7.3): permission request, per-tier opt-out switches in Settings.
+- `flutter-engineer` implements Insights screen (5.6): pattern visualizations + mandatory disclaimer ack on first view.
+- `flutter-engineer` implements account deletion (2.4) in parallel.
+- `security-reviewer` audits the Cloud Function `suggestQuote.ts`: rate limiting, input validation, no PII to Gemini. Audits account deletion flow.
 
-**Day 2 (May 14)** —
-- `flutter-engineer` implements the cheer-up banner + wires PatternDetector state → banner visibility. Banner copy: exactly "It's been a heavy week. Want to try a two-minute breathing exercise?" — copy-reviewed.
-- `flutter-engineer` implements the FCM notification path: Cloud Function triggers on pattern detection, composes payload (no mood text — just "Noticing you've had a rough stretch. We're here."), FCM delivers to device.
-- `flutter-engineer` implements the 10-day escalation check — banner footer: "If it helps to talk, the Thai Mental Health Hotline is free at 1323, 24 hours."
-- `flutter-engineer` implements account deletion (2.4) in parallel — deletes `users/{uid}`, all subcollections, all Storage media, revokes Auth account.
-- `security-reviewer` audits account deletion end-to-end: no orphaned Storage files, no ghost Firestore docs, Auth record genuinely revoked.
+**Day 3 (May 15) — Integration tests + a11y sweep**
+- `qa-engineer` runs integration tests (8.3): all 3 intervention tiers seeded with synthetic mood histories. Critical: TC-40 (Tier 3 determinism — Gemini-mock asserts no call) and TC-41 (Quote Safety Filter rejection rate = 100%).
+- `qa-engineer` starts a11y sweep — every screen, WCAG 2.2 AA contrast, dynamic type. Disclaimer dialog must be readable at 200% type.
+- `flutter-engineer` addresses a11y findings same-day.
+- `Theerawat` continues Audit Report draft.
 
-**Day 3 (May 15)** —
-- `qa-engineer` executes Android test matrix (7.4) on a real Android emulator. Run: every widget test, every integration test, full app smoke including intervention trigger. Document in `docs/qa/android-matrix-20260515.md` with screenshots.
-- `qa-engineer` starts the accessibility sweep. Walk every screen. Check Semantics labels, focus states, contrast ratios, dynamic type up to 200%. Document in `docs/qa/a11y-sweep-20260515.md`. Flag failures for `flutter-engineer` to fix same day.
-- `flutter-engineer` addresses any a11y findings as they come in.
-- `Theerawat` continues the Enterprise Audit Report — Sections 5–8 (orchestration workflow, agent challenges, handoff examples).
+**Day 4 (May 18) — Cross-platform + performance**
+- `qa-engineer` runs Chrome web matrix + Android matrix. Document with screenshots.
+- `qa-engineer` runs performance profile: cold start, frame rate on Insights scroll, memory.
+- `flutter-engineer` addresses regressions.
+- `security-reviewer` final Security Posture Report.
 
-**Day 4 (May 18)** —
-- `qa-engineer` executes Chrome web test matrix on Chromium. Same scope as Android. Document in `docs/qa/web-matrix-20260518.md`.
-- `qa-engineer` runs performance profile: `flutter run --profile --trace-startup`, measure cold start, TTI, frame rate on analytics scroll, memory on 200-entry history. Document in `docs/qa/perf-20260518.md`.
-- `flutter-engineer` addresses any perf regressions flagged.
-- `security-reviewer` produces final Security Posture Report: no HIGH/CRITICAL `npm audit`, no HIGH/CRITICAL Dart deps, no secrets in source, PII-in-logs clean, Firestore rules pass all emulator tests, Cloud Functions rate-limited.
-
-**Day 5 (May 19 — presentation day)** —
-- `qa-engineer` runs one final smoke pass on both platforms after any same-day hotfixes.
-- `flutter-engineer` addresses any blocker bugs from qa-engineer's smoke pass.
-- `Theerawat` finalizes the Enterprise Audit Report (8.1) with test results, a11y findings, perf numbers, Crashlytics dashboard screenshots, Plan Mode transcripts.
+**Day 5 (May 19 — presentation day)**
+- Final smoke pass on both platforms.
+- `Theerawat` finalizes Audit Report with test results, a11y findings, perf numbers, screenshots, Plan Mode transcripts.
 - Merge everything. Tag `v1.5`.
-- Sprint 5 demo: switch app to Som's seeded data → 5-of-7 pattern triggers → FCM notification arrives → tap banner → breathing exercise plays → user completes it. Demo continues to seeded day 10 → banner shows Hotline 1323 footer. Demo account deletion → user confirms → all data goes. Flip AI feature flag → Insights hide gracefully. A11y narrator (TalkBack) walks one screen live.
-
-### May 20 – May 30: Report writing & submission (post-sprint)
-
-After tagging v1.5, the team is in report-writing mode:
-- **May 20–22** — Theerawat finalizes CSC231 Project Report (consolidates WBS, Backlog, PDM, GANTT, Personas, Journey Maps, Architecture). All members review.
-- **May 23** (Saturday — buffer day) — team reviews both reports.
-- **May 25** — Napat + Teerin finalize CSC234 UX/UI Report.
-- **May 26** — CSC231 Project Report due. Submit.
-- **May 28** — CSC234 UX/UI Report due. Submit.
-- **May 30** — Final submission deadline. Verify both reports accepted; submit the evidence package (code repo link, screenshots, Crashlytics dashboards, Plan Mode transcripts).
+- Demo: switch to Som's seeded data → Pattern Engine fires Tier 1 → notification appears with disclaimer footer + safe Gemini-suggested quote (filtered) → user opts out, no further alerts for 48h. Continue to seeded Tier 2 day → journaling prompt. Continue to seeded Tier 3 day → curated message + Hotline 1323 + disclaimer (verify byte-for-byte from curated pool, no Gemini). First Insights view → mandatory ack dialog. Account deletion → all data goes.
 
 ### High-risk items requiring your attention
 
-1. **Cheer-up intervention correctness (5.5)** — the most important user-visible feature of the whole pivot. If the banner fires wrong (too often, not often enough, wrong copy), the pivot fails. Test the seeded fixtures thoroughly. Have two team members read the banner copy out loud before merge. Never use clinical language.
+1. **TC-40: Tier 3 determinism** — most critical test in the entire project. Tier 3 path through Gemini = catastrophic failure mode. Implementation must have hard branch; test must mock Gemini and assert it was NEVER called when triggering Tier 3. Fail this test → fail the sprint.
 
-2. **Hotline 1323 escalation** — do not ship with the Hotline 1323 URL/link broken, incorrect, or prematurely shown. This is a duty-of-care obligation. `security-reviewer` verifies the link and the 10-day threshold on day 2.
+2. **TC-41: Quote Safety Filter rejection** — feed 50 synthetic Gemini outputs containing forbidden terms (depression, bipolar, diagnosis, medication, urgency words "must/should/now"). Filter must reject 100%. Any pass-through is a blocker.
 
-3. **Cross-platform divergence** — if a widget test passes on Android but fails on Chrome, or vice versa, it's not done. Fix, don't skip.
+3. **Disclaimer placement (TC-36–39)** — every notification body MUST include the footer line. Test by mocking dispatcher and asserting all 3 tier outputs contain disclaimer string. Insights screen MUST require ack on first view (state in `users/{uid}.insightsDisclaimerAcked`).
 
-4. **Accessibility sweep with WCAG 2.2 AA contrast** — the compassion palette (compassion coral, rain gray) may not pass contrast in certain combinations. If any combination fails, adjust tokens in `packages/design_system/` and re-run goldens. Budget half a day for this.
+4. **Curated phrase pool review** — before merge, the entire team reads aloud every Tier 1, 2, 3 curated phrase. If any phrase causes hesitation or feels off → revise. Tier 3 phrases especially: read aloud twice. The team is the last line of defense.
 
-5. **Report writing bandwidth** — Theerawat is the single owner of AA1/AA2. If Theerawat slips on report work, the team rallies: Kraiwich writes the Security Matrix section, Jedsarit writes the Observability + Rollback section. Pre-decide these fallbacks now, not on day 5.
+### Acceptance criteria (Sprint 5 demo + v1.5 release)
 
-### Acceptance criteria for Sprint 5 presentation + v1.5 release
+From `.claude/specs/sprint-4-5-spec.md` Part 7. All must pass:
 
-- [ ] Seeding Som's 5-of-7 dataset triggers the cheer-up banner within 60s
-- [ ] Tapping the banner opens the breathing exercise overlay; 4-7-8 rhythm animation works; "Done" returns to Home
-- [ ] FCM notification arrives on device from the Cloud Function when pattern detected (verified on emulator with test token)
-- [ ] 10-day escalation adds the Hotline 1323 footer — link opens hotline information, never auto-dials
-- [ ] FCM permission request flow works on Android (permission prompt) and Web (browser permission)
-- [ ] Account deletion removes all user data across Firestore, Storage, and Auth (verified in Firebase console)
-- [ ] All integration tests pass on both Android and Chrome
-- [ ] Accessibility sweep documented: every screen ≥ WCAG 2.2 AA contrast, Semantics labels present, dynamic type to 200% renders legibly
-- [ ] Performance profile documented: cold start < 2s on mid-range Android, no frame > 16ms on analytics scroll, memory < 150MB on 200-entry history
-- [ ] Enterprise Audit Report complete (5–8 pages, all required sections)
-- [ ] Evidence package compiled: repo link, audit report, presentation slides, screenshots, Crashlytics dashboards, golden test files, Plan Mode transcripts
-- [ ] Tag `v1.5` pushed after demo
-- [ ] Zero HIGH/CRITICAL security findings
+**Skin System (TC 6–10):**
+- [ ] TC-6: Unlock sunflower skin → ALL sunflowers display new skin.
+- [ ] TC-7: Tap a flower → mood entry detail opens.
+- [ ] TC-8: Skin modal shows locked skins with correct token cost.
+- [ ] TC-9: Spending tokens reduces balance with confirmation dialog.
+- [ ] TC-10: Default skin always available without purchase.
 
-### Out of scope for Sprint 5 (do not start these)
+**Intervention Notifications (TC 31–35):**
+- [ ] TC-31: Max 1 notification per 24h enforced.
+- [ ] TC-32: 48h cooldown between alerts enforced.
+- [ ] TC-33: Tier 3 always includes Hotline 1323 link + crisis resources.
+- [ ] TC-34: All notifications include "I'm okay" opt-out.
+- [ ] TC-35: Intervention features NEVER locked behind tokens.
+
+**Bipolar Disclaimer (TC 36–39):**
+- [ ] TC-36: First Insights view shows mandatory ack dialog.
+- [ ] TC-37: Ack state persists across restarts.
+- [ ] TC-38: Every Tier 1/2/3 notification body includes disclaimer footer.
+- [ ] TC-39: Settings → About contains full disclaimer text.
+
+**Tier 3 Determinism (TC 40–41) — CRITICAL:**
+- [ ] TC-40: Tier 3 dispatch — Gemini-mock asserts NO call attempted; output byte-for-byte from curated pool.
+- [ ] TC-41: Quote Safety Filter rejects 100% of test cases containing forbidden terms.
+
+**Final release gates:**
+- [ ] All integration tests pass on both Android emulator and Chrome web.
+- [ ] Accessibility sweep documented; every screen ≥ WCAG 2.2 AA.
+- [ ] Performance profile documented; cold start < 2s.
+- [ ] Enterprise Audit Report complete (5–8 pages).
+- [ ] Evidence package compiled.
+- [ ] Tag `v1.5` pushed.
+- [ ] Zero HIGH/CRITICAL security findings.
+
+### Out of scope for Sprint 5
 
 - Thai localization (v2.0)
 - iOS build (v2.0)
-- Event sourcing for mood history (v2.0)
-- Therapist-facing shared mood export (v2.0)
+- Therapist-shared exports (v2.0)
 - Any new features not in the committed backlog
 
 ### Now enter Plan Mode
 
-Produce the plan, the handoff brief for the cheer-up intervention (5.5), the handoff brief for account deletion (2.4). Wait for my approval. Do not write production code until I approve.
+Produce the plan, ADR-0007 (Tier 3 determinism rationale + Gemini-mock test design), the handoff brief for Tiered Intervention (5.4), and the handoff brief for Quote Library + Safety Filter (5.5). Wait for my approval.
 
-At the end of the sprint, produce a retrospective in `docs/retros/sprint-5-retro.md` — what worked in the multi-agent workflow, what broke, what the human team caught that the agents missed. This is part of the Enterprise Audit Report evidence.
+At the end of the sprint, produce a retrospective in `docs/retros/sprint-5-retro.md`. The Enterprise Audit Report's "agent challenges" section pulls from this.
