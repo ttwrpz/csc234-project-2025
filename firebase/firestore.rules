@@ -146,6 +146,80 @@ service cloud.firestore {
         // deletion (WBS 2.4) uses the admin SDK.
         allow delete: if false;
       }
+
+      // Per-user Pattern Engine result, one doc per local-midnight day
+      // (ADR-0011, HB-006 §"Sub-track D"). The 5-algorithm engine
+      // (Mann-Kendall, sliding 5-of-7, 3-consecutive S<=-0.6, Z-score,
+      // CUSUM) writes one of these per mood log; same-day re-evaluation
+      // overwrites the doc cleanly. Mood text is NEVER part of the
+      // schema — affectedKeys().hasOnly() enforces it.
+      match /patterns/{dateId} {
+        allow read: if isOwner(uid);
+
+        allow create: if isOwner(uid)
+          && dateId.matches('^\\d{4}-\\d{2}-\\d{2}$')
+          && request.resource.data.dateId == dateId
+          && request.resource.data.schemaV == 1
+          && request.resource.data.keys().hasOnly(
+              ['dateId','mannKendallZ','slidingNegCount',
+               'consecutiveHighIntensity','zScoreToday',
+               'cusumC','triggeredTier','schemaV'])
+          && (request.resource.data.triggeredTier == null
+              || request.resource.data.triggeredTier in ['one','two','three'])
+          && (request.resource.data.mannKendallZ == null
+              || request.resource.data.mannKendallZ is number)
+          && (request.resource.data.zScoreToday == null
+              || request.resource.data.zScoreToday is number)
+          && request.resource.data.slidingNegCount is int
+          && request.resource.data.slidingNegCount >= 0
+          && request.resource.data.slidingNegCount <= 7
+          && request.resource.data.consecutiveHighIntensity is int
+          && request.resource.data.consecutiveHighIntensity >= 0
+          && request.resource.data.cusumC is number
+          && request.resource.data.cusumC >= 0;
+
+        // Same-day re-evaluation: overwrite is allowed (the engine
+        // re-runs on every mood log within the day). The same field
+        // allowlist + value guards apply.
+        allow update: if isOwner(uid)
+          && dateId.matches('^\\d{4}-\\d{2}-\\d{2}$')
+          && request.resource.data.dateId == dateId
+          && request.resource.data.schemaV == 1
+          && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['mannKendallZ','slidingNegCount',
+                       'consecutiveHighIntensity','zScoreToday',
+                       'cusumC','triggeredTier'])
+          && (request.resource.data.triggeredTier == null
+              || request.resource.data.triggeredTier in ['one','two','three'])
+          && (request.resource.data.mannKendallZ == null
+              || request.resource.data.mannKendallZ is number)
+          && (request.resource.data.zScoreToday == null
+              || request.resource.data.zScoreToday is number)
+          && request.resource.data.slidingNegCount is int
+          && request.resource.data.slidingNegCount >= 0
+          && request.resource.data.slidingNegCount <= 7
+          && request.resource.data.consecutiveHighIntensity is int
+          && request.resource.data.consecutiveHighIntensity >= 0
+          && request.resource.data.cusumC is number
+          && request.resource.data.cusumC >= 0;
+
+        allow delete: if false;
+      }
+
+      // S5-stub denials. Both collections are reserved for the new
+      // tier-aware dispatcher (ADR-0011 §5). Reads allowed so the S5
+      // dispatcher's read-side wiring lands without rule churn; writes
+      // denied in v1.0 because the dispatcher is gated off via the
+      // `interventionDispatchEnabled` Remote Config flag.
+      match /interventions/{id} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /cooldowns/{type} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
     }
 
     match /rateLimits/{uid} {

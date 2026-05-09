@@ -1,6 +1,7 @@
 import 'package:core/core.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../app/providers.dart';
 import '../../data/providers.dart';
 import 'cheer_up_state.dart';
 
@@ -50,6 +51,31 @@ class CheerUpController extends _$CheerUpController {
   /// failing does NOT block step 3 — the CF only needs the event doc.
   Future<void> onShown({required String reason}) async {
     if (state.onShownDispatched) return;
+    const logger = Logger('garden.cheerup.controller');
+
+    // Remote-Config gate (ADR-0011 §4). When v1.0's
+    // `interventionDispatchEnabled` flag is false, the legacy 2-rule
+    // dispatcher is dark — no anchor writes, no audit-log event, no
+    // FCM push. The new Pattern Engine writes
+    // `users/{uid}/patterns/{date}` independently upstream. Sprint 5
+    // re-points the dispatcher at that document, attaches the Quote
+    // Library safety filter + Bipolar/medical disclaimer footer, and
+    // flips the flag to true. Until then, this early-return is the
+    // single difference between "engine on, dispatcher off" (v1.0)
+    // and "engine on, dispatcher on" (S5).
+    final flags = ref.read(featureFlagsProvider);
+    if (!flags.interventionDispatchEnabled) {
+      logger.info(
+        'cheer_up_dispatch_skipped',
+        data: const {'reason': 'flag_disabled'},
+      );
+      // Mark dispatched so a re-entrant call in the same lifecycle
+      // does not log the skip event repeatedly. The flag itself is
+      // the durable gate; this flip is purely UI-state hygiene.
+      state = state.copyWith(onShownDispatched: true);
+      return;
+    }
+
     // Flip the flag BEFORE the awaits so a re-entrant rebuild can't
     // race-fire a second dispatch while the first is in flight.
     state = state.copyWith(onShownDispatched: true);
@@ -57,8 +83,6 @@ class CheerUpController extends _$CheerUpController {
     final repo = await ref.read(interventionStateRepositoryProvider.future);
     final eventsRepo = ref.read(cheerUpEventsRepositoryProvider);
     final now = DateTime.now();
-
-    const logger = Logger('garden.cheerup.controller');
 
     final lastResult = await repo.writeLastTriggeredAt(now);
     if (lastResult is Err) {

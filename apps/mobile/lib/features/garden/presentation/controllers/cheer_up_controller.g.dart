@@ -107,7 +107,7 @@ final class CheerUpControllerProvider
   }
 }
 
-String _$cheerUpControllerHash() => r'982e291155545dd95628c68617619cb082d87eb4';
+String _$cheerUpControllerHash() => r'c68e6b7dbe1abd0ca1b194188da615a1084a050a';
 
 /// Controller for the cheer-up banner (HB-003 §5.5a + §5.5b).
 ///

@@ -1,3 +1,11 @@
+// ignore_for_file: deprecated_member_use
+//
+// `detectPattern` is intentionally consumed below while the legacy 2-rule
+// dispatcher path is gated behind `interventionDispatchEnabled` (default
+// false in v1.0). The new 5-algorithm engine writes
+// `users/{uid}/patterns/{date}` independently; S5 re-points the dispatcher
+// at that doc and removes this caller. ADR-0011.
+
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,11 +13,11 @@ import '../../../app/providers.dart';
 import '../../auth/data/providers.dart';
 import '../../mood/data/providers.dart';
 import '../../mood/domain/entities/mood_entry.dart';
+import '../../pattern_engine/domain/legacy_pattern_detector.dart';
 import '../domain/cheer_up_events_repository.dart';
 import '../domain/entities/garden_state.dart';
 import '../domain/entities/intervention_state.dart';
 import '../domain/intervention_state_repository.dart';
-import '../domain/pattern_detector.dart';
 import '../domain/usecases/compute_garden_state.dart';
 import 'cheer_up_events_repository_impl.dart';
 import 'datasources/cheer_up_events_firestore_datasource.dart';

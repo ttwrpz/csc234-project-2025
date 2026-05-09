@@ -1,6 +1,8 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moodbloom/app/feature_flags.dart';
+import 'package:moodbloom/app/providers.dart';
 import 'package:moodbloom/features/garden/data/providers.dart';
 import 'package:moodbloom/features/garden/domain/cheer_up_events_repository.dart';
 import 'package:moodbloom/features/garden/domain/intervention_state_repository.dart';
@@ -79,6 +81,12 @@ void main() {
         overrides: [
           interventionStateRepositoryProvider.overrideWith((_) async => repo),
           cheerUpEventsRepositoryProvider.overrideWithValue(eventsRepo),
+          // Existing tests assert dispatch behaviour, so flip the gate
+          // ON for them. The dedicated "gate-off" group below overrides
+          // this back to false.
+          featureFlagsProvider.overrideWithValue(
+            FeatureFlags.defaults().copyWith(interventionDispatchEnabled: true),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -194,6 +202,62 @@ void main() {
         container.read(cheerUpControllerProvider).onShownDispatched,
         isFalse,
       );
+    });
+  });
+
+  group('CheerUpController — interventionDispatchEnabled gate (ADR-0011)', () {
+    late _FakeRepo repo;
+    late _FakeEventsRepo eventsRepo;
+    late ProviderContainer container;
+
+    setUp(() {
+      repo = _FakeRepo();
+      eventsRepo = _FakeEventsRepo();
+      container = ProviderContainer(
+        overrides: [
+          interventionStateRepositoryProvider.overrideWith((_) async => repo),
+          cheerUpEventsRepositoryProvider.overrideWithValue(eventsRepo),
+          // Default v1.0 state: gate off.
+          featureFlagsProvider.overrideWithValue(FeatureFlags.defaults()),
+        ],
+      );
+      addTearDown(container.dispose);
+    });
+
+    test(
+      'onShown() with the gate disabled writes nothing — no anchor, no event doc',
+      () async {
+        await container
+            .read(cheerUpControllerProvider.notifier)
+            .onShown(reason: '5_of_7_negative');
+
+        expect(repo.writeLastCalls, 0);
+        expect(repo.writeFirstIfNullCalls, 0);
+        expect(eventsRepo.calls, isEmpty);
+      },
+    );
+
+    test(
+      'onShown() with the gate disabled still flips onShownDispatched',
+      () async {
+        await container
+            .read(cheerUpControllerProvider.notifier)
+            .onShown(reason: '5_of_7_negative');
+
+        // Hygiene flip prevents the skip-log from firing twice in the
+        // same lifecycle. The flag itself is the durable gate.
+        expect(
+          container.read(cheerUpControllerProvider).onShownDispatched,
+          isTrue,
+        );
+      },
+    );
+
+    test('gate is the only difference: default-off matches v1.0 contract', () {
+      // Regression guard: if the default ever flips to true, this
+      // test fails and the v1.0-engine-on-dispatcher-off invariant
+      // breaks. ADR-0011 §4.
+      expect(FeatureFlags.defaults().interventionDispatchEnabled, isFalse);
     });
   });
 }

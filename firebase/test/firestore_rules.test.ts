@@ -777,3 +777,205 @@ describe("Storage rules — users/{uid}/media/**", () => {
     );
   });
 });
+
+/**
+ * Sprint-4 redesign — Pattern Engine result collection.
+ *
+ * The 5-algorithm engine (Mann-Kendall, sliding 5-of-7, 3-consecutive
+ * S<=-0.6, Z-score, CUSUM) writes one PatternResult per local-midnight
+ * day to `users/{uid}/patterns/{dateId}` via the
+ * `patterns_firestore_datasource`. Rule lives in `firestore.rules` per
+ * ADR-0011 §5 / HB-006 §"Sub-track D".
+ *
+ * The schema's load-bearing invariant is the field allowlist: NO mood
+ * text, NO entry id, NO mood category, NO intensity. Only the 5
+ * algorithm outputs + the resolved tier + dateId + schemaV.
+ */
+describe("Sprint-4 patterns/{dateId} rule (ADR-0011)", () => {
+  const TODAY = "2026-05-09";
+
+  function basePattern() {
+    return {
+      dateId: TODAY,
+      mannKendallZ: -2.21,
+      slidingNegCount: 4,
+      consecutiveHighIntensity: 2,
+      zScoreToday: -1.8,
+      cusumC: 0.5,
+      triggeredTier: "two",
+      schemaV: 1,
+    };
+  }
+
+  it("owner can create a valid PatternResult doc", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), basePattern()),
+    );
+  });
+
+  it("non-owner cannot read another user's patterns", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${USER_A}/patterns/${TODAY}`),
+        basePattern(),
+      );
+    });
+    const userB = testEnv.authenticatedContext(USER_B).firestore();
+    await assertFails(
+      getDoc(doc(userB, `users/${USER_A}/patterns/${TODAY}`)),
+    );
+  });
+
+  it("create with bad doc id (not yyyy-MM-dd) is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/patterns/2026-5-9`), {
+        ...basePattern(),
+        dateId: "2026-5-9",
+      }),
+    );
+  });
+
+  it("create with mismatched dateId field is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        dateId: "2026-05-08",
+      }),
+    );
+  });
+
+  it("create with off-allowlist key (e.g. text) is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        text: "leaked mood text",
+      }),
+    );
+  });
+
+  it("create with off-allowlist key (e.g. moodCode) is denied — PII guard", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        moodCode: "sad",
+      }),
+    );
+  });
+
+  it("create with triggeredTier outside allowlist is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        triggeredTier: "four",
+      }),
+    );
+  });
+
+  it("create with slidingNegCount > 7 is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        slidingNegCount: 8,
+      }),
+    );
+  });
+
+  it("create with negative cusumC is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        cusumC: -0.1,
+      }),
+    );
+  });
+
+  it("create with null triggeredTier is allowed (no algorithm fired)", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        triggeredTier: null,
+        mannKendallZ: null,
+        zScoreToday: null,
+      }),
+    );
+  });
+
+  it("update with same-day re-evaluation is allowed (set merge: false overwrite)", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), basePattern()),
+    );
+    await assertSucceeds(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        slidingNegCount: 5,
+        triggeredTier: "two",
+      }),
+    );
+  });
+
+  it("delete is denied (write-once-per-day-then-overwrite contract)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${USER_A}/patterns/${TODAY}`),
+        basePattern(),
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      deleteDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`)),
+    );
+  });
+});
+
+/**
+ * Sprint-4 S5-stub denials. Both `interventions/{id}` and
+ * `cooldowns/{type}` are reserved for the new tier-aware dispatcher
+ * landing in S5 (ADR-0011 §5). Reads allowed so S5's read-side wiring
+ * lands without rule churn; writes denied in v1.0 because the
+ * dispatcher is gated off via Remote Config (`interventionDispatchEnabled`).
+ */
+describe("Sprint-4 S5-stub collections (ADR-0011)", () => {
+  it("interventions/{id} write is denied for owner in v1.0", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/interventions/abc`), {
+        tier: "one",
+        dispatchedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("interventions/{id} read is allowed for owner", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    // Doc may or may not exist — assertSucceeds covers both.
+    await assertSucceeds(
+      getDoc(doc(userA, `users/${USER_A}/interventions/abc`)),
+    );
+  });
+
+  it("cooldowns/{type} write is denied for owner in v1.0", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/cooldowns/tier_one`), {
+        lastDispatchedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("cooldowns/{type} read is allowed for owner", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      getDoc(doc(userA, `users/${USER_A}/cooldowns/tier_one`)),
+    );
+  });
+});

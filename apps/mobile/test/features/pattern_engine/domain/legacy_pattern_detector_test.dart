@@ -1,5 +1,15 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+//
+// detectPattern is intentionally retained as a regression baseline for the
+// legacy 2-rule trigger path. ADR-0011 supersedes it with
+// RunPatternEngineUseCase; the deprecation annotation is correct, and these
+// tests are the canary that protects the legacy code path until S5 flips the
+// dispatcher to the new engine.
+@Tags(['legacy'])
+library;
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:moodbloom/features/garden/domain/pattern_detector.dart';
+import 'package:moodbloom/features/pattern_engine/domain/legacy_pattern_detector.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_entry.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
 
