@@ -4,7 +4,8 @@
 **Actually executed:** 2026-05-07 (Sprint 5 Day 2 PM, opportunistic — paired with the Android matrix Run 2). Keeping the filename for cross-reference with the audit report + S5 plan.
 
 **Browser:** Chrome 147.0.7727.138 (already installed on the dev workstation).
-**Branch tested:** `feat/7.3b-pattern-intervention` (merges `feat/7.3a-integ-tests` + `feat/5.5b-send-cheer-up-push` per the Android matrix doc).
+**Branch tested (Run 1):** `feat/7.3b-pattern-intervention` (merges `feat/7.3a-integ-tests` + `feat/5.5b-send-cheer-up-push` per the Android matrix doc).
+**Branch tested (Run 2):** `origin/main` at `47b15b59` (post-#38 merge) — the Sprint-3-era conditional-Drift fix turned out to be already integrated.
 **Driver:** `apps/mobile/test_driver/integration_test.dart` (NEW — canonical Flutter `integration_test` driver entrypoint added in this run; `flutter drive --driver=test_driver/integration_test.dart --target=integration_test/<flow>.dart -d chrome`).
 
 ## Run 1 — 2026-05-07 (after the Android matrix attempt)
@@ -65,7 +66,7 @@ The "Chrome web" half is currently **infeasible to verify** without merging `cho
 
 Recommendation: **Path 1**. The fix exists, the work is done, the merge is mechanical. The audit miss should not propagate into v1.5 by inaction.
 
-### Cherry-pick attempt — too-deep-for-autonomous-resolution
+### Cherry-pick attempt — too-deep-for-autonomous-resolution (HISTORICAL, superseded by Run 2)
 
 **2026-05-07 follow-up.** Attempted `git cherry-pick 2ac4d0f1 e4000869` from `chore/web-build-conditional-drift` onto `main`. **8 file conflicts** because the S3-era branch predates S4's wilting/rain-cloud refactor:
 
@@ -89,7 +90,30 @@ The `DU` on `garden_flower.dart` (S4 deleted that widget when wilting plants + r
 
 Estimated: 30 min if done by someone who knows the current Drift wiring (i.e. Kraiwich). Out-of-scope autonomous because incorrect resolution risks the offline-first invariant (Drift carries the local mood store + sync queue + intervention anchors mirror).
 
-**Filing as a v1.6 carry-over** in `docs/retros/sprint-5-retro.md` "What hurt" + the audit report risk register. The kickoff acceptance bar's "AND Chrome web" half is **not verified for v1.5** — the team should weigh whether to delay tag for the fix or ship v1.5 Android-only with a known web-build gap.
+### Run 2 — 2026-05-08 — `flutter build web` succeeds
+
+**Status:** ✅ **Build succeeds on `origin/main` post-#38 merge.**
+
+When I went to re-create the conditional-Drift fix, I discovered the scaffolding was **already on `main`**. Some prior PR (likely a carry-over wrapped into one of the merged PRs) had already integrated:
+
+```
+apps/mobile/lib/features/mood/data/local/mood_database.dart
+  → conditional import: 'mood_database_web.dart' if (dart.library.io) 'mood_database_native.dart'
+
+apps/mobile/lib/features/mood/data/local/mood_database_native.dart  (new)
+  → NativeDatabase via dart:ffi + path_provider
+
+apps/mobile/lib/features/mood/data/local/mood_database_web.dart  (new)
+  → throwing-stub LazyDatabase; the offline-first guard never invokes it on web
+```
+
+`flutter build web --no-tree-shake-icons` completes in **~245 s** with output `√ Built build\web` and only the expected wasm-dry-run warnings.
+
+**This closes v1.6 backlog item B1 ahead of schedule.** The kickoff acceptance bar's "AND Chrome web" half is now **verifiable for v1.5** — though Run 2 only confirms the build compiles. The integration tests themselves (`flutter drive -d chrome` for the four flows) remain a separate exercise, blocked by the same harness/host-vs-device divergence that v1.6 backlog B2 captures (real platform channels diverge from the host-test scaffolding).
+
+### Run 3 — pending
+
+Re-run `flutter drive --driver=test_driver/integration_test.dart --target=integration_test/<flow>.dart -d chrome` for each of the four flows once B2 (harness real-device hardening) lands. v1.6 work.
 
 ## Run 2 — pending
 

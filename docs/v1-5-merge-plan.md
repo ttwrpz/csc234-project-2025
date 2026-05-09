@@ -85,7 +85,7 @@ Before `git tag -a v1.5 ... && git push origin v1.5`:
 4. [ ] `flutter test --tags=golden` green; ≥ 9 golden test files (closes S4 acceptance bar)
 5. [ ] `pnpm test` for `functions/` ≥ 45 cases (after #36 lands)
 6. [ ] `firebase emulators:exec` for `firebase/test/` ≥ 41 cases
-7. [ ] **Optional but recommended:** re-create the conditional-Drift fix for Chrome web (v1.6 backlog B1) before tag — the kickoff acceptance bar demands "AND Chrome web". Without B1, v1.5 ships Android-only with a documented gap.
+7. [x] ✅ **Closed (2026-05-08) — discovery, not re-creation.** Conditional-Drift scaffolding was already integrated upstream via a Wave-1 carry-over; `flutter build web --no-tree-shake-icons` succeeds on `origin/main` at `47b15b59`. v1.6 backlog B1 marked closed; the kickoff acceptance bar's "AND Chrome web" half is now verifiable at the build level (flow-level `flutter drive -d chrome` is still v1.6 work, blocked by B2 — harness real-device hardening). See PR #47 + `docs/qa/web-matrix-20260518.md` Run 2.
 8. [ ] `tool/package_evidence.sh --dry-run --no-ci` exits 0
 9. [ ] Demo run-through (kickoff §Day 5 script) on the connected Samsung device
 10. [ ] `docs/retros/sprint-5-retro.md` + audit report runtime numbers filled in
