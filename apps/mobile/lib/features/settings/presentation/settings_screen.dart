@@ -7,6 +7,7 @@ import '../../auth/data/providers.dart';
 import '../../auth/presentation/widgets/biometric_settings_tile.dart';
 import '../../mood/data/sync/connectivity_provider.dart';
 import '../../notifications/presentation/widgets/notifications_toggle_tile.dart';
+import '../domain/entities/theme_mode_preference.dart';
 import 'controllers/theme_mode_controller.dart';
 
 /// Settings screen — restyled in Phase C and re-grouped in this round so
@@ -19,7 +20,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserStreamProvider).value;
-    final themeMode = ref.watch(themeModeControllerProvider);
+    final themePreference = ref.watch(themeModeControllerProvider);
     final mb = Theme.of(context).extension<MbColors>()!;
 
     return Scaffold(
@@ -87,7 +88,7 @@ class SettingsScreen extends ConsumerWidget {
             // ── Preferences zone ──
             const MbSectionLabel('PREFERENCES'),
             const SizedBox(height: 6),
-            _PreferencesCluster(themeMode: themeMode),
+            _PreferencesCluster(preference: themePreference),
 
             const SizedBox(height: 18),
 
@@ -217,9 +218,9 @@ class _Avatar extends StatelessWidget {
 }
 
 class _PreferencesCluster extends ConsumerWidget {
-  const _PreferencesCluster({required this.themeMode});
+  const _PreferencesCluster({required this.preference});
 
-  final ThemeMode themeMode;
+  final ThemeModePreference preference;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -228,24 +229,37 @@ class _PreferencesCluster extends ConsumerWidget {
       padding: EdgeInsets.zero,
       child: Column(
         children: [
+          // Theme group header — replaces the previous ListTile +
+          // dropdown with a 4-option radio group. The fourth option,
+          // `followDeviceTime`, lets the app flip between light and
+          // dark on local-clock cutoff (07:00 / 19:00) without any
+          // device-level theme support.
           ListTile(
             leading: const Icon(Icons.brightness_6_outlined),
             title: const Text('Theme'),
-            subtitle: Text(_themeModeLabel(themeMode)),
-            trailing: DropdownButton<ThemeMode>(
-              value: themeMode,
-              underline: const SizedBox.shrink(),
-              onChanged: (mode) {
-                if (mode == null) return;
-                ref.read(themeModeControllerProvider.notifier).setMode(mode);
-              },
-              items: const [
-                DropdownMenuItem(
-                  value: ThemeMode.system,
-                  child: Text('System'),
-                ),
-                DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
-                DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
+            subtitle: Text(_preferenceSummary(preference)),
+          ),
+          // Order is intentional, not enum-declaration order: device
+          // theme + device time first (auto-pickers), then the two
+          // explicit always-on choices. Matches HB-005 §Track 4.4/7.2.
+          //
+          // RadioGroup is the post-Flutter-3.32 API for grouping
+          // radios — child RadioListTiles read `groupValue`/`onChanged`
+          // from this ancestor instead of taking them on each tile.
+          RadioGroup<ThemeModePreference>(
+            groupValue: preference,
+            onChanged: (chosen) {
+              if (chosen == null) return;
+              ref
+                  .read(themeModeControllerProvider.notifier)
+                  .setPreference(chosen);
+            },
+            child: const Column(
+              children: [
+                _ThemeRadioTile(option: ThemeModePreference.system),
+                _ThemeRadioTile(option: ThemeModePreference.followDeviceTime),
+                _ThemeRadioTile(option: ThemeModePreference.light),
+                _ThemeRadioTile(option: ThemeModePreference.dark),
               ],
             ),
           ),
@@ -256,10 +270,59 @@ class _PreferencesCluster extends ConsumerWidget {
     );
   }
 
-  static String _themeModeLabel(ThemeMode mode) => switch (mode) {
-    ThemeMode.system => 'Match the system',
-    ThemeMode.light => 'Always light',
-    ThemeMode.dark => 'Always dark',
+  /// One-line summary shown under the "Theme" header so the user
+  /// sees the current selection without scanning four radios.
+  static String _preferenceSummary(ThemeModePreference preference) =>
+      switch (preference) {
+        ThemeModePreference.system => 'Match the device theme',
+        ThemeModePreference.light => 'Always light',
+        ThemeModePreference.dark => 'Always dark',
+        ThemeModePreference.followDeviceTime =>
+          'Light by day, dark by night (local time)',
+      };
+}
+
+/// Single radio tile in the theme picker. Pulled into its own widget
+/// so the Semantics label stays in one place and the parent
+/// `_PreferencesCluster` reads as a flat list of options.
+///
+/// Uses the post-3.32 RadioListTile API — `groupValue` / `onChanged`
+/// come from a [RadioGroup] ancestor in `_PreferencesCluster`, not
+/// from per-tile parameters.
+class _ThemeRadioTile extends StatelessWidget {
+  const _ThemeRadioTile({required this.option});
+
+  final ThemeModePreference option;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _label(option);
+    // Read the selection from the RadioGroup ancestor so the
+    // Semantics description stays accurate.
+    final registry = RadioGroup.maybeOf<ThemeModePreference>(context);
+    final selected = option == registry?.groupValue;
+    return Semantics(
+      // Compose a screen-reader-friendly description so users on
+      // TalkBack / VoiceOver hear "Theme: Follow device time,
+      // selected" instead of just the radio's default semantics.
+      label: 'Theme: $label, ${selected ? 'selected' : 'not selected'}',
+      button: true,
+      selected: selected,
+      excludeSemantics: true,
+      child: RadioListTile<ThemeModePreference>(
+        value: option,
+        title: Text(label),
+        controlAffinity: ListTileControlAffinity.trailing,
+        dense: true,
+      ),
+    );
+  }
+
+  static String _label(ThemeModePreference option) => switch (option) {
+    ThemeModePreference.system => 'Follow device theme',
+    ThemeModePreference.followDeviceTime => 'Follow device time',
+    ThemeModePreference.light => 'Always light',
+    ThemeModePreference.dark => 'Always dark',
   };
 }
 
