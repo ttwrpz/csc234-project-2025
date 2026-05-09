@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/data/providers.dart';
+import '../../harvest/presentation/controllers/weekly_summary_controller.dart';
+import '../../harvest/presentation/weekly_summary_screen.dart';
 import '../../history/presentation/calendar_view.dart' show DayEntriesSheet;
 import '../../history/presentation/widgets/mood_entry_tile.dart';
 import '../../mood/data/providers.dart';
@@ -32,6 +34,12 @@ class GardenScreen extends ConsumerStatefulWidget {
 }
 
 class _GardenScreenState extends ConsumerState<GardenScreen> {
+  /// One-shot guard so we only push the [WeeklySummaryScreen] once per
+  /// pending-harvest signal. Reset after the user acknowledges the
+  /// archive (a fresh harvest a week later flips the provider true
+  /// again, but in a new build pass after the route returns).
+  bool _harvestRouteScheduled = false;
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(gardenStateStreamProvider);
@@ -45,6 +53,39 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
 
     final mb = Theme.of(context).extension<MbColors>()!;
     final theme = Theme.of(context);
+
+    // HB-005 Track 6.1: when the user has crossed a 7-day boundary on
+    // an unarchived week AND we have a precomputed summary to show,
+    // route them to the WeeklySummaryScreen via a post-frame callback
+    // so the route stack stays clean. We do not edit `app/router.dart`
+    // (architect-owned) — a `MaterialPageRoute` push is acceptable for
+    // v1.0 demo scope. The flag prevents double-pushing across
+    // identical rebuilds.
+    final pendingSummary = ref.watch(pendingWeeklySummaryProvider);
+    if (pendingSummary != null && !_harvestRouteScheduled) {
+      _harvestRouteScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        // Reset the StateNotifier scoped state before each new push so
+        // a previous week's success/error from this app session does
+        // not carry into a fresh pending harvest.
+        ref.read(weeklySummaryControllerProvider.notifier).resetError();
+        Navigator.of(context)
+            .push(
+              MaterialPageRoute<void>(
+                builder: (_) =>
+                    WeeklySummaryScreen(summary: pendingSummary.summary),
+              ),
+            )
+            .then((_) {
+              if (mounted) {
+                setState(() {
+                  _harvestRouteScheduled = false;
+                });
+              }
+            });
+      });
+    }
 
     // Whenever the detector flips to `triggered: true`, dispatch
     // `onShown` exactly once per app launch. The controller itself
