@@ -13,6 +13,7 @@ import '../../domain/entities/mood_entry.dart';
 import '../../domain/entities/mood_media.dart';
 import '../../domain/entities/mood_type.dart';
 import '../../domain/mood_failure.dart';
+import 'ai_suggestion_controller.dart';
 import 'log_mood_submission_controller.dart';
 
 part 'log_mood_controller.g.dart';
@@ -34,7 +35,18 @@ class LogMoodController extends _$LogMoodController {
   /// session does not leak into the next one (the controller is a
   /// non-autoDispose `Notifier`, so without an explicit reset its state
   /// would persist across tab swaps).
-  void reset() => state = MoodDraft.empty();
+  ///
+  /// Also invalidates the (autoDispose) AI suggestion controller so the
+  /// suggestion pill from the prior entry does not linger when the
+  /// draft is cleared. The TextField only fires `onChanged` on user
+  /// input; programmatic resets via `state = MoodDraft.empty()` do
+  /// NOT propagate to `aiSuggestionController.onTextChanged`, so the
+  /// pill would otherwise remain on tab swap / post-save until the
+  /// user types into the empty field. Fix: clear it explicitly.
+  void reset() {
+    state = MoodDraft.empty();
+    ref.invalidate(aiSuggestionControllerProvider);
+  }
 
   /// Hydrate the draft from an existing entry — used by the edit flow
   /// when the screen is opened with `?edit=<id>`. mediaRefs are
@@ -210,6 +222,9 @@ class LogMoodController extends _$LogMoodController {
   MoodEntry _onSaveOk(LogMoodSubmissionController submission, MoodEntry entry) {
     submission.succeed();
     state = MoodDraft.empty();
+    // Drop the AI suggestion alongside the draft — see [reset] for the
+    // rationale. Post-save flow now leaves both surfaces empty.
+    ref.invalidate(aiSuggestionControllerProvider);
     // Best-effort post-save Pattern Engine run. Failures are logged
     // (no PII) and swallowed so they cannot block the user's save
     // success surfacing — see HB-006 sub-track B.

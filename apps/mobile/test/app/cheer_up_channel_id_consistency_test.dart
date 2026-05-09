@@ -30,7 +30,7 @@ void main() {
   // Locate the repo root by walking upward from the test file's
   // working directory until we find `apps/mobile/pubspec.yaml`. This
   // makes the test resilient to whatever cwd `flutter test` chooses.
-  Directory _findRepoRoot() {
+  Directory findRepoRoot() {
     var dir = Directory.current;
     for (var i = 0; i < 8; i += 1) {
       final probe = File('${dir.path}/apps/mobile/pubspec.yaml');
@@ -44,7 +44,7 @@ void main() {
     return Directory.current.parent.parent;
   }
 
-  final repoRoot = _findRepoRoot();
+  final repoRoot = findRepoRoot();
 
   group('Channel id `cheer_up` byte-identical across three sites', () {
     test('1. AndroidManifest.xml declares the channel id meta-data', () {

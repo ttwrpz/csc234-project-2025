@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/data/providers.dart';
 import '../../auth/presentation/widgets/biometric_settings_tile.dart';
+import '../../harvest/presentation/controllers/weekly_summary_controller.dart';
 import '../../mood/data/sync/connectivity_provider.dart';
 import '../../notifications/presentation/widgets/notifications_toggle_tile.dart';
 import '../../tokens/presentation/controllers/token_visibility_controller.dart';
@@ -352,7 +353,7 @@ class _AboutCluster extends StatelessWidget {
   const _AboutCluster();
 
   /// Hand-maintained until package_info_plus lands. Bumped per release.
-  static const String _appVersion = 'Beta 0.5';
+  static const String _appVersion = 'Release 1.0';
 
   @override
   Widget build(BuildContext context) {
@@ -405,8 +406,51 @@ class _DebugCluster extends ConsumerWidget {
               );
             },
           ),
+          const Divider(height: 1),
+          // Force-harvest tile (HB-005 Track 6.1 demo affordance).
+          // Bypasses the 7-day boundary check so QA + demo can run the
+          // archive flow without waiting for a Monday rollover. Calls
+          // the same `acknowledge()` path as the production
+          // WeeklySummaryScreen Continue button — the only difference
+          // is the entry point (a debug ListTile vs the
+          // pendingWeeklySummaryProvider-driven push).
+          ListTile(
+            leading: const Icon(Icons.eco_outlined),
+            title: const Text('Force harvest now'),
+            subtitle: const Text(
+              'Archive the current active week immediately, regardless of '
+              'the 7-day boundary. Debug only.',
+            ),
+            onTap: () => _forceHarvest(context, ref),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _forceHarvest(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final controller = ref.read(weeklySummaryControllerProvider.notifier);
+    final garden = await controller.acknowledge();
+    if (!context.mounted) return;
+    if (garden != null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Harvested ${garden.weekId} — '
+            '${garden.entries.length} entries archived.',
+          ),
+        ),
+      );
+      return;
+    }
+    // Failure path: surface the failure's `message` (HarvestFailure
+    // extends Failure, which carries a human-readable description).
+    final state = ref.read(weeklySummaryControllerProvider);
+    final reason = state is HarvestArchiveError
+        ? state.failure.message
+        : 'Nothing to harvest.';
+    messenger.showSnackBar(SnackBar(content: Text(reason)));
+    controller.resetError();
   }
 }

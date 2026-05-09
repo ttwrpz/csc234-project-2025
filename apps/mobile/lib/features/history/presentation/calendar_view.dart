@@ -197,8 +197,65 @@ class _CalendarCard extends ConsumerWidget {
 class DayEntriesSheet extends StatelessWidget {
   const DayEntriesSheet({super.key, required this.dayKey});
 
+  /// Width threshold above which the day-entries surface renders as a
+  /// centered dialog rather than a bottom sheet. Below this the
+  /// bottom-sheet ergonomics (thumb-reach, drag-to-dismiss) win; above
+  /// it a dialog is the natural desktop / web affordance — bottom
+  /// sheets feel pinned-to-the-bottom on a 1440px window.
+  ///
+  /// 720dp was chosen to match the wide-layout breakpoint already in
+  /// use elsewhere in this file (`wide = constraints.maxWidth >= 720`).
+  static const double _dialogBreakpoint = 720;
+
   static Future<void> show(BuildContext context, DateTime dayKey) {
     final mb = Theme.of(context).extension<MbColors>()!;
+    final width = MediaQuery.of(context).size.width;
+    if (width >= _dialogBreakpoint) {
+      // Desktop / web wide layout — render as a centered dialog so the
+      // mouse-driven dismiss + close button feel native. The same
+      // [DayEntriesPanel] body backs both surfaces; only the chrome
+      // changes.
+      return showDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        builder: (dialogContext) => Dialog(
+          backgroundColor: mb.bg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 32,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: IconButton(
+                      icon: const Icon(Icons.close),
+                      tooltip: 'Close',
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                    ),
+                  ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: DayEntriesPanel(dayKey: dayKey, popOnTap: true),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    // Narrow layout — keep the bottom sheet (phone-class screen).
     return showModalBottomSheet<void>(
       context: context,
       showDragHandle: false,
