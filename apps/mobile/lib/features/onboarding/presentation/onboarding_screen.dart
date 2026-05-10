@@ -1,30 +1,44 @@
+import 'dart:math' as math;
+
 import 'package:design_system/design_system.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../disclaimer/presentation/widgets/disclaimer_panel.dart';
+import '../../notifications/presentation/controllers/notifications_controller.dart';
 import 'widgets/onboarding_slide.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _controller = PageController();
   int _index = 0;
 
-  /// Onboarding deck — 4 slides. The 3 art-driven slides keep their
-  /// original copy; the new "A note about MoodBloom" disclaimer slide
-  /// (S5 feature 7.4 — pulled forward) sits second-to-last so the
-  /// existing "Watch patterns emerge" + "Get started" CTA remains the
-  /// user's last touch.
-  static const _slideKinds = <_SlideKind>[
+  /// Onboarding deck — 4 or 5 slides. On Web we insert an extra
+  /// "Stay connected" slide (just before the disclaimer) that requests
+  /// the browser notification permission inline, because the browser
+  /// only emits the permission prompt from a user gesture and the
+  /// in-Settings toggle is too easy to miss for a first-touch user.
+  /// Native (Android / iOS) ships without the extra slide — the OS
+  /// permission flow is well-trodden enough that explaining it in
+  /// onboarding adds friction without value.
+  ///
+  /// The 3 art-driven slides keep their original copy; the
+  /// disclaimer slide (S5 feature 7.4 — pulled forward) sits before
+  /// the "Watch patterns emerge" + "Get started" CTA so that remains
+  /// the user's last touch.
+  late final List<_SlideKind> _slideKinds = <_SlideKind>[
     _SlideKind.gardenScene,
     _SlideKind.logEntry,
+    if (kIsWeb) _SlideKind.notificationsWeb,
     _SlideKind.disclaimer,
     _SlideKind.patterns,
   ];
@@ -171,6 +185,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         );
       case _SlideKind.disclaimer:
         return const _DisclaimerSlide();
+      case _SlideKind.notificationsWeb:
+        return const _NotificationsSlide();
     }
   }
 
@@ -184,10 +200,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 /// Carousel slide kinds. Names match the painter cases for the
-/// art-driven slides; `disclaimer` has no painter case (it renders a
-/// `DisclaimerPanel` instead) — the painter switch's default branch
-/// handles that.
-enum _SlideKind { gardenScene, logEntry, patterns, disclaimer }
+/// art-driven slides; `disclaimer` and `notificationsWeb` have no
+/// painter case (they render their own widgets) — the painter
+/// switch's default branch handles that. `notificationsWeb` is only
+/// inserted on Web (see `_slideKinds` initializer).
+enum _SlideKind {
+  gardenScene,
+  logEntry,
+  patterns,
+  disclaimer,
+  notificationsWeb,
+}
 
 /// Custom slide for the bipolar / medical disclaimer (S5 feature 7.4 —
 /// pulled forward). Mirrors `OnboardingSlide`'s typography (Fraunces 26
@@ -256,6 +279,224 @@ class _DisclaimerSlide extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Web-only onboarding slide that explains why MoodBloom needs
+/// browser notification permission and offers an inline "Allow
+/// notifications" button. The button calls
+/// `notificationsControllerProvider.setEnabled(true)`, which in turn
+/// triggers `FcmDatasource.requestPermission()` — that's the only
+/// path on Web that opens the browser's permission prompt (browsers
+/// require a user gesture). Skipping is fine; the cheer-up
+/// reminders Settings tile is still discoverable later.
+///
+/// On Android / iOS this slide is skipped entirely (see
+/// `_slideKinds` initializer's `if (kIsWeb)` guard).
+class _NotificationsSlide extends ConsumerStatefulWidget {
+  const _NotificationsSlide();
+
+  @override
+  ConsumerState<_NotificationsSlide> createState() =>
+      _NotificationsSlideState();
+}
+
+class _NotificationsSlideState extends ConsumerState<_NotificationsSlide> {
+  bool _requesting = false;
+  bool _granted = false;
+  String? _failureMessage;
+
+  Future<void> _request() async {
+    setState(() {
+      _requesting = true;
+      _failureMessage = null;
+    });
+    final controller = ref.read(notificationsControllerProvider.notifier);
+    await controller.setEnabled(true);
+    if (!mounted) return;
+    final state = ref.read(notificationsControllerProvider);
+    setState(() {
+      _requesting = false;
+      _granted = state.enabled;
+      _failureMessage = state.lastError?.message;
+    });
+    if (state.lastError != null) {
+      // Acknowledge the error so the surrounding listener (in the
+      // settings toggle) doesn't re-fire the snackbar later — we've
+      // already surfaced it inline here.
+      ref.read(notificationsControllerProvider.notifier).acknowledgeError();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Semantics(
+      label: 'Stay connected — notification permission request',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Bell-with-leaf inline art — same 220×170 footprint as
+            // the other slides so the carousel feels consistent.
+            SizedBox(
+              width: 220,
+              height: 170,
+              child: CustomPaint(painter: _NotificationsArtPainter()),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Stay connected',
+              style: MbFonts.fraunces(
+                fontSize: 26,
+                fontWeight: FontWeight.w600,
+                color: mb.text,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: Text(
+                _granted
+                    ? "Thanks — we'll only nudge if your week looks heavy."
+                    : 'MoodBloom needs notification permission so cheer-up '
+                          "reminders can find you when it's a heavy week. "
+                          'You can turn this off later in Settings.',
+                style: MbFonts.nunito(
+                  fontSize: 15,
+                  height: 1.55,
+                  color: mb.textDim,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 18),
+            if (_granted)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Permission granted',
+                    style: MbFonts.nunito(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              )
+            else
+              MbPrimaryButton(
+                label: _requesting ? 'Requesting…' : 'Allow notifications',
+                onPressed: _requesting ? null : _request,
+                fullWidth: false,
+              ),
+            if (_failureMessage != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                _failureMessage!,
+                style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Inline brand art for the notifications slide. Bell + leaf hybrid
+/// in the warm-cream sky palette — bell shape signals notifications,
+/// leaf softens it back into the garden vocabulary.
+class _NotificationsArtPainter extends CustomPainter {
+  static const _skyTop = Color(0xFFFFE4D1);
+  static const _skyBot = Color(0xFFE8F3ED);
+  static const _amber = Color(0xFFE8A23B);
+  static const _primary = Color(0xFF2E7D5B);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width / 200, size.height / 160);
+
+    // Backdrop.
+    final bgRect = RRect.fromRectAndRadius(
+      const Rect.fromLTWH(0, 0, 200, 160),
+      const Radius.circular(18),
+    );
+    final bgPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [_skyTop, _skyBot],
+      ).createShader(const Rect.fromLTWH(0, 0, 200, 160));
+    canvas.drawRRect(bgRect, bgPaint);
+
+    // Halo behind the bell.
+    canvas.drawCircle(
+      const Offset(100, 80),
+      52,
+      Paint()..color = Colors.white.withAlpha(0x80),
+    );
+
+    // Bell body — top arc + side flare + clapper.
+    final bellPaint = Paint()
+      ..color = _amber
+      ..style = PaintingStyle.fill;
+    final bell = Path()
+      ..moveTo(70, 100)
+      ..cubicTo(70, 60, 130, 60, 130, 100)
+      ..lineTo(140, 110)
+      ..lineTo(60, 110)
+      ..close();
+    canvas.drawPath(bell, bellPaint);
+    // Clapper.
+    canvas.drawCircle(const Offset(100, 118), 6, Paint()..color = _amber);
+    // Bell handle dot.
+    canvas.drawCircle(const Offset(100, 56), 5, Paint()..color = _primary);
+
+    // Two ringing arcs to the sides.
+    final ringPaint = Paint()
+      ..color = _primary.withAlpha(0x80)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(
+      Rect.fromCenter(center: const Offset(100, 90), width: 110, height: 90),
+      -1.0,
+      0.6,
+      false,
+      ringPaint,
+    );
+    canvas.drawArc(
+      Rect.fromCenter(center: const Offset(100, 90), width: 110, height: 90),
+      math.pi - 0.4,
+      0.6,
+      false,
+      ringPaint,
+    );
+
+    // Leaf accent at the base — keeps the garden vocabulary.
+    final leafPaint = Paint()..color = _primary.withAlpha(0xCC);
+    canvas.save();
+    canvas.translate(86, 130);
+    canvas.rotate(-0.25);
+    canvas.drawOval(const Rect.fromLTWH(0, 0, 28, 12), leafPaint);
+    canvas.restore();
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _NotificationsArtPainter oldDelegate) => false;
 }
 
 /// Inline brand art for the disclaimer slide. Soft mint backdrop with
@@ -432,8 +673,9 @@ class _OnboardingArtPainter extends CustomPainter {
       case _SlideKind.patterns:
         _paintPatterns(canvas);
       case _SlideKind.disclaimer:
-        // No painter — `_DisclaimerSlide` renders its own content and
-        // never instantiates this painter. The case is here so the
+      case _SlideKind.notificationsWeb:
+        // No painter — these slides render their own content and
+        // never instantiate this painter. The cases are here so the
         // exhaustive switch passes the analyser.
         break;
     }

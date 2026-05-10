@@ -3,11 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:drift/drift.dart' show TableInfo;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../app/providers.dart';
 import '../../auth/data/providers.dart';
+import '../../mood/data/providers.dart' show firebaseFunctionsProvider;
 import '../../auth/presentation/widgets/biometric_settings_tile.dart';
 import '../../disclaimer/presentation/widgets/disclaimer_panel.dart';
 import '../../harvest/presentation/controllers/weekly_summary_controller.dart';
@@ -471,6 +473,36 @@ class _DebugCluster extends ConsumerWidget {
             ),
             onTap: () => _clearLocalCache(context, ref),
           ),
+          const Divider(height: 1),
+          // Wipe all CLOUD data for the signed-in user via the
+          // `wipeUserData` Cloud Function (admin SDK). Most subcollection
+          // rules deny client deletes (cheerUpEvents append-only,
+          // patterns delete-denied, weeklyGardens write-once, etc), so
+          // a full reset has to go through admin SDK. Auth account
+          // (displayName / email / photoUrl / createdAt) survives —
+          // the user stays signed in and can re-onboard with a fresh
+          // mood history. Local Drift + SharedPrefs are also wiped so
+          // the next launch syncs from the (now-empty) cloud rather
+          // than re-uploading the offline mirror.
+          ListTile(
+            leading: const Icon(
+              Icons.delete_forever_outlined,
+              color: MoodBloomColors.coral,
+            ),
+            title: const Text(
+              'Wipe all account data',
+              style: TextStyle(
+                color: MoodBloomColors.coral,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: const Text(
+              'Wipes EVERY mood / harvest / pattern / event under '
+              'users/{uid}/ on Firestore plus the local cache. Account '
+              'profile + sign-in survive. Debug only.',
+            ),
+            onTap: () => _wipeAccountData(context, ref),
+          ),
         ],
       ),
     );
@@ -554,6 +586,79 @@ class _DebugCluster extends ConsumerWidget {
           'Local cache cleared. Restart the app to see a fresh state.',
         ),
         duration: Duration(seconds: 6),
+      ),
+    );
+  }
+
+  Future<void> _wipeAccountData(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Wipe all account data?'),
+        content: const Text(
+          'Deletes EVERY mood entry, harvest archive, pattern result, '
+          'cheer-up event, intervention state, settings, and token field '
+          'under your account on Firestore. The auth account itself '
+          '(name, email, sign-in) survives so you can re-onboard. '
+          '\n\nThis cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: MoodBloomColors.coral,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Wipe everything'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    // 1. Server-side wipe via the `wipeUserData` callable. Admin SDK
+    //    bypasses the rule denials on cheerUpEvents / patterns /
+    //    weeklyGardens / interventionState / etc.
+    final functions = ref.read(firebaseFunctionsProvider);
+    try {
+      await functions.httpsCallable('wipeUserData').call();
+    } on FirebaseFunctionsException catch (e) {
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Wipe failed: ${e.code} — ${e.message ?? "unknown"}'),
+        ),
+      );
+      return;
+    } catch (e) {
+      if (!context.mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('Wipe failed: $e')));
+      return;
+    }
+
+    // 2. Local cache wipe — same path as `_clearLocalCache` so the
+    //    next launch syncs from the (now-empty) Firestore rather than
+    //    re-uploading the offline mirror.
+    final db = ref.read(databaseProvider);
+    for (final table in db.allTables) {
+      await db.delete(table as TableInfo).go();
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    if (!context.mounted) return;
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Account data wiped. Restart the app to re-onboard with a '
+          'fresh mood history (sign-in preserved).',
+        ),
+        duration: Duration(seconds: 8),
       ),
     );
   }

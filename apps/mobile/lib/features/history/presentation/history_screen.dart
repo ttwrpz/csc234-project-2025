@@ -3,14 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../harvest/presentation/weekly_harvests_tab.dart';
 import '../../mood/data/providers.dart';
 import '../../mood/domain/entities/mood_entry.dart';
 import '../../mood/domain/entities/mood_type.dart';
 import 'calendar_view.dart';
 import 'widgets/mood_entry_tile.dart';
 
-/// Two views the user can flip between with a pill-segmented toggle.
-enum HistoryView { list, calendar }
+/// Three views the user can flip between with a pill-segmented toggle:
+/// the entry list (default), the calendar, and the archived weekly
+/// harvests. The harvests view was wired into History on 2026-05-10
+/// (v1.0 polish — user feedback "where does the garden history
+/// render? It should be render on history page somehow"). Per
+/// HB-005 Track 6.1 the History tab is the canonical surface for the
+/// archive, but the WeeklyHarvestsTab widget shipped without a
+/// host — this fixes the orphan.
+enum HistoryView { list, calendar, harvests }
 
 /// Four filters available on the list view. Order matches the prototype's
 /// horizontal-scroll chip row. `okay` rolls up under Negative since the
@@ -83,9 +91,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
               const SizedBox(height: MoodBloomSpacing.md),
               // Filter pills only act on the list. Hiding them on the
-              // calendar tab removes a noisy non-functional control and
-              // lets the calendar grid use the full vertical space below
-              // the header.
+              // calendar / harvests tabs removes a noisy non-functional
+              // control and lets each grid use the full vertical space
+              // below the header.
               if (_view == HistoryView.list) ...[
                 _FilterChipRow(
                   value: _filter,
@@ -98,15 +106,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   duration: const Duration(milliseconds: 220),
                   switchInCurve: Curves.easeOut,
                   switchOutCurve: Curves.easeIn,
-                  child: _view == HistoryView.list
-                      ? _HistoryListView(
-                          key: const ValueKey('list'),
-                          filter: _filter,
-                        )
-                      : const KeyedSubtree(
-                          key: ValueKey('calendar'),
-                          child: CalendarView(),
-                        ),
+                  child: switch (_view) {
+                    HistoryView.list => _HistoryListView(
+                      key: const ValueKey('list'),
+                      filter: _filter,
+                    ),
+                    HistoryView.calendar => const KeyedSubtree(
+                      key: ValueKey('calendar'),
+                      child: CalendarView(),
+                    ),
+                    HistoryView.harvests => const KeyedSubtree(
+                      key: ValueKey('harvests'),
+                      child: WeeklyHarvestsTab(),
+                    ),
+                  },
                 ),
               ),
             ],
@@ -139,11 +152,12 @@ class _Header extends StatelessWidget {
           ),
         ),
         SizedBox(
-          width: 200,
+          width: 280,
           child: MbSegmentedToggle<HistoryView>(
             items: const [
               MbSegmentedItem(value: HistoryView.list, label: 'List'),
               MbSegmentedItem(value: HistoryView.calendar, label: 'Calendar'),
+              MbSegmentedItem(value: HistoryView.harvests, label: 'Harvests'),
             ],
             value: view,
             onChanged: onViewChanged,

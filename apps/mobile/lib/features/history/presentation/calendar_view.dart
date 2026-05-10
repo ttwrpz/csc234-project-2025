@@ -96,11 +96,19 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
             const SizedBox(width: 16),
             Expanded(
               flex: 4,
+              // Wrap the side panel in a SingleChildScrollView so a day
+              // with many entries scrolls inside the panel rather than
+              // overflowing the History screen's vertical bounds. The
+              // panel's own Column uses MainAxisSize.min, which would
+              // otherwise push past the parent's allowed height —
+              // surfacing as a `RenderFlex overflowed by …` warning on
+              // desktop where the side panel is enabled. Bug fix v1.0
+              // polish (2026-05-10).
               child: _selectedDay == null
                   ? const SizedBox.shrink()
-                  : DayEntriesPanel(
+                  : SingleChildScrollView(
                       key: ValueKey(_selectedDay),
-                      dayKey: _selectedDay!,
+                      child: DayEntriesPanel(dayKey: _selectedDay!),
                     ),
             ),
           ],
