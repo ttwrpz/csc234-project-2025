@@ -3,6 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:drift/drift.dart' show TableInfo;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../app/providers.dart';
 import '../../auth/data/providers.dart';
 import '../../auth/presentation/widgets/biometric_settings_tile.dart';
 import '../../disclaimer/presentation/widgets/disclaimer_panel.dart';
@@ -447,6 +451,26 @@ class _DebugCluster extends ConsumerWidget {
             ),
             onTap: () => _forceHarvest(context, ref),
           ),
+          const Divider(height: 1),
+          // Clear local cache + offline DB. User asked for this in
+          // v1.0 polish to investigate "no flower on negative render"
+          // bug — to rule out stale Drift / SharedPreferences state.
+          // Wipes all rows from the Drift mood DB (mood_entries +
+          // sync_queue) and clears every key in SharedPreferences.
+          // Does NOT sign the user out (Firebase Auth state is owned
+          // by FirebaseAuth, separate from local cache); does NOT
+          // touch Firestore. After clearing, recommends an app restart
+          // because Riverpod providers + Drift open handles cache the
+          // wiped state in memory.
+          ListTile(
+            leading: const Icon(Icons.delete_sweep_outlined),
+            title: const Text('Clear local cache'),
+            subtitle: const Text(
+              'Wipes Drift mood DB + SharedPreferences. Cloud data is '
+              'untouched. Restart the app afterwards.',
+            ),
+            onTap: () => _clearLocalCache(context, ref),
+          ),
         ],
       ),
     );
@@ -476,5 +500,61 @@ class _DebugCluster extends ConsumerWidget {
         : 'Nothing to harvest.';
     messenger.showSnackBar(SnackBar(content: Text(reason)));
     controller.resetError();
+  }
+
+  Future<void> _clearLocalCache(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Clear local cache?'),
+        content: const Text(
+          'Wipes the offline mood database AND SharedPreferences on this '
+          'device. Cloud data (Firestore) is untouched and will re-sync. '
+          'This is a debug affordance — restart the app afterwards.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: MoodBloomColors.coral,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Wipe'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    // 1. Truncate every Drift table on the mood DB. We iterate
+    //    `db.allTables` rather than naming `MoodEntries` /
+    //    `SyncQueue` directly so that future schema additions don't
+    //    silently leave rows on disk.
+    final db = ref.read(databaseProvider);
+    for (final table in db.allTables) {
+      // ignore: cascade_invocations
+      await db.delete(table as TableInfo).go();
+    }
+
+    // 2. Clear SharedPreferences. Resolved synchronously via the
+    //    pre-warmed singleton; if it's not warm yet the
+    //    `instance.clear()` call still works.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    if (!context.mounted) return;
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Local cache cleared. Restart the app to see a fresh state.',
+        ),
+        duration: Duration(seconds: 6),
+      ),
+    );
   }
 }

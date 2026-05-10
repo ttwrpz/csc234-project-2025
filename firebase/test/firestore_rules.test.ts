@@ -1108,3 +1108,139 @@ describe("v1.0-polish users/{uid}.insightsDisclaimerAcked one-way guard", () => 
     await assertFails(getDoc(doc(userB, `users/${USER_A}`)));
   });
 });
+
+/**
+ * v1.0-polish — `users/{uid}/weeklyGardens/{weekId}` archive rule.
+ *
+ * HB-005 Track 6.1 + ADR-0010 §6 ("Weekly Harvest cycle: write-once-on-
+ * archive, then read-only"). The collection was unintentionally omitted
+ * from the Sprint-4 architect rules pass (firestore.rules commit
+ * `a7c1dd80` only added `patterns/{date}` + S5-stub denials). Result:
+ * a 403 on `BatchGetDocuments` from `weeklyGardenHistoryProvider` and
+ * the dev-mode "Force harvest now" button — Firestore denies-by-default
+ * when no match block is present. This rule unblocks the History tab
+ * read-side AND the create-side write.
+ *
+ * Validation: doc-id `^\d{4}-W\d{2}$`; `weekId` field matches the doc
+ * id; `archivedAt` is an ISO-8601 string (json_serializable's default
+ * DateTime serializer — Firestore does NOT auto-convert unless the
+ * client uses `FieldValue.serverTimestamp()`). Update + delete denied.
+ */
+describe("v1.0-polish weeklyGardens/{weekId} write-once rule", () => {
+  const WEEK_ID = "2026-W18";
+
+  function baseGarden() {
+    return {
+      weekId: WEEK_ID,
+      weekStart: "2026-04-27T00:00:00.000",
+      weekEnd: "2026-05-04T00:00:00.000",
+      entries: [],
+      healthHistory: [0.0, 0.1],
+      summary: {
+        averageMoodScore: 0.2,
+        moodCounts: { happy: 1 },
+        endingPlantTier: "thriving",
+        totalEntryCount: 1,
+        triggeredTierCount: 0,
+      },
+      archivedAt: "2026-05-04T10:30:00.000",
+      schemaV: 1,
+    };
+  }
+
+  it("owner can create a valid archive doc", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(
+        doc(userA, `users/${USER_A}/weeklyGardens/${WEEK_ID}`),
+        baseGarden(),
+      ),
+    );
+  });
+
+  it("owner can read their archive history", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${USER_A}/weeklyGardens/${WEEK_ID}`),
+        baseGarden(),
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      getDoc(doc(userA, `users/${USER_A}/weeklyGardens/${WEEK_ID}`)),
+    );
+  });
+
+  it("non-owner cannot read another user's archive", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${USER_A}/weeklyGardens/${WEEK_ID}`),
+        baseGarden(),
+      );
+    });
+    const userB = testEnv.authenticatedContext(USER_B).firestore();
+    await assertFails(
+      getDoc(doc(userB, `users/${USER_A}/weeklyGardens/${WEEK_ID}`)),
+    );
+  });
+
+  it("create with malformed weekId (e.g. 2026-W5) is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/weeklyGardens/2026-W5`), {
+        ...baseGarden(),
+        weekId: "2026-W5",
+      }),
+    );
+  });
+
+  it("create with mismatched weekId field is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/weeklyGardens/${WEEK_ID}`), {
+        ...baseGarden(),
+        weekId: "2026-W17",
+      }),
+    );
+  });
+
+  it("create without archivedAt is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    const { archivedAt: _omit, ...withoutArchivedAt } = baseGarden();
+    await assertFails(
+      setDoc(
+        doc(userA, `users/${USER_A}/weeklyGardens/${WEEK_ID}`),
+        withoutArchivedAt,
+      ),
+    );
+  });
+
+  it("update is DENIED (write-once contract)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${USER_A}/weeklyGardens/${WEEK_ID}`),
+        baseGarden(),
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      updateDoc(
+        doc(userA, `users/${USER_A}/weeklyGardens/${WEEK_ID}`),
+        { schemaV: 2 },
+      ),
+    );
+  });
+
+  it("delete is DENIED (history is a record, not a redo)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${USER_A}/weeklyGardens/${WEEK_ID}`),
+        baseGarden(),
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      deleteDoc(doc(userA, `users/${USER_A}/weeklyGardens/${WEEK_ID}`)),
+    );
+  });
+});

@@ -245,6 +245,46 @@ service cloud.firestore {
         allow read: if isOwner(uid);
         allow write: if false;
       }
+
+      // Weekly Harvest archive (HB-005 Track 6.1; ADR-0010 §6).
+      // Write-once-on-archive: history is a record, not a redo. Each
+      // doc id is the ISO-8601 weekId formatted `YYYY-Www`; the
+      // archive use case writes the doc exactly once at the end of
+      // each weekly cycle.
+      //
+      // Bug fix (v1.0 polish, 2026-05-10): the prior rule omission
+      // surfaced as a 403 on `BatchGetDocuments` from the History tab
+      // and the dev-mode "Force harvest now" button — Firestore
+      // denies-by-default when no match block is present. Adding the
+      // rule unblocks both the read-side stream
+      // (`weeklyGardenHistoryProvider`) and the create-side write.
+      //
+      // Schema-level validation is deliberately permissive (only
+      // weekId match + write-once + server-timestamp on archivedAt)
+      // because the entity is rich (entries[], healthHistory[],
+      // summary nested object) and a strict allowlist would block
+      // legitimate v1.x schema additions. The use case + the unit
+      // tests own shape correctness.
+      match /weeklyGardens/{weekId} {
+        allow read: if isOwner(uid);
+
+        // archivedAt arrives as an ISO-8601 string (json_serializable's
+        // default DateTime serializer) — Firestore does NOT auto-convert
+        // unless the client passes a literal `Timestamp` or
+        // `FieldValue.serverTimestamp()`. The validation here is
+        // therefore string-shape; the use case + the unit tests own
+        // the value's correctness (must be `now` per spec §6).
+        allow create: if isOwner(uid)
+          && weekId.matches('^\\d{4}-W\\d{2}$')
+          && request.resource.data.weekId == weekId
+          && request.resource.data.archivedAt is string;
+
+        // Update + delete denied: the archive is immutable. A second
+        // archive attempt for the same week surfaces as 'already-
+        // exists' on create; the repository impl maps that to
+        // HarvestFailure.alreadyArchived.
+        allow update, delete: if false;
+      }
     }
 
     match /rateLimits/{uid} {

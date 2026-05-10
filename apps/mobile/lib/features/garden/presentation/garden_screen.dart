@@ -188,6 +188,16 @@ class _GardenView extends StatelessWidget {
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     final preview = recentForPreview.take(5).toList(growable: false);
 
+    // This week's entries (today through 6 days ago) feed the
+    // SkyHeader's per-entry FlowerSprite scatter — see
+    // `_WeeklyFlowerScatter`. Negative entries (sad/anxious/angry)
+    // surface as their species silhouette on the canvas, not just in
+    // list tiles.
+    final weekCutoff = DateTime.now().subtract(const Duration(days: 7));
+    final weekEntries = allEntries
+        .where((e) => e.createdAt.isAfter(weekCutoff))
+        .toList(growable: false);
+
     return SafeArea(
       bottom: false,
       child: Stack(
@@ -198,7 +208,11 @@ class _GardenView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SkyHeader(state: state, greetingName: greetingName),
+                SkyHeader(
+                  state: state,
+                  greetingName: greetingName,
+                  recentEntries: weekEntries,
+                ),
                 if (triggered && !bannerDismissed)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),

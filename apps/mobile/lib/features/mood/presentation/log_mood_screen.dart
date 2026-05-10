@@ -430,7 +430,12 @@ class _WideLayout extends StatelessWidget {
                       controller: controller,
                     ),
                   ),
-                  const SizedBox(width: MoodBloomSpacing.xl),
+                  // 48dp gap between columns — twice the `xl` value
+                  // (24dp). User feedback v1.0 polish ("more gap on
+                  // between 2 column"): the 24dp gap left the two
+                  // halves visually adjacent on a 1280dp window. 48dp
+                  // makes the form feel like two distinct zones.
+                  const SizedBox(width: 48),
                   Expanded(
                     flex: 45,
                     child: _RightColumn(

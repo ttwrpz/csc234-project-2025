@@ -213,6 +213,20 @@ class _DisclaimerSlide extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Inline brand art — same 220×170 footprint as the other
+            // three slides so the carousel feels visually consistent.
+            // Painted in Flutter (`_DisclaimerArtPainter`) rather than
+            // a static asset to avoid adding a PNG to the bundle. The
+            // composition is a soft heart-leaf-cross hybrid: a leaf
+            // base for the "natural / observational" framing, a heart
+            // outline for the care intent, and a small medical cross
+            // glyph anchoring the "not a medical device" message.
+            SizedBox(
+              width: 220,
+              height: 170,
+              child: CustomPaint(painter: _DisclaimerArtPainter()),
+            ),
+            const SizedBox(height: 24),
             Text(
               'A note about MoodBloom',
               style: MbFonts.fraunces(
@@ -222,9 +236,9 @@ class _DisclaimerSlide extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 18),
-            const DisclaimerPanel(),
             const SizedBox(height: 14),
+            const DisclaimerPanel(),
+            const SizedBox(height: 12),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 300),
               child: Text(
@@ -242,6 +256,115 @@ class _DisclaimerSlide extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Inline brand art for the disclaimer slide. Soft mint backdrop with
+/// a heart outline + a small medical cross glyph — reads as
+/// "compassionate care, not clinical diagnosis" at a glance. Mirrors
+/// the 200×160 viewBox + 18-radius card surface of the other
+/// onboarding slides.
+class _DisclaimerArtPainter extends CustomPainter {
+  static const _skyTop = Color(0xFFE8F3ED);
+  static const _skyBot = Color(0xFFFFE4D1);
+  static const _primary = Color(0xFF2E7D5B);
+  static const _coral = Color(0xFFE77A8C);
+  static const _amber = Color(0xFFE8A23B);
+  static const _line = Color(0xFFD6DDE4);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width / 200, size.height / 160);
+
+    // Backdrop with rounded corners + reverse-gradient (mint top,
+    // peach bottom) to differentiate from the garden-scene slide.
+    final bgRect = RRect.fromRectAndRadius(
+      const Rect.fromLTWH(0, 0, 200, 160),
+      const Radius.circular(18),
+    );
+    final bgPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [_skyTop, _skyBot],
+      ).createShader(const Rect.fromLTWH(0, 0, 200, 160));
+    canvas.drawRRect(bgRect, bgPaint);
+
+    // Soft halo behind the heart so it sits on the gradient instead
+    // of looking flat.
+    canvas.drawCircle(
+      const Offset(100, 80),
+      48,
+      Paint()..color = Colors.white.withAlpha(0x80),
+    );
+
+    // Heart outline — two arcs + a `V` to the bottom point. Stroked
+    // (not filled) so it reads as compassionate / open rather than
+    // medical-record-red.
+    final heartStroke = Paint()
+      ..color = _coral
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final heart = Path()
+      ..moveTo(100, 60)
+      ..cubicTo(85, 40, 60, 50, 60, 75)
+      ..cubicTo(60, 95, 80, 105, 100, 120)
+      ..cubicTo(120, 105, 140, 95, 140, 75)
+      ..cubicTo(140, 50, 115, 40, 100, 60);
+    canvas.drawPath(heart, heartStroke);
+
+    // Small medical cross inside the heart — anchors the "not a
+    // medical device" message. Two short rounded bars (vertical +
+    // horizontal) in primary green so it doesn't compete with the
+    // coral heart.
+    final crossPaint = Paint()
+      ..color = _primary
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(const Offset(100, 75), const Offset(100, 95), crossPaint);
+    canvas.drawLine(const Offset(90, 85), const Offset(110, 85), crossPaint);
+
+    // Two leaves flanking the heart — pulls the visual back toward
+    // the garden palette so the slide doesn't feel clinical.
+    final leafPaint = Paint()..color = _primary.withAlpha(0xCC);
+    canvas.save();
+    canvas.translate(48, 130);
+    canvas.rotate(-0.4);
+    canvas.drawOval(const Rect.fromLTWH(0, 0, 28, 14), leafPaint);
+    canvas.restore();
+    canvas.save();
+    canvas.translate(124, 130);
+    canvas.rotate(0.4);
+    canvas.drawOval(const Rect.fromLTWH(0, 0, 28, 14), leafPaint);
+    canvas.restore();
+
+    // Three small care-dots above the heart (calm, dotted), implying
+    // the "we're here / observational" cadence of a check-in app.
+    final dot = Paint()..color = _amber.withAlpha(0xCC);
+    for (var i = 0; i < 3; i += 1) {
+      canvas.drawCircle(Offset(76 + i * 12.0, 30), 3, dot);
+    }
+
+    // Subtle horizon line at the bottom — same `_line` colour as the
+    // other slides' card-border accents, ties it visually to the rest
+    // of the carousel.
+    canvas.drawLine(
+      const Offset(20, 145),
+      const Offset(180, 145),
+      Paint()
+        ..color = _line
+        ..strokeWidth = 1
+        ..style = PaintingStyle.stroke,
+    );
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _DisclaimerArtPainter oldDelegate) => false;
 }
 
 class _Dots extends StatelessWidget {

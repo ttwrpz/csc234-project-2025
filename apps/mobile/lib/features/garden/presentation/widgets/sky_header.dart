@@ -4,10 +4,14 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../mood/domain/entities/mood_entry.dart';
+import '../../../mood/presentation/widgets/mood_kind_adapter.dart';
 import '../../domain/entities/atmosphere.dart';
+import '../../domain/entities/flower_species.dart';
 import '../../domain/entities/garden_state.dart';
 import '../../domain/entities/plant_tier.dart';
 import 'atmosphere_overlay.dart';
+import 'flower_sprite.dart';
 import 'plant_tier_group.dart';
 
 /// 320 dp gradient sky header that doubles as the garden canvas.
@@ -23,7 +27,12 @@ import 'plant_tier_group.dart';
 /// Plants are alive in every tier; rain belongs to the atmosphere
 /// layer, not the plant layer.
 class SkyHeader extends StatelessWidget {
-  const SkyHeader({super.key, required this.state, required this.greetingName});
+  const SkyHeader({
+    super.key,
+    required this.state,
+    required this.greetingName,
+    this.recentEntries = const <MoodEntry>[],
+  });
 
   /// Computed garden snapshot — drives both the plant tier and the
   /// atmosphere overlay.
@@ -32,6 +41,21 @@ class SkyHeader extends StatelessWidget {
   /// First-name used in the greeting. Falls back to a friendly default
   /// when the user has not set a display name.
   final String greetingName;
+
+  /// This week's mood entries (most recent first). Drives the
+  /// per-entry [FlowerSprite] scatter on the canvas — each sad/anxious/
+  /// angry entry shows up as its emotion-specific flower silhouette
+  /// (forget-me-not / fern / poppy) so the user sees negative
+  /// entries immediately. Empty list collapses the scatter (first-time
+  /// users still see a clean tier-only canvas).
+  ///
+  /// User feedback v1.0 polish (2026-05-10): "Why there is no flower
+  /// on negative render in garden?" — the prior design only showed
+  /// generic tier-level closed buds for negative tiers. Wiring
+  /// per-entry species onto the canvas makes individual negative
+  /// entries visible at the SkyHeader level, not just inside list
+  /// tiles + chips.
+  final List<MoodEntry> recentEntries;
 
   static const double _height = 320;
 
@@ -130,6 +154,25 @@ class SkyHeader extends StatelessWidget {
                   ),
                 ),
               ),
+              // Per-entry flower-species scatter — sits ABOVE the plant
+              // tier so each entry's specific species silhouette
+              // (sunflower / forget-me-not / daisy / poppy / fern /
+              // lavender) is visible alongside the aggregate tier.
+              // Negative entries become highly visible: a sad log
+              // shows a forget-me-not, anxious shows fern, anger
+              // shows poppy. See `_WeeklyFlowerScatter` for the
+              // deterministic positioning (entry-id hash drives x;
+              // day-of-week drives y).
+              if (recentEntries.isNotEmpty)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 30,
+                  height: _plantRowHeight,
+                  child: IgnorePointer(
+                    child: _WeeklyFlowerScatter(entries: recentEntries),
+                  ),
+                ),
               // Top bar: greeting + entries-this-week pill.
               Positioned(
                 top: 16,
@@ -369,6 +412,77 @@ class _ViewPatternsPill extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Scatters one [FlowerSprite] per entry across the plant row.
+/// Positioning is deterministic (entry-id hash → x percentile;
+/// day-of-week → y offset) so a given entry list always renders at
+/// the same coordinates — keeps the layout stable across rebuilds and
+/// makes goldens reproducible.
+///
+/// Caps at 8 sprites (most recent first) to avoid clutter. The scatter
+/// is drawn ABOVE the [PlantTierGroup] so per-emotion silhouettes are
+/// visible regardless of the aggregate tier. Sized 22 dp per sprite —
+/// big enough to read at a glance, small enough not to dominate the
+/// 100 dp canvas row.
+class _WeeklyFlowerScatter extends StatelessWidget {
+  const _WeeklyFlowerScatter({required this.entries});
+
+  final List<MoodEntry> entries;
+
+  static const int _maxSprites = 8;
+  static const double _spriteSize = 22;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = Theme.of(context).extension<MbMoodPalette>()!;
+    // Take the most-recent first; sort by createdAt desc.
+    final sorted = [...entries]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final shown = sorted.take(_maxSprites).toList(growable: false);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            for (final entry in shown)
+              Positioned(
+                left: _xFor(entry, constraints.maxWidth),
+                top: _yFor(entry, constraints.maxHeight),
+                child: FlowerSprite(
+                  species: FlowerSpecies.forMood(entry.mood),
+                  size: _spriteSize,
+                  tint: palette.colorOf(entry.mood.mbKind),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Spread sprites across the row using the entry id's hash. The
+  /// 12 dp side margins keep them off the canvas edges where the
+  /// `ClipRRect` would chop them.
+  static double _xFor(MoodEntry entry, double width) {
+    final usable = (width - 12 * 2 - _spriteSize).clamp(0.0, double.infinity);
+    final pct = (entry.id.hashCode.abs() % 1000) / 1000;
+    return 12 + pct * usable;
+  }
+
+  /// Day-of-week → y. Older entries float higher (smaller y); today's
+  /// entries sit closer to the ground line. Bounded so a sprite never
+  /// clips above the row or below the ground curve.
+  static double _yFor(MoodEntry entry, double height) {
+    final daysAgo = DateTime.now()
+        .difference(entry.createdAt.toLocal())
+        .inDays
+        .clamp(0, 6);
+    // y = 0 → top of row; height → bottom. Older = higher up (smaller y).
+    final pct = 0.10 + (1.0 - daysAgo / 6) * 0.55;
+    return pct * (height - _spriteSize);
   }
 }
 
