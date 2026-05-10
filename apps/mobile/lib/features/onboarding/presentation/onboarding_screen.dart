@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../disclaimer/presentation/widgets/disclaimer_panel.dart';
 import 'widgets/onboarding_slide.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -16,28 +17,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _controller = PageController();
   int _index = 0;
 
-  static const _slides = <_SlideData>[
-    _SlideData(
-      art: _OnboardingArt.gardenScene,
-      title: 'Meet your garden',
-      body:
-          'Your feelings become a living scene. Nothing to fix — just to '
-          'notice.',
-    ),
-    _SlideData(
-      art: _OnboardingArt.logEntry,
-      title: 'Log how you feel',
-      body:
-          'Pick a mood, slide the intensity, and write as much or as little '
-          'as you want.',
-    ),
-    _SlideData(
-      art: _OnboardingArt.patterns,
-      title: 'Watch patterns emerge',
-      body:
-          'Over time, gentle insights appear. Your history is safe, '
-          'private, and yours.',
-    ),
+  /// Onboarding deck — 4 slides. The 3 art-driven slides keep their
+  /// original copy; the new "A note about MoodBloom" disclaimer slide
+  /// (S5 feature 7.4 — pulled forward) sits second-to-last so the
+  /// existing "Watch patterns emerge" + "Get started" CTA remains the
+  /// user's last touch.
+  static const _slideKinds = <_SlideKind>[
+    _SlideKind.gardenScene,
+    _SlideKind.logEntry,
+    _SlideKind.disclaimer,
+    _SlideKind.patterns,
   ];
 
   Future<void> _complete() async {
@@ -48,7 +37,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _next() {
-    if (_index == _slides.length - 1) {
+    if (_index == _slideKinds.length - 1) {
       _complete();
     } else {
       _controller.nextPage(
@@ -75,7 +64,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    final isLast = _index == _slides.length - 1;
+    final isLast = _index == _slideKinds.length - 1;
     final isFirst = _index == 0;
 
     return Scaffold(
@@ -95,19 +84,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   Expanded(
                     child: PageView.builder(
                       controller: _controller,
-                      itemCount: _slides.length,
+                      itemCount: _slideKinds.length,
                       onPageChanged: (i) => setState(() => _index = i),
-                      itemBuilder: (context, i) {
-                        final s = _slides[i];
-                        return OnboardingSlide(
-                          art: _buildArt(s.art),
-                          title: s.title,
-                          body: s.body,
-                        );
-                      },
+                      itemBuilder: (context, i) => _buildSlide(_slideKinds[i]),
                     ),
                   ),
-                  _Dots(count: _slides.length, activeIndex: _index),
+                  _Dots(count: _slideKinds.length, activeIndex: _index),
                   const SizedBox(height: 20),
                   Row(
                     children: [
@@ -156,26 +138,110 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildArt(_OnboardingArt art) {
+  /// Builds the slide widget for the given kind. The 3 art-driven
+  /// slides reuse the existing `OnboardingSlide` widget; the disclaimer
+  /// slide composes a similar layout (Fraunces title + body content +
+  /// dim Nunito caption) but swaps the inline brand art for a
+  /// [DisclaimerPanel].
+  Widget _buildSlide(_SlideKind kind) {
+    switch (kind) {
+      case _SlideKind.gardenScene:
+        return OnboardingSlide(
+          art: _buildArt(kind),
+          title: 'Meet your garden',
+          body:
+              'Your feelings become a living scene. Nothing to fix — just to '
+              'notice.',
+        );
+      case _SlideKind.logEntry:
+        return OnboardingSlide(
+          art: _buildArt(kind),
+          title: 'Log how you feel',
+          body:
+              'Pick a mood, slide the intensity, and write as much or as '
+              'little as you want.',
+        );
+      case _SlideKind.patterns:
+        return OnboardingSlide(
+          art: _buildArt(kind),
+          title: 'Watch patterns emerge',
+          body:
+              'Over time, gentle insights appear. Your history is safe, '
+              'private, and yours.',
+        );
+      case _SlideKind.disclaimer:
+        return const _DisclaimerSlide();
+    }
+  }
+
+  Widget _buildArt(_SlideKind kind) {
     return SizedBox(
       width: 220,
       height: 170,
-      child: CustomPaint(painter: _OnboardingArtPainter(art)),
+      child: CustomPaint(painter: _OnboardingArtPainter(kind)),
     );
   }
 }
 
-enum _OnboardingArt { gardenScene, logEntry, patterns }
+/// Carousel slide kinds. Names match the painter cases for the
+/// art-driven slides; `disclaimer` has no painter case (it renders a
+/// `DisclaimerPanel` instead) — the painter switch's default branch
+/// handles that.
+enum _SlideKind { gardenScene, logEntry, patterns, disclaimer }
 
-class _SlideData {
-  const _SlideData({
-    required this.art,
-    required this.title,
-    required this.body,
-  });
-  final _OnboardingArt art;
-  final String title;
-  final String body;
+/// Custom slide for the bipolar / medical disclaimer (S5 feature 7.4 —
+/// pulled forward). Mirrors `OnboardingSlide`'s typography (Fraunces 26
+/// title + Nunito 13 dim caption) so the carousel feels consistent;
+/// swaps the inline brand art for a [DisclaimerPanel] containing
+/// [DisclaimerCopy.full] + a small medical icon.
+///
+/// The slide does NOT call `disclaimerRepository.ack()` automatically.
+/// The ack-tracking flag (`users/{uid}.insightsDisclaimerAcked`) flips
+/// only when the user taps "I understand" in the (S5) Insights ack
+/// dialog. Swiping past this slide is fine — onboarding completion is
+/// a separate concern.
+class _DisclaimerSlide extends StatelessWidget {
+  const _DisclaimerSlide();
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Semantics(
+      label: 'A note about MoodBloom',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'A note about MoodBloom',
+              style: MbFonts.fraunces(
+                fontSize: 26,
+                fontWeight: FontWeight.w600,
+                color: mb.text,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            const DisclaimerPanel(),
+            const SizedBox(height: 14),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 300),
+              child: Text(
+                "You'll see this again any time you visit Settings → About.",
+                style: MbFonts.nunito(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: mb.textDim,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _Dots extends StatelessWidget {
@@ -207,13 +273,15 @@ class _Dots extends StatelessWidget {
   }
 }
 
-/// Inline brand art for the three onboarding slides. Transcribed from the
-/// React prototype's SVGs (`screens.jsx` lines 1–93). The viewBox is 200×160
-/// so we paint into a 220×170 canvas and scale uniformly.
+/// Inline brand art for the three art-driven onboarding slides.
+/// Transcribed from the React prototype's SVGs (`screens.jsx` lines
+/// 1–93). The viewBox is 200×160 so we paint into a 220×170 canvas and
+/// scale uniformly. The `disclaimer` slide has no painter case — it
+/// composes a `DisclaimerPanel` instead.
 class _OnboardingArtPainter extends CustomPainter {
   _OnboardingArtPainter(this.kind);
 
-  final _OnboardingArt kind;
+  final _SlideKind kind;
 
   // Palette mirrors `data.jsx` PALETTE constants used in the prototype.
   static const _skyTop = Color(0xFFFFE4D1);
@@ -234,12 +302,17 @@ class _OnboardingArtPainter extends CustomPainter {
     canvas.scale(size.width / 200, size.height / 160);
 
     switch (kind) {
-      case _OnboardingArt.gardenScene:
+      case _SlideKind.gardenScene:
         _paintGarden(canvas);
-      case _OnboardingArt.logEntry:
+      case _SlideKind.logEntry:
         _paintLogEntry(canvas);
-      case _OnboardingArt.patterns:
+      case _SlideKind.patterns:
         _paintPatterns(canvas);
+      case _SlideKind.disclaimer:
+        // No painter — `_DisclaimerSlide` renders its own content and
+        // never instantiates this painter. The case is here so the
+        // exhaustive switch passes the analyser.
+        break;
     }
     canvas.restore();
   }

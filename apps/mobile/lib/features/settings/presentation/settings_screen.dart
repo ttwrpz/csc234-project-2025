@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/data/providers.dart';
 import '../../auth/presentation/widgets/biometric_settings_tile.dart';
+import '../../disclaimer/presentation/widgets/disclaimer_panel.dart';
 import '../../harvest/presentation/controllers/weekly_summary_controller.dart';
 import '../../mood/data/sync/connectivity_provider.dart';
 import '../../notifications/presentation/widgets/notifications_toggle_tile.dart';
@@ -349,6 +350,11 @@ class _ThemeRadioTile extends StatelessWidget {
 /// hard-coded constant for now; once the app graduates from Sprint 2 we
 /// can read it from `package_info_plus` instead. Keeping it inline avoids
 /// the extra dependency on a single string.
+///
+/// The Medical disclaimer expansion tile (S5 feature 7.4 — pulled
+/// forward) lives at the bottom of the cluster so the version line
+/// stays the cluster's primary affordance. The expansion only opens on
+/// explicit tap; the disclaimer text is never auto-shown here.
 class _AboutCluster extends StatelessWidget {
   const _AboutCluster();
 
@@ -360,10 +366,28 @@ class _AboutCluster extends StatelessWidget {
     return MbCard(
       clipBehavior: Clip.hardEdge,
       padding: EdgeInsets.zero,
-      child: ListTile(
-        leading: const Icon(Icons.info_outline),
-        title: const Text('MoodBloom'),
-        subtitle: Text('Version $_appVersion'),
+      child: Column(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('MoodBloom'),
+            subtitle: Text('Version $_appVersion'),
+          ),
+          const Divider(height: 1),
+          ExpansionTile(
+            leading: const Icon(Icons.medical_information_outlined),
+            title: const Text('Medical disclaimer'),
+            subtitle: const Text(
+              'MoodBloom is not a medical device — tap to read more.',
+            ),
+            children: const [
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: DisclaimerPanel(),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
