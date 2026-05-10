@@ -2,7 +2,9 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../garden/domain/entities/flower_species.dart';
 import '../../garden/domain/entities/plant_tier.dart';
+import '../../garden/presentation/widgets/flower_sprite.dart';
 import '../../garden/presentation/widgets/plant_tier_group.dart';
 import '../../mood/domain/entities/mood_type.dart';
 import '../../mood/presentation/widgets/mood_kind_adapter.dart';
@@ -262,14 +264,58 @@ class _DominantEmotionsSection extends StatelessWidget {
             runSpacing: MoodBloomSpacing.sm,
             children: [
               for (final entry in top)
-                MbMoodChip(
-                  mood: entry.key.mbKind,
-                  size: MbChipSize.md,
-                  label: '${entry.key.name} · ${entry.value}',
-                ),
+                _DominantEmotionChip(mood: entry.key, count: entry.value),
             ],
           ),
       ],
+    );
+  }
+}
+
+/// Mood chip with the per-emotion flower-species sprite leading the
+/// label. Replaces the prior `MbMoodChip` so the Sprint 4 polish
+/// flower mapping (sunflower / forget-me-not / daisy / poppy / fern /
+/// lavender) is visible on the weekly summary screen.
+class _DominantEmotionChip extends StatelessWidget {
+  const _DominantEmotionChip({required this.mood, required this.count});
+
+  final MoodType mood;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final palette = Theme.of(context).extension<MbMoodPalette>()!;
+    final color = palette.colorOf(mood.mbKind);
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: MoodBloomSpacing.md,
+        vertical: MoodBloomSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: color.withAlpha(0x1F),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withAlpha(0x55)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FlowerSprite(
+            species: FlowerSpecies.forMood(mood),
+            size: 16,
+            tint: color,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '${mood.name} · $count',
+            style: MbFonts.nunito(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: mb.text,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

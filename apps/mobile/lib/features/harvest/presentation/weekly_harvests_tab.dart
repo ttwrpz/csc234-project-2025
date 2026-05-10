@@ -2,7 +2,11 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../garden/domain/entities/flower_species.dart';
+import '../../garden/presentation/widgets/flower_sprite.dart';
 import '../../garden/presentation/widgets/plant_tier_group.dart';
+import '../../mood/domain/entities/mood_type.dart';
+import '../../mood/presentation/widgets/mood_kind_adapter.dart';
 import '../data/providers.dart';
 import '../domain/entities/weekly_garden.dart';
 import 'archived_week_screen.dart';
@@ -75,6 +79,47 @@ class WeeklyHarvestsTab extends ConsumerWidget {
   }
 }
 
+/// Glanceable row of flower-species sprites — one per top mood of the
+/// archived week. Gives the History list a visual cue of "what kind of
+/// week" each archived week was without forcing the user to open it.
+/// Empty input renders an empty box (no overflow / no caption).
+class _DominantSpeciesCluster extends StatelessWidget {
+  const _DominantSpeciesCluster({required this.counts});
+
+  final Map<MoodType, int> counts;
+
+  static const int _maxSprites = 4;
+
+  List<MapEntry<MoodType, int>> get _topMoods {
+    final entries = counts.entries.where((e) => e.value > 0).toList()
+      ..sort((a, b) {
+        final byCount = b.value.compareTo(a.value);
+        if (byCount != 0) return byCount;
+        return a.key.index.compareTo(b.key.index);
+      });
+    return entries.take(_maxSprites).toList(growable: false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = Theme.of(context).extension<MbMoodPalette>()!;
+    final top = _topMoods;
+    if (top.isEmpty) return const SizedBox.shrink();
+    return Row(
+      children: [
+        for (final entry in top) ...[
+          FlowerSprite(
+            species: FlowerSpecies.forMood(entry.key),
+            size: 16,
+            tint: palette.colorOf(entry.key.mbKind),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ],
+    );
+  }
+}
+
 class _WeeklyHarvestTile extends StatelessWidget {
   const _WeeklyHarvestTile({required this.week, required this.onTap});
 
@@ -119,6 +164,8 @@ class _WeeklyHarvestTile extends StatelessWidget {
                   'avg ${week.summary.averageMoodScore.toStringAsFixed(2)}',
                   style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
                 ),
+                const SizedBox(height: 6),
+                _DominantSpeciesCluster(counts: week.summary.moodCounts),
               ],
             ),
           ),
