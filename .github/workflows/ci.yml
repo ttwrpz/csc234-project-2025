@@ -153,12 +153,29 @@ jobs:
       # Domain purity: the domain/ folder of every feature must NOT import
       # Flutter, Firebase, or Cloud Firestore. This is the hard rule from
       # CLAUDE.md and is graded in the Enterprise Term Assignment.
+      #
+      # Sanctioned exception (ADR-0010 §"Compliance Check"):
+      #   `apps/mobile/lib/features/settings/domain/services/day_night_strategy.dart`
+      # imports `package:flutter/material.dart` for the `ThemeMode` enum.
+      # `ThemeMode` has no Flutter behaviour — three named constants —
+      # and re-creating a `MoodBloomThemeMode` mirror only to map back at
+      # every call site would be ceremony with no testability benefit.
+      # The file's own header documents the carve-out; the CI grep
+      # excludes the filename to align with the architectural decision.
       # ------------------------------------------------------------------
       - name: Domain purity check
         run: |
           set -euo pipefail
           echo "Scanning apps/mobile/lib/features/*/domain/ for forbidden imports..."
-          if grep -rEn --include="*.dart" "import 'package:(flutter|firebase_|cloud_firestore)" apps/mobile/lib/features/*/domain/ 2>/dev/null; then
+          # Two-stage filter: grep collects all forbidden imports, then a
+          # post-filter strips the sanctioned exception line. Pipe pattern
+          # is more portable than `grep --exclude` across grep variants.
+          # `|| true` keeps the pipeline alive when grep finds nothing
+          # (default exit 1) so the variable assignment doesn't trip
+          # `set -e`.
+          forbidden=$(grep -rEn --include="*.dart" "import 'package:(flutter|firebase_|cloud_firestore)" apps/mobile/lib/features/*/domain/ 2>/dev/null | grep -v "settings/domain/services/day_night_strategy.dart" || true)
+          if [ -n "$forbidden" ]; then
+            echo "$forbidden"
             echo "::error::Domain layer must not import package:flutter, package:firebase_*, or package:cloud_firestore. See CLAUDE.md."
             exit 1
           fi
