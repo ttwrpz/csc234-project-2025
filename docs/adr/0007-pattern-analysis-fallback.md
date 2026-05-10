@@ -1,9 +1,11 @@
 # ADR-0007 — Pattern Analysis Fallback Strategy (Statistical-Primary, Gemini-Supplementary)
 
-**Status:** Proposed (Sprint 4)
+**Status:** Superseded by ADR-0011 (2026-05-09)
 **Date:** 2026-05-01
 **Deciders:** orchestrator + architect
 **Related:** ADR-0001 (repo structure & Clean Architecture); ADR-0003 (`analyzeMoodText` Cloud Function contract — wire format, validation order, rate-limit scaffolding, logging schema); CLAUDE.md pivot feature #4 ("Gemini pattern analysis over history with explicit confidence labels"); CLAUDE.md feature flag `ai_pattern_analysis_enabled`
+
+> **Superseded.** The intervention-trigger path moves from `analyzePatterns` (Cloud Function, statistical-primary) to a client-side pure-Dart Pattern Engine running five algorithms (Mann-Kendall, sliding 5-of-7, 3-consecutive, Z-score, CUSUM) per ADR-0011. The `analyzePatterns` Cloud Function remains deployed for the Insights screen (qualitative themes, confidence bands, sample-size floors) but no longer drives the dispatcher. The `ai_pattern_analysis_enabled` flag continues to gate the Gemini themes path, not the intervention path. See ADR-0011 §3 and `docs/audit/sprint-4-redesign-audit.md` for the full migration plan.
 
 ## Context
 

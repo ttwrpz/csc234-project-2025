@@ -1,109 +1,109 @@
 import 'package:core/core.dart';
 
 import '../../../mood/domain/entities/mood_entry.dart';
-import '../../../mood/domain/entities/mood_type.dart';
+import '../../../mood/domain/services/mood_score.dart';
+import '../entities/atmosphere.dart';
 import '../entities/garden_state.dart';
+import '../entities/plant_tier.dart';
+import '../services/atmosphere.dart' as atmosphere_service;
+import '../services/garden_health_ewma.dart';
 
-/// Pure-Dart use case that turns a flat list of `MoodEntry`s into the shape
-/// the garden screen renders: total counts per glyph kind, current
-/// consecutive positive-day streak, and the last 7 days as `DayBloom` cells.
+/// Pure-Dart use case that turns a flat list of `MoodEntry`s into the
+/// Sprint 4–5 ecosystem [GardenState]:
+///   * `H_t` Garden Health folded over the current week's per-day means
+///     (`gardenHealth`) → drives [PlantTier] (5 alive tiers).
+///   * Today's mean mood-score → drives [Atmosphere] (4 weather states).
+///   * The last 7 calendar days as [DayScore] cells (newest first).
 ///
-/// `now` is injected so unit tests can pin the "today" anchor and so we don't
-/// drift across midnight during a single computation.
+/// `now` and `weekStart` are injected so unit tests can pin both
+/// anchors. `weekStart` is the local-midnight `DateTime` of the
+/// current week's first day (e.g. Monday); the EWMA fold runs over
+/// `[weekStart, now]` and resets to `H_0 = 0` every week (weekly
+/// harvest cycle — ADR-0010 §3).
 ///
-/// Time-zone semantics: every entry's `createdAt` is converted to local time
-/// and truncated to midnight before bucketing. This matches CLAUDE.md's
-/// expectation that the user sees the garden in *their* day boundaries.
+/// Empty-day interpretation: days within the week with NO logged
+/// entries are NOT folded as zero. Spec §2.3 defines `S_day` only when
+/// the user logs on that day; folding zero would bias `H` toward 0
+/// over time, which is incorrect (a missing day means "no signal", not
+/// "neutral"). Only days with entries contribute to the EWMA.
 class ComputeGardenStateUseCase {
   const ComputeGardenStateUseCase();
 
-  /// Number of cells in the weekly bloom bar. Public so widget tests can
-  /// reference it without hard-coding a magic number.
+  /// Number of cells in the daily-score strip. Public so widget tests
+  /// can reference it without hard-coding a magic number.
   static const int weeklyWindow = 7;
 
-  /// Pure mapping from a single (mood, intensity) pair to the bloom-bar kind
-  /// it would imply for its day, **before** any per-day priority resolution.
-  ///
-  /// Rule (per ADR-0006): positives are blooms; negatives split on
-  /// user-felt intensity — `i ≤ 3` wilts gently, `i ≥ 4` rains. `intensity`
-  /// is clamped defensively to `[1, 5]` so a malformed entry can never
-  /// poison the bucketing.
-  static DayBloomKind kind(MoodType mood, int intensity) {
-    if (mood.category == MoodCategory.positive) return DayBloomKind.bloom;
-    final i = intensity.clamp(1, 5);
-    return i <= 3 ? DayBloomKind.wilting : DayBloomKind.rainCloud;
-  }
-
-  GardenState call({required List<MoodEntry> entries, required DateTime now}) {
-    // Bucket entries into three day-sets so we can answer the streak +
-    // bloom-bar questions in O(n). Counts are tracked separately because
-    // multiple entries can land on the same day and we still want each entry
-    // to contribute to the canvas density.
-    final positiveDays = <DateTime>{};
-    final wiltingDays = <DateTime>{};
-    final rainDays = <DateTime>{};
-    var positiveCount = 0;
-    var wiltingCount = 0;
-    var rainCloudCount = 0;
+  GardenState call({
+    required List<MoodEntry> entries,
+    required DateTime now,
+    required DateTime weekStart,
+  }) {
+    // Bucket every entry by its local-midnight day key. We hold the raw
+    // mood-score values per day so we can compute both the per-day mean
+    // (for the strip + EWMA) and today's atmosphere from the same source.
+    final byDay = <DateTime, List<double>>{};
     for (final entry in entries) {
       final day = localMidnight(entry.createdAt);
-      switch (kind(entry.mood, entry.intensity)) {
-        case DayBloomKind.bloom:
-          positiveCount += 1;
-          positiveDays.add(day);
-        case DayBloomKind.wilting:
-          wiltingCount += 1;
-          wiltingDays.add(day);
-        case DayBloomKind.rainCloud:
-          rainCloudCount += 1;
-          rainDays.add(day);
-        case DayBloomKind.empty:
-          // `kind()` never returns `empty` for a logged entry; the case
-          // exists only so the switch is exhaustive over the enum.
-          break;
-      }
+      final score = computeMoodScore(entry.mood, entry.intensity).value;
+      (byDay[day] ??= <double>[]).add(score);
     }
 
     final today = localMidnight(now);
+    final weekStartDay = localMidnight(weekStart);
 
-    // Streak: walk back from today; stop the first day with no positive
-    // entry. **Wilting and rain-cloud days do NOT count** — we do not
-    // streak-reward negative logging (regression guard: see test).
-    var streak = 0;
-    var cursor = today;
-    while (positiveDays.contains(cursor)) {
-      streak += 1;
-      cursor = cursor.subtract(const Duration(days: 1));
+    // EWMA fold over the current week. Walk forward in chronological
+    // order; only days with entries contribute (see class docstring on
+    // empty-day interpretation).
+    final weekDailyMeans = <double>[];
+    for (
+      var d = weekStartDay;
+      !d.isAfter(today);
+      d = d.add(const Duration(days: 1))
+    ) {
+      final scores = byDay[d];
+      if (scores == null || scores.isEmpty) continue;
+      weekDailyMeans.add(_mean(scores));
     }
+    final gardenHealth = foldGardenHealthEwma(weekDailyMeans);
+    final tier = PlantTier.fromHealth(gardenHealth);
 
-    // Last 7 days, newest first. Per ADR-0006 the per-cell priority is
-    // `bloom > rainCloud > wilting > empty` — a single positive entry
-    // outranks any number of negatives that day, and a stormy negative
-    // outranks a gentler one.
-    final last7Days = <DayBloom>[
+    // Today's atmosphere: mean of today's per-entry scores.
+    final todayScores = byDay[today] ?? const <double>[];
+    final atmosphere = atmosphere_service.computeAtmosphere(todayScores);
+
+    // Last-7-days strip, newest first. Days with no entry surface as
+    // `(avgScore: null, entryCount: 0)` so the widget can render the
+    // empty-cell treatment without a separate enum.
+    final last7Days = <DayScore>[
       for (var i = 0; i < weeklyWindow; i += 1)
         () {
           final day = today.subtract(Duration(days: i));
-          final DayBloomKind kindForDay;
-          if (positiveDays.contains(day)) {
-            kindForDay = DayBloomKind.bloom;
-          } else if (rainDays.contains(day)) {
-            kindForDay = DayBloomKind.rainCloud;
-          } else if (wiltingDays.contains(day)) {
-            kindForDay = DayBloomKind.wilting;
-          } else {
-            kindForDay = DayBloomKind.empty;
+          final scores = byDay[day];
+          if (scores == null || scores.isEmpty) {
+            return DayScore(day: day, avgScore: null, entryCount: 0);
           }
-          return DayBloom(day: day, kind: kindForDay);
+          return DayScore(
+            day: day,
+            avgScore: _mean(scores),
+            entryCount: scores.length,
+          );
         }(),
     ];
 
     return GardenState(
-      positiveMoodCount: positiveCount,
-      wiltingMoodCount: wiltingCount,
-      rainCloudMoodCount: rainCloudCount,
-      currentStreakDays: streak,
+      gardenHealth: gardenHealth,
+      plantTier: tier,
+      atmosphere: atmosphere,
       last7Days: last7Days,
+      totalEntryCount: entries.length,
     );
+  }
+
+  static double _mean(List<double> xs) {
+    var sum = 0.0;
+    for (final x in xs) {
+      sum += x;
+    }
+    return sum / xs.length;
   }
 }

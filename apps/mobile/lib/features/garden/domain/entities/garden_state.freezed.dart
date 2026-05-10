@@ -14,20 +14,17 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$GardenState {
 
-/// Total number of positive mood entries in the user's history. Drives
-/// the canvas density: more positives → more flowers.
- int get positiveMoodCount;/// Total number of negative-mood entries at intensity 1–3 (gentler
-/// negatives). Rendered as wilting plants on the garden canvas.
- int get wiltingMoodCount;/// Total number of negative-mood entries at intensity 4–5 (stormier
-/// negatives). Rendered as rain clouds that drift and fade on their own
-/// — the user is never asked to clean them up.
- int get rainCloudMoodCount;/// Consecutive days, ending today, on which the user logged at least one
-/// positive mood. Empty days break the streak silently — there is no
-/// streak-shaming copy. **Wilting and rain-cloud days do NOT contribute
-/// to the streak**, by design (see ADR-0006).
- int get currentStreakDays;/// Last 7 days, newest first (today, yesterday, …, 6 days ago). Always
-/// length 7. Drives the weekly bloom bar.
- List<DayBloom> get last7Days;
+/// Garden Health for the current week (`H_t`, range [-1, +1]).
+/// Resets to 0 at the start of every week (weekly harvest cycle —
+/// see ADR-0010 §3).
+ double get gardenHealth;/// 5-tier ecosystem state derived from [gardenHealth].
+ PlantTier get plantTier;/// 4-state weather overlay derived from today's mean mood-score.
+/// Defaults to `calmSunny` when the user has not yet logged today.
+ Atmosphere get atmosphere;/// Last 7 days, newest first (today, yesterday, …, 6 days ago).
+/// Always length 7. Drives the daily-score strip below the canvas.
+ List<DayScore> get last7Days;/// Total entry count across all of history. Used by the screen for
+/// diagnostics ("12 entries this week") and to derive [isEmpty].
+ int get totalEntryCount;
 /// Create a copy of GardenState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -38,16 +35,16 @@ $GardenStateCopyWith<GardenState> get copyWith => _$GardenStateCopyWithImpl<Gard
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GardenState&&(identical(other.positiveMoodCount, positiveMoodCount) || other.positiveMoodCount == positiveMoodCount)&&(identical(other.wiltingMoodCount, wiltingMoodCount) || other.wiltingMoodCount == wiltingMoodCount)&&(identical(other.rainCloudMoodCount, rainCloudMoodCount) || other.rainCloudMoodCount == rainCloudMoodCount)&&(identical(other.currentStreakDays, currentStreakDays) || other.currentStreakDays == currentStreakDays)&&const DeepCollectionEquality().equals(other.last7Days, last7Days));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GardenState&&(identical(other.gardenHealth, gardenHealth) || other.gardenHealth == gardenHealth)&&(identical(other.plantTier, plantTier) || other.plantTier == plantTier)&&(identical(other.atmosphere, atmosphere) || other.atmosphere == atmosphere)&&const DeepCollectionEquality().equals(other.last7Days, last7Days)&&(identical(other.totalEntryCount, totalEntryCount) || other.totalEntryCount == totalEntryCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,positiveMoodCount,wiltingMoodCount,rainCloudMoodCount,currentStreakDays,const DeepCollectionEquality().hash(last7Days));
+int get hashCode => Object.hash(runtimeType,gardenHealth,plantTier,atmosphere,const DeepCollectionEquality().hash(last7Days),totalEntryCount);
 
 @override
 String toString() {
-  return 'GardenState(positiveMoodCount: $positiveMoodCount, wiltingMoodCount: $wiltingMoodCount, rainCloudMoodCount: $rainCloudMoodCount, currentStreakDays: $currentStreakDays, last7Days: $last7Days)';
+  return 'GardenState(gardenHealth: $gardenHealth, plantTier: $plantTier, atmosphere: $atmosphere, last7Days: $last7Days, totalEntryCount: $totalEntryCount)';
 }
 
 
@@ -58,7 +55,7 @@ abstract mixin class $GardenStateCopyWith<$Res>  {
   factory $GardenStateCopyWith(GardenState value, $Res Function(GardenState) _then) = _$GardenStateCopyWithImpl;
 @useResult
 $Res call({
- int positiveMoodCount, int wiltingMoodCount, int rainCloudMoodCount, int currentStreakDays, List<DayBloom> last7Days
+ double gardenHealth, PlantTier plantTier, Atmosphere atmosphere, List<DayScore> last7Days, int totalEntryCount
 });
 
 
@@ -75,14 +72,14 @@ class _$GardenStateCopyWithImpl<$Res>
 
 /// Create a copy of GardenState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? positiveMoodCount = null,Object? wiltingMoodCount = null,Object? rainCloudMoodCount = null,Object? currentStreakDays = null,Object? last7Days = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? gardenHealth = null,Object? plantTier = null,Object? atmosphere = null,Object? last7Days = null,Object? totalEntryCount = null,}) {
   return _then(_self.copyWith(
-positiveMoodCount: null == positiveMoodCount ? _self.positiveMoodCount : positiveMoodCount // ignore: cast_nullable_to_non_nullable
-as int,wiltingMoodCount: null == wiltingMoodCount ? _self.wiltingMoodCount : wiltingMoodCount // ignore: cast_nullable_to_non_nullable
-as int,rainCloudMoodCount: null == rainCloudMoodCount ? _self.rainCloudMoodCount : rainCloudMoodCount // ignore: cast_nullable_to_non_nullable
-as int,currentStreakDays: null == currentStreakDays ? _self.currentStreakDays : currentStreakDays // ignore: cast_nullable_to_non_nullable
-as int,last7Days: null == last7Days ? _self.last7Days : last7Days // ignore: cast_nullable_to_non_nullable
-as List<DayBloom>,
+gardenHealth: null == gardenHealth ? _self.gardenHealth : gardenHealth // ignore: cast_nullable_to_non_nullable
+as double,plantTier: null == plantTier ? _self.plantTier : plantTier // ignore: cast_nullable_to_non_nullable
+as PlantTier,atmosphere: null == atmosphere ? _self.atmosphere : atmosphere // ignore: cast_nullable_to_non_nullable
+as Atmosphere,last7Days: null == last7Days ? _self.last7Days : last7Days // ignore: cast_nullable_to_non_nullable
+as List<DayScore>,totalEntryCount: null == totalEntryCount ? _self.totalEntryCount : totalEntryCount // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 
@@ -167,10 +164,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int positiveMoodCount,  int wiltingMoodCount,  int rainCloudMoodCount,  int currentStreakDays,  List<DayBloom> last7Days)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double gardenHealth,  PlantTier plantTier,  Atmosphere atmosphere,  List<DayScore> last7Days,  int totalEntryCount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GardenState() when $default != null:
-return $default(_that.positiveMoodCount,_that.wiltingMoodCount,_that.rainCloudMoodCount,_that.currentStreakDays,_that.last7Days);case _:
+return $default(_that.gardenHealth,_that.plantTier,_that.atmosphere,_that.last7Days,_that.totalEntryCount);case _:
   return orElse();
 
 }
@@ -188,10 +185,10 @@ return $default(_that.positiveMoodCount,_that.wiltingMoodCount,_that.rainCloudMo
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int positiveMoodCount,  int wiltingMoodCount,  int rainCloudMoodCount,  int currentStreakDays,  List<DayBloom> last7Days)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double gardenHealth,  PlantTier plantTier,  Atmosphere atmosphere,  List<DayScore> last7Days,  int totalEntryCount)  $default,) {final _that = this;
 switch (_that) {
 case _GardenState():
-return $default(_that.positiveMoodCount,_that.wiltingMoodCount,_that.rainCloudMoodCount,_that.currentStreakDays,_that.last7Days);case _:
+return $default(_that.gardenHealth,_that.plantTier,_that.atmosphere,_that.last7Days,_that.totalEntryCount);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -208,10 +205,10 @@ return $default(_that.positiveMoodCount,_that.wiltingMoodCount,_that.rainCloudMo
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int positiveMoodCount,  int wiltingMoodCount,  int rainCloudMoodCount,  int currentStreakDays,  List<DayBloom> last7Days)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double gardenHealth,  PlantTier plantTier,  Atmosphere atmosphere,  List<DayScore> last7Days,  int totalEntryCount)?  $default,) {final _that = this;
 switch (_that) {
 case _GardenState() when $default != null:
-return $default(_that.positiveMoodCount,_that.wiltingMoodCount,_that.rainCloudMoodCount,_that.currentStreakDays,_that.last7Days);case _:
+return $default(_that.gardenHealth,_that.plantTier,_that.atmosphere,_that.last7Days,_that.totalEntryCount);case _:
   return null;
 
 }
@@ -223,35 +220,32 @@ return $default(_that.positiveMoodCount,_that.wiltingMoodCount,_that.rainCloudMo
 
 
 class _GardenState extends GardenState {
-  const _GardenState({required this.positiveMoodCount, required this.wiltingMoodCount, required this.rainCloudMoodCount, required this.currentStreakDays, required final  List<DayBloom> last7Days}): _last7Days = last7Days,super._();
+  const _GardenState({required this.gardenHealth, required this.plantTier, required this.atmosphere, required final  List<DayScore> last7Days, required this.totalEntryCount}): _last7Days = last7Days,super._();
   
 
-/// Total number of positive mood entries in the user's history. Drives
-/// the canvas density: more positives → more flowers.
-@override final  int positiveMoodCount;
-/// Total number of negative-mood entries at intensity 1–3 (gentler
-/// negatives). Rendered as wilting plants on the garden canvas.
-@override final  int wiltingMoodCount;
-/// Total number of negative-mood entries at intensity 4–5 (stormier
-/// negatives). Rendered as rain clouds that drift and fade on their own
-/// — the user is never asked to clean them up.
-@override final  int rainCloudMoodCount;
-/// Consecutive days, ending today, on which the user logged at least one
-/// positive mood. Empty days break the streak silently — there is no
-/// streak-shaming copy. **Wilting and rain-cloud days do NOT contribute
-/// to the streak**, by design (see ADR-0006).
-@override final  int currentStreakDays;
-/// Last 7 days, newest first (today, yesterday, …, 6 days ago). Always
-/// length 7. Drives the weekly bloom bar.
- final  List<DayBloom> _last7Days;
-/// Last 7 days, newest first (today, yesterday, …, 6 days ago). Always
-/// length 7. Drives the weekly bloom bar.
-@override List<DayBloom> get last7Days {
+/// Garden Health for the current week (`H_t`, range [-1, +1]).
+/// Resets to 0 at the start of every week (weekly harvest cycle —
+/// see ADR-0010 §3).
+@override final  double gardenHealth;
+/// 5-tier ecosystem state derived from [gardenHealth].
+@override final  PlantTier plantTier;
+/// 4-state weather overlay derived from today's mean mood-score.
+/// Defaults to `calmSunny` when the user has not yet logged today.
+@override final  Atmosphere atmosphere;
+/// Last 7 days, newest first (today, yesterday, …, 6 days ago).
+/// Always length 7. Drives the daily-score strip below the canvas.
+ final  List<DayScore> _last7Days;
+/// Last 7 days, newest first (today, yesterday, …, 6 days ago).
+/// Always length 7. Drives the daily-score strip below the canvas.
+@override List<DayScore> get last7Days {
   if (_last7Days is EqualUnmodifiableListView) return _last7Days;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_last7Days);
 }
 
+/// Total entry count across all of history. Used by the screen for
+/// diagnostics ("12 entries this week") and to derive [isEmpty].
+@override final  int totalEntryCount;
 
 /// Create a copy of GardenState
 /// with the given fields replaced by the non-null parameter values.
@@ -263,16 +257,16 @@ _$GardenStateCopyWith<_GardenState> get copyWith => __$GardenStateCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GardenState&&(identical(other.positiveMoodCount, positiveMoodCount) || other.positiveMoodCount == positiveMoodCount)&&(identical(other.wiltingMoodCount, wiltingMoodCount) || other.wiltingMoodCount == wiltingMoodCount)&&(identical(other.rainCloudMoodCount, rainCloudMoodCount) || other.rainCloudMoodCount == rainCloudMoodCount)&&(identical(other.currentStreakDays, currentStreakDays) || other.currentStreakDays == currentStreakDays)&&const DeepCollectionEquality().equals(other._last7Days, _last7Days));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GardenState&&(identical(other.gardenHealth, gardenHealth) || other.gardenHealth == gardenHealth)&&(identical(other.plantTier, plantTier) || other.plantTier == plantTier)&&(identical(other.atmosphere, atmosphere) || other.atmosphere == atmosphere)&&const DeepCollectionEquality().equals(other._last7Days, _last7Days)&&(identical(other.totalEntryCount, totalEntryCount) || other.totalEntryCount == totalEntryCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,positiveMoodCount,wiltingMoodCount,rainCloudMoodCount,currentStreakDays,const DeepCollectionEquality().hash(_last7Days));
+int get hashCode => Object.hash(runtimeType,gardenHealth,plantTier,atmosphere,const DeepCollectionEquality().hash(_last7Days),totalEntryCount);
 
 @override
 String toString() {
-  return 'GardenState(positiveMoodCount: $positiveMoodCount, wiltingMoodCount: $wiltingMoodCount, rainCloudMoodCount: $rainCloudMoodCount, currentStreakDays: $currentStreakDays, last7Days: $last7Days)';
+  return 'GardenState(gardenHealth: $gardenHealth, plantTier: $plantTier, atmosphere: $atmosphere, last7Days: $last7Days, totalEntryCount: $totalEntryCount)';
 }
 
 
@@ -283,7 +277,7 @@ abstract mixin class _$GardenStateCopyWith<$Res> implements $GardenStateCopyWith
   factory _$GardenStateCopyWith(_GardenState value, $Res Function(_GardenState) _then) = __$GardenStateCopyWithImpl;
 @override @useResult
 $Res call({
- int positiveMoodCount, int wiltingMoodCount, int rainCloudMoodCount, int currentStreakDays, List<DayBloom> last7Days
+ double gardenHealth, PlantTier plantTier, Atmosphere atmosphere, List<DayScore> last7Days, int totalEntryCount
 });
 
 
@@ -300,14 +294,14 @@ class __$GardenStateCopyWithImpl<$Res>
 
 /// Create a copy of GardenState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? positiveMoodCount = null,Object? wiltingMoodCount = null,Object? rainCloudMoodCount = null,Object? currentStreakDays = null,Object? last7Days = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? gardenHealth = null,Object? plantTier = null,Object? atmosphere = null,Object? last7Days = null,Object? totalEntryCount = null,}) {
   return _then(_GardenState(
-positiveMoodCount: null == positiveMoodCount ? _self.positiveMoodCount : positiveMoodCount // ignore: cast_nullable_to_non_nullable
-as int,wiltingMoodCount: null == wiltingMoodCount ? _self.wiltingMoodCount : wiltingMoodCount // ignore: cast_nullable_to_non_nullable
-as int,rainCloudMoodCount: null == rainCloudMoodCount ? _self.rainCloudMoodCount : rainCloudMoodCount // ignore: cast_nullable_to_non_nullable
-as int,currentStreakDays: null == currentStreakDays ? _self.currentStreakDays : currentStreakDays // ignore: cast_nullable_to_non_nullable
-as int,last7Days: null == last7Days ? _self._last7Days : last7Days // ignore: cast_nullable_to_non_nullable
-as List<DayBloom>,
+gardenHealth: null == gardenHealth ? _self.gardenHealth : gardenHealth // ignore: cast_nullable_to_non_nullable
+as double,plantTier: null == plantTier ? _self.plantTier : plantTier // ignore: cast_nullable_to_non_nullable
+as PlantTier,atmosphere: null == atmosphere ? _self.atmosphere : atmosphere // ignore: cast_nullable_to_non_nullable
+as Atmosphere,last7Days: null == last7Days ? _self._last7Days : last7Days // ignore: cast_nullable_to_non_nullable
+as List<DayScore>,totalEntryCount: null == totalEntryCount ? _self.totalEntryCount : totalEntryCount // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 
@@ -315,41 +309,47 @@ as List<DayBloom>,
 }
 
 /// @nodoc
-mixin _$DayBloom {
+mixin _$DayScore {
 
-/// Midnight of the day in the user's local time zone.
- DateTime get day; DayBloomKind get kind;
-/// Create a copy of DayBloom
+/// Local-midnight `DateTime` of the day this cell represents (in the
+/// user's local time zone).
+ DateTime get day;/// Mean of `MoodScore.value` for entries logged on [day]. Range
+/// [-1, +1]. `null` when no entry was logged that day — distinct
+/// from "neutral 0", which would be a logged Okay×0 (impossible).
+ double? get avgScore;/// Number of entries logged on [day]. Used by the strip's a11y
+/// label and by callers that want to surface "tap for entries".
+ int get entryCount;
+/// Create a copy of DayScore
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$DayBloomCopyWith<DayBloom> get copyWith => _$DayBloomCopyWithImpl<DayBloom>(this as DayBloom, _$identity);
+$DayScoreCopyWith<DayScore> get copyWith => _$DayScoreCopyWithImpl<DayScore>(this as DayScore, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DayBloom&&(identical(other.day, day) || other.day == day)&&(identical(other.kind, kind) || other.kind == kind));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DayScore&&(identical(other.day, day) || other.day == day)&&(identical(other.avgScore, avgScore) || other.avgScore == avgScore)&&(identical(other.entryCount, entryCount) || other.entryCount == entryCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,day,kind);
+int get hashCode => Object.hash(runtimeType,day,avgScore,entryCount);
 
 @override
 String toString() {
-  return 'DayBloom(day: $day, kind: $kind)';
+  return 'DayScore(day: $day, avgScore: $avgScore, entryCount: $entryCount)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $DayBloomCopyWith<$Res>  {
-  factory $DayBloomCopyWith(DayBloom value, $Res Function(DayBloom) _then) = _$DayBloomCopyWithImpl;
+abstract mixin class $DayScoreCopyWith<$Res>  {
+  factory $DayScoreCopyWith(DayScore value, $Res Function(DayScore) _then) = _$DayScoreCopyWithImpl;
 @useResult
 $Res call({
- DateTime day, DayBloomKind kind
+ DateTime day, double? avgScore, int entryCount
 });
 
 
@@ -357,28 +357,29 @@ $Res call({
 
 }
 /// @nodoc
-class _$DayBloomCopyWithImpl<$Res>
-    implements $DayBloomCopyWith<$Res> {
-  _$DayBloomCopyWithImpl(this._self, this._then);
+class _$DayScoreCopyWithImpl<$Res>
+    implements $DayScoreCopyWith<$Res> {
+  _$DayScoreCopyWithImpl(this._self, this._then);
 
-  final DayBloom _self;
-  final $Res Function(DayBloom) _then;
+  final DayScore _self;
+  final $Res Function(DayScore) _then;
 
-/// Create a copy of DayBloom
+/// Create a copy of DayScore
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? day = null,Object? kind = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? day = null,Object? avgScore = freezed,Object? entryCount = null,}) {
   return _then(_self.copyWith(
 day: null == day ? _self.day : day // ignore: cast_nullable_to_non_nullable
-as DateTime,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
-as DayBloomKind,
+as DateTime,avgScore: freezed == avgScore ? _self.avgScore : avgScore // ignore: cast_nullable_to_non_nullable
+as double?,entryCount: null == entryCount ? _self.entryCount : entryCount // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 
 }
 
 
-/// Adds pattern-matching-related methods to [DayBloom].
-extension DayBloomPatterns on DayBloom {
+/// Adds pattern-matching-related methods to [DayScore].
+extension DayScorePatterns on DayScore {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -391,10 +392,10 @@ extension DayBloomPatterns on DayBloom {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DayBloom value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DayScore value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _DayBloom() when $default != null:
+case _DayScore() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -413,10 +414,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DayBloom value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DayScore value)  $default,){
 final _that = this;
 switch (_that) {
-case _DayBloom():
+case _DayScore():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -434,10 +435,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DayBloom value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DayScore value)?  $default,){
 final _that = this;
 switch (_that) {
-case _DayBloom() when $default != null:
+case _DayScore() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -455,10 +456,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime day,  DayBloomKind kind)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime day,  double? avgScore,  int entryCount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _DayBloom() when $default != null:
-return $default(_that.day,_that.kind);case _:
+case _DayScore() when $default != null:
+return $default(_that.day,_that.avgScore,_that.entryCount);case _:
   return orElse();
 
 }
@@ -476,10 +477,10 @@ return $default(_that.day,_that.kind);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime day,  DayBloomKind kind)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime day,  double? avgScore,  int entryCount)  $default,) {final _that = this;
 switch (_that) {
-case _DayBloom():
-return $default(_that.day,_that.kind);case _:
+case _DayScore():
+return $default(_that.day,_that.avgScore,_that.entryCount);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -496,10 +497,10 @@ return $default(_that.day,_that.kind);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime day,  DayBloomKind kind)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime day,  double? avgScore,  int entryCount)?  $default,) {final _that = this;
 switch (_that) {
-case _DayBloom() when $default != null:
-return $default(_that.day,_that.kind);case _:
+case _DayScore() when $default != null:
+return $default(_that.day,_that.avgScore,_that.entryCount);case _:
   return null;
 
 }
@@ -510,45 +511,52 @@ return $default(_that.day,_that.kind);case _:
 /// @nodoc
 
 
-class _DayBloom implements DayBloom {
-  const _DayBloom({required this.day, required this.kind});
+class _DayScore implements DayScore {
+  const _DayScore({required this.day, required this.avgScore, required this.entryCount});
   
 
-/// Midnight of the day in the user's local time zone.
+/// Local-midnight `DateTime` of the day this cell represents (in the
+/// user's local time zone).
 @override final  DateTime day;
-@override final  DayBloomKind kind;
+/// Mean of `MoodScore.value` for entries logged on [day]. Range
+/// [-1, +1]. `null` when no entry was logged that day — distinct
+/// from "neutral 0", which would be a logged Okay×0 (impossible).
+@override final  double? avgScore;
+/// Number of entries logged on [day]. Used by the strip's a11y
+/// label and by callers that want to surface "tap for entries".
+@override final  int entryCount;
 
-/// Create a copy of DayBloom
+/// Create a copy of DayScore
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$DayBloomCopyWith<_DayBloom> get copyWith => __$DayBloomCopyWithImpl<_DayBloom>(this, _$identity);
+_$DayScoreCopyWith<_DayScore> get copyWith => __$DayScoreCopyWithImpl<_DayScore>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DayBloom&&(identical(other.day, day) || other.day == day)&&(identical(other.kind, kind) || other.kind == kind));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DayScore&&(identical(other.day, day) || other.day == day)&&(identical(other.avgScore, avgScore) || other.avgScore == avgScore)&&(identical(other.entryCount, entryCount) || other.entryCount == entryCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,day,kind);
+int get hashCode => Object.hash(runtimeType,day,avgScore,entryCount);
 
 @override
 String toString() {
-  return 'DayBloom(day: $day, kind: $kind)';
+  return 'DayScore(day: $day, avgScore: $avgScore, entryCount: $entryCount)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$DayBloomCopyWith<$Res> implements $DayBloomCopyWith<$Res> {
-  factory _$DayBloomCopyWith(_DayBloom value, $Res Function(_DayBloom) _then) = __$DayBloomCopyWithImpl;
+abstract mixin class _$DayScoreCopyWith<$Res> implements $DayScoreCopyWith<$Res> {
+  factory _$DayScoreCopyWith(_DayScore value, $Res Function(_DayScore) _then) = __$DayScoreCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime day, DayBloomKind kind
+ DateTime day, double? avgScore, int entryCount
 });
 
 
@@ -556,20 +564,21 @@ $Res call({
 
 }
 /// @nodoc
-class __$DayBloomCopyWithImpl<$Res>
-    implements _$DayBloomCopyWith<$Res> {
-  __$DayBloomCopyWithImpl(this._self, this._then);
+class __$DayScoreCopyWithImpl<$Res>
+    implements _$DayScoreCopyWith<$Res> {
+  __$DayScoreCopyWithImpl(this._self, this._then);
 
-  final _DayBloom _self;
-  final $Res Function(_DayBloom) _then;
+  final _DayScore _self;
+  final $Res Function(_DayScore) _then;
 
-/// Create a copy of DayBloom
+/// Create a copy of DayScore
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? day = null,Object? kind = null,}) {
-  return _then(_DayBloom(
+@override @pragma('vm:prefer-inline') $Res call({Object? day = null,Object? avgScore = freezed,Object? entryCount = null,}) {
+  return _then(_DayScore(
 day: null == day ? _self.day : day // ignore: cast_nullable_to_non_nullable
-as DateTime,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
-as DayBloomKind,
+as DateTime,avgScore: freezed == avgScore ? _self.avgScore : avgScore // ignore: cast_nullable_to_non_nullable
+as double?,entryCount: null == entryCount ? _self.entryCount : entryCount // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 

@@ -777,3 +777,470 @@ describe("Storage rules — users/{uid}/media/**", () => {
     );
   });
 });
+
+/**
+ * Sprint-4 redesign — Pattern Engine result collection.
+ *
+ * The 5-algorithm engine (Mann-Kendall, sliding 5-of-7, 3-consecutive
+ * S<=-0.6, Z-score, CUSUM) writes one PatternResult per local-midnight
+ * day to `users/{uid}/patterns/{dateId}` via the
+ * `patterns_firestore_datasource`. Rule lives in `firestore.rules` per
+ * ADR-0011 §5 / HB-006 §"Sub-track D".
+ *
+ * The schema's load-bearing invariant is the field allowlist: NO mood
+ * text, NO entry id, NO mood category, NO intensity. Only the 5
+ * algorithm outputs + the resolved tier + dateId + schemaV.
+ */
+describe("Sprint-4 patterns/{dateId} rule (ADR-0011)", () => {
+  const TODAY = "2026-05-09";
+
+  function basePattern() {
+    return {
+      dateId: TODAY,
+      mannKendallZ: -2.21,
+      slidingNegCount: 4,
+      consecutiveHighIntensity: 2,
+      zScoreToday: -1.8,
+      cusumC: 0.5,
+      triggeredTier: "two",
+      schemaV: 1,
+    };
+  }
+
+  it("owner can create a valid PatternResult doc", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), basePattern()),
+    );
+  });
+
+  it("non-owner cannot read another user's patterns", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${USER_A}/patterns/${TODAY}`),
+        basePattern(),
+      );
+    });
+    const userB = testEnv.authenticatedContext(USER_B).firestore();
+    await assertFails(
+      getDoc(doc(userB, `users/${USER_A}/patterns/${TODAY}`)),
+    );
+  });
+
+  it("create with bad doc id (not yyyy-MM-dd) is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/patterns/2026-5-9`), {
+        ...basePattern(),
+        dateId: "2026-5-9",
+      }),
+    );
+  });
+
+  it("create with mismatched dateId field is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        dateId: "2026-05-08",
+      }),
+    );
+  });
+
+  it("create with off-allowlist key (e.g. text) is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        text: "leaked mood text",
+      }),
+    );
+  });
+
+  it("create with off-allowlist key (e.g. moodCode) is denied — PII guard", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        moodCode: "sad",
+      }),
+    );
+  });
+
+  it("create with triggeredTier outside allowlist is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        triggeredTier: "four",
+      }),
+    );
+  });
+
+  it("create with slidingNegCount > 7 is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        slidingNegCount: 8,
+      }),
+    );
+  });
+
+  it("create with negative cusumC is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        cusumC: -0.1,
+      }),
+    );
+  });
+
+  it("create with null triggeredTier is allowed (no algorithm fired)", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        triggeredTier: null,
+        mannKendallZ: null,
+        zScoreToday: null,
+      }),
+    );
+  });
+
+  it("update with same-day re-evaluation is allowed (set merge: false overwrite)", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), basePattern()),
+    );
+    await assertSucceeds(
+      setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
+        ...basePattern(),
+        slidingNegCount: 5,
+        triggeredTier: "two",
+      }),
+    );
+  });
+
+  it("delete is denied (write-once-per-day-then-overwrite contract)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${USER_A}/patterns/${TODAY}`),
+        basePattern(),
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      deleteDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`)),
+    );
+  });
+});
+
+/**
+ * Sprint-4 S5-stub denials. Both `interventions/{id}` and
+ * `cooldowns/{type}` are reserved for the new tier-aware dispatcher
+ * landing in S5 (ADR-0011 §5). Reads allowed so S5's read-side wiring
+ * lands without rule churn; writes denied in v1.0 because the
+ * dispatcher is gated off via Remote Config (`interventionDispatchEnabled`).
+ */
+describe("Sprint-4 S5-stub collections (ADR-0011)", () => {
+  it("interventions/{id} write is denied for owner in v1.0", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/interventions/abc`), {
+        tier: "one",
+        dispatchedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("interventions/{id} read is allowed for owner", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    // Doc may or may not exist — assertSucceeds covers both.
+    await assertSucceeds(
+      getDoc(doc(userA, `users/${USER_A}/interventions/abc`)),
+    );
+  });
+
+  it("cooldowns/{type} write is denied for owner in v1.0", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/cooldowns/tier_one`), {
+        lastDispatchedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("cooldowns/{type} read is allowed for owner", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      getDoc(doc(userA, `users/${USER_A}/cooldowns/tier_one`)),
+    );
+  });
+});
+
+/**
+ * v1.0-polish — `users/{uid}.insightsDisclaimerAcked` field-level guard.
+ *
+ * Spec §4 + ADR-0010: the bipolar/medical disclaimer ack is one-way
+ * (false → true). The user-doc rule splits read / create / update so
+ * the update path can reject any client write that flips the field
+ * back from `true` to `false` (or to absent, which evaluates as
+ * `false` via `get(field, false)`). Admin SDK writes bypass these
+ * rules and remain free to reset the field if S5 ever needs a re-ack
+ * flow.
+ */
+describe("v1.0-polish users/{uid}.insightsDisclaimerAcked one-way guard", () => {
+  it("create with insightsDisclaimerAcked: false is allowed", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(doc(userA, `users/${USER_A}`), {
+        displayName: "Alice",
+        insightsDisclaimerAcked: false,
+      }),
+    );
+  });
+
+  it("create with insightsDisclaimerAcked: true is allowed (eager ack)", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(doc(userA, `users/${USER_A}`), {
+        displayName: "Alice",
+        insightsDisclaimerAcked: true,
+      }),
+    );
+  });
+
+  it("update from false → true is allowed (the canonical ack path)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `users/${USER_A}`), {
+        displayName: "Alice",
+        insightsDisclaimerAcked: false,
+      });
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      updateDoc(doc(userA, `users/${USER_A}`), {
+        insightsDisclaimerAcked: true,
+      }),
+    );
+  });
+
+  it("update from missing → true is allowed (legacy doc upgrades)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `users/${USER_A}`), {
+        displayName: "Alice",
+        // insightsDisclaimerAcked field absent — legacy doc shape.
+      });
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      updateDoc(doc(userA, `users/${USER_A}`), {
+        insightsDisclaimerAcked: true,
+      }),
+    );
+  });
+
+  it("update from true → false is DENIED (the one-way guard)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `users/${USER_A}`), {
+        displayName: "Alice",
+        insightsDisclaimerAcked: true,
+      });
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      updateDoc(doc(userA, `users/${USER_A}`), {
+        insightsDisclaimerAcked: false,
+      }),
+    );
+  });
+
+  it("update from true → field deleted is DENIED (no ack-revert via deletion)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `users/${USER_A}`), {
+        displayName: "Alice",
+        insightsDisclaimerAcked: true,
+      });
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    // Deleting the field is equivalent to setting it to absent →
+    // `get(field, false)` returns false, which the rule treats as the
+    // forbidden true→false transition.
+    await assertFails(
+      // Equivalent to deleting via FieldValue.delete; we approximate
+      // here by passing a bare empty merge that drops the prior value.
+      // (Direct FieldValue.delete API not used to keep the test
+      // assertion-form consistent with the rest of the file.)
+      setDoc(
+        doc(userA, `users/${USER_A}`),
+        { displayName: "Alice" },
+        { merge: false },
+      ),
+    );
+  });
+
+  it("update with field unchanged (still true) is allowed", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `users/${USER_A}`), {
+        displayName: "Alice",
+        insightsDisclaimerAcked: true,
+      });
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    // The `displayName` change touches only that field; the
+    // `insightsDisclaimerAcked` value remains `true` in the resulting
+    // doc, satisfying the second arm of the rule.
+    await assertSucceeds(
+      updateDoc(doc(userA, `users/${USER_A}`), { displayName: "Alice II" }),
+    );
+  });
+
+  it("non-owner cannot read another user's profile", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `users/${USER_A}`), {
+        displayName: "Alice",
+        insightsDisclaimerAcked: true,
+      });
+    });
+    const userB = testEnv.authenticatedContext(USER_B).firestore();
+    await assertFails(getDoc(doc(userB, `users/${USER_A}`)));
+  });
+});
+
+/**
+ * v1.0-polish — `users/{uid}/weeklyGardens/{weekId}` archive rule.
+ *
+ * HB-005 Track 6.1 + ADR-0010 §6 ("Weekly Harvest cycle: write-once-on-
+ * archive, then read-only"). The collection was unintentionally omitted
+ * from the Sprint-4 architect rules pass (firestore.rules commit
+ * `a7c1dd80` only added `patterns/{date}` + S5-stub denials). Result:
+ * a 403 on `BatchGetDocuments` from `weeklyGardenHistoryProvider` and
+ * the dev-mode "Force harvest now" button — Firestore denies-by-default
+ * when no match block is present. This rule unblocks the History tab
+ * read-side AND the create-side write.
+ *
+ * Validation: doc-id `^\d{4}-W\d{2}$`; `weekId` field matches the doc
+ * id; `archivedAt` is an ISO-8601 string (json_serializable's default
+ * DateTime serializer — Firestore does NOT auto-convert unless the
+ * client uses `FieldValue.serverTimestamp()`). Update + delete denied.
+ */
+describe("v1.0-polish weeklyGardens/{weekId} write-once rule", () => {
+  const WEEK_ID = "2026-W18";
+
+  function baseGarden() {
+    return {
+      weekId: WEEK_ID,
+      weekStart: "2026-04-27T00:00:00.000",
+      weekEnd: "2026-05-04T00:00:00.000",
+      entries: [],
+      healthHistory: [0.0, 0.1],
+      summary: {
+        averageMoodScore: 0.2,
+        moodCounts: { happy: 1 },
+        endingPlantTier: "thriving",
+        totalEntryCount: 1,
+        triggeredTierCount: 0,
+      },
+      archivedAt: "2026-05-04T10:30:00.000",
+      schemaV: 1,
+    };
+  }
+
+  it("owner can create a valid archive doc", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(
+        doc(userA, `users/${USER_A}/weeklyGardens/${WEEK_ID}`),
+        baseGarden(),
+      ),
+    );
+  });
+
+  it("owner can read their archive history", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${USER_A}/weeklyGardens/${WEEK_ID}`),
+        baseGarden(),
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      getDoc(doc(userA, `users/${USER_A}/weeklyGardens/${WEEK_ID}`)),
+    );
+  });
+
+  it("non-owner cannot read another user's archive", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${USER_A}/weeklyGardens/${WEEK_ID}`),
+        baseGarden(),
+      );
+    });
+    const userB = testEnv.authenticatedContext(USER_B).firestore();
+    await assertFails(
+      getDoc(doc(userB, `users/${USER_A}/weeklyGardens/${WEEK_ID}`)),
+    );
+  });
+
+  it("create with malformed weekId (e.g. 2026-W5) is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/weeklyGardens/2026-W5`), {
+        ...baseGarden(),
+        weekId: "2026-W5",
+      }),
+    );
+  });
+
+  it("create with mismatched weekId field is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      setDoc(doc(userA, `users/${USER_A}/weeklyGardens/${WEEK_ID}`), {
+        ...baseGarden(),
+        weekId: "2026-W17",
+      }),
+    );
+  });
+
+  it("create without archivedAt is denied", async () => {
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    const { archivedAt: _omit, ...withoutArchivedAt } = baseGarden();
+    await assertFails(
+      setDoc(
+        doc(userA, `users/${USER_A}/weeklyGardens/${WEEK_ID}`),
+        withoutArchivedAt,
+      ),
+    );
+  });
+
+  it("update is DENIED (write-once contract)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${USER_A}/weeklyGardens/${WEEK_ID}`),
+        baseGarden(),
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      updateDoc(
+        doc(userA, `users/${USER_A}/weeklyGardens/${WEEK_ID}`),
+        { schemaV: 2 },
+      ),
+    );
+  });
+
+  it("delete is DENIED (history is a record, not a redo)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${USER_A}/weeklyGardens/${WEEK_ID}`),
+        baseGarden(),
+      );
+    });
+    const userA = testEnv.authenticatedContext(USER_A).firestore();
+    await assertFails(
+      deleteDoc(doc(userA, `users/${USER_A}/weeklyGardens/${WEEK_ID}`)),
+    );
+  });
+});

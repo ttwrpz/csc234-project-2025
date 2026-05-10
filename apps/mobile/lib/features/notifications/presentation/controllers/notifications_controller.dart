@@ -56,7 +56,11 @@ class NotificationsController extends Notifier<NotificationsToggleState> {
   @override
   NotificationsToggleState build() {
     return NotificationsToggleState(
-      enabled: _preference?.isCheerUpEnabled() ?? true,
+      // Default flipped to `false` in v1.0 polish (2026-05-10): cheer-
+      // up reminders must be off until the user explicitly grants
+      // notification permission. See `NotificationsPreferenceDatasource`
+      // docstring for the rationale.
+      enabled: _preference?.isCheerUpEnabled() ?? false,
     );
   }
 

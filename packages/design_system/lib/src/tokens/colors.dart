@@ -12,6 +12,16 @@ abstract final class MoodBloomColors {
   static const Color amber = Color(0xFFE8A23B);
   static const Color coral = Color(0xFFF4A78C);
 
+  /// Deeper coral suitable for destructive TEXT on a cream surface.
+  /// `coral` (0xFFF4A78C, luminance ~0.50) gives a ~2.2:1 contrast
+  /// ratio against `surfaceCream` and fails WCAG AA. This deeper tone
+  /// (luminance ~0.13) lands at ~7:1 — passes AAA — while staying in
+  /// the warm coral hue family. Use [coralText] for ListTile titles,
+  /// `Sign out` / `Wipe…` labels, snackbar copy, etc. Filled buttons
+  /// can keep `coral` as their background since the foreground there
+  /// is white (ratio is fine on white).
+  static const Color coralText = Color(0xFFA63B2E);
+
   // Neutrals (light mode)
   /// Warm cream scaffold. Updated to the prototype value `#FBFAF6`.
   static const Color surfaceCream = Color(0xFFFBFAF6);

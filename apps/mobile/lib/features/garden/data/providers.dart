@@ -1,3 +1,11 @@
+// ignore_for_file: deprecated_member_use
+//
+// `detectPattern` is intentionally consumed below while the legacy 2-rule
+// dispatcher path is gated behind `interventionDispatchEnabled` (default
+// false in v1.0). The new 5-algorithm engine writes
+// `users/{uid}/patterns/{date}` independently; S5 re-points the dispatcher
+// at that doc and removes this caller. ADR-0011.
+
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,11 +13,12 @@ import '../../../app/providers.dart';
 import '../../auth/data/providers.dart';
 import '../../mood/data/providers.dart';
 import '../../mood/domain/entities/mood_entry.dart';
+import '../../pattern_engine/domain/legacy_pattern_detector.dart';
 import '../domain/cheer_up_events_repository.dart';
 import '../domain/entities/garden_state.dart';
 import '../domain/entities/intervention_state.dart';
+import '../domain/entities/plant_tier.dart';
 import '../domain/intervention_state_repository.dart';
-import '../domain/pattern_detector.dart';
 import '../domain/usecases/compute_garden_state.dart';
 import 'cheer_up_events_repository_impl.dart';
 import 'datasources/cheer_up_events_firestore_datasource.dart';
@@ -29,21 +38,74 @@ final computeGardenStateUseCaseProvider = Provider<ComputeGardenStateUseCase>((
   return const ComputeGardenStateUseCase();
 });
 
+/// Debug-only override that forces a specific [PlantTier] on the
+/// computed [GardenState]. `null` (default) means "no override — use
+/// the EWMA-derived tier". Settings → Debug exposes a tile that cycles
+/// this through the 5 tiers so reviewers can see every visual state
+/// without manufacturing entries.
+///
+/// Production paths never set this. The override is a runtime state,
+/// not persisted across launches — it resets to `null` on app restart.
+class DebugPlantTierOverride extends Notifier<PlantTier?> {
+  @override
+  PlantTier? build() => null;
+
+  void set(PlantTier? tier) => state = tier;
+}
+
+final debugPlantTierOverrideProvider =
+    NotifierProvider<DebugPlantTierOverride, PlantTier?>(
+      DebugPlantTierOverride.new,
+    );
+
 /// Reactive `GardenState` derived from the signed-in user's mood stream.
 ///
 /// We watch the upstream `AsyncValue<List<MoodEntry>>` directly (not via the
 /// deprecated `.stream` accessor) and map each non-loading state through the
 /// pure use case. `DateTime.now()` is captured on every recompute so the
-/// bloom bar / streak roll forward when the underlying stream re-emits (e.g.
-/// a fresh mood log). Crossing midnight without a new emission is
-/// acceptable — the bar refreshes on the next interaction.
+/// daily-score strip + atmosphere roll forward when the underlying stream
+/// re-emits (e.g. a fresh mood log). Crossing midnight without a new
+/// emission is acceptable — the strip refreshes on the next interaction.
+///
+/// `weekStart` is the local-midnight `DateTime` of the current week's
+/// Monday. `H_t` resets to 0 on every fresh week (weekly harvest cycle —
+/// ADR-0010 §3).
 final gardenStateStreamProvider = Provider<AsyncValue<GardenState>>((ref) {
   final useCase = ref.watch(computeGardenStateUseCaseProvider);
   final moods = ref.watch(myMoodsStreamProvider);
-  return moods.whenData(
-    (entries) => useCase(entries: entries, now: DateTime.now()),
-  );
+  final tierOverride = ref.watch(debugPlantTierOverrideProvider);
+  return moods.whenData((entries) {
+    final now = DateTime.now();
+    final state = useCase(
+      entries: entries,
+      now: now,
+      weekStart: _localMondayMidnight(now),
+    );
+    if (tierOverride == null) return state;
+    return GardenState(
+      gardenHealth: state.gardenHealth,
+      plantTier: tierOverride,
+      atmosphere: state.atmosphere,
+      last7Days: state.last7Days,
+      totalEntryCount: state.totalEntryCount,
+    );
+  });
 });
+
+/// Local-midnight `DateTime` of the Monday of the week containing [now].
+/// Pure helper colocated with the provider — kept private because the
+/// domain layer should not own week-start semantics (those are presentation /
+/// product policy: Monday vs Sunday vs ISO weeks).
+DateTime _localMondayMidnight(DateTime now) {
+  final local = now.toLocal();
+  final daysFromMonday = local.weekday - DateTime.monday;
+  final monday = DateTime(
+    local.year,
+    local.month,
+    local.day,
+  ).subtract(Duration(days: daysFromMonday));
+  return monday;
+}
 
 /// Underlying mood entries the garden canvas iterates to render per-entry
 /// glyphs (flower / wilting plant / rain cloud). Mirrors

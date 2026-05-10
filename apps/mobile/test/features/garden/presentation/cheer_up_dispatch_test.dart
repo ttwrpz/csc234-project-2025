@@ -5,6 +5,8 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moodbloom/app/feature_flags.dart';
+import 'package:moodbloom/app/providers.dart';
 import 'package:moodbloom/features/auth/data/providers.dart';
 import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
 import 'package:moodbloom/features/garden/data/providers.dart';
@@ -127,6 +129,13 @@ void main() {
                 (_) async => stateRepo,
               ),
               cheerUpEventsRepositoryProvider.overrideWithValue(eventsRepo),
+              // ADR-0011 §4: existing dispatch tests assert behaviour
+              // BEFORE the v1.0 gate (default false). Flip ON for these.
+              featureFlagsProvider.overrideWithValue(
+                FeatureFlags.defaults().copyWith(
+                  interventionDispatchEnabled: true,
+                ),
+              ),
             ],
             child: MaterialApp(
               theme: buildLightTheme(),
@@ -178,6 +187,13 @@ void main() {
                 (_) async => stateRepo,
               ),
               cheerUpEventsRepositoryProvider.overrideWithValue(eventsRepo),
+              // ADR-0011 §4: existing dispatch tests assert behaviour
+              // BEFORE the v1.0 gate (default false). Flip ON for these.
+              featureFlagsProvider.overrideWithValue(
+                FeatureFlags.defaults().copyWith(
+                  interventionDispatchEnabled: true,
+                ),
+              ),
             ],
             child: MaterialApp(
               theme: buildLightTheme(),

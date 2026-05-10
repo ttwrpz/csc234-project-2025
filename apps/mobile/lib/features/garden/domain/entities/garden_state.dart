@@ -1,79 +1,75 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'atmosphere.dart';
+import 'plant_tier.dart';
+
 part 'garden_state.freezed.dart';
 
 /// Snapshot of the user's garden visualization. Computed by
 /// `ComputeGardenStateUseCase` from a list of `MoodEntry`s and rendered by
-/// `GardenScreen`. The entity is pure Dart so the domain layer stays free of
+/// `GardenScreen`. Pure Dart so the domain layer stays free of
 /// Flutter / Firebase imports.
 ///
-/// Sprint 4 realises the compassionate-reframing variants previously only
-/// scaffolded in S3:
-///  * positive moods → flowers (drives `positiveMoodCount`)
-///  * `negativeMild` (or any negative at intensity ≤ 3) → wilting plants
-///    (`wiltingMoodCount`)
-///  * `negativeStrong` *or* any negative at intensity ≥ 4 → rain clouds that
-///    self-fade (`rainCloudMoodCount`)
+/// The Sprint 4–5 ecosystem redesign (ADR-0010) replaces the previous
+/// per-entry glyph counts (positive / wilting / rain-cloud) with two
+/// signals on different timescales:
+///   * [gardenHealth] — slow weekly EWMA (`H_t` ∈ [-1, +1]) folded over
+///     per-day mood-score means. Drives [plantTier] (5 alive states).
+///   * [atmosphere] — today-only mean mood-score, mapped to one of 4
+///     weather states (calm/bright sun, light rain, storm). Resets
+///     at local midnight.
 ///
-/// The split between wilting and rain-cloud is driven by the user-felt
-/// **intensity**, not the `MoodCategory` bucket — see ADR-0006 and
-/// `ComputeGardenStateUseCase` for the rule.
+/// Plants are NEVER destroyed/wilting/dying in any tier — the Storm
+/// Season tier renders rain falling AROUND a sheltered garden, not on
+/// the plants themselves. See ADR-0010 §1 for the no-wilt copy rule.
 @freezed
 abstract class GardenState with _$GardenState {
   const factory GardenState({
-    /// Total number of positive mood entries in the user's history. Drives
-    /// the canvas density: more positives → more flowers.
-    required int positiveMoodCount,
+    /// Garden Health for the current week (`H_t`, range [-1, +1]).
+    /// Resets to 0 at the start of every week (weekly harvest cycle —
+    /// see ADR-0010 §3).
+    required double gardenHealth,
 
-    /// Total number of negative-mood entries at intensity 1–3 (gentler
-    /// negatives). Rendered as wilting plants on the garden canvas.
-    required int wiltingMoodCount,
+    /// 5-tier ecosystem state derived from [gardenHealth].
+    required PlantTier plantTier,
 
-    /// Total number of negative-mood entries at intensity 4–5 (stormier
-    /// negatives). Rendered as rain clouds that drift and fade on their own
-    /// — the user is never asked to clean them up.
-    required int rainCloudMoodCount,
+    /// 4-state weather overlay derived from today's mean mood-score.
+    /// Defaults to `calmSunny` when the user has not yet logged today.
+    required Atmosphere atmosphere,
 
-    /// Consecutive days, ending today, on which the user logged at least one
-    /// positive mood. Empty days break the streak silently — there is no
-    /// streak-shaming copy. **Wilting and rain-cloud days do NOT contribute
-    /// to the streak**, by design (see ADR-0006).
-    required int currentStreakDays,
+    /// Last 7 days, newest first (today, yesterday, …, 6 days ago).
+    /// Always length 7. Drives the daily-score strip below the canvas.
+    required List<DayScore> last7Days,
 
-    /// Last 7 days, newest first (today, yesterday, …, 6 days ago). Always
-    /// length 7. Drives the weekly bloom bar.
-    required List<DayBloom> last7Days,
+    /// Total entry count across all of history. Used by the screen for
+    /// diagnostics ("12 entries this week") and to derive [isEmpty].
+    required int totalEntryCount,
   }) = _GardenState;
 
   const GardenState._();
 
-  /// True when the canvas has nothing to render across all three glyph
-  /// kinds. Used by the screen to swap in the compassionate empty-state copy.
-  bool get isEmpty =>
-      positiveMoodCount == 0 &&
-      wiltingMoodCount == 0 &&
-      rainCloudMoodCount == 0;
+  /// True when the user has logged no entries at all. Used by the
+  /// screen to swap in the compassionate empty-state copy.
+  bool get isEmpty => totalEntryCount == 0;
 }
 
-/// One cell in the weekly bloom bar.
+/// One cell in the daily-score strip. Carries the raw signed magnitude
+/// so the widget can shade positive/negative days at varying intensity
+/// rather than collapsing each day into a single "kind" enum.
 @freezed
-abstract class DayBloom with _$DayBloom {
-  const factory DayBloom({
-    /// Midnight of the day in the user's local time zone.
+abstract class DayScore with _$DayScore {
+  const factory DayScore({
+    /// Local-midnight `DateTime` of the day this cell represents (in the
+    /// user's local time zone).
     required DateTime day,
-    required DayBloomKind kind,
-  }) = _DayBloom;
-}
 
-/// Visual treatment for a single day in the bloom bar.
-///
-/// S4 realises all four variants:
-///  * [bloom] — at least one positive mood that day.
-///  * [rainCloud] — at least one negative mood at intensity ≥ 4 that day,
-///    and no positives. Highest negative priority.
-///  * [wilting] — at least one negative mood at intensity ≤ 3 that day,
-///    and no positives or rain-cloud entries.
-///  * [empty] — no entries at all that day.
-///
-/// Day-aggregation priority is `bloom > rainCloud > wilting > empty`.
-enum DayBloomKind { bloom, empty, wilting, rainCloud }
+    /// Mean of `MoodScore.value` for entries logged on [day]. Range
+    /// [-1, +1]. `null` when no entry was logged that day — distinct
+    /// from "neutral 0", which would be a logged Okay×0 (impossible).
+    required double? avgScore,
+
+    /// Number of entries logged on [day]. Used by the strip's a11y
+    /// label and by callers that want to surface "tap for entries".
+    required int entryCount,
+  }) = _DayScore;
+}

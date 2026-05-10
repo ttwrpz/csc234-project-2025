@@ -1,6 +1,8 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
+import '../../../garden/domain/entities/flower_species.dart';
+import '../../../garden/presentation/widgets/flower_sprite.dart';
 import '../../domain/entities/mood_type.dart';
 import 'mood_kind_adapter.dart';
 
@@ -29,7 +31,7 @@ class MoodTypeTile extends StatelessWidget {
     final palette = Theme.of(context).extension<MbMoodPalette>()!;
     final mbKind = type.mbKind;
     final color = palette.colorOf(mbKind);
-    final emoji = palette.emojiOf(mbKind);
+    final species = FlowerSpecies.forMood(type);
     final label = type.name;
 
     final bg = selected ? color.withAlpha(0x33) : mb.card;
@@ -55,8 +57,8 @@ class MoodTypeTile extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(emoji, style: const TextStyle(fontSize: 22)),
-                const SizedBox(height: 2),
+                FlowerSprite(species: species, size: 28, tint: color),
+                const SizedBox(height: 4),
                 Text(
                   label,
                   style: MbFonts.nunito(

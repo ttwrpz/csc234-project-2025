@@ -1,13 +1,19 @@
+import 'dart:async';
+
 import 'package:core/core.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../auth/data/providers.dart';
+import '../../../pattern_engine/data/providers.dart';
+import '../../../tokens/data/providers.dart';
+import '../../../tokens/domain/token_failure.dart';
 import '../../data/providers.dart';
 import '../../domain/entities/mood_draft.dart';
 import '../../domain/entities/mood_entry.dart';
 import '../../domain/entities/mood_media.dart';
 import '../../domain/entities/mood_type.dart';
 import '../../domain/mood_failure.dart';
+import 'ai_suggestion_controller.dart';
 import 'log_mood_submission_controller.dart';
 
 part 'log_mood_controller.g.dart';
@@ -29,7 +35,18 @@ class LogMoodController extends _$LogMoodController {
   /// session does not leak into the next one (the controller is a
   /// non-autoDispose `Notifier`, so without an explicit reset its state
   /// would persist across tab swaps).
-  void reset() => state = MoodDraft.empty();
+  ///
+  /// Also invalidates the (autoDispose) AI suggestion controller so the
+  /// suggestion pill from the prior entry does not linger when the
+  /// draft is cleared. The TextField only fires `onChanged` on user
+  /// input; programmatic resets via `state = MoodDraft.empty()` do
+  /// NOT propagate to `aiSuggestionController.onTextChanged`, so the
+  /// pill would otherwise remain on tab swap / post-save until the
+  /// user types into the empty field. Fix: clear it explicitly.
+  void reset() {
+    state = MoodDraft.empty();
+    ref.invalidate(aiSuggestionControllerProvider);
+  }
 
   /// Hydrate the draft from an existing entry — used by the edit flow
   /// when the screen is opened with `?edit=<id>`. mediaRefs are
@@ -46,12 +63,14 @@ class LogMoodController extends _$LogMoodController {
 
   void pickMood(MoodType mood) => state = state.copyWith(mood: mood);
 
-  /// Apply a mood that came from the AI suggestion pill. Identical to
-  /// [pickMood] today; kept as a separate method so future analytics can
-  /// distinguish AI-accepted moods from manual picks (Lin US-Lin-2 metric).
-  /// Intentionally does NOT touch `intensity` — intensity is a deliberate
-  /// user choice, not part of the AI suggestion contract.
-  void applyAiSuggestion(MoodType mood) => state = state.copyWith(mood: mood);
+  /// Apply a mood (and optionally an inferred intensity) that came from
+  /// the AI suggestion pill. v1.0 polish (2026-05-10) extends the
+  /// contract to accept `intensity` so the user doesn't have to set it
+  /// manually after accepting Gemini's read of the journal. When omitted
+  /// (older deployments or direct callers), intensity is left unchanged.
+  void applyAiSuggestion(MoodType mood, {int? intensity}) {
+    state = state.copyWith(mood: mood, intensity: intensity ?? state.intensity);
+  }
 
   void setIntensity(int value) => state = state.copyWith(intensity: value);
 
@@ -205,11 +224,97 @@ class LogMoodController extends _$LogMoodController {
   MoodEntry _onSaveOk(LogMoodSubmissionController submission, MoodEntry entry) {
     submission.succeed();
     state = MoodDraft.empty();
+    // Drop the AI suggestion alongside the draft — see [reset] for the
+    // rationale. Post-save flow now leaves both surfaces empty.
+    ref.invalidate(aiSuggestionControllerProvider);
+    // Best-effort post-save Pattern Engine run. Failures are logged
+    // (no PII) and swallowed so they cannot block the user's save
+    // success surfacing — see HB-006 sub-track B.
+    //
+    // The brief named `log_mood_submission_controller.dart` as the
+    // edit site, but that controller only holds transient submission
+    // flags (no `Ok` branch). The actual `Ok` branch lives here, so
+    // the wire-up follows the success path instead. Both `save()` and
+    // `updateExisting()` route through `_onSaveOk`, so the engine
+    // also runs on edits — desired behaviour: an edited entry can
+    // change today's `avgScore` and therefore today's tier.
+    unawaited(_runPatternEngine(entry.userId));
+    // Best-effort post-save token award. Mood-agnostic — the
+    // repository's `awardForLog` takes only the userId. Failures are
+    // logged (failure runtimeType only — no userId, no balance, no
+    // award value, no PII) and swallowed so they cannot block the
+    // user's save success surfacing (HB-005 Track 6.2).
+    unawaited(_awardTokens(entry.userId));
     return entry;
   }
 
   Null _onSaveErr(LogMoodSubmissionController submission, MoodFailure failure) {
     submission.fail(failure.message);
     return null;
+  }
+
+  /// Aggregates the user's mood history through the Pattern Engine and
+  /// upserts the per-day `PatternResult`. Best-effort; failures are
+  /// logged once with the dateId + failure type only (no PII).
+  ///
+  /// History source: `myMoodsStreamProvider` (the canonical newest-first
+  /// stream used by History, Garden, and Analytics). Read once via
+  /// `.future` — the controller doesn't watch the stream because the
+  /// engine should reflect the state at save-time, not chase further
+  /// emissions.
+  Future<void> _runPatternEngine(String userId) async {
+    const logger = Logger('mood.pattern_engine');
+    try {
+      final entries = await ref.read(myMoodsStreamProvider.future);
+      final result = ref.read(runPatternEngineUseCaseProvider)(
+        entries,
+        now: DateTime.now(),
+      );
+      final saveOutcome = await ref
+          .read(patternRepositoryProvider)
+          .save(userId: userId, result: result);
+      saveOutcome.fold(
+        ok: (_) {},
+        err: (failure) => logger.warn(
+          'pattern_engine_save_failed dateId=${result.dateId} '
+          'failure=${failure.runtimeType}',
+        ),
+      );
+    } catch (e) {
+      // Defense in depth — anything thrown by the upstream stream
+      // (e.g. a transient Firestore unavailability mid-flight) must
+      // not bubble out of a fire-and-forget save hook.
+      logger.warn('pattern_engine_save_failed failure=${e.runtimeType}');
+    }
+  }
+
+  /// Awards tokens for a successful log via the token repository.
+  /// Best-effort: failures are logged once with the failure
+  /// runtimeType only (no userId, no balance, no award value — PII
+  /// + signal-leakage free) and never propagate to the UI surface.
+  ///
+  /// Mood-agnostic by construction: the repository's `awardForLog`
+  /// accepts only the userId. Logging a sad-5 entry earns the same
+  /// as logging a joy-5 entry — pivot feature #10 (CLAUDE.md),
+  /// ADR-0010 §7.
+  Future<void> _awardTokens(String userId) async {
+    const logger = Logger('mood.tokens');
+    try {
+      final outcome = await ref
+          .read(tokenRepositoryProvider)
+          .awardForLog(userId: userId);
+      outcome.fold(
+        ok: (_) {},
+        err: (failure) =>
+            logger.warn('token_award_failed failure=${failure.runtimeType}'),
+      );
+    } on TokenFailure catch (failure) {
+      // Defense in depth — the repository is contract-bound to return
+      // `Result`, but a misbehaving fake or partial impl could throw.
+      // Log + swallow.
+      logger.warn('token_award_failed failure=${failure.runtimeType}');
+    } catch (e) {
+      logger.warn('token_award_failed failure=${e.runtimeType}');
+    }
   }
 }

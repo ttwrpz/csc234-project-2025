@@ -75,6 +75,9 @@ final featureFlagsProvider = Provider<FeatureFlags>((ref) {
     return FeatureFlags(
       aiPatternAnalysisEnabled: source.getBool('ai_pattern_analysis_enabled'),
       geminiDetectionEnabled: source.getBool('gemini_detection_enabled'),
+      interventionDispatchEnabled: source.getBool(
+        'intervention_dispatch_enabled',
+      ),
     );
   } catch (_) {
     // Source throws if RC hasn't been initialised yet (e.g. before

@@ -32,10 +32,17 @@ Stream<AppUser?> _userStream(AppUser? user) {
 Future<void> _pumpLogMood(
   WidgetTester tester, {
   required FakeMoodRepository repo,
+  Size surfaceSize = const Size(700, 1600),
 }) async {
-  // Tall surface keeps the Save button on screen so we don't need to scroll
-  // to interact with it.
-  await tester.binding.setSurfaceSize(const Size(800, 1600));
+  // Default surface mirrors a tall phone-landscape / small-tablet portrait:
+  // width <720 forces the narrow single-column layout, height keeps the
+  // Save button on screen so tests don't need to scroll to interact with
+  // it. Wide-layout tests pass an explicit surfaceSize to flip into the
+  // desktop two-column path. We deliberately stay >414dp because the
+  // existing MbPrimaryButton Row needs more horizontal room than a
+  // typical phone width to render its label + spinner without overflow
+  // (see MbPrimaryButton).
+  await tester.binding.setSurfaceSize(surfaceSize);
   addTearDown(() => tester.binding.setSurfaceSize(null));
 
   await tester.pumpWidget(
@@ -125,6 +132,78 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'wide surface (>=720dp) renders the two-column desktop layout',
+      (tester) async {
+        final repo = FakeMoodRepository();
+        await _pumpLogMood(
+          tester,
+          repo: repo,
+          surfaceSize: const Size(1280, 800),
+        );
+
+        // The wide layout is identified by the ValueKey on its outermost
+        // Center; the narrow layout is keyed differently and must NOT be
+        // present when the surface is wide.
+        expect(
+          find.byKey(const ValueKey('log-mood-wide')),
+          findsOneWidget,
+          reason: 'wide surface must select the two-column layout',
+        );
+        expect(
+          find.byKey(const ValueKey('log-mood-narrow')),
+          findsNothing,
+          reason:
+              'narrow ListView layout must NOT render alongside the wide '
+              'layout — exactly one of the two paths is taken per build',
+        );
+        expect(
+          find.byKey(const ValueKey('log-mood-wide-left')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('log-mood-wide-right')),
+          findsOneWidget,
+        );
+
+        // Both column section labels still render. MbSectionLabel
+        // renders its `text` argument upper-cased, so we match by widget
+        // predicate against the source string instead of the rendered
+        // glyphs.
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is MbSectionLabel && w.text == 'Choose a feeling',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is MbSectionLabel && w.text == "What's on your mind?",
+          ),
+          findsOneWidget,
+        );
+
+        // The save button is present and starts disabled (no mood picked).
+        final initial = tester.widget<FilledButton>(_saveButton());
+        expect(initial.onPressed, isNull);
+      },
+    );
+
+    testWidgets(
+      'narrow surface (<720dp) renders the single-column ListView layout',
+      (tester) async {
+        final repo = FakeMoodRepository();
+        await _pumpLogMood(
+          tester,
+          repo: repo,
+          surfaceSize: const Size(700, 1600),
+        );
+
+        expect(find.byKey(const ValueKey('log-mood-narrow')), findsOneWidget);
+        expect(find.byKey(const ValueKey('log-mood-wide')), findsNothing);
+      },
+    );
 
     testWidgets('tapping Save invokes SaveMoodEntryUseCase via the repo', (
       tester,

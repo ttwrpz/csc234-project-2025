@@ -1,0 +1,26 @@
+# Build-runner config for the mobile app's codegen pipeline.
+#
+# `explicit_to_json: true` tells `json_serializable` to call `.toJson()`
+# recursively on nested objects when generating `_$XxxToJson()` methods.
+# Without it, a Freezed entity with a nested `List<NestedEntity>` or
+# `NestedEntity` field gets `'field': instance.field` in the output map
+# — a raw Dart object, not a JSON-encodable map.
+#
+# That works for `jsonEncode(...)` (Dart's default toEncodable walks
+# objects via toJson) but it BREAKS direct Web Firestore writes:
+# `cloud_firestore_web` passes the raw map to `dart:js_interop`, which
+# rejects raw Dart objects with "Attempting to box non-Dart object" at
+# `js_interop_patch.dart:133`.
+#
+# Bug surfaced (v1.0 polish, 2026-05-10) on the harvest "Continue to
+# new week" flow because `WeeklyGarden` carries `List<MoodEntry>` +
+# `WeeklySummary` (which itself carries `Map<MoodType, int>`).
+#
+# Setting it globally avoids per-class `@JsonSerializable(explicitToJson:
+# true)` annotation churn and keeps the entity files clean.
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          explicit_to_json: true

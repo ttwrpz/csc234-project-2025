@@ -14,6 +14,16 @@ abstract class FeatureFlags with _$FeatureFlags {
   const factory FeatureFlags({
     required bool aiPatternAnalysisEnabled,
     required bool geminiDetectionEnabled,
+
+    /// Gates the legacy cheer-up dispatcher path (`cheer_up_controller`
+    /// + `sendCheerUpPush` Cloud Function). Default `false` in v1.0:
+    /// the new client-side Pattern Engine writes
+    /// `users/{uid}/patterns/{date}` regardless, but no notification
+    /// fires. Sprint 5 re-points the dispatcher at the new
+    /// `patterns/{date}.triggeredTier` field, attaches the Quote
+    /// Library safety filter and the Bipolar/medical disclaimer
+    /// footer, and flips this flag to `true`. See ADR-0011 §4.
+    required bool interventionDispatchEnabled,
   }) = _FeatureFlags;
 
   const FeatureFlags._();
@@ -21,6 +31,7 @@ abstract class FeatureFlags with _$FeatureFlags {
   factory FeatureFlags.defaults() => const FeatureFlags(
     aiPatternAnalysisEnabled: true,
     geminiDetectionEnabled: true,
+    interventionDispatchEnabled: false,
   );
 }
 
