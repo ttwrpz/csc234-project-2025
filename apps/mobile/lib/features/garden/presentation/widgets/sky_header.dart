@@ -2,23 +2,19 @@ import 'dart:ui' as ui;
 
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../mood/domain/entities/mood_entry.dart';
-import '../../../mood/presentation/widgets/mood_kind_adapter.dart';
 import '../../domain/entities/atmosphere.dart';
-import '../../domain/entities/flower_species.dart';
 import '../../domain/entities/garden_state.dart';
 import '../../domain/entities/plant_tier.dart';
 import 'atmosphere_overlay.dart';
-import 'flower_sprite.dart';
-import 'plant_tier_group.dart';
+import 'garden_bed.dart';
 
 /// 320 dp gradient sky header that doubles as the garden canvas.
 /// Hosts the greeting + entries pill (top), sun (right), `CustomPaint`
-/// ground (bottom 60 dp), the [PlantTierGroup] driven by
-/// [GardenState.plantTier], an [AtmosphereOverlay] driven by
-/// [GardenState.atmosphere], and the "View patterns →" footer row.
+/// ground (bottom 60 dp), a [GardenBed] driven by this week's mood
+/// entries, an [AtmosphereOverlay] driven by [GardenState.atmosphere],
+/// and the "View patterns →" footer row.
 ///
 /// ADR-0010 redesign: the previous per-entry sprite dispatch (flowers /
 /// buds / wilting plants / rain clouds) is gone. The canvas now reads
@@ -26,12 +22,20 @@ import 'plant_tier_group.dart';
 /// tier) and the fast today-only mood mean (atmosphere overlay).
 /// Plants are alive in every tier; rain belongs to the atmosphere
 /// layer, not the plant layer.
+///
+/// v1.0 polish (2026-05-10): the prior `PlantTierGroup` + `_WeeklyFlowerScatter`
+/// pair was replaced by a single entry-driven [GardenBed]. The bed paints
+/// one full plant per entry (stem + leaves + petals at canvas scale) and
+/// uses tier only as an ambient modulator (butterflies / cloud shadow /
+/// lanterns AROUND the plants). Empty entries paints ground+grass only,
+/// closing the wipe-still-shows-3-flowers bug at the source.
 class SkyHeader extends StatelessWidget {
   const SkyHeader({
     super.key,
     required this.state,
     required this.greetingName,
     this.recentEntries = const <MoodEntry>[],
+    this.height = 320,
   });
 
   /// Computed garden snapshot — drives both the plant tier and the
@@ -42,25 +46,29 @@ class SkyHeader extends StatelessWidget {
   /// when the user has not set a display name.
   final String greetingName;
 
-  /// This week's mood entries (most recent first). Drives the
-  /// per-entry [FlowerSprite] scatter on the canvas — each sad/anxious/
-  /// angry entry shows up as its emotion-specific flower silhouette
-  /// (forget-me-not / fern / poppy) so the user sees negative
-  /// entries immediately. Empty list collapses the scatter (first-time
-  /// users still see a clean tier-only canvas).
+  /// This week's mood entries (any order). Forwarded to [GardenBed],
+  /// which sorts newest-first internally, caps at 6, and paints one
+  /// full plant per entry. Empty list yields a bare bed (ground +
+  /// grass only) so the wipe-account-data flow no longer leaves
+  /// ghost flowers behind.
   ///
-  /// User feedback v1.0 polish (2026-05-10): "Why there is no flower
-  /// on negative render in garden?" — the prior design only showed
-  /// generic tier-level closed buds for negative tiers. Wiring
-  /// per-entry species onto the canvas makes individual negative
-  /// entries visible at the SkyHeader level, not just inside list
-  /// tiles + chips.
+  /// User feedback v1.0 polish (2026-05-10): the previous design relied
+  /// on a tier-driven `PlantTierGroup` that painted 3 generic buds even
+  /// when the user had zero entries, plus a `_WeeklyFlowerScatter` overlay
+  /// of 22 dp head-only sprites. Replacing both with an entry-driven
+  /// [GardenBed] makes the per-entry render the canonical visual and
+  /// closes the empty-state regression at the source.
   final List<MoodEntry> recentEntries;
 
-  static const double _height = 320;
+  /// Total canvas height. 320 dp is the phone-class default; desktop
+  /// callers pass ~420 dp so the canvas reads as a hero on a wide
+  /// viewport instead of a thin band.
+  final double height;
 
-  /// Height of the plant row anchored above the ground line.
-  static const double _plantRowHeight = 100;
+  /// Height of the garden bed anchored above the ground line. Bumped
+  /// from 100 dp to 140 dp so the tallest species (sunflower at ~110 dp
+  /// incl. petals) renders at full height without clipping.
+  static const double _plantRowHeight = 140;
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +77,10 @@ class SkyHeader extends StatelessWidget {
 
     final dateLabel = _humanDate(DateTime.now());
     final entriesThisWeek = _countEntriesThisWeek(state.last7Days);
+    // Tier-gated atmosphere (see _atmosphereForTier docstring) — used
+    // for the sky gradient, sun dim and the rain overlay so all three
+    // weather signals stay consistent with the plant tier.
+    final atmosphere = _atmosphereForTier(state.plantTier, state.atmosphere);
 
     return Semantics(
       container: true,
@@ -76,7 +88,7 @@ class SkyHeader extends StatelessWidget {
           'Garden canvas — ${state.plantTier.name} tier, '
           '${state.atmosphere.name} sky.',
       child: SizedBox(
-        height: _height,
+        height: height,
         child: ClipRRect(
           borderRadius: const BorderRadius.only(
             bottomLeft: Radius.circular(MoodBloomSpacing.radiusSky),
@@ -98,7 +110,7 @@ class SkyHeader extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       stops: const [0, 0.55, 1],
-                      colors: _skyColorsFor(state.atmosphere, mb),
+                      colors: _skyColorsFor(atmosphere, mb),
                     ),
                   ),
                 ),
@@ -109,7 +121,7 @@ class SkyHeader extends StatelessWidget {
                 top: 60,
                 right: 34,
                 child: Opacity(
-                  opacity: _sunOpacity(state.atmosphere),
+                  opacity: _sunOpacity(atmosphere),
                   child: Container(
                     width: 56,
                     height: 56,
@@ -137,43 +149,53 @@ class SkyHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              // Plant tier wrapped in atmosphere overlay. The plant
-              // group is the bottom layer; the overlay paints rain /
-              // sun rays above it. Plants are NOT children of the
-              // overlay so rain visually falls AROUND them.
+              // Garden bed at its dedicated row above the ground line.
+              // No longer wrapped in the AtmosphereOverlay — rain now
+              // falls across the full canvas via the dedicated
+              // Positioned.fill layer below. v1.0 polish (2026-05-10):
+              // user reported rain only filled half the canvas because
+              // the overlay was scoped to the 140dp bed slot. Splitting
+              // the layers fixes the half-canvas rain at the source.
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 30,
                 height: _plantRowHeight,
-                child: AtmosphereOverlay(
-                  atmosphere: state.atmosphere,
-                  child: PlantTierGroup(
-                    tier: state.plantTier,
-                    entryCount: entriesThisWeek,
+                child: LayoutBuilder(
+                  builder: (context, constraints) => Center(
+                    child: GardenBed(
+                      entries: recentEntries,
+                      tier: state.plantTier,
+                      size: Size(constraints.maxWidth, _plantRowHeight),
+                    ),
                   ),
                 ),
               ),
-              // Per-entry flower-species scatter — sits ABOVE the plant
-              // tier so each entry's specific species silhouette
-              // (sunflower / forget-me-not / daisy / poppy / fern /
-              // lavender) is visible alongside the aggregate tier.
-              // Negative entries become highly visible: a sad log
-              // shows a forget-me-not, anxious shows fern, anger
-              // shows poppy. See `_WeeklyFlowerScatter` for the
-              // deterministic positioning (entry-id hash drives x;
-              // day-of-week drives y).
-              if (recentEntries.isNotEmpty)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 30,
-                  height: _plantRowHeight,
-                  child: IgnorePointer(
-                    child: _WeeklyFlowerScatter(entries: recentEntries),
-                  ),
+              // Atmosphere overlay covers the FULL sky canvas. Rain
+              // falls from the top of the canvas through to the ground
+              // line so storm reads as a whole-sky event, not a
+              // ground-level mist.
+              //
+              // v1.0 polish (2026-05-10): the atmosphere is gated by
+              // plant tier so the user never sees rain over a
+              // Resting/Thriving/Flourishing tier. The original spec
+              // computed atmosphere from `avg_S_today` independently
+              // of the weekly EWMA, but the resulting "rain on Resting
+              // plants" reads as a contradiction in the UI. We pin
+              // the atmosphere to the tier — rain only when the bed
+              // is also visually weathering.
+              Positioned.fill(
+                child: AtmosphereOverlay(
+                  atmosphere: atmosphere,
+                  child: const SizedBox.expand(),
                 ),
+              ),
               // Top bar: greeting + entries-this-week pill.
+              // v1.0 polish (2026-05-10): the floating tier-tagline
+              // and "View patterns" pill that previously sat in the
+              // bottom of the canvas were moved out into a dedicated
+              // section below the SkyHeader (see [GardenSummaryRow])
+              // so the canvas reads as a clean visual hero.
               Positioned(
                 top: 16,
                 left: MoodBloomSpacing.pagePadding,
@@ -211,27 +233,8 @@ class SkyHeader extends StatelessWidget {
                   ],
                 ),
               ),
-              // Footer row inside the sky.
-              Positioned(
-                left: MoodBloomSpacing.pagePadding,
-                right: MoodBloomSpacing.pagePadding,
-                bottom: 14,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        _tierTagline(state),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: mb.textDim,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                    _ViewPatternsPill(onTap: () => context.go('/analytics')),
-                  ],
-                ),
-              ),
+              // (Tagline + View patterns pill moved out — see
+              // GardenSummaryRow rendered below the SkyHeader.)
             ],
           ),
         ),
@@ -245,6 +248,35 @@ class SkyHeader extends StatelessWidget {
       total += d.entryCount;
     }
     return total;
+  }
+
+  /// Reconciles the use case's [Atmosphere] (computed from today's
+  /// mean) with the bed's [PlantTier]. Negative tiers may keep the
+  /// raw atmosphere (rain belongs there visually); positive/neutral
+  /// tiers force a sunny atmosphere so the user never sees rain over
+  /// flowering plants. v1.0 polish (2026-05-10) — addresses "why is
+  /// it raining but the tier is Resting?" feedback.
+  static Atmosphere _atmosphereForTier(PlantTier tier, Atmosphere raw) {
+    switch (tier) {
+      case PlantTier.stormSeason:
+      case PlantTier.weathering:
+        return raw;
+      case PlantTier.resting:
+        // Resting is a quiet baseline — rain reads as inconsistent.
+        // Soften lightRain → calmSunny; storm → lightRain at most.
+        return switch (raw) {
+          Atmosphere.storm => Atmosphere.lightRain,
+          Atmosphere.lightRain => Atmosphere.calmSunny,
+          _ => raw,
+        };
+      case PlantTier.thriving:
+      case PlantTier.flourishing:
+        // Positive tiers never show rain — the bed is in bloom.
+        return switch (raw) {
+          Atmosphere.storm || Atmosphere.lightRain => Atmosphere.calmSunny,
+          _ => raw,
+        };
+    }
   }
 
   /// Sun visibility tapers in rainy atmospheres so the weather
@@ -287,7 +319,10 @@ class SkyHeader extends StatelessWidget {
   /// total entry count. Empty-state copy ("plant your first mood")
   /// kicks in when the user has logged nothing at all. Matches the
   /// no-wilt copy rule in CLAUDE.md.
-  static String _tierTagline(GardenState state) {
+  ///
+  /// Public so [GardenSummaryRow] (in `garden_summary_row.dart`) can
+  /// render the same tagline in the page flow below the canvas.
+  static String tierTagline(GardenState state) {
     if (state.isEmpty) return 'Plant your first mood — a fresh canvas awaits.';
     return switch (state.plantTier) {
       PlantTier.flourishing => 'A flourishing week.',
@@ -375,119 +410,16 @@ class _EntriesPill extends StatelessWidget {
   }
 }
 
-class _ViewPatternsPill extends StatelessWidget {
-  const _ViewPatternsPill({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
-
-    return Semantics(
-      button: true,
-      label: 'View patterns',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.8),
-            borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
-            border: Border.all(
-              color: primary.withValues(alpha: 0.15),
-              width: 1,
-            ),
-          ),
-          child: Text(
-            'View patterns →',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: primary,
-              fontWeight: FontWeight.w500,
-              fontSize: 12,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Scatters one [FlowerSprite] per entry across the plant row.
-/// Positioning is deterministic (entry-id hash → x percentile;
-/// day-of-week → y offset) so a given entry list always renders at
-/// the same coordinates — keeps the layout stable across rebuilds and
-/// makes goldens reproducible.
-///
-/// Caps at 8 sprites (most recent first) to avoid clutter. The scatter
-/// is drawn ABOVE the [PlantTierGroup] so per-emotion silhouettes are
-/// visible regardless of the aggregate tier. Sized 22 dp per sprite —
-/// big enough to read at a glance, small enough not to dominate the
-/// 100 dp canvas row.
-class _WeeklyFlowerScatter extends StatelessWidget {
-  const _WeeklyFlowerScatter({required this.entries});
-
-  final List<MoodEntry> entries;
-
-  static const int _maxSprites = 8;
-  static const double _spriteSize = 22;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = Theme.of(context).extension<MbMoodPalette>()!;
-    // Take the most-recent first; sort by createdAt desc.
-    final sorted = [...entries]
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final shown = sorted.take(_maxSprites).toList(growable: false);
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            for (final entry in shown)
-              Positioned(
-                left: _xFor(entry, constraints.maxWidth),
-                top: _yFor(entry, constraints.maxHeight),
-                child: FlowerSprite(
-                  species: FlowerSpecies.forMood(entry.mood),
-                  size: _spriteSize,
-                  tint: palette.colorOf(entry.mood.mbKind),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Spread sprites across the row using the entry id's hash. The
-  /// 12 dp side margins keep them off the canvas edges where the
-  /// `ClipRRect` would chop them.
-  static double _xFor(MoodEntry entry, double width) {
-    final usable = (width - 12 * 2 - _spriteSize).clamp(0.0, double.infinity);
-    final pct = (entry.id.hashCode.abs() % 1000) / 1000;
-    return 12 + pct * usable;
-  }
-
-  /// Day-of-week → y. Older entries float higher (smaller y); today's
-  /// entries sit closer to the ground line. Bounded so a sprite never
-  /// clips above the row or below the ground curve.
-  static double _yFor(MoodEntry entry, double height) {
-    final daysAgo = DateTime.now()
-        .difference(entry.createdAt.toLocal())
-        .inDays
-        .clamp(0, 6);
-    // y = 0 → top of row; height → bottom. Older = higher up (smaller y).
-    final pct = 0.10 + (1.0 - daysAgo / 6) * 0.55;
-    return pct * (height - _spriteSize);
-  }
-}
-
 /// Paints the two-layer ground + grass blades along the horizon.
-/// Reproduces the prototype's `viewBox="0 0 400 320"` paths in Flutter.
+///
+/// v1.0 polish (2026-05-10): rewritten to anchor the horizon at the
+/// bed's groundY (canvas.height - 36) instead of the prototype's
+/// hard-coded `viewBox y=260`. Previously the painter used
+/// `canvas.scale(width/400)` which meant the y-coords scaled with
+/// width — at 800 dp wide the ground rendered at `y=520` and fell
+/// off-canvas, leaving flowers floating above empty sky. Anchoring to
+/// the bottom keeps the ground line aligned with the [GardenBed]'s
+/// groundY at every canvas size.
 class _GroundPainter extends CustomPainter {
   _GroundPainter({
     required this.ground,
@@ -499,45 +431,70 @@ class _GroundPainter extends CustomPainter {
   final Color ground2;
   final Color grass;
 
+  /// Y offset of the horizon from the bottom of the canvas. Matches
+  /// [SkyHeader._plantRowHeight] minus the bed's internal `groundY`
+  /// inset (6 dp) and the bed's `Positioned bottom` offset (30 dp) —
+  /// the flowers' visible base sits exactly here.
+  static const double _horizonFromBottom = 36;
+
   @override
   void paint(Canvas canvas, Size size) {
-    // Map prototype's 400-wide viewBox onto the actual width.
-    final scale = size.width / 400.0;
-    canvas.save();
-    canvas.scale(scale, scale);
+    final w = size.width;
+    final horizonY = size.height - _horizonFromBottom;
 
-    // Ground layer 1.
+    // Ground layer 1 — gentle wave around the horizon line.
     final p1 = Path()
-      ..moveTo(0, 260)
-      ..cubicTo(80, 248, 160, 272, 240, 258)
-      ..cubicTo(320, 246, 380, 268, 400, 260)
-      ..lineTo(400, 320)
-      ..lineTo(0, 320)
+      ..moveTo(0, horizonY)
+      ..cubicTo(
+        w * 0.20,
+        horizonY - 10,
+        w * 0.40,
+        horizonY + 8,
+        w * 0.60,
+        horizonY - 6,
+      )
+      ..cubicTo(w * 0.80, horizonY - 14, w * 0.95, horizonY + 4, w, horizonY)
+      ..lineTo(w, size.height)
+      ..lineTo(0, size.height)
       ..close();
     canvas.drawPath(p1, Paint()..color = ground);
 
-    // Ground layer 2 — slightly lower wave, 70% opacity.
+    // Ground layer 2 — slightly lower wave, semi-transparent for depth.
     final p2 = Path()
-      ..moveTo(0, 280)
-      ..cubicTo(80, 270, 160, 288, 240, 278)
-      ..cubicTo(320, 270, 380, 286, 400, 280)
-      ..lineTo(400, 320)
-      ..lineTo(0, 320)
+      ..moveTo(0, horizonY + 16)
+      ..cubicTo(
+        w * 0.25,
+        horizonY + 6,
+        w * 0.50,
+        horizonY + 22,
+        w * 0.70,
+        horizonY + 14,
+      )
+      ..cubicTo(
+        w * 0.85,
+        horizonY + 8,
+        w * 0.95,
+        horizonY + 22,
+        w,
+        horizonY + 16,
+      )
+      ..lineTo(w, size.height)
+      ..lineTo(0, size.height)
       ..close();
     canvas.drawPath(p2, Paint()..color = ground2.withValues(alpha: 0.7));
 
-    // 22 grass blades along the horizon.
+    // Grass blades along the horizon. Density scales with canvas width.
     final grassPaint = Paint()
       ..color = grass.withValues(alpha: 0.6)
       ..strokeWidth = 1.2
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-    for (var i = 0; i < 22; i += 1) {
-      final x = 8 + i * 18.0;
-      final y = 260 + (i % 3) * 4.0;
+    final blades = (w / 18).clamp(16, 64).toInt();
+    for (var i = 0; i < blades; i += 1) {
+      final x = 8 + i * (w - 16) / blades;
+      final y = horizonY - 1 + (i % 3) * 1.5;
       canvas.drawLine(Offset(x, y), Offset(x + 2, y - 8), grassPaint);
     }
-    canvas.restore();
   }
 
   @override

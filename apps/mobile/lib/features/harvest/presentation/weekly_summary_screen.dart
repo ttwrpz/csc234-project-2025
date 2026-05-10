@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../garden/domain/entities/flower_species.dart';
 import '../../garden/domain/entities/plant_tier.dart';
 import '../../garden/presentation/widgets/flower_sprite.dart';
-import '../../garden/presentation/widgets/plant_tier_group.dart';
+import '../../garden/presentation/widgets/garden_bed.dart';
+import '../../mood/domain/entities/mood_entry.dart';
 import '../../mood/domain/entities/mood_type.dart';
 import '../../mood/presentation/widgets/mood_kind_adapter.dart';
 import '../domain/entities/weekly_garden.dart';
@@ -23,9 +24,19 @@ import 'controllers/weekly_summary_controller.dart';
 /// banner copy → average-mood scale → top-3 dominant emotion chips →
 /// "Pattern check-ins" line → full-width Continue button.
 class WeeklySummaryScreen extends ConsumerWidget {
-  const WeeklySummaryScreen({super.key, required this.summary});
+  const WeeklySummaryScreen({
+    super.key,
+    required this.summary,
+    this.entries = const <MoodEntry>[],
+  });
 
   final WeeklySummary summary;
+
+  /// The week's entries — drives the hero [GardenBed] so the user sees
+  /// real plants for the moods they logged this week, not generic
+  /// stylized buds. Empty list collapses the hero to a small archive
+  /// marker so the screen still mounts on edge-case test rigs.
+  final List<MoodEntry> entries;
 
   /// Locked banner phrasing — verbatim from CLAUDE.md "Pre-approved
   /// intervention phrasing". Test asserts the exact string is rendered.
@@ -70,7 +81,7 @@ class WeeklySummaryScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _Hero(tier: summary.endingPlantTier),
+              _Hero(tier: summary.endingPlantTier, entries: entries),
               const SizedBox(height: MoodBloomSpacing.lg),
               _HarvestBanner(text: harvestBanner),
               const SizedBox(height: MoodBloomSpacing.xl),
@@ -94,13 +105,21 @@ class WeeklySummaryScreen extends ConsumerWidget {
 }
 
 class _Hero extends StatelessWidget {
-  const _Hero({required this.tier});
+  const _Hero({required this.tier, required this.entries});
 
   final PlantTier tier;
+  final List<MoodEntry> entries;
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: PlantTierGroup(tier: tier, entryCount: 0));
+    return Center(
+      child: GardenBed(
+        entries: entries,
+        tier: tier,
+        size: const Size(280, 140),
+        showOverflowBadge: true,
+      ),
+    );
   }
 }
 

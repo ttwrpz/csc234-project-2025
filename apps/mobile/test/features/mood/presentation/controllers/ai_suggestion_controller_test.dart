@@ -19,6 +19,11 @@ ProviderContainer _container({required FakeAiAnalysisRepository fake}) {
       // injection of the debounce window now goes through a sibling
       // provider override.
       aiSuggestionDebounceWindowProvider.overrideWithValue(_shortDebounce),
+      // Drop the production min-char threshold (12) to 1 so legacy
+      // tests with short inputs ('hello', 'feeling sad') still
+      // exercise the analyse path. Production gates short drafts so
+      // Gemini doesn't fire on 2-3 char typos.
+      aiSuggestionMinCharsProvider.overrideWithValue(1),
     ],
   );
   // autoDispose providers are reaped once the last subscription drops; keep a

@@ -1,6 +1,3 @@
-import 'dart:math' as math;
-
-import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/atmosphere.dart';
@@ -178,10 +175,15 @@ class _AtmospherePainter extends CustomPainter {
 
     switch (atmosphere) {
       case Atmosphere.calmSunny:
-        // No further treatment.
-        break;
       case Atmosphere.brightSunny:
-        _paintSunRays(canvas, size);
+        // No further treatment. Earlier versions painted 5 faint amber
+        // rays across the canvas for `brightSunny`, but the rays
+        // emanated INTO the bed (yellow-orange streaks crossing the
+        // plants), which read as misplaced graphic noise rather than
+        // sunlight. The sky gradient + sun circle already convey
+        // brightness; the rays were removed in v1.0 polish (2026-05-10)
+        // per user feedback.
+        break;
       case Atmosphere.lightRain:
         _paintDrops(
           canvas,
@@ -200,23 +202,6 @@ class _AtmospherePainter extends CustomPainter {
           strokeWidth: 2.0,
           length: 12,
         );
-    }
-  }
-
-  void _paintSunRays(Canvas canvas, Size size) {
-    // 5 faint rays radiating from the upper-right corner. Subtle —
-    // accents the gradient rather than dominating it.
-    final origin = Offset(size.width * 0.78, 18);
-    final paint = Paint()
-      ..color = MoodBloomColors.amber.withValues(alpha: 0.18)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    for (var i = 0; i < 5; i += 1) {
-      final t = (i / 4) * (math.pi / 3) + (phase * 0.05);
-      final endX = origin.dx + math.cos(t + math.pi) * 64;
-      final endY = origin.dy + math.sin(t + math.pi) * 64;
-      canvas.drawLine(origin, Offset(endX, endY), paint);
     }
   }
 

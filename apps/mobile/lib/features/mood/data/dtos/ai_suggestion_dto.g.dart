@@ -22,6 +22,7 @@ _AiSuggestionDto _$AiSuggestionDtoFromJson(Map<String, dynamic> json) =>
       flag: json['flag'] as String?,
       latencyMs: (json['latencyMs'] as num).toInt(),
       modelVersion: json['modelVersion'] as String,
+      intensity: (json['intensity'] as num?)?.toInt() ?? 3,
     );
 
 Map<String, dynamic> _$AiSuggestionDtoToJson(_AiSuggestionDto instance) =>
@@ -36,6 +37,7 @@ Map<String, dynamic> _$AiSuggestionDtoToJson(_AiSuggestionDto instance) =>
       'flag': instance.flag,
       'latencyMs': instance.latencyMs,
       'modelVersion': instance.modelVersion,
+      'intensity': instance.intensity,
     };
 
 _AiSuggestionAlternativeDto _$AiSuggestionAlternativeDtoFromJson(

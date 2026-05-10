@@ -19,3 +19,4 @@ export { analyzeMoodText } from './analyzeMoodText.js';
 export { analyzePatterns } from './analyzePatterns.js';
 export { sendCheerUpPush } from './sendCheerUpPush.js';
 export { wipeUserData } from './wipeUserData.js';
+export { wipeWeeklyGarden } from './wipeWeeklyGarden.js';

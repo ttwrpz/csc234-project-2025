@@ -43,6 +43,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _SlideKind.patterns,
   ];
 
+  /// Pre-built slide widgets, one per [_SlideKind]. Memoised so
+  /// `setState` (which flips `_index`) doesn't rebuild every slide's
+  /// CustomPaint subtree on each page swipe. v1.0 polish (2026-05-10)
+  /// — addresses "onboarding sometimes invisible / animations lag":
+  /// the prior `itemBuilder` rebuilt the slide tree on every parent
+  /// rebuild, which on slow devices / debug builds left a blank
+  /// frame mid-transition.
+  late final List<Widget> _slides = _slideKinds
+      .map((kind) => RepaintBoundary(child: _buildSlide(kind)))
+      .toList(growable: false);
+
   Future<void> _complete() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_complete', true);
@@ -81,69 +92,87 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isLast = _index == _slideKinds.length - 1;
     final isFirst = _index == 0;
 
-    return Scaffold(
-      backgroundColor: mb.bg,
-      // Centred column with a fixed max width so the carousel doesn't
-      // stretch across a desktop viewport (which previously pushed the
-      // bottom button row off-screen on tall windows). 480 dp matches
-      // the carousel art's natural reading width.
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Padding(
-              padding: const EdgeInsets.all(28),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: PageView.builder(
-                      controller: _controller,
-                      itemCount: _slideKinds.length,
-                      onPageChanged: (i) => setState(() => _index = i),
-                      itemBuilder: (context, i) => _buildSlide(_slideKinds[i]),
-                    ),
-                  ),
-                  _Dots(count: _slideKinds.length, activeIndex: _index),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      if (!isFirst) ...[
-                        MbGhostButton(
-                          label: 'Back',
-                          onPressed: _back,
-                          fullWidth: false,
-                        ),
-                        const SizedBox(width: 10),
-                      ],
-                      Expanded(
-                        child: MbPrimaryButton(
-                          label: isLast ? 'Get started' : 'Next',
-                          onPressed: _next,
-                          // The Get-started CTA is the only entry-point on
-                          // the final slide — make it visually unmistakable
-                          // even when the user is on a small phone. Add a
-                          // forward arrow so it reads as "go".
-                          leading: isLast
-                              ? const Icon(Icons.arrow_forward, size: 18)
-                              : null,
-                        ),
+    // PopScope intercepts Android system back / browser back / desktop
+    // Esc so the user navigates between slides instead of exiting the
+    // carousel. On the first slide, fall through (`canPop: true`) so
+    // the OS handles the gesture normally — that's the user's only way
+    // to leave onboarding from slide 0 without completing it.
+    return PopScope(
+      canPop: isFirst,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _back();
+      },
+      child: Scaffold(
+        backgroundColor: mb.bg,
+        // Centred column with a fixed max width so the carousel doesn't
+        // stretch across a desktop viewport (which previously pushed the
+        // bottom button row off-screen on tall windows). 480 dp matches
+        // the carousel art's natural reading width.
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  children: [
+                    Expanded(
+                      // PageView (not .builder) so the children list
+                      // is built once (`_slides`) and PageView reuses
+                      // the same widget instances across transitions.
+                      // RepaintBoundary on each child caches the paint
+                      // so swiping between slides only re-composites
+                      // cached layers instead of re-running CustomPaint
+                      // every frame.
+                      child: PageView(
+                        controller: _controller,
+                        onPageChanged: (i) => setState(() => _index = i),
+                        children: _slides,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  // Skip on slides 0/1 lets the user bail early; on the last
-                  // slide the same slot becomes a "I'm ready" reinforcement
-                  // — same destination, redundant CTA, but it removes any
-                  // ambiguity about how to leave the carousel.
-                  TextButton(
-                    onPressed: _complete,
-                    style: TextButton.styleFrom(
-                      foregroundColor: mb.textDim,
-                      textStyle: MbFonts.nunito(fontSize: 13),
                     ),
-                    child: Text(isLast ? "I'm ready" : 'Skip'),
-                  ),
-                ],
+                    _Dots(count: _slideKinds.length, activeIndex: _index),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        if (!isFirst) ...[
+                          MbGhostButton(
+                            label: 'Back',
+                            onPressed: _back,
+                            fullWidth: false,
+                          ),
+                          const SizedBox(width: 10),
+                        ],
+                        Expanded(
+                          child: MbPrimaryButton(
+                            label: isLast ? 'Get started' : 'Next',
+                            onPressed: _next,
+                            // The Get-started CTA is the only entry-point on
+                            // the final slide — make it visually unmistakable
+                            // even when the user is on a small phone. Add a
+                            // forward arrow so it reads as "go".
+                            leading: isLast
+                                ? const Icon(Icons.arrow_forward, size: 18)
+                                : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    // Skip on slides 0/1 lets the user bail early; on the last
+                    // slide the same slot becomes a "I'm ready" reinforcement
+                    // — same destination, redundant CTA, but it removes any
+                    // ambiguity about how to leave the carousel.
+                    TextButton(
+                      onPressed: _complete,
+                      style: TextButton.styleFrom(
+                        foregroundColor: mb.textDim,
+                        textStyle: MbFonts.nunito(fontSize: 13),
+                      ),
+                      child: Text(isLast ? "I'm ready" : 'Skip'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -261,19 +290,6 @@ class _DisclaimerSlide extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             const DisclaimerPanel(),
-            const SizedBox(height: 12),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 300),
-              child: Text(
-                "You'll see this again any time you visit Settings → About.",
-                style: MbFonts.nunito(
-                  fontSize: 13,
-                  height: 1.5,
-                  color: mb.textDim,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
           ],
         ),
       ),
@@ -305,18 +321,29 @@ class _NotificationsSlideState extends ConsumerState<_NotificationsSlide> {
   bool _granted = false;
   String? _failureMessage;
 
+  /// `true` when the controller resolved fast enough that we suspect
+  /// the browser had already cached a "granted" decision (no popup
+  /// shown). We surface this to the user so they understand the
+  /// silent state instead of suspecting the button is broken.
+  bool _alreadyGranted = false;
+
   Future<void> _request() async {
     setState(() {
       _requesting = true;
       _failureMessage = null;
     });
+    final stopwatch = Stopwatch()..start();
     final controller = ref.read(notificationsControllerProvider.notifier);
     await controller.setEnabled(true);
+    stopwatch.stop();
     if (!mounted) return;
     final state = ref.read(notificationsControllerProvider);
+    final fastGrant =
+        state.enabled && stopwatch.elapsed < const Duration(milliseconds: 250);
     setState(() {
       _requesting = false;
       _granted = state.enabled;
+      _alreadyGranted = fastGrant;
       _failureMessage = state.lastError?.message;
     });
     if (state.lastError != null) {
@@ -359,10 +386,17 @@ class _NotificationsSlideState extends ConsumerState<_NotificationsSlide> {
               constraints: const BoxConstraints(maxWidth: 320),
               child: Text(
                 _granted
-                    ? "Thanks — we'll only nudge if your week looks heavy."
+                    ? (_alreadyGranted
+                          ? "Notifications are already enabled in this "
+                                "browser, so no popup was needed. To revoke, "
+                                "manage permissions in your browser's site "
+                                'settings.'
+                          : "Thanks — we'll only nudge if your week looks "
+                                'heavy.')
                     : 'MoodBloom needs notification permission so cheer-up '
                           "reminders can find you when it's a heavy week. "
-                          'You can turn this off later in Settings.',
+                          "Your browser will ask you to allow this. You can "
+                          'turn it off later in Settings.',
                 style: MbFonts.nunito(
                   fontSize: 15,
                   height: 1.55,

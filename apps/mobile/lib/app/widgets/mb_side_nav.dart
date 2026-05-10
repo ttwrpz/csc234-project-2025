@@ -20,6 +20,7 @@ class MbSideNav extends StatelessWidget {
     required this.items,
     this.brandLabel = 'MoodBloom',
     this.footer,
+    this.actions = const <Widget>[],
   });
 
   final int currentIndex;
@@ -30,6 +31,12 @@ class MbSideNav extends StatelessWidget {
   /// Optional small caption rendered at the bottom of the sidebar
   /// (e.g. user name + sprint label).
   final String? footer;
+
+  /// Account-level action widgets rendered above the [footer] caption.
+  /// Used on desktop for the sign-out button + theme switcher (v1.0
+  /// polish). Empty list (default) collapses the slot — phones / tablet
+  /// shells that never compose this widget keep their original layout.
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -85,6 +92,13 @@ class MbSideNav extends StatelessWidget {
                   onTap: () => onTap(i),
                 ),
               const Spacer(),
+              if (actions.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Divider(color: mb.line, height: 1),
+                ),
+                for (final action in actions) action,
+              ],
               if (footer != null)
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -94,6 +108,67 @@ class MbSideNav extends StatelessWidget {
                   ),
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Public action tile reusable in [MbSideNav.actions]. Same visual
+/// language as a non-active nav tab — icon + label, transparent
+/// background, hover-tinted on focus. Optional [destructive] flag
+/// applies the high-contrast `coralText` color from the design tokens.
+class MbSideNavAction extends StatelessWidget {
+  const MbSideNavAction({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.destructive = false,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool destructive;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final color = destructive ? MoodBloomColors.coralText : mb.text;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: Semantics(
+        button: true,
+        label: label,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: color),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
+                  ),
+                ),
+                ?trailing,
+              ],
+            ),
           ),
         ),
       ),

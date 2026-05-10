@@ -17,7 +17,12 @@ import '../../domain/entities/garden_state.dart';
 /// intensity 0.4") and never use the legacy "wilting" / "rain cloud"
 /// vocabulary — see CLAUDE.md copy rules.
 class DailyScoreStrip extends StatelessWidget {
-  const DailyScoreStrip({super.key, required this.last7Days, this.onDayTap});
+  const DailyScoreStrip({
+    super.key,
+    required this.last7Days,
+    this.onDayTap,
+    this.compact = true,
+  });
 
   /// Newest-first list of cells (today, yesterday, …, 6 days ago).
   /// Always length 7 (the use case guarantees this).
@@ -26,6 +31,12 @@ class DailyScoreStrip extends StatelessWidget {
   /// Optional tap handler — called with the cell's local-midnight
   /// `DateTime`. Empty cells stay non-interactive.
   final ValueChanged<DateTime>? onDayTap;
+
+  /// `true` (default) renders the original phone-class layout (60 dp
+  /// strip, 10/13 sp text). `false` is the desktop-class layout —
+  /// taller bars, larger headings, more breathing room — used when the
+  /// strip lives in a wider home page column.
+  final bool compact;
 
   // SMTWTFS — index by `DateTime.weekday % 7` so Sunday=0.
   static const List<String> _weekdayLetters = <String>[
@@ -55,6 +66,12 @@ class DailyScoreStrip extends StatelessWidget {
     // Display oldest-first (left to right).
     final displayed = last7Days.reversed.toList(growable: false);
 
+    final titleSize = compact ? 13.0 : 17.0;
+    final captionSize = compact ? 11.0 : 13.0;
+    final stripHeight = compact ? 60.0 : 110.0;
+    final cellGap = compact ? 6.0 : 12.0;
+    final headerSpacing = compact ? 10.0 : 16.0;
+
     return Semantics(
       label: 'Daily score strip — last 7 days',
       child: Column(
@@ -66,33 +83,34 @@ class DailyScoreStrip extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                "This week",
+                'This week',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: mb.text,
                   fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                  fontSize: titleSize,
                 ),
               ),
               Text(
                 'mood scores',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: mb.textDim,
-                  fontSize: 11,
+                  fontSize: captionSize,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: headerSpacing),
           SizedBox(
-            height: 60,
+            height: stripHeight,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 for (var i = 0; i < displayed.length; i += 1) ...[
-                  if (i > 0) const SizedBox(width: 6),
+                  if (i > 0) SizedBox(width: cellGap),
                   Expanded(
                     child: _ScoreCell(
                       day: displayed[i],
+                      compact: compact,
                       onTap: onDayTap == null
                           ? null
                           : () => onDayTap!(
@@ -116,9 +134,10 @@ DateTime _truncateToLocalDay(DateTime t) {
 }
 
 class _ScoreCell extends StatelessWidget {
-  const _ScoreCell({required this.day, this.onTap});
+  const _ScoreCell({required this.day, required this.compact, this.onTap});
 
   final DayScore day;
+  final bool compact;
   final VoidCallback? onTap;
 
   @override
@@ -131,11 +150,17 @@ class _ScoreCell extends StatelessWidget {
     final magnitude = isEmpty ? 0.0 : score.abs();
     final isPositive = !isEmpty && score >= 0;
 
-    // Cell bar height. Bounded so the column (bar + 4 dp gap + ~12 dp
-    // label) fits inside the parent's 60 dp `SizedBox`. Empty days
-    // render as a thin 6 dp placeholder; logged days scale 10..38 dp
-    // with magnitude.
-    final height = isEmpty ? 6.0 : (10.0 + magnitude * 28.0).clamp(10.0, 38.0);
+    // Cell bar height. Bounded so the column (bar + gap + label) fits
+    // inside the parent's `SizedBox`. Empty days render as a thin
+    // placeholder; logged days scale with magnitude. Desktop uses a
+    // taller scale so the strip reads as a proper insight surface.
+    final emptyH = compact ? 6.0 : 10.0;
+    final minH = compact ? 10.0 : 16.0;
+    final maxH = compact ? 38.0 : 78.0;
+    final scaleH = compact ? 28.0 : 62.0;
+    final height = isEmpty
+        ? emptyH
+        : (minH + magnitude * scaleH).clamp(minH, maxH);
 
     final fillColor = isEmpty
         ? Colors.transparent
@@ -154,12 +179,13 @@ class _ScoreCell extends StatelessWidget {
             border: isEmpty ? Border.all(color: mb.line, width: 1) : null,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: compact ? 4 : 8),
         Text(
           DailyScoreStrip._weekdayLetters[day.day.weekday % 7],
           style: theme.textTheme.labelSmall?.copyWith(
             color: mb.textDim,
-            fontSize: 10,
+            fontSize: compact ? 10 : 13,
+            fontWeight: compact ? FontWeight.w500 : FontWeight.w600,
           ),
         ),
       ],

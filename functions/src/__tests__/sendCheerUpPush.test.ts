@@ -39,10 +39,18 @@ jest.unstable_mockModule('firebase-functions', () => ({
   },
 }));
 
-// Pass-through wrapper for the v2 firestore trigger registration —
-// returns the handler fn unchanged so the test can call it directly.
-jest.unstable_mockModule('firebase-functions/v2/firestore', () => ({
-  onDocumentCreated: (_opts: unknown, handler: unknown) => handler,
+// Pass-through wrappers for the v2 callable registration.
+// `onCall(opts, handler)` → returns the handler fn unchanged so the
+// test can call it directly. `HttpsError` is imported by the handler
+// for the unauthenticated branch; we expose a minimal class for tests.
+class FakeHttpsError extends Error {
+  constructor(public readonly code: string, message: string) {
+    super(message);
+  }
+}
+jest.unstable_mockModule('firebase-functions/v2/https', () => ({
+  onCall: (_opts: unknown, handler: unknown) => handler,
+  HttpsError: FakeHttpsError,
 }));
 
 // ---------------------------------------------------------------------------
@@ -210,36 +218,39 @@ beforeEach(() => {
   nextMulticastResponse = null;
 });
 
-interface FakeFirestoreEvent {
-  id: string;
-  params: { uid: string; evtId: string };
+interface FakeCallableRequest {
+  auth: { uid: string } | undefined;
+  data: { requestId?: string };
 }
 
-function makeEvent(uid: string, evtId: string): FakeFirestoreEvent {
+function makeRequest(
+  uid: string,
+  requestId: string = '2026-05-13-5_of_7_negative',
+): FakeCallableRequest {
   return {
-    id: `evt-${uid}-${evtId}`,
-    params: { uid, evtId },
+    auth: { uid },
+    data: { requestId },
   };
 }
 
-function seedSettings(
-  uid: string,
-  data: Record<string, unknown>,
-): void {
+function seedSettings(uid: string, data: Record<string, unknown>): void {
   docStore.set(`users/${uid}/settings/notifications`, data);
 }
 
 async function invoke(
   uid: string,
-  evtId: string = '2026-05-13-5_of_7_negative',
+  requestId: string = '2026-05-13-5_of_7_negative',
 ): Promise<void> {
-  // The mocked `onDocumentCreated` returns the handler unchanged. The
-  // actual signature is `(event) => Promise<void>`, but TS sees the
-  // CloudFunction wrapper type so we cast through unknown.
+  // The mocked `onCall` returns the handler unchanged. v1.0 polish
+  // (2026-05-10): the function used to be a Firestore document
+  // trigger but moved to onCall because the project's Firestore is
+  // in `asia-southeast3` (Bangkok), which Firestore-trigger Eventarc
+  // does not yet allowlist. Tests now pass a `CallableRequest`
+  // shape; everything else is unchanged.
   const handler = sendCheerUpPush as unknown as (
-    event: FakeFirestoreEvent,
-  ) => Promise<void>;
-  await handler(makeEvent(uid, evtId));
+    req: FakeCallableRequest,
+  ) => Promise<unknown>;
+  await handler(makeRequest(uid, requestId));
 }
 
 function lastLog(): { level: string; payload: unknown } | undefined {

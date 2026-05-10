@@ -17,6 +17,8 @@ import '../features/mood/data/providers.dart' as mood_providers;
 import '../features/mood/presentation/log_mood_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
+import '../features/settings/domain/entities/theme_mode_preference.dart';
+import '../features/settings/presentation/controllers/theme_mode_controller.dart';
 import 'widgets/mb_bottom_nav.dart';
 import 'widgets/mb_side_nav.dart';
 
@@ -202,7 +204,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class _AppShell extends StatelessWidget {
+class _AppShell extends ConsumerWidget {
   const _AppShell({required this.navigationShell});
   final StatefulNavigationShell navigationShell;
 
@@ -269,11 +271,11 @@ class _AppShell extends StatelessWidget {
   Widget _body() => navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final w = constraints.maxWidth;
-        if (w >= _desktopMin) return _buildDesktop(context, w);
+        if (w >= _desktopMin) return _buildDesktop(context, ref, w);
         if (w >= _tabletMin) return _buildTablet(context);
         return _buildPhone(context);
       },
@@ -285,16 +287,19 @@ class _AppShell extends StatelessWidget {
   /// 24 dp at narrow desktop widths to 48 dp at wide ones. This is the
   /// layout the user reported as "wasting space" — fixing the previous
   /// hard 900 dp cap is the whole point of this method.
-  Widget _buildDesktop(BuildContext context, double availableWidth) {
+  Widget _buildDesktop(
+    BuildContext context,
+    WidgetRef ref,
+    double availableWidth,
+  ) {
     final bodyAvailable = availableWidth - kMbSideNavWidth;
-    // Smooth ramp from 24 → 48 between 900 and 1400 dp body widths so the
-    // edges don't crowd the content on narrow desktop windows but also
-    // don't waste an extra centimetre on each side at 4K.
     final hPadding = bodyAvailable < 1100
         ? 24.0
         : bodyAvailable < 1400
         ? 32.0
         : 48.0;
+
+    final themePref = ref.watch(themeModeControllerProvider);
 
     return Scaffold(
       body: Row(
@@ -303,6 +308,25 @@ class _AppShell extends StatelessWidget {
             currentIndex: _activeNavIndex(context),
             onTap: _goBranch,
             items: _items,
+            actions: [
+              MbSideNavAction(
+                icon: _iconForThemePref(themePref),
+                label: _labelForThemePref(themePref),
+                onTap: () => _showThemeDialog(context, ref, themePref),
+                trailing: const Icon(
+                  Icons.unfold_more,
+                  size: 14,
+                  color: Color(0x66808080),
+                ),
+              ),
+              MbSideNavAction(
+                icon: Icons.logout,
+                label: 'Sign out',
+                destructive: true,
+                onTap: () => _confirmSidebarSignOut(context, ref),
+              ),
+              const SizedBox(height: 8),
+            ],
           ),
           Expanded(
             child: Center(
@@ -318,6 +342,81 @@ class _AppShell extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static IconData _iconForThemePref(ThemeModePreference p) => switch (p) {
+    ThemeModePreference.light => Icons.light_mode_outlined,
+    ThemeModePreference.dark => Icons.dark_mode_outlined,
+    ThemeModePreference.system => Icons.brightness_auto_outlined,
+    ThemeModePreference.followDeviceTime => Icons.schedule_outlined,
+  };
+
+  static String _labelForThemePref(ThemeModePreference p) => switch (p) {
+    ThemeModePreference.light => 'Theme: Light',
+    ThemeModePreference.dark => 'Theme: Dark',
+    ThemeModePreference.system => 'Theme: Auto (device)',
+    ThemeModePreference.followDeviceTime => 'Theme: Auto (time)',
+  };
+
+  Future<void> _showThemeDialog(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeModePreference current,
+  ) async {
+    final picked = await showDialog<ThemeModePreference>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Theme'),
+        children: [
+          for (final option in ThemeModePreference.values)
+            RadioListTile<ThemeModePreference>(
+              title: Text(_labelForThemePref(option)),
+              value: option,
+              // ignore: deprecated_member_use
+              groupValue: current,
+              // ignore: deprecated_member_use
+              onChanged: (v) => Navigator.of(dialogContext).pop(v),
+            ),
+        ],
+      ),
+    );
+    if (picked != null && picked != current) {
+      await ref
+          .read(themeModeControllerProvider.notifier)
+          .setPreference(picked);
+    }
+  }
+
+  Future<void> _confirmSidebarSignOut(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text(
+          'Your moods stay safe on this device and in the cloud. You can '
+          'always sign back in.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFA63B2E),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(signOutUseCaseProvider)();
   }
 
   /// Tablet: phone shell (bottom nav) but content column centred at a

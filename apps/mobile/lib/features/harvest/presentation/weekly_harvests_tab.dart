@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../garden/domain/entities/flower_species.dart';
 import '../../garden/presentation/widgets/flower_sprite.dart';
-import '../../garden/presentation/widgets/plant_tier_group.dart';
+import '../../garden/presentation/widgets/garden_bed.dart';
 import '../../mood/domain/entities/mood_type.dart';
 import '../../mood/presentation/widgets/mood_kind_adapter.dart';
 import '../data/providers.dart';
@@ -126,51 +126,62 @@ class _WeeklyHarvestTile extends StatelessWidget {
   final WeeklyGarden week;
   final VoidCallback onTap;
 
+  /// Below this row width the inline GardenBed thumbnail shrinks so the
+  /// entry text isn't squeezed. The 110×90 thumbnail used to dominate
+  /// phone-class rows (~360 dp wide) — user feedback v1.0 polish
+  /// (2026-05-10): "harvest entries the flowers side is too large in
+  /// the mobile viewport".
+  static const double _phoneRow = 420;
+
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
     return MbCard(
       onTap: onTap,
       padding: const EdgeInsets.all(MoodBloomSpacing.lg),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Hero plant-tier thumbnail. Smaller than the canvas size used
-          // on the WeeklySummary screen so it fits the row neatly; the
-          // PlantTierGroup widget scales its painter to the supplied
-          // logical size.
-          PlantTierGroup(
-            tier: week.summary.endingPlantTier,
-            entryCount: week.summary.totalEntryCount,
-            size: const Size(80, 64),
-          ),
-          const SizedBox(width: MoodBloomSpacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  week.weekId,
-                  style: MbFonts.fraunces(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: mb.text,
-                  ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isPhone = constraints.maxWidth < _phoneRow;
+          final thumbSize = isPhone ? const Size(72, 60) : const Size(110, 90);
+          final gap = isPhone ? MoodBloomSpacing.md : MoodBloomSpacing.lg;
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              GardenBed(
+                entries: week.entries,
+                tier: week.summary.endingPlantTier,
+                size: thumbSize,
+                showOverflowBadge: true,
+              ),
+              SizedBox(width: gap),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      week.weekId,
+                      style: MbFonts.fraunces(
+                        fontSize: isPhone ? 14 : 16,
+                        fontWeight: FontWeight.w700,
+                        color: mb.text,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${week.summary.totalEntryCount} '
+                      '${week.summary.totalEntryCount == 1 ? "entry" : "entries"} · '
+                      'avg ${week.summary.averageMoodScore.toStringAsFixed(2)}',
+                      style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
+                    ),
+                    const SizedBox(height: 6),
+                    _DominantSpeciesCluster(counts: week.summary.moodCounts),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${week.summary.totalEntryCount} '
-                  '${week.summary.totalEntryCount == 1 ? "entry" : "entries"} · '
-                  'avg ${week.summary.averageMoodScore.toStringAsFixed(2)}',
-                  style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
-                ),
-                const SizedBox(height: 6),
-                _DominantSpeciesCluster(counts: week.summary.moodCounts),
-              ],
-            ),
-          ),
-          Icon(Icons.chevron_right, color: mb.textDim),
-        ],
+              ),
+              Icon(Icons.chevron_right, color: mb.textDim),
+            ],
+          );
+        },
       ),
     );
   }

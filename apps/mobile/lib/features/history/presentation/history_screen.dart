@@ -136,35 +136,54 @@ class _Header extends StatelessWidget {
   final HistoryView view;
   final ValueChanged<HistoryView> onViewChanged;
 
+  /// Below this width the title + 280dp segmented toggle no longer
+  /// fit comfortably side-by-side, so we stack them vertically.
+  /// v1.0 polish (2026-05-10): user feedback that the "History" title
+  /// was squished on phone-class viewports because the 3-segment
+  /// toggle ate most of the row.
+  static const double _stackBelow = 520;
+
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            'History',
-            style: MbFonts.fraunces(
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: mb.text,
-            ),
-          ),
-        ),
-        SizedBox(
-          width: 280,
-          child: MbSegmentedToggle<HistoryView>(
-            items: const [
-              MbSegmentedItem(value: HistoryView.list, label: 'List'),
-              MbSegmentedItem(value: HistoryView.calendar, label: 'Calendar'),
-              MbSegmentedItem(value: HistoryView.harvests, label: 'Harvests'),
-            ],
-            value: view,
-            onChanged: onViewChanged,
-            height: 36,
-          ),
-        ),
+    final title = Text(
+      'History',
+      style: MbFonts.fraunces(
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+        color: mb.text,
+      ),
+    );
+    final toggle = MbSegmentedToggle<HistoryView>(
+      items: const [
+        MbSegmentedItem(value: HistoryView.list, label: 'List'),
+        MbSegmentedItem(value: HistoryView.calendar, label: 'Calendar'),
+        MbSegmentedItem(value: HistoryView.harvests, label: 'Harvests'),
       ],
+      value: view,
+      onChanged: onViewChanged,
+      height: 36,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < _stackBelow) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              title,
+              const SizedBox(height: MoodBloomSpacing.md),
+              SizedBox(width: double.infinity, child: toggle),
+            ],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: title),
+            SizedBox(width: 280, child: toggle),
+          ],
+        );
+      },
     );
   }
 }

@@ -45,7 +45,10 @@ class AISuggestionPill extends ConsumerWidget {
             onAccept: () {
               ref
                   .read(logMoodControllerProvider.notifier)
-                  .applyAiSuggestion(suggestion.mood);
+                  .applyAiSuggestion(
+                    suggestion.mood,
+                    intensity: suggestion.intensity,
+                  );
               ref.read(aiSuggestionControllerProvider.notifier).clear();
             },
             onDismiss: () =>

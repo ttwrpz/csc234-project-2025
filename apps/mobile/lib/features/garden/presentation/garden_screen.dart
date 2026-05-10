@@ -19,6 +19,7 @@ import '../domain/entities/intervention_state.dart';
 import 'controllers/cheer_up_controller.dart';
 import 'widgets/cheer_up_banner.dart';
 import 'widgets/daily_score_strip.dart';
+import 'widgets/garden_summary_row.dart';
 import 'widgets/hotline_footer.dart';
 import 'widgets/sky_header.dart';
 
@@ -76,8 +77,10 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
         Navigator.of(context)
             .push(
               MaterialPageRoute<void>(
-                builder: (_) =>
-                    WeeklySummaryScreen(summary: pendingSummary.summary),
+                builder: (_) => WeeklySummaryScreen(
+                  summary: pendingSummary.summary,
+                  entries: pendingSummary.entries,
+                ),
               ),
             )
             .then((_) {
@@ -176,6 +179,19 @@ class _GardenView extends StatelessWidget {
   final bool bannerDismissed;
   final VoidCallback onDismissBanner;
 
+  /// Tablet breakpoint: the canvas + score strip shift into a 60% left
+  /// column with the recent-moods list on a 40% right column. Phones
+  /// stay single-column.
+  static const double _tabletBreakpoint = 720;
+
+  /// Desktop breakpoint: same two-column split as tablet, but clamped
+  /// inside a 1100 dp `ConstrainedBox` so the form doesn't sprawl on
+  /// 1440 / 1920 dp windows. Page padding bumps from 18 dp to 32 dp.
+  /// (Tightened from 1200 in v1.0 polish so the centered home page
+  /// reads as a focused content column instead of a wide split with
+  /// empty space on either side.)
+  static const double _desktopBreakpoint = 1080;
+
   @override
   Widget build(BuildContext context) {
     final triggered = intervention?.triggered ?? false;
@@ -189,8 +205,7 @@ class _GardenView extends StatelessWidget {
     final preview = recentForPreview.take(5).toList(growable: false);
 
     // This week's entries (today through 6 days ago) feed the
-    // SkyHeader's per-entry FlowerSprite scatter — see
-    // `_WeeklyFlowerScatter`. Negative entries (sad/anxious/angry)
+    // SkyHeader's [GardenBed]. Negative entries (sad/anxious/angry)
     // surface as their species silhouette on the canvas, not just in
     // list tiles.
     final weekCutoff = DateTime.now().subtract(const Duration(days: 7));
@@ -200,75 +215,253 @@ class _GardenView extends StatelessWidget {
 
     return SafeArea(
       bottom: false,
-      child: Stack(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
+          final isTablet =
+              !isDesktop && constraints.maxWidth >= _tabletBreakpoint;
+          if (isDesktop || isTablet) {
+            return _buildWide(
+              context,
+              isDesktop: isDesktop,
+              triggered: triggered,
+              escalated: escalated,
+              reason: reason,
+              preview: preview,
+              weekEntries: weekEntries,
+            );
+          }
+          return _buildNarrow(
+            context,
+            triggered: triggered,
+            escalated: escalated,
+            reason: reason,
+            preview: preview,
+            weekEntries: weekEntries,
+          );
+        },
+      ),
+    );
+  }
+
+  /// Phone-class layout (< 720 dp). Single-column scrolling list. The
+  /// token chip is wired into the SkyHeader's top-right slot, stacked
+  /// directly under the entries-this-week pill.
+  Widget _buildNarrow(
+    BuildContext context, {
+    required bool triggered,
+    required bool escalated,
+    required String reason,
+    required List<MoodEntry> preview,
+    required List<MoodEntry> weekEntries,
+  }) {
+    return SingleChildScrollView(
+      // Extra bottom padding clears both the bottom nav AND the FAB.
+      padding: const EdgeInsets.only(bottom: 140),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SingleChildScrollView(
-            // Extra bottom padding clears both the bottom nav AND the FAB.
-            padding: const EdgeInsets.only(bottom: 140),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SkyHeader(
-                  state: state,
-                  greetingName: greetingName,
-                  recentEntries: weekEntries,
-                ),
-                if (triggered && !bannerDismissed)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
-                    child: CheerUpBanner(
-                      reason: reason,
-                      onDismiss: onDismissBanner,
-                    ),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
-                  child: MbCard(
-                    child: DailyScoreStrip(
-                      last7Days: state.last7Days,
-                      // Tap a cell → bottom-sheet listing every entry on
-                      // that day. Reuses the calendar's DayEntriesSheet so
-                      // the UX is the same in both surfaces.
-                      onDayTap: (day) => DayEntriesSheet.show(context, day),
-                    ),
-                  ),
-                ),
-                if (preview.isNotEmpty) ...[
-                  const SizedBox(height: 24),
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(18, 0, 18, 0),
-                    child: MbSectionLabel('RECENT MOODS'),
-                  ),
-                  const SizedBox(height: 8),
-                  for (final e in preview)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
-                      child: MoodEntryTile(
-                        entry: e,
-                        onTap: () => context.go('/history/${e.id}'),
-                      ),
-                    ),
-                ],
-                if (escalated)
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(18, 16, 18, 0),
-                    child: HotlineFooter(),
-                  ),
-              ],
+          SkyHeader(
+            state: state,
+            greetingName: greetingName,
+            recentEntries: weekEntries,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
+            child: GardenSummaryRow(
+              state: state,
+              tokenChip: const _GardenTokenChip(),
             ),
           ),
-          // Floating token-balance chip — overlaid on the SkyHeader,
-          // top-right BELOW the existing entries pill so the two pills
-          // stack vertically without restructuring the SkyHeader's own
-          // top-bar Row (HB-005 Track 6.2). Hidden via the "Show token
-          // balance" toggle in Settings; never forced.
-          const Positioned(
-            top: 56,
-            right: MoodBloomSpacing.pagePadding,
-            child: _GardenTokenChip(),
+          if (triggered && !bannerDismissed)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
+              child: CheerUpBanner(reason: reason, onDismiss: onDismissBanner),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
+            child: MbCard(
+              child: DailyScoreStrip(
+                last7Days: state.last7Days,
+                onDayTap: (day) => DayEntriesSheet.show(context, day),
+              ),
+            ),
           ),
+          if (preview.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(18, 0, 18, 0),
+              child: MbSectionLabel('RECENT MOODS'),
+            ),
+            const SizedBox(height: 8),
+            for (final e in preview)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+                child: MoodEntryTile(
+                  entry: e,
+                  onTap: () => context.go('/history/${e.id}'),
+                ),
+              ),
+          ],
+          if (escalated)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(18, 16, 18, 0),
+              child: HotlineFooter(),
+            ),
         ],
       ),
+    );
+  }
+
+  /// Tablet- / desktop-class layout (≥ 720 dp). Two-column split: the
+  /// SkyHeader + DailyScoreStrip + cheer-up banner sit on the left
+  /// (60%); recent-moods + hotline footer sit on the right (40%). On
+  /// desktop (≥ 1080 dp) the whole block is wrapped in a 1200 dp
+  /// `Center`+`ConstrainedBox` and the page padding bumps to 32 dp.
+  Widget _buildWide(
+    BuildContext context, {
+    required bool isDesktop,
+    required bool triggered,
+    required bool escalated,
+    required String reason,
+    required List<MoodEntry> preview,
+    required List<MoodEntry> weekEntries,
+  }) {
+    final hPad = isDesktop ? 32.0 : 18.0;
+    final maxWidth = isDesktop ? 1100.0 : double.infinity;
+    final theme = Theme.of(context);
+
+    final left = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusSky),
+          child: SkyHeader(
+            state: state,
+            greetingName: greetingName,
+            recentEntries: weekEntries,
+            // Wider canvas on tablet/desktop reads as a hero strip
+            // instead of a band — the user reported the right column
+            // out-running the left visually because the SkyHeader
+            // was anchored at 320dp. 420dp gives the bed more vertical
+            // room without crowding out the DailyScoreStrip below.
+            height: isDesktop ? 420 : 360,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: GardenSummaryRow(
+            state: state,
+            tokenChip: const _GardenTokenChip(),
+          ),
+        ),
+        if (triggered && !bannerDismissed)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: CheerUpBanner(reason: reason, onDismiss: onDismissBanner),
+          ),
+        if (escalated)
+          const Padding(
+            padding: EdgeInsets.only(top: 16),
+            child: HotlineFooter(),
+          ),
+      ],
+    );
+
+    // Right column on desktop: this week's mood strip on top, then
+    // recent moods below. v1.0 polish (2026-05-10) — moved the strip
+    // out of the left column so the desktop layout reads as
+    // "garden art on the left, week-at-a-glance + recent entries on
+    // the right" instead of stacking three blocks under the SkyHeader.
+    final right = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: MbCard(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: MoodBloomSpacing.sm,
+                vertical: MoodBloomSpacing.sm,
+              ),
+              child: DailyScoreStrip(
+                last7Days: state.last7Days,
+                onDayTap: (day) => DayEntriesSheet.show(context, day),
+                compact: false,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (preview.isEmpty)
+          MbCard(
+            child: Padding(
+              padding: const EdgeInsets.all(MoodBloomSpacing.lg),
+              child: Text(
+                'Your most recent moods will appear here once you log '
+                'a few entries.',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+          )
+        else ...[
+          const MbSectionLabel('RECENT MOODS'),
+          const SizedBox(height: 8),
+          for (final e in preview)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: MoodEntryTile(
+                entry: e,
+                onTap: () => context.go('/history/${e.id}'),
+              ),
+            ),
+        ],
+      ],
+    );
+
+    // Top padding scales with breakpoint so the SkyHeader doesn't
+    // hug the top of the viewport on desktop. Bottom padding stays
+    // generous so the FAB doesn't overlap content. v1.0 polish
+    // (2026-05-10) — addressed "content too much at top in desktop"
+    // by giving the page a vertical-rhythm anchor instead of starting
+    // at y=8 dp.
+    final topPad = isDesktop ? 48.0 : 16.0;
+    return LayoutBuilder(
+      builder: (context, viewport) {
+        // Floor the content height to the viewport so the bed +
+        // recent moods sit centred when the bottom of the page
+        // would otherwise be empty whitespace. We MUST guard against
+        // unbounded height (the SCV that wraps us provides infinite
+        // maxHeight to its child during intrinsic measurement) —
+        // setting `minHeight: infinity` on a BoxConstraints throws
+        // and renders a RenderErrorBox, which then explodes on the
+        // next hit test. v1.0 polish (2026-05-10) — fixes
+        // "Cannot hit test a render box that has never been laid out"
+        // crash reported in the user-testing round.
+        final viewportH = viewport.hasBoundedHeight ? viewport.maxHeight : 0.0;
+        final minH = viewport.hasBoundedHeight
+            ? (viewportH - topPad - 140).clamp(0.0, viewportH)
+            : 0.0;
+        return SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(hPad, topPad, hPad, 140),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: minH),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 6, child: left),
+                    const SizedBox(width: 24),
+                    Expanded(flex: 4, child: right),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

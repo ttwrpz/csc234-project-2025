@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../disclaimer/domain/disclaimer_copy.dart';
 import '../data/providers.dart';
 import '../domain/entities/mood_draft.dart';
 import '../domain/entities/mood_entry.dart';
@@ -349,6 +350,8 @@ class _NarrowLayout extends ConsumerWidget {
                   ),
                 ),
               ],
+              const SizedBox(height: MoodBloomSpacing.lg),
+              const _LogMoodDisclaimerFootnote(),
             ],
           ),
         ),
@@ -551,6 +554,8 @@ class _RightColumn extends ConsumerWidget {
           const SizedBox(height: MoodBloomSpacing.sm),
           Text(submission.errorMessage!, style: errorTextStyle),
         ],
+        const SizedBox(height: MoodBloomSpacing.lg),
+        const _LogMoodDisclaimerFootnote(),
         const SizedBox(height: MoodBloomSpacing.lg),
         _SaveButton(
           hasMood: hasMood,
@@ -775,6 +780,39 @@ class _SaveButton extends StatelessWidget {
       label: label,
       onPressed: onPressed,
       loading: loading,
+    );
+  }
+}
+
+/// Compact disclaimer footnote shown above the Save bar on the Add Mood
+/// page. Surfaces the short "not a medical device" line ([DisclaimerCopy
+/// .notificationFooter]) so the framing is visible on every entry — the
+/// surface where users spend the most time and where AI mood
+/// interpretation is offered. v1.0 polish (2026-05-10): the disclaimer
+/// previously only appeared in onboarding, Settings, and the (future)
+/// Insights ack dialog; the user asked for it on the Add page too.
+class _LogMoodDisclaimerFootnote extends StatelessWidget {
+  const _LogMoodDisclaimerFootnote();
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.medical_information_outlined, size: 14, color: mb.textDim),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            DisclaimerCopy.notificationFooter,
+            style: MbFonts.nunito(
+              fontSize: 11,
+              height: 1.45,
+              color: mb.textDim,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

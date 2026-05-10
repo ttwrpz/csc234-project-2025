@@ -47,6 +47,12 @@ export type AnalyzeMoodTextRequest = z.infer<typeof AnalyzeMoodTextRequestSchema
 export const GeminiResponseSchema = z.object({
   mood: MoodTypeSchema,
   confidence: z.number().min(0).max(2),
+  /**
+   * Inferred 1..5 emotional intensity. Optional for backward-compat
+   * with deployed model versions that don't yet emit it; the server
+   * clamps and falls back to a neutral 3 when missing.
+   */
+  intensity: z.number().min(1).max(5).optional(),
   alternative: z
     .object({
       mood: MoodTypeSchema,
@@ -69,6 +75,13 @@ export interface AnalyzeMoodTextSuccess {
   requestId: string;
   mood: MoodTypeWire;
   confidence: number; // clamped to [0, 1]
+  /**
+   * Inferred 1..5 emotional intensity. Surfaces alongside `mood` so
+   * the Log Mood UI can pre-fill both the mood pill AND the intensity
+   * slider from a single Gemini call. Server-side clamped to [1, 5];
+   * falls back to 3 (neutral) when the model omits it.
+   */
+  intensity: number;
   alternative: { mood: MoodTypeWire; confidence: number } | null;
   rationale: string; // <=80 chars on the wire (truncate from 120)
   flag?: SafetyFlag;

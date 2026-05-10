@@ -248,15 +248,27 @@ final pendingWeeklySummaryProvider = Provider<PendingWeekSummary?>((ref) {
         dailyHealthHistory: const [],
         triggeredTierCount: 0,
       );
-  return PendingWeekSummary(weekStart: weekStart, summary: summary);
+  return PendingWeekSummary(
+    weekStart: weekStart,
+    summary: summary,
+    entries: weekEntries,
+  );
 });
 
 /// Carrier for the pending week's metadata + computed summary. Only
 /// [pendingWeeklySummaryProvider] emits one; the WeeklySummary screen
-/// + garden routing wire-up consume it directly.
+/// + garden routing wire-up consume it directly. [entries] are the
+/// week's mood entries (already filtered to the active week) so the
+/// summary screen's hero [GardenBed] can render real plants without
+/// re-querying the stream.
 class PendingWeekSummary {
-  const PendingWeekSummary({required this.weekStart, required this.summary});
+  const PendingWeekSummary({
+    required this.weekStart,
+    required this.summary,
+    required this.entries,
+  });
 
   final DateTime weekStart;
   final WeeklySummary summary;
+  final List<MoodEntry> entries;
 }

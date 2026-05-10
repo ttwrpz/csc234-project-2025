@@ -12,6 +12,8 @@ import '../../auth/data/providers.dart';
 import '../../mood/data/providers.dart' show firebaseFunctionsProvider;
 import '../../auth/presentation/widgets/biometric_settings_tile.dart';
 import '../../disclaimer/presentation/widgets/disclaimer_panel.dart';
+import '../../garden/data/providers.dart' show debugPlantTierOverrideProvider;
+import '../../garden/domain/entities/plant_tier.dart';
 import '../../harvest/presentation/controllers/weekly_summary_controller.dart';
 import '../../mood/data/sync/connectivity_provider.dart';
 import '../../notifications/presentation/widgets/notifications_toggle_tile.dart';
@@ -119,12 +121,16 @@ class SettingsScreen extends ConsumerWidget {
               clipBehavior: Clip.hardEdge,
               padding: EdgeInsets.zero,
               child: ListTile(
-                leading: Icon(Icons.logout, color: MoodBloomColors.coral),
-                title: Text(
+                leading: const Icon(
+                  Icons.logout,
+                  color: MoodBloomColors.coralText,
+                ),
+                title: const Text(
                   'Sign out',
                   style: TextStyle(
-                    color: MoodBloomColors.coral,
+                    color: MoodBloomColors.coralText,
                     fontWeight: FontWeight.w600,
+                    shadows: <Shadow>[],
                   ),
                 ),
                 onTap: () => _confirmSignOut(context, ref),
@@ -437,6 +443,14 @@ class _DebugCluster extends ConsumerWidget {
             },
           ),
           const Divider(height: 1),
+          // Cycle the plant tier through the 5 ecosystem states
+          // (Storm Season → Weathering → Resting → Thriving → Flourishing
+          // → off). The override is held by `debugPlantTierOverrideProvider`
+          // and short-circuits the EWMA-derived tier at the
+          // `gardenStateStreamProvider` level — no entries needed,
+          // visual states stay reproducible for QA + reviewers.
+          const _DebugTierCycleTile(),
+          const Divider(height: 1),
           // Force-harvest tile (HB-005 Track 6.1 demo affordance).
           // Bypasses the 7-day boundary check so QA + demo can run the
           // archive flow without waiting for a Monday rollover. Calls
@@ -487,13 +501,14 @@ class _DebugCluster extends ConsumerWidget {
           ListTile(
             leading: const Icon(
               Icons.delete_forever_outlined,
-              color: MoodBloomColors.coral,
+              color: MoodBloomColors.coralText,
             ),
             title: const Text(
               'Wipe all account data',
               style: TextStyle(
-                color: MoodBloomColors.coral,
+                color: MoodBloomColors.coralText,
                 fontWeight: FontWeight.w600,
+                shadows: <Shadow>[],
               ),
             ),
             subtitle: const Text(
@@ -511,6 +526,37 @@ class _DebugCluster extends ConsumerWidget {
   Future<void> _forceHarvest(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
     final controller = ref.read(weeklySummaryControllerProvider.notifier);
+
+    // v1.0 polish (2026-05-10): clear the most recent weeklyGarden
+    // archive first so the force-harvest button is replay-able.
+    // Without this, the second tap fails with "alreadyArchived"
+    // because production rules treat the archive as write-once.
+    // The `wipeWeeklyGarden` callable bypasses the delete: false
+    // rule via Admin SDK and is debug-only.
+    final functions = ref.read(firebaseFunctionsProvider);
+    try {
+      await functions.httpsCallable('wipeWeeklyGarden').call();
+    } on FirebaseFunctionsException catch (e) {
+      // `not-found` means the CF isn't deployed yet — surface a
+      // friendly note so the demo path can still continue (the
+      // existing acknowledge() call below will surface the
+      // alreadyArchived failure if a doc was in the way).
+      if (e.code != 'not-found') {
+        if (!context.mounted) return;
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'wipeWeeklyGarden failed: ${e.code} — '
+              '${e.message ?? "unknown"}. Continuing anyway.',
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      // Swallow other transient failures and let acknowledge() try.
+    }
+
+    if (!context.mounted) return;
     final garden = await controller.acknowledge();
     if (!context.mounted) return;
     if (garden != null) {
@@ -518,7 +564,8 @@ class _DebugCluster extends ConsumerWidget {
         SnackBar(
           content: Text(
             'Harvested ${garden.weekId} — '
-            '${garden.entries.length} entries archived.',
+            '${garden.entries.length} entries archived '
+            '(prior archive cleared first).',
           ),
         ),
       );
@@ -660,6 +707,46 @@ class _DebugCluster extends ConsumerWidget {
         ),
         duration: Duration(seconds: 8),
       ),
+    );
+  }
+}
+
+/// Cycles `debugPlantTierOverrideProvider` through `null ? stormSeason ?
+/// weathering ? resting ? thriving ? flourishing ? null`. The current
+/// override is shown in the subtitle so reviewers can read which tier
+/// the canvas is forced to without leaving Settings. v1.0 polish
+/// (2026-05-10) � addresses "Garden Health stuck at Resting" feedback
+/// by giving the user an immediate path to all 5 visual states.
+class _DebugTierCycleTile extends ConsumerWidget {
+  const _DebugTierCycleTile();
+
+  static const List<PlantTier?> _cycle = [
+    null,
+    PlantTier.stormSeason,
+    PlantTier.weathering,
+    PlantTier.resting,
+    PlantTier.thriving,
+    PlantTier.flourishing,
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(debugPlantTierOverrideProvider);
+    final label = current?.name ?? 'off (use EWMA)';
+    return ListTile(
+      leading: const Icon(Icons.local_florist_outlined),
+      title: const Text('Cycle plant tier (5 states)'),
+      subtitle: Text(
+        'Tap to advance: $label ? next. Forces the home canvas to '
+        'render Storm Season / Weathering / Resting / Thriving / '
+        'Flourishing without manufacturing entries.',
+      ),
+      onTap: () {
+        final notifier = ref.read(debugPlantTierOverrideProvider.notifier);
+        final idx = _cycle.indexOf(current);
+        final next = _cycle[(idx + 1) % _cycle.length];
+        notifier.set(next);
+      },
     );
   }
 }

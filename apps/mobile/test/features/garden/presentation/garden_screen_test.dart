@@ -8,8 +8,9 @@ import 'package:moodbloom/features/auth/data/providers.dart';
 import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
 import 'package:moodbloom/features/garden/presentation/garden_screen.dart';
 import 'package:moodbloom/features/garden/presentation/widgets/daily_score_strip.dart';
-import 'package:moodbloom/features/garden/presentation/widgets/plant_tier_group.dart';
+import 'package:moodbloom/features/garden/presentation/widgets/garden_bed.dart';
 import 'package:moodbloom/features/garden/presentation/widgets/sky_header.dart';
+import 'package:moodbloom/features/history/presentation/widgets/mood_entry_tile.dart';
 import 'package:moodbloom/features/mood/data/providers.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_entry.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
@@ -75,20 +76,19 @@ MoodEntry _entry(
 
 void main() {
   group('GardenScreen — ADR-0010 ecosystem refactor', () {
-    testWidgets('empty state still mounts the canvas (PlantTierGroup) and the '
+    testWidgets('empty state still mounts the canvas (GardenBed) and the '
         'daily-score strip', (tester) async {
       final repo = FakeMoodRepository()..streamedEntries = [const []];
       await _pumpGarden(tester, repo: repo);
 
-      // The canvas always renders — no per-entry sprite dispatch.
+      // The canvas always renders — empty state paints ground+grass only,
+      // no flowers (closes the wipe-still-shows-3-flowers regression).
       expect(find.byType(SkyHeader), findsOneWidget);
-      expect(find.byType(PlantTierGroup), findsOneWidget);
+      expect(find.byType(GardenBed), findsOneWidget);
       expect(find.byType(DailyScoreStrip), findsOneWidget);
     });
 
-    testWidgets('positive entries today drive a thriving/flourishing tier', (
-      tester,
-    ) async {
+    testWidgets('positive entries today drive a populated bed', (tester) async {
       final today = DateTime.now();
       final entries = [
         for (var i = 0; i < 5; i += 1)
@@ -98,14 +98,15 @@ void main() {
       await _pumpGarden(tester, repo: repo);
 
       // The tier picker is the use case's job; from the screen's side
-      // we just verify the canvas keeps mounting and the entries
-      // pill reflects the live count (today is in this week).
-      expect(find.byType(PlantTierGroup), findsOneWidget);
+      // we verify the bed is mounted with this week's entries forwarded
+      // through the SkyHeader.
+      final bed = tester.widget<GardenBed>(find.byType(GardenBed));
+      expect(bed.entries.length, 5);
       expect(find.text('5 entries this week'), findsOneWidget);
     });
 
     testWidgets(
-      'negative-only history mounts the canvas with no per-entry sprites',
+      'negative-only history mounts the canvas with the bed populated',
       (tester) async {
         final today = DateTime.now();
         final repo = FakeMoodRepository()
@@ -118,9 +119,8 @@ void main() {
           ];
         await _pumpGarden(tester, repo: repo);
 
-        // No per-entry sprites — just the tier group + atmosphere
-        // overlay. Plants stay alive in every tier per ADR-0010 §1.
-        expect(find.byType(PlantTierGroup), findsOneWidget);
+        final bed = tester.widget<GardenBed>(find.byType(GardenBed));
+        expect(bed.entries.length, 3);
         expect(find.byType(DailyScoreStrip), findsOneWidget);
       },
     );
@@ -132,6 +132,50 @@ void main() {
       await _pumpGarden(tester, repo: repo);
 
       expect(find.text('Log mood'), findsOneWidget);
+    });
+
+    testWidgets('wide layout (≥720dp) mounts the bed in a two-column row with '
+        'recent moods on the right', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final today = DateTime.now();
+      final entries = [
+        for (var i = 0; i < 3; i += 1)
+          _entry(MoodType.happy, today, id: 'w$i', intensity: 4),
+      ];
+      final repo = FakeMoodRepository()..streamedEntries = [entries];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            moodRepositoryProvider.overrideWithValue(repo),
+            currentUserStreamProvider.overrideWith(
+              (_) => _userStream(
+                const AppUser(uid: 'u-1', email: 'u@example.com'),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            theme: buildLightTheme(),
+            home: Consumer(
+              builder: (context, ref, _) {
+                ref.watch(currentUserStreamProvider);
+                return const GardenScreen();
+              },
+            ),
+          ),
+        ),
+      );
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      // Two-column tree contains a Row that holds both the SkyHeader
+      // (left) and the recent-moods list (right). The bed mounts once;
+      // the recent-moods preview shows up to 5 tiles.
+      expect(find.byType(GardenBed), findsOneWidget);
+      expect(find.byType(MoodEntryTile), findsAtLeastNWidgets(1));
     });
   });
 }

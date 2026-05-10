@@ -17,6 +17,7 @@ import '../../pattern_engine/domain/legacy_pattern_detector.dart';
 import '../domain/cheer_up_events_repository.dart';
 import '../domain/entities/garden_state.dart';
 import '../domain/entities/intervention_state.dart';
+import '../domain/entities/plant_tier.dart';
 import '../domain/intervention_state_repository.dart';
 import '../domain/usecases/compute_garden_state.dart';
 import 'cheer_up_events_repository_impl.dart';
@@ -37,6 +38,26 @@ final computeGardenStateUseCaseProvider = Provider<ComputeGardenStateUseCase>((
   return const ComputeGardenStateUseCase();
 });
 
+/// Debug-only override that forces a specific [PlantTier] on the
+/// computed [GardenState]. `null` (default) means "no override — use
+/// the EWMA-derived tier". Settings → Debug exposes a tile that cycles
+/// this through the 5 tiers so reviewers can see every visual state
+/// without manufacturing entries.
+///
+/// Production paths never set this. The override is a runtime state,
+/// not persisted across launches — it resets to `null` on app restart.
+class DebugPlantTierOverride extends Notifier<PlantTier?> {
+  @override
+  PlantTier? build() => null;
+
+  void set(PlantTier? tier) => state = tier;
+}
+
+final debugPlantTierOverrideProvider =
+    NotifierProvider<DebugPlantTierOverride, PlantTier?>(
+      DebugPlantTierOverride.new,
+    );
+
 /// Reactive `GardenState` derived from the signed-in user's mood stream.
 ///
 /// We watch the upstream `AsyncValue<List<MoodEntry>>` directly (not via the
@@ -52,12 +73,21 @@ final computeGardenStateUseCaseProvider = Provider<ComputeGardenStateUseCase>((
 final gardenStateStreamProvider = Provider<AsyncValue<GardenState>>((ref) {
   final useCase = ref.watch(computeGardenStateUseCaseProvider);
   final moods = ref.watch(myMoodsStreamProvider);
+  final tierOverride = ref.watch(debugPlantTierOverrideProvider);
   return moods.whenData((entries) {
     final now = DateTime.now();
-    return useCase(
+    final state = useCase(
       entries: entries,
       now: now,
       weekStart: _localMondayMidnight(now),
+    );
+    if (tierOverride == null) return state;
+    return GardenState(
+      gardenHealth: state.gardenHealth,
+      plantTier: tierOverride,
+      atmosphere: state.atmosphere,
+      last7Days: state.last7Days,
+      totalEntryCount: state.totalEntryCount,
     );
   });
 });

@@ -1,7 +1,9 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:core/core.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../app/providers.dart';
+import '../../../mood/data/providers.dart' show firebaseFunctionsProvider;
 import '../../data/providers.dart';
 import 'cheer_up_state.dart';
 
@@ -99,10 +101,46 @@ class CheerUpController extends _$CheerUpController {
     // 5.5b — idempotent event-doc create. Independent of anchor writes
     // above: if the cloud is reachable for ONE of the two it's almost
     // certainly reachable for both, but failure of the anchor writes
-    // must not block this — the CF only triggers on the event doc.
+    // must not block this — the audit log is the canonical record of
+    // a triggered cheer-up.
+    //
+    // v1.0 polish (2026-05-10): the Cloud Function is no longer a
+    // Firestore document trigger (this project's Firestore lives in
+    // `asia-southeast3`, which neither v1 nor v2 Firestore triggers
+    // currently support). The event doc is still written for the
+    // audit trail; the push itself is dispatched by an HTTPS-callable
+    // `sendCheerUpPush` invoked from the client below. The 24h
+    // server-side rate limit on the function makes a duplicate call
+    // a no-op, so callers don't need their own dedupe.
     final eventResult = await eventsRepo.createEvent(reason: reason, now: now);
-    if (eventResult is Err) {
-      logger.warn('cheerUpEvents createEvent failed; CF will not fire');
+    final eventOk = eventResult is Ok;
+    if (!eventOk) {
+      logger.warn('cheerUpEvents createEvent failed; audit log skipped');
+    }
+
+    try {
+      final functions = ref.read(firebaseFunctionsProvider);
+      // Build a deterministic requestId from the same {dayUtc}-{reason}
+      // shape the audit doc uses, so server logs can correlate the
+      // CF invocation with the doc the client wrote.
+      final dayUtc = now.toUtc();
+      final dayKey =
+          '${dayUtc.year.toString().padLeft(4, '0')}-'
+          '${dayUtc.month.toString().padLeft(2, '0')}-'
+          '${dayUtc.day.toString().padLeft(2, '0')}';
+      await functions.httpsCallable('sendCheerUpPush').call({
+        'requestId': '$dayKey-$reason',
+      });
+    } on FirebaseFunctionsException catch (e) {
+      // `not-found` means the CF isn't deployed yet (e.g. local dev
+      // before the v1.0 polish redeploy). Swallow without alarming
+      // the user — the audit doc is already written, and the push
+      // is best-effort by design.
+      logger.warn('sendCheerUpPush call failed: ${e.code}; push will not fire');
+    } catch (e) {
+      logger.warn(
+        'sendCheerUpPush call failed (transient); push will not fire',
+      );
     }
 
     // Force the read-side anchor cache to recompute so the next

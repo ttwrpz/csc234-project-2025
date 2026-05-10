@@ -18,6 +18,7 @@ part 'ai_suggestion.freezed.dart';
 @freezed
 abstract class AiSuggestion with _$AiSuggestion {
   @Assert('confidence >= 0 && confidence <= 1', 'confidence must be in [0, 1]')
+  @Assert('intensity >= 1 && intensity <= 5', 'intensity must be in [1, 5]')
   const factory AiSuggestion({
     required MoodType mood,
     required double confidence,
@@ -25,6 +26,13 @@ abstract class AiSuggestion with _$AiSuggestion {
     AiSuggestionAlternative? alternative,
     AiSafetyFlag? safetyFlag,
     required Duration latency,
+
+    /// Inferred 1..5 intensity from the model. The Log Mood UI uses
+    /// this to pre-fill the intensity slider when the user accepts
+    /// the AI suggestion. Defaults to 3 (neutral) on the wire when
+    /// the model omits it; clamped to [1, 5] by both the server and
+    /// the Dart DTO mapper.
+    @Default(3) int intensity,
   }) = _AiSuggestion;
 }
 

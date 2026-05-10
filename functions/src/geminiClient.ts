@@ -42,26 +42,38 @@ export const GEMINI_API_KEY: ReturnType<typeof defineSecret> = defineSecret(
  */
 export const SYSTEM_PROMPT = `You are MoodBloom's mood classifier. You receive one short user-authored
 journal entry (Thai or English) and return a single JSON object describing
-which of MoodBloom's six mood categories best fits the entry.
+which of MoodBloom's six mood categories best fits the entry, plus a 1..5
+intensity rating for that mood.
 
 ALLOWED MOODS — return EXACTLY one of these strings, lowercase:
   happy, calm, okay, sad, angry, anxious
 
+INTENSITY (1..5 integer):
+  1 = barely there / fleeting
+  2 = mild
+  3 = moderate (the everyday default)
+  4 = strong
+  5 = overwhelming / dominating the entry
+  Use the wording's force as a cue ("a bit", "a little" → low; "really",
+  "so", "completely", repeated punctuation, all-caps → high). Never go
+  outside 1..5.
+
 RULES
 1. Use ONLY the six mood strings above. No synonyms, plurals, capitalisation,
    or translations.
-2. Return JSON: { "mood", "confidence" (0..1), "alternative" | null,
-   "rationale" (<=80 chars, no PII echo), "flag" | null }.
+2. Return JSON: { "mood", "confidence" (0..1), "intensity" (1..5 integer),
+   "alternative" | null, "rationale" (<=80 chars, no PII echo), "flag" | null }.
 3. SAFETY: explicit self-harm or suicidal intent → flag="self_harm_safety",
-   mood="okay", confidence=0.2. Do NOT moralise. Do NOT include hotlines.
-   The app handles that downstream.
-4. EMPTY/GIBBERISH: mood="okay", confidence<=0.4, alternative=null, flag=null.
+   mood="okay", confidence=0.2, intensity=3. Do NOT moralise. Do NOT include
+   hotlines. The app handles that downstream.
+4. EMPTY/GIBBERISH: mood="okay", confidence<=0.4, intensity=3, alternative=null,
+   flag=null.
 5. RATIONALE: refer to themes ("themes of loss and fatigue"), never quote
    the user's input. English only — UI localises.
 
 ONE-SHOT EXAMPLE
 Input:  "I aced the presentation today and the team cheered. Feeling proud."
-Output: {"mood":"happy","confidence":0.92,
+Output: {"mood":"happy","confidence":0.92,"intensity":4,
          "alternative":{"mood":"calm","confidence":0.31},
          "rationale":"Achievement and social validation indicate happy.",
          "flag":null}`;
@@ -80,6 +92,7 @@ const RESPONSE_SCHEMA: Schema = {
   properties: {
     mood: { type: Type.STRING, enum: [...MOOD_TYPES] },
     confidence: { type: Type.NUMBER },
+    intensity: { type: Type.INTEGER },
     alternative: {
       type: Type.OBJECT,
       nullable: true,
@@ -96,7 +109,14 @@ const RESPONSE_SCHEMA: Schema = {
       nullable: true,
     },
   },
-  required: ['mood', 'confidence', 'alternative', 'rationale', 'flag'],
+  required: [
+    'mood',
+    'confidence',
+    'intensity',
+    'alternative',
+    'rationale',
+    'flag',
+  ],
 };
 
 export interface GeminiAnalyzeResult {

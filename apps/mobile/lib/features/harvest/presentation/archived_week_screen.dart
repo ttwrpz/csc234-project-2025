@@ -2,7 +2,7 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../garden/presentation/widgets/plant_tier_group.dart';
+import '../../garden/presentation/widgets/garden_bed.dart';
 import '../../history/presentation/widgets/mood_entry_tile.dart';
 import '../domain/entities/weekly_garden.dart';
 
@@ -80,10 +80,11 @@ class _SummaryHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Center(
-            child: PlantTierGroup(
+            child: GardenBed(
+              entries: week.entries,
               tier: week.summary.endingPlantTier,
-              entryCount: week.summary.totalEntryCount,
-              size: const Size(240, 80),
+              size: const Size(280, 140),
+              showOverflowBadge: true,
             ),
           ),
           const SizedBox(height: MoodBloomSpacing.md),
