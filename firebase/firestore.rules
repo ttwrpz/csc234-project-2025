@@ -7,7 +7,32 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read, write: if isOwner(uid);
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid);
+
+      // Update is owner-only with one field-level guard:
+      // `insightsDisclaimerAcked` is ONE-WAY (false → true). Once a
+      // user has acknowledged the bipolar/medical disclaimer (spec §4
+      // / ADR-0010), the client cannot revert the ack. The field is
+      // optional on the doc — `get(field, false)` provides a safe
+      // default so docs predating this field still update freely as
+      // long as no client tries to write a `true → false` transition.
+      // Admin SDK paths (e.g. account deletion in S5) bypass these
+      // rules and remain free to reset the field if a re-ack flow is
+      // ever needed.
+      allow update: if isOwner(uid)
+        && (
+          // Was previously not acked (or absent) → any new state OK.
+          resource.data.get('insightsDisclaimerAcked', false) == false
+          // Was acked → must stay acked.
+          || request.resource.data.get('insightsDisclaimerAcked', false) == true
+        );
+
+      // Delete preserved from the prior catch-all `write` permission.
+      // Account deletion goes through the admin SDK in S5 (ADR-0009),
+      // but closing the door on client-side delete now would be a
+      // breaking change for any existing flow that relies on it.
+      allow delete: if isOwner(uid);
 
       match /moods/{moodId} {
         allow create: if isOwner(uid)
@@ -145,6 +170,120 @@ service cloud.firestore {
         // disabling cheer-up reminders mutates the doc instead. Account
         // deletion (WBS 2.4) uses the admin SDK.
         allow delete: if false;
+      }
+
+      // Per-user Pattern Engine result, one doc per local-midnight day
+      // (ADR-0011, HB-006 §"Sub-track D"). The 5-algorithm engine
+      // (Mann-Kendall, sliding 5-of-7, 3-consecutive S<=-0.6, Z-score,
+      // CUSUM) writes one of these per mood log; same-day re-evaluation
+      // overwrites the doc cleanly. Mood text is NEVER part of the
+      // schema — affectedKeys().hasOnly() enforces it.
+      match /patterns/{dateId} {
+        allow read: if isOwner(uid);
+
+        allow create: if isOwner(uid)
+          && dateId.matches('^\\d{4}-\\d{2}-\\d{2}$')
+          && request.resource.data.dateId == dateId
+          && request.resource.data.schemaV == 1
+          && request.resource.data.keys().hasOnly(
+              ['dateId','mannKendallZ','slidingNegCount',
+               'consecutiveHighIntensity','zScoreToday',
+               'cusumC','triggeredTier','schemaV'])
+          && (request.resource.data.triggeredTier == null
+              || request.resource.data.triggeredTier in ['one','two','three'])
+          && (request.resource.data.mannKendallZ == null
+              || request.resource.data.mannKendallZ is number)
+          && (request.resource.data.zScoreToday == null
+              || request.resource.data.zScoreToday is number)
+          && request.resource.data.slidingNegCount is int
+          && request.resource.data.slidingNegCount >= 0
+          && request.resource.data.slidingNegCount <= 7
+          && request.resource.data.consecutiveHighIntensity is int
+          && request.resource.data.consecutiveHighIntensity >= 0
+          && request.resource.data.cusumC is number
+          && request.resource.data.cusumC >= 0;
+
+        // Same-day re-evaluation: overwrite is allowed (the engine
+        // re-runs on every mood log within the day). The same field
+        // allowlist + value guards apply.
+        allow update: if isOwner(uid)
+          && dateId.matches('^\\d{4}-\\d{2}-\\d{2}$')
+          && request.resource.data.dateId == dateId
+          && request.resource.data.schemaV == 1
+          && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['mannKendallZ','slidingNegCount',
+                       'consecutiveHighIntensity','zScoreToday',
+                       'cusumC','triggeredTier'])
+          && (request.resource.data.triggeredTier == null
+              || request.resource.data.triggeredTier in ['one','two','three'])
+          && (request.resource.data.mannKendallZ == null
+              || request.resource.data.mannKendallZ is number)
+          && (request.resource.data.zScoreToday == null
+              || request.resource.data.zScoreToday is number)
+          && request.resource.data.slidingNegCount is int
+          && request.resource.data.slidingNegCount >= 0
+          && request.resource.data.slidingNegCount <= 7
+          && request.resource.data.consecutiveHighIntensity is int
+          && request.resource.data.consecutiveHighIntensity >= 0
+          && request.resource.data.cusumC is number
+          && request.resource.data.cusumC >= 0;
+
+        allow delete: if false;
+      }
+
+      // S5-stub denials. Both collections are reserved for the new
+      // tier-aware dispatcher (ADR-0011 §5). Reads allowed so the S5
+      // dispatcher's read-side wiring lands without rule churn; writes
+      // denied in v1.0 because the dispatcher is gated off via the
+      // `interventionDispatchEnabled` Remote Config flag.
+      match /interventions/{id} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /cooldowns/{type} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      // Weekly Harvest archive (HB-005 Track 6.1; ADR-0010 §6).
+      // Write-once-on-archive: history is a record, not a redo. Each
+      // doc id is the ISO-8601 weekId formatted `YYYY-Www`; the
+      // archive use case writes the doc exactly once at the end of
+      // each weekly cycle.
+      //
+      // Bug fix (v1.0 polish, 2026-05-10): the prior rule omission
+      // surfaced as a 403 on `BatchGetDocuments` from the History tab
+      // and the dev-mode "Force harvest now" button — Firestore
+      // denies-by-default when no match block is present. Adding the
+      // rule unblocks both the read-side stream
+      // (`weeklyGardenHistoryProvider`) and the create-side write.
+      //
+      // Schema-level validation is deliberately permissive (only
+      // weekId match + write-once + server-timestamp on archivedAt)
+      // because the entity is rich (entries[], healthHistory[],
+      // summary nested object) and a strict allowlist would block
+      // legitimate v1.x schema additions. The use case + the unit
+      // tests own shape correctness.
+      match /weeklyGardens/{weekId} {
+        allow read: if isOwner(uid);
+
+        // archivedAt arrives as an ISO-8601 string (json_serializable's
+        // default DateTime serializer) — Firestore does NOT auto-convert
+        // unless the client passes a literal `Timestamp` or
+        // `FieldValue.serverTimestamp()`. The validation here is
+        // therefore string-shape; the use case + the unit tests own
+        // the value's correctness (must be `now` per spec §6).
+        allow create: if isOwner(uid)
+          && weekId.matches('^\\d{4}-W\\d{2}$')
+          && request.resource.data.weekId == weekId
+          && request.resource.data.archivedAt is string;
+
+        // Update + delete denied: the archive is immutable. A second
+        // archive attempt for the same week surfaces as 'already-
+        // exists' on create; the repository impl maps that to
+        // HarvestFailure.alreadyArchived.
+        allow update, delete: if false;
       }
     }
 

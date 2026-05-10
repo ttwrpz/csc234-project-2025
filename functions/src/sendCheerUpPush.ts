@@ -28,8 +28,28 @@
 //    (rules block deletes); the CF is the only "consumer" but the doc
 //    persists for traceability.
 
+// HTTPS-callable cheer-up push. v1.0 polish (2026-05-10) converted
+// from a Firestore document-create trigger to `onCall` because the
+// project's Firestore database is in `asia-southeast3` (Bangkok),
+// which neither Cloud Functions v1 nor v2 currently support as a
+// Firestore-trigger location — the v2 Eventarc allowlist excludes
+// southeast3, and the v1 trigger validator rejects it too. `onCall`
+// is region-independent and matches the pattern already in use by
+// `analyzeMoodText`, `analyzePatterns`, `wipeUserData`, and
+// `wipeWeeklyGarden` (all `asia-southeast1`).
+//
+// Idempotency moves from "Firestore event id is server-allocated"
+// to "client passes a deterministic requestId derived from the
+// {dayUtc}-{reason} event-doc id it just wrote". The 24h rate
+// limit below already collapses any duplicate same-day calls; the
+// requestId is for log correlation only.
+
 import { logger } from 'firebase-functions';
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import {
+  HttpsError,
+  onCall,
+  type CallableRequest,
+} from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 
@@ -106,18 +126,33 @@ interface LogPayload {
   errorReason?: string;
 }
 
-export const sendCheerUpPush = onDocumentCreated(
-  {
-    document: 'users/{uid}/cheerUpEvents/{evtId}',
-    region: 'asia-southeast1',
-    memory: '256MiB',
-    timeoutSeconds: 30,
-  },
-  async (event) => {
-    const uid = event.params.uid;
-    // Firestore event id — log correlation across the CF invocation +
-    // any follow-up settings update + the consumeToken call.
-    const requestId = event.id;
+interface SendCheerUpPushRequest {
+  /**
+   * Deterministic id the client derived from the cheerUpEvent doc it
+   * just wrote (e.g. `2026-05-10-trend`). Used as the structured-log
+   * `requestId` for cross-step correlation. The 24h rate limit below
+   * is the actual idempotency guard.
+   */
+  requestId?: string;
+}
+
+export const sendCheerUpPush = onCall<
+  SendCheerUpPushRequest,
+  Promise<{ ok: true; outcome: Outcome }>
+>(
+  { region: 'asia-southeast1', memory: '256MiB', timeoutSeconds: 30 },
+  async (
+    request: CallableRequest<SendCheerUpPushRequest>,
+  ): Promise<{ ok: true; outcome: Outcome }> => {
+    const auth = request.auth;
+    if (!auth) {
+      throw new HttpsError(
+        'unauthenticated',
+        'Sign in before calling sendCheerUpPush.',
+      );
+    }
+    const uid = auth.uid;
+    const requestId = request.data?.requestId ?? 'unknown';
     const startMs = Date.now();
     const db = getFirestore();
 
@@ -136,7 +171,7 @@ export const sendCheerUpPush = onDocumentCreated(
         outcome: 'opted_out',
       };
       logger.info(payload);
-      return;
+      return { ok: true, outcome: 'opted_out' };
     }
 
     const rawTokens = settings.tokens ?? [];
@@ -152,7 +187,7 @@ export const sendCheerUpPush = onDocumentCreated(
         outcome: 'no_tokens',
       };
       logger.info(payload);
-      return;
+      return { ok: true, outcome: 'no_tokens' };
     }
 
     // 2. Rate limit — at most 1 push per uid per 24h. Consumed BEFORE
@@ -175,7 +210,7 @@ export const sendCheerUpPush = onDocumentCreated(
         latencyTotalMs: Date.now() - startMs,
       };
       logger.error({ ...payload, cause: e instanceof Error ? e.name : 'unknown' });
-      return;
+      return { ok: true, outcome: 'internal' };
     }
 
     if (!rateLimit.allowed) {
@@ -188,7 +223,7 @@ export const sendCheerUpPush = onDocumentCreated(
         latencyTotalMs: Date.now() - startMs,
       };
       logger.info(payload);
-      return;
+      return { ok: true, outcome: 'rate_limited' };
     }
 
     // 3. Send multicast. Locked payload — `notification` only, no
@@ -251,5 +286,6 @@ export const sendCheerUpPush = onDocumentCreated(
       rateLimit: { remaining: rateLimit.remaining, retryAfterSec: 0 },
     };
     logger.info(payload);
+    return { ok: true, outcome: 'sent' };
   },
 );

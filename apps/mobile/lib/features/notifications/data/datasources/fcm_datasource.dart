@@ -17,7 +17,8 @@ enum FcmPermissionOutcome { granted, denied }
 /// — the browser uses it to subscribe; the matching private half stays
 /// in Firebase. Leave empty to fall back to platform-default behaviour
 /// (Android only — web `getToken` will return `null`).
-const String _kWebVapidPublicKey = 'BOTljqdiD_OL2ti5FpqeG0e0g5LmRp9c8kx69VMMSJm26GYqX2Rn6SDnpnevIh3oxrXldoUGZguyuFah-PcCMw0';
+const String _kWebVapidPublicKey =
+    'BOTljqdiD_OL2ti5FpqeG0e0g5LmRp9c8kx69VMMSJm26GYqX2Rn6SDnpnevIh3oxrXldoUGZguyuFah-PcCMw0';
 
 /// Thin wrapper around `firebase_messaging`. Centralises platform
 /// detection and the permission-request → token-fetch flow so the

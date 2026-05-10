@@ -92,15 +92,22 @@ void main() {
       expect(find.byType(SwitchListTile), findsOneWidget);
     });
 
-    testWidgets('default state is enabled (O13)', (tester) async {
+    testWidgets('default state is disabled (v1.0 polish 2026-05-10)', (
+      tester,
+    ) async {
+      // O13's original rule was "opt-in by default" but the v1.0
+      // polish round flipped that to "off by default" so the cheer-up
+      // toggle never reports `enabled = true` until the user has
+      // explicitly granted notification permission. See
+      // `NotificationsPreferenceDatasource` for the rationale.
       await _pump(tester, repo: _FakeRepo());
 
       final tile = tester.widget<SwitchListTile>(find.byType(SwitchListTile));
-      expect(tile.value, isTrue);
+      expect(tile.value, isFalse);
     });
 
     testWidgets(
-      'tapping off → calls setEnabled(false) on the repo when signed-in',
+      'tapping on → calls setEnabled(true) (v1.0 polish: default-off)',
       (tester) async {
         final repo = _FakeRepo();
         await _pump(
@@ -109,10 +116,13 @@ void main() {
           currentUser: const AppUser(uid: 'user-1'),
         );
 
+        // The default is now off — first tap turns the toggle ON,
+        // which is the only path that requests OS permission and
+        // registers an FCM token.
         await tester.tap(find.byType(SwitchListTile));
         await tester.pumpAndSettle();
 
-        expect(repo.setEnabledCalls, [false]);
+        expect(repo.setEnabledCalls, [true]);
       },
     );
 

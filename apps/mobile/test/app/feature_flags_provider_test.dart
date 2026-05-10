@@ -36,11 +36,13 @@ void main() {
 
       expect(flags.aiPatternAnalysisEnabled, isFalse);
       expect(flags.geminiDetectionEnabled, isTrue);
+      expect(flags.interventionDispatchEnabled, isTrue);
       expect(
         source.calls,
         containsAll(<String>[
           'ai_pattern_analysis_enabled',
           'gemini_detection_enabled',
+          'intervention_dispatch_enabled',
         ]),
       );
     });

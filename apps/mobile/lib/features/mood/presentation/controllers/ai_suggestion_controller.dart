@@ -12,6 +12,14 @@ import '../../domain/entities/ai_suggestion.dart';
 /// feels laggy, shorter wastes quota.
 const Duration _kDefaultDebounceWindow = Duration(milliseconds: 600);
 
+/// Minimum trimmed character count before the AI analyse fires. Below
+/// this threshold the controller treats the text as empty (no
+/// suggestion shown, no Cloud Function call). User feedback v1.0
+/// polish (2026-05-10): the prior threshold was 1 char, which fired
+/// Gemini on 2-3 char drafts ("ok", "sad") and felt over-eager. 12
+/// chars is roughly "I feel sad" — long enough to imply intent.
+const int _kDefaultMinChars = 12;
+
 /// Debounce window for the AI suggestion call. Tests override this with a
 /// short interval (e.g. 30ms) so the timer fires inside the test budget.
 /// Riverpod 3: `Notifier` constructors take no args, so dependency
@@ -20,6 +28,11 @@ const Duration _kDefaultDebounceWindow = Duration(milliseconds: 600);
 final aiSuggestionDebounceWindowProvider = Provider<Duration>(
   (ref) => _kDefaultDebounceWindow,
 );
+
+/// Minimum trimmed-text length before AI analyse fires. Tests can
+/// override this provider to drop the threshold to 1 if they want to
+/// exercise the fire path with short inputs.
+final aiSuggestionMinCharsProvider = Provider<int>((ref) => _kDefaultMinChars);
 
 /// Auto-disposed notifier holding the latest AI mood suggestion for the
 /// Log Mood screen. Pure-Riverpod (no codegen) so tests can override the
@@ -30,20 +43,23 @@ class AiSuggestionController extends Notifier<AsyncValue<AiSuggestion?>> {
 
   Timer? _debounce;
   late Duration _debounceWindow;
+  late int _minChars;
 
   @override
   AsyncValue<AiSuggestion?> build() {
     _debounceWindow = ref.watch(aiSuggestionDebounceWindowProvider);
+    _minChars = ref.watch(aiSuggestionMinCharsProvider);
     ref.onDispose(() => _debounce?.cancel());
     return const AsyncValue.data(null);
   }
 
   /// Pump text into the controller. Debounced — only the latest call within
-  /// the configured window survives.
+  /// the configured window survives. Texts shorter than [_minChars] are
+  /// treated as empty and clear any prior suggestion (no Gemini call).
   void onTextChanged(String text) {
     _debounce?.cancel();
     final trimmed = text.trim();
-    if (trimmed.isEmpty) {
+    if (trimmed.length < _minChars) {
       state = const AsyncValue.data(null);
       return;
     }
@@ -62,7 +78,7 @@ class AiSuggestionController extends Notifier<AsyncValue<AiSuggestion?>> {
   Future<void> retry(String text) async {
     _debounce?.cancel();
     final trimmed = text.trim();
-    if (trimmed.isEmpty) {
+    if (trimmed.length < _minChars) {
       state = const AsyncValue.data(null);
       return;
     }

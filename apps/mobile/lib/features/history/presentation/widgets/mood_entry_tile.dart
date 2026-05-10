@@ -1,11 +1,16 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
+import '../../../garden/domain/entities/flower_species.dart';
+import '../../../garden/presentation/widgets/flower_sprite.dart';
 import '../../../mood/domain/entities/mood_entry.dart';
 import '../../../mood/presentation/widgets/mood_kind_adapter.dart';
 
-/// Single row in the History list. Restyled to the Sprint 2 Prototype:
-/// 40×40 mood-tinted square with the mood-emotion emoji, mood label +
+/// Single row in the History list. v1.0 polish (2026-05-10) replaced
+/// the leading mood emoji with a per-species `FlowerSprite` so the
+/// list visually matches the species vocabulary used everywhere else
+/// (the home garden, the harvest archive, the dominant-emotion chips).
+/// Layout: 40×40 mood-tinted square with the FlowerSprite, mood label +
 /// intensity dots + optional lock badge, 2-line clamped note, and a
 /// `relative · time` caption. Tap routes to `/history/<id>`.
 class MoodEntryTile extends StatelessWidget {
@@ -20,7 +25,6 @@ class MoodEntryTile extends StatelessWidget {
     final palette = Theme.of(context).extension<MbMoodPalette>()!;
     final mbKind = entry.mood.mbKind;
     final color = palette.colorOf(mbKind);
-    final emoji = palette.emojiOf(mbKind);
     final locked = entry.isLocked();
     final note = entry.text.trim();
     final now = DateTime.now();
@@ -31,6 +35,13 @@ class MoodEntryTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 40×40 mood-tinted square with the per-species FlowerSprite
+          // as the primary glyph. Earlier the tile leaned on the
+          // mood emoji as the primary cue with a small flower badge
+          // overlaid; user feedback (v1.0 polish, 2026-05-10) was
+          // that the emoji felt out of vocabulary now that the rest
+          // of the app paints species. Promoting the FlowerSprite
+          // to the main glyph keeps the list visually consistent.
           Container(
             width: 40,
             height: 40,
@@ -39,7 +50,11 @@ class MoodEntryTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             alignment: Alignment.center,
-            child: Text(emoji, style: const TextStyle(fontSize: 20)),
+            child: FlowerSprite(
+              species: FlowerSpecies.forMood(entry.mood),
+              size: 26,
+              tint: color,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(

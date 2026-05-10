@@ -7,8 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/auth/data/providers.dart';
 import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
 import 'package:moodbloom/features/garden/presentation/garden_screen.dart';
-import 'package:moodbloom/features/garden/presentation/widgets/flora_sprite.dart';
-import 'package:moodbloom/features/garden/presentation/widgets/rain_cloud.dart';
+import 'package:moodbloom/features/garden/presentation/widgets/daily_score_strip.dart';
+import 'package:moodbloom/features/garden/presentation/widgets/garden_bed.dart';
+import 'package:moodbloom/features/garden/presentation/widgets/sky_header.dart';
+import 'package:moodbloom/features/history/presentation/widgets/mood_entry_tile.dart';
 import 'package:moodbloom/features/mood/data/providers.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_entry.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
@@ -47,9 +49,10 @@ Future<void> _pumpGarden(
       ),
     ),
   );
-  // The garden-state stream emits asynchronously; flora sprites animate
-  // continuously so `pumpAndSettle` would loop forever. Pump enough
-  // frames to let the providers settle but stop before animations matter.
+  // The garden-state stream emits asynchronously; atmosphere overlay
+  // animates continuously so `pumpAndSettle` would loop forever. Pump
+  // a few frames to let the providers settle, then stop before
+  // animations matter.
   for (var i = 0; i < 6; i++) {
     await tester.pump(const Duration(milliseconds: 50));
   }
@@ -72,32 +75,38 @@ MoodEntry _entry(
 }
 
 void main() {
-  group('GardenScreen', () {
-    testWidgets('empty state renders no flora sprites', (tester) async {
+  group('GardenScreen — ADR-0010 ecosystem refactor', () {
+    testWidgets('empty state still mounts the canvas (GardenBed) and the '
+        'daily-score strip', (tester) async {
       final repo = FakeMoodRepository()..streamedEntries = [const []];
       await _pumpGarden(tester, repo: repo);
 
-      expect(find.byType(Flower), findsNothing);
-      expect(find.byType(Bud), findsNothing);
-      expect(find.byType(WiltingPlant), findsNothing);
-      expect(find.byType(RainCloud), findsNothing);
+      // The canvas always renders — empty state paints ground+grass only,
+      // no flowers (closes the wipe-still-shows-3-flowers regression).
+      expect(find.byType(SkyHeader), findsOneWidget);
+      expect(find.byType(GardenBed), findsOneWidget);
+      expect(find.byType(DailyScoreStrip), findsOneWidget);
     });
 
-    testWidgets('positive entries render Flower sprites', (tester) async {
+    testWidgets('positive entries today drive a populated bed', (tester) async {
       final today = DateTime.now();
       final entries = [
-        for (var i = 0; i < 5; i += 1) _entry(MoodType.happy, today, id: 'e$i'),
+        for (var i = 0; i < 5; i += 1)
+          _entry(MoodType.happy, today, id: 'e$i', intensity: 5),
       ];
       final repo = FakeMoodRepository()..streamedEntries = [entries];
       await _pumpGarden(tester, repo: repo);
 
-      // Each happy@i=3 maps to a Flower (Bud is reserved for intensity 1).
-      expect(find.byType(Flower), findsNWidgets(5));
+      // The tier picker is the use case's job; from the screen's side
+      // we verify the bed is mounted with this week's entries forwarded
+      // through the SkyHeader.
+      final bed = tester.widget<GardenBed>(find.byType(GardenBed));
+      expect(bed.entries.length, 5);
+      expect(find.text('5 entries this week'), findsOneWidget);
     });
 
     testWidgets(
-      'negative-only history (S4) → wilting plants for i ≤ 3, rain clouds '
-      'for i ≥ 4; no flowers',
+      'negative-only history mounts the canvas with the bed populated',
       (tester) async {
         final today = DateTime.now();
         final repo = FakeMoodRepository()
@@ -110,43 +119,63 @@ void main() {
           ];
         await _pumpGarden(tester, repo: repo);
 
-        expect(find.byType(Flower), findsNothing);
-        expect(find.byType(WiltingPlant), findsNWidgets(2));
-        expect(find.byType(RainCloud), findsOneWidget);
+        final bed = tester.widget<GardenBed>(find.byType(GardenBed));
+        expect(bed.entries.length, 3);
+        expect(find.byType(DailyScoreStrip), findsOneWidget);
       },
     );
-
-    testWidgets('mixed canvas: positives + negatives render side by side', (
-      tester,
-    ) async {
-      final today = DateTime.now();
-      final repo = FakeMoodRepository()
-        ..streamedEntries = [
-          [
-            _entry(MoodType.happy, today, id: 'p1'),
-            _entry(MoodType.sad, today, id: 'w1', intensity: 1),
-            _entry(MoodType.calm, today, id: 'p2'),
-            _entry(MoodType.angry, today, id: 'r1', intensity: 5),
-            _entry(MoodType.anxious, today, id: 'r2', intensity: 4),
-          ],
-        ];
-      await _pumpGarden(tester, repo: repo);
-
-      expect(find.byType(Flower), findsNWidgets(2));
-      expect(find.byType(WiltingPlant), findsOneWidget);
-      expect(find.byType(RainCloud), findsNWidgets(2));
-    });
 
     testWidgets('"Log mood" CTA (FAB) is reachable from the home page', (
       tester,
     ) async {
-      // The inline "Log today's mood" button was retired once the FAB
-      // and the centred bottom-nav slot covered the same action. The
-      // FAB stays — it's the primary mood-logging affordance on Home.
       final repo = FakeMoodRepository()..streamedEntries = [const []];
       await _pumpGarden(tester, repo: repo);
 
       expect(find.text('Log mood'), findsOneWidget);
+    });
+
+    testWidgets('wide layout (≥720dp) mounts the bed in a two-column row with '
+        'recent moods on the right', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final today = DateTime.now();
+      final entries = [
+        for (var i = 0; i < 3; i += 1)
+          _entry(MoodType.happy, today, id: 'w$i', intensity: 4),
+      ];
+      final repo = FakeMoodRepository()..streamedEntries = [entries];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            moodRepositoryProvider.overrideWithValue(repo),
+            currentUserStreamProvider.overrideWith(
+              (_) => _userStream(
+                const AppUser(uid: 'u-1', email: 'u@example.com'),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            theme: buildLightTheme(),
+            home: Consumer(
+              builder: (context, ref, _) {
+                ref.watch(currentUserStreamProvider);
+                return const GardenScreen();
+              },
+            ),
+          ),
+        ),
+      );
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      // Two-column tree contains a Row that holds both the SkyHeader
+      // (left) and the recent-moods list (right). The bed mounts once;
+      // the recent-moods preview shows up to 5 tiles.
+      expect(find.byType(GardenBed), findsOneWidget);
+      expect(find.byType(MoodEntryTile), findsAtLeastNWidgets(1));
     });
   });
 }

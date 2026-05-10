@@ -11,7 +11,12 @@ class MoodBloomApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-    final themeMode = ref.watch(themeModeControllerProvider);
+    // `currentThemeModeProvider` resolves the persisted
+    // ThemeModePreference (system / light / dark / followDeviceTime)
+    // into a concrete ThemeMode. Rebuilds whenever the user changes
+    // the preference OR — for `followDeviceTime` — when the
+    // 07:00 / 19:00 ticker inside the provider fires.
+    final themeMode = ref.watch(currentThemeModeProvider);
     return MaterialApp.router(
       title: 'MoodBloom',
       // Hide the red "DEBUG" banner. Devs identify debug builds via

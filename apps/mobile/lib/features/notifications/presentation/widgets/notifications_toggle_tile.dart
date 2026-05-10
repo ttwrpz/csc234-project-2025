@@ -43,8 +43,8 @@ class NotificationsToggleTile extends ConsumerWidget {
       secondary: const Icon(Icons.notifications_active_outlined),
       title: const Text('Cheer-up reminders'),
       subtitle: const Text(
-        'Gentle nudges if your week looks heavy. Off by default in the cloud '
-        'until you sign in.',
+        'Gentle nudges if your week looks heavy. Off until you grant '
+        'notification permission.',
       ),
       value: state.enabled,
       onChanged: state.isPersisting

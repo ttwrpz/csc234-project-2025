@@ -58,6 +58,11 @@ Future<void> main() async {
       await rc.setDefaults(<String, Object>{
         'ai_pattern_analysis_enabled': true,
         'gemini_detection_enabled': true,
+        // Default false in v1.0: the new client-side Pattern Engine
+        // writes patterns/{date} regardless, but no notification fires.
+        // S5 flips this to true once the new dispatcher reads
+        // patterns/{date}.triggeredTier (ADR-0011 §4).
+        'intervention_dispatch_enabled': false,
       });
       await rc.setConfigSettings(
         RemoteConfigSettings(

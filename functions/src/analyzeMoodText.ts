@@ -233,6 +233,14 @@ export async function handleAnalyzeMoodText(
   const confidence = clamp(validated.confidence, 0, 1);
   const clamped = confidence !== originalConfidence;
 
+  // Intensity: clamp to [1,5]. Default to 3 (neutral) when the
+  // model omits it — older deployments may not have been instructed
+  // to emit `intensity`, and we'd rather surface a neutral default
+  // than fail the whole call. Round to int so the client's slider
+  // (1..5 step 1) lands on a valid stop.
+  const intensityRaw = validated.intensity ?? 3;
+  const intensity = Math.round(clamp(intensityRaw, 1, 5));
+
   const altOriginal = validated.alternative?.confidence;
   const alternative =
     validated.alternative === null
@@ -263,6 +271,7 @@ export async function handleAnalyzeMoodText(
     classification: {
       mood: validated.mood,
       confidence,
+      intensity,
       safetyFlag: validated.flag ?? null,
     },
     rateLimit: {
@@ -279,6 +288,7 @@ export async function handleAnalyzeMoodText(
     requestId: ctx.requestId,
     mood: validated.mood,
     confidence,
+    intensity,
     alternative,
     rationale: truncate(validated.rationale, RATIONALE_WIRE_MAX),
     latencyMs: totalLatencyMs,

@@ -14,7 +14,12 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AiSuggestion {
 
- MoodType get mood; double get confidence; String get rationale; AiSuggestionAlternative? get alternative; AiSafetyFlag? get safetyFlag; Duration get latency;
+ MoodType get mood; double get confidence; String get rationale; AiSuggestionAlternative? get alternative; AiSafetyFlag? get safetyFlag; Duration get latency;/// Inferred 1..5 intensity from the model. The Log Mood UI uses
+/// this to pre-fill the intensity slider when the user accepts
+/// the AI suggestion. Defaults to 3 (neutral) on the wire when
+/// the model omits it; clamped to [1, 5] by both the server and
+/// the Dart DTO mapper.
+ int get intensity;
 /// Create a copy of AiSuggestion
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +30,16 @@ $AiSuggestionCopyWith<AiSuggestion> get copyWith => _$AiSuggestionCopyWithImpl<A
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiSuggestion&&(identical(other.mood, mood) || other.mood == mood)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.rationale, rationale) || other.rationale == rationale)&&(identical(other.alternative, alternative) || other.alternative == alternative)&&(identical(other.safetyFlag, safetyFlag) || other.safetyFlag == safetyFlag)&&(identical(other.latency, latency) || other.latency == latency));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiSuggestion&&(identical(other.mood, mood) || other.mood == mood)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.rationale, rationale) || other.rationale == rationale)&&(identical(other.alternative, alternative) || other.alternative == alternative)&&(identical(other.safetyFlag, safetyFlag) || other.safetyFlag == safetyFlag)&&(identical(other.latency, latency) || other.latency == latency)&&(identical(other.intensity, intensity) || other.intensity == intensity));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,mood,confidence,rationale,alternative,safetyFlag,latency);
+int get hashCode => Object.hash(runtimeType,mood,confidence,rationale,alternative,safetyFlag,latency,intensity);
 
 @override
 String toString() {
-  return 'AiSuggestion(mood: $mood, confidence: $confidence, rationale: $rationale, alternative: $alternative, safetyFlag: $safetyFlag, latency: $latency)';
+  return 'AiSuggestion(mood: $mood, confidence: $confidence, rationale: $rationale, alternative: $alternative, safetyFlag: $safetyFlag, latency: $latency, intensity: $intensity)';
 }
 
 
@@ -45,7 +50,7 @@ abstract mixin class $AiSuggestionCopyWith<$Res>  {
   factory $AiSuggestionCopyWith(AiSuggestion value, $Res Function(AiSuggestion) _then) = _$AiSuggestionCopyWithImpl;
 @useResult
 $Res call({
- MoodType mood, double confidence, String rationale, AiSuggestionAlternative? alternative, AiSafetyFlag? safetyFlag, Duration latency
+ MoodType mood, double confidence, String rationale, AiSuggestionAlternative? alternative, AiSafetyFlag? safetyFlag, Duration latency, int intensity
 });
 
 
@@ -62,7 +67,7 @@ class _$AiSuggestionCopyWithImpl<$Res>
 
 /// Create a copy of AiSuggestion
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? mood = null,Object? confidence = null,Object? rationale = null,Object? alternative = freezed,Object? safetyFlag = freezed,Object? latency = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? mood = null,Object? confidence = null,Object? rationale = null,Object? alternative = freezed,Object? safetyFlag = freezed,Object? latency = null,Object? intensity = null,}) {
   return _then(_self.copyWith(
 mood: null == mood ? _self.mood : mood // ignore: cast_nullable_to_non_nullable
 as MoodType,confidence: null == confidence ? _self.confidence : confidence // ignore: cast_nullable_to_non_nullable
@@ -70,7 +75,8 @@ as double,rationale: null == rationale ? _self.rationale : rationale // ignore: 
 as String,alternative: freezed == alternative ? _self.alternative : alternative // ignore: cast_nullable_to_non_nullable
 as AiSuggestionAlternative?,safetyFlag: freezed == safetyFlag ? _self.safetyFlag : safetyFlag // ignore: cast_nullable_to_non_nullable
 as AiSafetyFlag?,latency: null == latency ? _self.latency : latency // ignore: cast_nullable_to_non_nullable
-as Duration,
+as Duration,intensity: null == intensity ? _self.intensity : intensity // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 /// Create a copy of AiSuggestion
@@ -167,10 +173,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( MoodType mood,  double confidence,  String rationale,  AiSuggestionAlternative? alternative,  AiSafetyFlag? safetyFlag,  Duration latency)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( MoodType mood,  double confidence,  String rationale,  AiSuggestionAlternative? alternative,  AiSafetyFlag? safetyFlag,  Duration latency,  int intensity)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AiSuggestion() when $default != null:
-return $default(_that.mood,_that.confidence,_that.rationale,_that.alternative,_that.safetyFlag,_that.latency);case _:
+return $default(_that.mood,_that.confidence,_that.rationale,_that.alternative,_that.safetyFlag,_that.latency,_that.intensity);case _:
   return orElse();
 
 }
@@ -188,10 +194,10 @@ return $default(_that.mood,_that.confidence,_that.rationale,_that.alternative,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( MoodType mood,  double confidence,  String rationale,  AiSuggestionAlternative? alternative,  AiSafetyFlag? safetyFlag,  Duration latency)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( MoodType mood,  double confidence,  String rationale,  AiSuggestionAlternative? alternative,  AiSafetyFlag? safetyFlag,  Duration latency,  int intensity)  $default,) {final _that = this;
 switch (_that) {
 case _AiSuggestion():
-return $default(_that.mood,_that.confidence,_that.rationale,_that.alternative,_that.safetyFlag,_that.latency);case _:
+return $default(_that.mood,_that.confidence,_that.rationale,_that.alternative,_that.safetyFlag,_that.latency,_that.intensity);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -208,10 +214,10 @@ return $default(_that.mood,_that.confidence,_that.rationale,_that.alternative,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( MoodType mood,  double confidence,  String rationale,  AiSuggestionAlternative? alternative,  AiSafetyFlag? safetyFlag,  Duration latency)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( MoodType mood,  double confidence,  String rationale,  AiSuggestionAlternative? alternative,  AiSafetyFlag? safetyFlag,  Duration latency,  int intensity)?  $default,) {final _that = this;
 switch (_that) {
 case _AiSuggestion() when $default != null:
-return $default(_that.mood,_that.confidence,_that.rationale,_that.alternative,_that.safetyFlag,_that.latency);case _:
+return $default(_that.mood,_that.confidence,_that.rationale,_that.alternative,_that.safetyFlag,_that.latency,_that.intensity);case _:
   return null;
 
 }
@@ -223,7 +229,7 @@ return $default(_that.mood,_that.confidence,_that.rationale,_that.alternative,_t
 
 
 class _AiSuggestion implements AiSuggestion {
-  const _AiSuggestion({required this.mood, required this.confidence, required this.rationale, this.alternative, this.safetyFlag, required this.latency}): assert(confidence >= 0 && confidence <= 1, 'confidence must be in [0, 1]');
+  const _AiSuggestion({required this.mood, required this.confidence, required this.rationale, this.alternative, this.safetyFlag, required this.latency, this.intensity = 3}): assert(confidence >= 0 && confidence <= 1, 'confidence must be in [0, 1]'),assert(intensity >= 1 && intensity <= 5, 'intensity must be in [1, 5]');
   
 
 @override final  MoodType mood;
@@ -232,6 +238,12 @@ class _AiSuggestion implements AiSuggestion {
 @override final  AiSuggestionAlternative? alternative;
 @override final  AiSafetyFlag? safetyFlag;
 @override final  Duration latency;
+/// Inferred 1..5 intensity from the model. The Log Mood UI uses
+/// this to pre-fill the intensity slider when the user accepts
+/// the AI suggestion. Defaults to 3 (neutral) on the wire when
+/// the model omits it; clamped to [1, 5] by both the server and
+/// the Dart DTO mapper.
+@override@JsonKey() final  int intensity;
 
 /// Create a copy of AiSuggestion
 /// with the given fields replaced by the non-null parameter values.
@@ -243,16 +255,16 @@ _$AiSuggestionCopyWith<_AiSuggestion> get copyWith => __$AiSuggestionCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiSuggestion&&(identical(other.mood, mood) || other.mood == mood)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.rationale, rationale) || other.rationale == rationale)&&(identical(other.alternative, alternative) || other.alternative == alternative)&&(identical(other.safetyFlag, safetyFlag) || other.safetyFlag == safetyFlag)&&(identical(other.latency, latency) || other.latency == latency));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiSuggestion&&(identical(other.mood, mood) || other.mood == mood)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.rationale, rationale) || other.rationale == rationale)&&(identical(other.alternative, alternative) || other.alternative == alternative)&&(identical(other.safetyFlag, safetyFlag) || other.safetyFlag == safetyFlag)&&(identical(other.latency, latency) || other.latency == latency)&&(identical(other.intensity, intensity) || other.intensity == intensity));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,mood,confidence,rationale,alternative,safetyFlag,latency);
+int get hashCode => Object.hash(runtimeType,mood,confidence,rationale,alternative,safetyFlag,latency,intensity);
 
 @override
 String toString() {
-  return 'AiSuggestion(mood: $mood, confidence: $confidence, rationale: $rationale, alternative: $alternative, safetyFlag: $safetyFlag, latency: $latency)';
+  return 'AiSuggestion(mood: $mood, confidence: $confidence, rationale: $rationale, alternative: $alternative, safetyFlag: $safetyFlag, latency: $latency, intensity: $intensity)';
 }
 
 
@@ -263,7 +275,7 @@ abstract mixin class _$AiSuggestionCopyWith<$Res> implements $AiSuggestionCopyWi
   factory _$AiSuggestionCopyWith(_AiSuggestion value, $Res Function(_AiSuggestion) _then) = __$AiSuggestionCopyWithImpl;
 @override @useResult
 $Res call({
- MoodType mood, double confidence, String rationale, AiSuggestionAlternative? alternative, AiSafetyFlag? safetyFlag, Duration latency
+ MoodType mood, double confidence, String rationale, AiSuggestionAlternative? alternative, AiSafetyFlag? safetyFlag, Duration latency, int intensity
 });
 
 
@@ -280,7 +292,7 @@ class __$AiSuggestionCopyWithImpl<$Res>
 
 /// Create a copy of AiSuggestion
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? mood = null,Object? confidence = null,Object? rationale = null,Object? alternative = freezed,Object? safetyFlag = freezed,Object? latency = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? mood = null,Object? confidence = null,Object? rationale = null,Object? alternative = freezed,Object? safetyFlag = freezed,Object? latency = null,Object? intensity = null,}) {
   return _then(_AiSuggestion(
 mood: null == mood ? _self.mood : mood // ignore: cast_nullable_to_non_nullable
 as MoodType,confidence: null == confidence ? _self.confidence : confidence // ignore: cast_nullable_to_non_nullable
@@ -288,7 +300,8 @@ as double,rationale: null == rationale ? _self.rationale : rationale // ignore: 
 as String,alternative: freezed == alternative ? _self.alternative : alternative // ignore: cast_nullable_to_non_nullable
 as AiSuggestionAlternative?,safetyFlag: freezed == safetyFlag ? _self.safetyFlag : safetyFlag // ignore: cast_nullable_to_non_nullable
 as AiSafetyFlag?,latency: null == latency ? _self.latency : latency // ignore: cast_nullable_to_non_nullable
-as Duration,
+as Duration,intensity: null == intensity ? _self.intensity : intensity // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 

@@ -15,7 +15,11 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AiSuggestionDto {
 
- bool get ok; int get v; String get requestId; String get mood; double get confidence; AiSuggestionAlternativeDto? get alternative; String get rationale; String? get flag; int get latencyMs; String get modelVersion;
+ bool get ok; int get v; String get requestId; String get mood; double get confidence; AiSuggestionAlternativeDto? get alternative; String get rationale; String? get flag; int get latencyMs; String get modelVersion;/// Inferred 1..5 intensity. Optional on the wire so we stay
+/// compatible with the Cloud Function before the v1.0-polish
+/// (2026-05-10) redeploy that adds it. Defaults to 3 (neutral)
+/// when the server omits it.
+ int get intensity;
 /// Create a copy of AiSuggestionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +32,16 @@ $AiSuggestionDtoCopyWith<AiSuggestionDto> get copyWith => _$AiSuggestionDtoCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiSuggestionDto&&(identical(other.ok, ok) || other.ok == ok)&&(identical(other.v, v) || other.v == v)&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.mood, mood) || other.mood == mood)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.alternative, alternative) || other.alternative == alternative)&&(identical(other.rationale, rationale) || other.rationale == rationale)&&(identical(other.flag, flag) || other.flag == flag)&&(identical(other.latencyMs, latencyMs) || other.latencyMs == latencyMs)&&(identical(other.modelVersion, modelVersion) || other.modelVersion == modelVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiSuggestionDto&&(identical(other.ok, ok) || other.ok == ok)&&(identical(other.v, v) || other.v == v)&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.mood, mood) || other.mood == mood)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.alternative, alternative) || other.alternative == alternative)&&(identical(other.rationale, rationale) || other.rationale == rationale)&&(identical(other.flag, flag) || other.flag == flag)&&(identical(other.latencyMs, latencyMs) || other.latencyMs == latencyMs)&&(identical(other.modelVersion, modelVersion) || other.modelVersion == modelVersion)&&(identical(other.intensity, intensity) || other.intensity == intensity));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,ok,v,requestId,mood,confidence,alternative,rationale,flag,latencyMs,modelVersion);
+int get hashCode => Object.hash(runtimeType,ok,v,requestId,mood,confidence,alternative,rationale,flag,latencyMs,modelVersion,intensity);
 
 @override
 String toString() {
-  return 'AiSuggestionDto(ok: $ok, v: $v, requestId: $requestId, mood: $mood, confidence: $confidence, alternative: $alternative, rationale: $rationale, flag: $flag, latencyMs: $latencyMs, modelVersion: $modelVersion)';
+  return 'AiSuggestionDto(ok: $ok, v: $v, requestId: $requestId, mood: $mood, confidence: $confidence, alternative: $alternative, rationale: $rationale, flag: $flag, latencyMs: $latencyMs, modelVersion: $modelVersion, intensity: $intensity)';
 }
 
 
@@ -48,7 +52,7 @@ abstract mixin class $AiSuggestionDtoCopyWith<$Res>  {
   factory $AiSuggestionDtoCopyWith(AiSuggestionDto value, $Res Function(AiSuggestionDto) _then) = _$AiSuggestionDtoCopyWithImpl;
 @useResult
 $Res call({
- bool ok, int v, String requestId, String mood, double confidence, AiSuggestionAlternativeDto? alternative, String rationale, String? flag, int latencyMs, String modelVersion
+ bool ok, int v, String requestId, String mood, double confidence, AiSuggestionAlternativeDto? alternative, String rationale, String? flag, int latencyMs, String modelVersion, int intensity
 });
 
 
@@ -65,7 +69,7 @@ class _$AiSuggestionDtoCopyWithImpl<$Res>
 
 /// Create a copy of AiSuggestionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? ok = null,Object? v = null,Object? requestId = null,Object? mood = null,Object? confidence = null,Object? alternative = freezed,Object? rationale = null,Object? flag = freezed,Object? latencyMs = null,Object? modelVersion = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? ok = null,Object? v = null,Object? requestId = null,Object? mood = null,Object? confidence = null,Object? alternative = freezed,Object? rationale = null,Object? flag = freezed,Object? latencyMs = null,Object? modelVersion = null,Object? intensity = null,}) {
   return _then(_self.copyWith(
 ok: null == ok ? _self.ok : ok // ignore: cast_nullable_to_non_nullable
 as bool,v: null == v ? _self.v : v // ignore: cast_nullable_to_non_nullable
@@ -77,7 +81,8 @@ as AiSuggestionAlternativeDto?,rationale: null == rationale ? _self.rationale : 
 as String,flag: freezed == flag ? _self.flag : flag // ignore: cast_nullable_to_non_nullable
 as String?,latencyMs: null == latencyMs ? _self.latencyMs : latencyMs // ignore: cast_nullable_to_non_nullable
 as int,modelVersion: null == modelVersion ? _self.modelVersion : modelVersion // ignore: cast_nullable_to_non_nullable
-as String,
+as String,intensity: null == intensity ? _self.intensity : intensity // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 /// Create a copy of AiSuggestionDto
@@ -174,10 +179,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool ok,  int v,  String requestId,  String mood,  double confidence,  AiSuggestionAlternativeDto? alternative,  String rationale,  String? flag,  int latencyMs,  String modelVersion)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool ok,  int v,  String requestId,  String mood,  double confidence,  AiSuggestionAlternativeDto? alternative,  String rationale,  String? flag,  int latencyMs,  String modelVersion,  int intensity)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AiSuggestionDto() when $default != null:
-return $default(_that.ok,_that.v,_that.requestId,_that.mood,_that.confidence,_that.alternative,_that.rationale,_that.flag,_that.latencyMs,_that.modelVersion);case _:
+return $default(_that.ok,_that.v,_that.requestId,_that.mood,_that.confidence,_that.alternative,_that.rationale,_that.flag,_that.latencyMs,_that.modelVersion,_that.intensity);case _:
   return orElse();
 
 }
@@ -195,10 +200,10 @@ return $default(_that.ok,_that.v,_that.requestId,_that.mood,_that.confidence,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool ok,  int v,  String requestId,  String mood,  double confidence,  AiSuggestionAlternativeDto? alternative,  String rationale,  String? flag,  int latencyMs,  String modelVersion)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool ok,  int v,  String requestId,  String mood,  double confidence,  AiSuggestionAlternativeDto? alternative,  String rationale,  String? flag,  int latencyMs,  String modelVersion,  int intensity)  $default,) {final _that = this;
 switch (_that) {
 case _AiSuggestionDto():
-return $default(_that.ok,_that.v,_that.requestId,_that.mood,_that.confidence,_that.alternative,_that.rationale,_that.flag,_that.latencyMs,_that.modelVersion);case _:
+return $default(_that.ok,_that.v,_that.requestId,_that.mood,_that.confidence,_that.alternative,_that.rationale,_that.flag,_that.latencyMs,_that.modelVersion,_that.intensity);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -215,10 +220,10 @@ return $default(_that.ok,_that.v,_that.requestId,_that.mood,_that.confidence,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool ok,  int v,  String requestId,  String mood,  double confidence,  AiSuggestionAlternativeDto? alternative,  String rationale,  String? flag,  int latencyMs,  String modelVersion)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool ok,  int v,  String requestId,  String mood,  double confidence,  AiSuggestionAlternativeDto? alternative,  String rationale,  String? flag,  int latencyMs,  String modelVersion,  int intensity)?  $default,) {final _that = this;
 switch (_that) {
 case _AiSuggestionDto() when $default != null:
-return $default(_that.ok,_that.v,_that.requestId,_that.mood,_that.confidence,_that.alternative,_that.rationale,_that.flag,_that.latencyMs,_that.modelVersion);case _:
+return $default(_that.ok,_that.v,_that.requestId,_that.mood,_that.confidence,_that.alternative,_that.rationale,_that.flag,_that.latencyMs,_that.modelVersion,_that.intensity);case _:
   return null;
 
 }
@@ -230,7 +235,7 @@ return $default(_that.ok,_that.v,_that.requestId,_that.mood,_that.confidence,_th
 @JsonSerializable()
 
 class _AiSuggestionDto extends AiSuggestionDto {
-  const _AiSuggestionDto({required this.ok, required this.v, required this.requestId, required this.mood, required this.confidence, this.alternative, required this.rationale, this.flag, required this.latencyMs, required this.modelVersion}): super._();
+  const _AiSuggestionDto({required this.ok, required this.v, required this.requestId, required this.mood, required this.confidence, this.alternative, required this.rationale, this.flag, required this.latencyMs, required this.modelVersion, this.intensity = 3}): super._();
   factory _AiSuggestionDto.fromJson(Map<String, dynamic> json) => _$AiSuggestionDtoFromJson(json);
 
 @override final  bool ok;
@@ -243,6 +248,11 @@ class _AiSuggestionDto extends AiSuggestionDto {
 @override final  String? flag;
 @override final  int latencyMs;
 @override final  String modelVersion;
+/// Inferred 1..5 intensity. Optional on the wire so we stay
+/// compatible with the Cloud Function before the v1.0-polish
+/// (2026-05-10) redeploy that adds it. Defaults to 3 (neutral)
+/// when the server omits it.
+@override@JsonKey() final  int intensity;
 
 /// Create a copy of AiSuggestionDto
 /// with the given fields replaced by the non-null parameter values.
@@ -257,16 +267,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiSuggestionDto&&(identical(other.ok, ok) || other.ok == ok)&&(identical(other.v, v) || other.v == v)&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.mood, mood) || other.mood == mood)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.alternative, alternative) || other.alternative == alternative)&&(identical(other.rationale, rationale) || other.rationale == rationale)&&(identical(other.flag, flag) || other.flag == flag)&&(identical(other.latencyMs, latencyMs) || other.latencyMs == latencyMs)&&(identical(other.modelVersion, modelVersion) || other.modelVersion == modelVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiSuggestionDto&&(identical(other.ok, ok) || other.ok == ok)&&(identical(other.v, v) || other.v == v)&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.mood, mood) || other.mood == mood)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.alternative, alternative) || other.alternative == alternative)&&(identical(other.rationale, rationale) || other.rationale == rationale)&&(identical(other.flag, flag) || other.flag == flag)&&(identical(other.latencyMs, latencyMs) || other.latencyMs == latencyMs)&&(identical(other.modelVersion, modelVersion) || other.modelVersion == modelVersion)&&(identical(other.intensity, intensity) || other.intensity == intensity));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,ok,v,requestId,mood,confidence,alternative,rationale,flag,latencyMs,modelVersion);
+int get hashCode => Object.hash(runtimeType,ok,v,requestId,mood,confidence,alternative,rationale,flag,latencyMs,modelVersion,intensity);
 
 @override
 String toString() {
-  return 'AiSuggestionDto(ok: $ok, v: $v, requestId: $requestId, mood: $mood, confidence: $confidence, alternative: $alternative, rationale: $rationale, flag: $flag, latencyMs: $latencyMs, modelVersion: $modelVersion)';
+  return 'AiSuggestionDto(ok: $ok, v: $v, requestId: $requestId, mood: $mood, confidence: $confidence, alternative: $alternative, rationale: $rationale, flag: $flag, latencyMs: $latencyMs, modelVersion: $modelVersion, intensity: $intensity)';
 }
 
 
@@ -277,7 +287,7 @@ abstract mixin class _$AiSuggestionDtoCopyWith<$Res> implements $AiSuggestionDto
   factory _$AiSuggestionDtoCopyWith(_AiSuggestionDto value, $Res Function(_AiSuggestionDto) _then) = __$AiSuggestionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- bool ok, int v, String requestId, String mood, double confidence, AiSuggestionAlternativeDto? alternative, String rationale, String? flag, int latencyMs, String modelVersion
+ bool ok, int v, String requestId, String mood, double confidence, AiSuggestionAlternativeDto? alternative, String rationale, String? flag, int latencyMs, String modelVersion, int intensity
 });
 
 
@@ -294,7 +304,7 @@ class __$AiSuggestionDtoCopyWithImpl<$Res>
 
 /// Create a copy of AiSuggestionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? ok = null,Object? v = null,Object? requestId = null,Object? mood = null,Object? confidence = null,Object? alternative = freezed,Object? rationale = null,Object? flag = freezed,Object? latencyMs = null,Object? modelVersion = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? ok = null,Object? v = null,Object? requestId = null,Object? mood = null,Object? confidence = null,Object? alternative = freezed,Object? rationale = null,Object? flag = freezed,Object? latencyMs = null,Object? modelVersion = null,Object? intensity = null,}) {
   return _then(_AiSuggestionDto(
 ok: null == ok ? _self.ok : ok // ignore: cast_nullable_to_non_nullable
 as bool,v: null == v ? _self.v : v // ignore: cast_nullable_to_non_nullable
@@ -306,7 +316,8 @@ as AiSuggestionAlternativeDto?,rationale: null == rationale ? _self.rationale : 
 as String,flag: freezed == flag ? _self.flag : flag // ignore: cast_nullable_to_non_nullable
 as String?,latencyMs: null == latencyMs ? _self.latencyMs : latencyMs // ignore: cast_nullable_to_non_nullable
 as int,modelVersion: null == modelVersion ? _self.modelVersion : modelVersion // ignore: cast_nullable_to_non_nullable
-as String,
+as String,intensity: null == intensity ? _self.intensity : intensity // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 
