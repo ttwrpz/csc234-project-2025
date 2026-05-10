@@ -60,7 +60,13 @@ class SkyHeader extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              // Sky gradient.
+              // Sky gradient. Atmosphere-aware: the base palette comes
+              // from the theme's MbColors (warm-cream in light, cool
+              // navy in dark), and a per-atmosphere blend pulls the
+              // sky toward grey on lightRain and a deep storm-blue on
+              // storm so the entire canvas — not just the plant-row
+              // overlay — reads as rainy. Sunny atmospheres pass the
+              // theme palette through unchanged.
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -68,7 +74,7 @@ class SkyHeader extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       stops: const [0, 0.55, 1],
-                      colors: [mb.skyTop, mb.skyMid, mb.skyBot],
+                      colors: _skyColorsFor(state.atmosphere, mb),
                     ),
                   ),
                 ),
@@ -203,9 +209,36 @@ class SkyHeader extends StatelessWidget {
   /// sun fades.
   static double _sunOpacity(Atmosphere a) => switch (a) {
     Atmosphere.calmSunny || Atmosphere.brightSunny => 1.0,
-    Atmosphere.lightRain => 0.55,
-    Atmosphere.storm => 0.20,
+    Atmosphere.lightRain => 0.40,
+    Atmosphere.storm => 0.10,
   };
+
+  /// Sky gradient colours per atmosphere. Sunny atmospheres pass the
+  /// theme's `MbColors` palette through unchanged. Rainy atmospheres
+  /// blend the palette toward stormy greys so the whole canvas — not
+  /// just the falling drops + plant-row overlay — reads as rainy.
+  /// User feedback (v1.0 polish) was that subtle drop animations on
+  /// the warm cream sky were easy to miss; this pulls the sky itself
+  /// into the weather.
+  static List<Color> _skyColorsFor(Atmosphere a, MbColors mb) {
+    switch (a) {
+      case Atmosphere.calmSunny:
+      case Atmosphere.brightSunny:
+        return [mb.skyTop, mb.skyMid, mb.skyBot];
+      case Atmosphere.lightRain:
+        return [
+          Color.lerp(mb.skyTop, const Color(0xFFB6C0CC), 0.55)!,
+          Color.lerp(mb.skyMid, const Color(0xFFC8D2DD), 0.45)!,
+          Color.lerp(mb.skyBot, const Color(0xFFD8DFE7), 0.35)!,
+        ];
+      case Atmosphere.storm:
+        return [
+          Color.lerp(mb.skyTop, const Color(0xFF3D454F), 0.78)!,
+          Color.lerp(mb.skyMid, const Color(0xFF555F6A), 0.65)!,
+          Color.lerp(mb.skyBot, const Color(0xFF8590A0), 0.45)!,
+        ];
+    }
+  }
 
   /// Compassionate, no-streak-shaming caption per the plant tier and
   /// total entry count. Empty-state copy ("plant your first mood")

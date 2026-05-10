@@ -124,6 +124,13 @@ class _AtmosphereLayer extends StatelessWidget {
     );
   }
 
+  /// Atmosphere gradient palette. Sunny atmospheres stay deliberately
+  /// soft (warm wash, no drama). Rainy atmospheres land HEAVIER —
+  /// `lightRain` at ~40% alpha + `storm` at ~60% — because the user
+  /// feedback in v1.0 polish was "negative mood does not show up on
+  /// the garden". Subtle blue-grey gradients went unnoticed against
+  /// the SkyHeader's bright sky background; the higher alpha + a
+  /// second darker stop in the middle make the shift unambiguous.
   static LinearGradient _gradientFor(Atmosphere a) => switch (a) {
     Atmosphere.calmSunny => const LinearGradient(
       begin: Alignment.topCenter,
@@ -138,12 +145,14 @@ class _AtmosphereLayer extends StatelessWidget {
     Atmosphere.lightRain => const LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [Color(0x33A6B2C2), Color(0x00FFFFFF)],
+      stops: [0.0, 0.6, 1.0],
+      colors: [Color(0x66758494), Color(0x4DA6B2C2), Color(0x1AA6B2C2)],
     ),
     Atmosphere.storm => const LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [Color(0x66555F6A), Color(0x00FFFFFF)],
+      stops: [0.0, 0.55, 1.0],
+      colors: [Color(0xCC3D454F), Color(0x99555F6A), Color(0x33555F6A)],
     ),
   };
 }
@@ -174,9 +183,23 @@ class _AtmospherePainter extends CustomPainter {
       case Atmosphere.brightSunny:
         _paintSunRays(canvas, size);
       case Atmosphere.lightRain:
-        _paintDrops(canvas, size, dropCount: 6, opacity: 0.55);
+        _paintDrops(
+          canvas,
+          size,
+          dropCount: 12,
+          opacity: 0.85,
+          strokeWidth: 1.8,
+          length: 9,
+        );
       case Atmosphere.storm:
-        _paintDrops(canvas, size, dropCount: 14, opacity: 0.78);
+        _paintDrops(
+          canvas,
+          size,
+          dropCount: 22,
+          opacity: 0.95,
+          strokeWidth: 2.0,
+          length: 12,
+        );
     }
   }
 
@@ -202,12 +225,22 @@ class _AtmospherePainter extends CustomPainter {
     Size size, {
     required int dropCount,
     required double opacity,
+    double strokeWidth = 1.4,
+    double length = 6,
   }) {
     // Deterministic xs derived from a fixed seed so two consecutive
     // builds on the same atmosphere render at the same x positions.
+    // Drop colour darkens with opacity so storm drops read as bolder
+    // streaks against the heavier gradient (v1.0 polish — user
+    // feedback on negative-mood visibility).
+    final dropColor = Color.lerp(
+      const Color(0xFF9EC3DB),
+      const Color(0xFF3D5A75),
+      (opacity - 0.5).clamp(0.0, 0.5) * 2,
+    )!;
     final paint = Paint()
-      ..color = const Color(0xFF9EC3DB).withValues(alpha: opacity)
-      ..strokeWidth = 1.4
+      ..color = dropColor.withValues(alpha: opacity)
+      ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
     for (var i = 0; i < dropCount; i += 1) {
@@ -215,7 +248,7 @@ class _AtmospherePainter extends CustomPainter {
       // Each drop has its own phase offset so they don't fall in lockstep.
       final dropPhase = (phase + i * 0.137) % 1.0;
       final y = dropPhase * size.height;
-      canvas.drawLine(Offset(x, y), Offset(x - 1.5, y + 6), paint);
+      canvas.drawLine(Offset(x, y), Offset(x - 1.5, y + length), paint);
     }
   }
 

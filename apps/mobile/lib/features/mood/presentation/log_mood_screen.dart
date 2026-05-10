@@ -216,11 +216,16 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
     _resetAll(ref);
     if (context.mounted) {
       // Edit returns to the detail screen so the user can verify the
-      // updated values; create flows still drop on /history.
+      // updated values. New-entry flows drop on the garden home (`/home`)
+      // — the user just logged a mood and the SkyHeader / daily-score
+      // strip is where they SEE the impact (atmosphere shift, EWMA
+      // tier, today's cell). Routing to /history skipped the visual
+      // feedback the user expected; v1.0 polish round (negative-mood-
+      // not-visible feedback) routes them to garden instead.
       if (original != null) {
         context.go('/history/${entry.id}');
       } else {
-        context.go('/history');
+        context.go('/home');
       }
     }
   }

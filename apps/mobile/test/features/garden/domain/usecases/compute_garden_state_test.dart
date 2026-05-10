@@ -275,5 +275,155 @@ void main() {
       expect(result.last7Days[1].entryCount, 2);
       expect(result.totalEntryCount, 3);
     });
+
+    // ───── negative-mood-shows-up regression suite ─────
+    //
+    // User reported (post-v1.0 polish): "negative mood does not show up
+    // on the garden, weather in the garden must depend on avg today
+    // mood score (recheck again)". The math below is the contract. If
+    // any of these tests fail, the visual surface — atmosphere overlay
+    // + daily-score strip + plant tier — will mis-render negative
+    // logs, which is the user-perceived "doesn't show up" failure mode.
+
+    group('negative mood visible in garden state (user feedback regression)', () {
+      test('Sad×3 today only → atmosphere=storm (avg=-0.6, |avg|>=0.3)', () {
+        final result = useCase(
+          entries: [_entry(mood: MoodType.sad, createdAt: now, intensity: 3)],
+          now: now,
+          weekStart: weekStart,
+        );
+
+        expect(result.last7Days.first.avgScore, closeTo(-0.6, 1e-9));
+        expect(
+          result.atmosphere,
+          Atmosphere.storm,
+          reason: 'avg_S_today = -0.6 → |avg| >= 0.3 → storm. Spec §2.2.',
+        );
+        // H_1 = 0.15 × -0.6 = -0.09 → Resting (just inside [-0.1, +0.1)).
+        // The plant tier does NOT flip on a single mid-intensity sad
+        // entry — by design (bounded daily delta α=0.15). The
+        // atmosphere change is the immediate visual signal.
+        expect(result.gardenHealth, closeTo(-0.09, 1e-9));
+        expect(result.plantTier, PlantTier.resting);
+      });
+
+      test('Sad×1 today → atmosphere=lightRain (avg=-0.2, |avg|<0.3)', () {
+        final result = useCase(
+          entries: [_entry(mood: MoodType.sad, createdAt: now, intensity: 1)],
+          now: now,
+          weekStart: weekStart,
+        );
+
+        expect(result.last7Days.first.avgScore, closeTo(-0.2, 1e-9));
+        expect(result.atmosphere, Atmosphere.lightRain);
+      });
+
+      test(
+        'Anxious×5 today → atmosphere=storm (avg=-1.0, max-magnitude case)',
+        () {
+          final result = useCase(
+            entries: [
+              _entry(mood: MoodType.anxious, createdAt: now, intensity: 5),
+            ],
+            now: now,
+            weekStart: weekStart,
+          );
+
+          expect(result.last7Days.first.avgScore, closeTo(-1.0, 1e-9));
+          expect(result.atmosphere, Atmosphere.storm);
+          expect(result.gardenHealth, closeTo(-0.15, 1e-9));
+          // H=-0.15 lands in [-0.4, -0.1) → Weathering. A single
+          // max-intensity sad entry DOES flip the tier, because the
+          // delta of 0.15 lands exactly on the [-0.1, +0.1)→Weathering
+          // boundary. The plant visual changes immediately AND the
+          // atmosphere shifts to storm.
+          expect(result.plantTier, PlantTier.weathering);
+        },
+      );
+
+      test('Anger×4 yesterday + Sad×2 today → today drives atmosphere, '
+          'EWMA folds both', () {
+        final result = useCase(
+          entries: [
+            _entry(
+              mood: MoodType.angry,
+              createdAt: yesterday.add(const Duration(hours: 12)),
+              intensity: 4,
+              id: 'y',
+            ),
+            _entry(mood: MoodType.sad, createdAt: now, intensity: 2, id: 't'),
+          ],
+          now: now,
+          weekStart: weekStart,
+        );
+
+        expect(result.last7Days.first.avgScore, closeTo(-0.4, 1e-9));
+        // Today's avg is -0.4 → |avg|>=0.3 → storm.
+        expect(result.atmosphere, Atmosphere.storm);
+        // EWMA: H_0=0 → +(-0.8) yesterday → -0.12 → +(-0.4) today
+        // → 0.85 × -0.12 + 0.15 × -0.4 = -0.102 - 0.060 = -0.162
+        expect(result.gardenHealth, closeTo(-0.162, 1e-9));
+        expect(result.plantTier, PlantTier.weathering);
+      });
+
+      test(
+        '5 consecutive Sad×4 days → tier flips to Weathering (visible plant change)',
+        () {
+          final entries = <MoodEntry>[];
+          for (var i = 0; i < 5; i += 1) {
+            entries.add(
+              _entry(
+                mood: MoodType.sad,
+                createdAt: weekStart.add(Duration(days: i, hours: 12)),
+                intensity: 4,
+                id: 'd$i',
+              ),
+            );
+          }
+          // EWMA over 5 days of S=-0.8:
+          //   H_5 = (1 - 0.85^5) × -0.8 ≈ 0.5563 × -0.8 ≈ -0.445
+          // -0.445 < -0.4 → stormSeason. Sustained negativity DOES
+          // flip the plant tier visually, which is the slow-signal
+          // intent of EWMA.
+          final result = useCase(
+            entries: entries,
+            now: weekStart.add(const Duration(days: 4, hours: 18)),
+            weekStart: weekStart,
+          );
+
+          expect(result.gardenHealth, lessThan(-0.4));
+          expect(result.plantTier, PlantTier.stormSeason);
+        },
+      );
+
+      test(
+        'today has no entry but yesterday was negative → atmosphere=calmSunny '
+        '(today-only contract — fast signal resets at midnight)',
+        () {
+          final result = useCase(
+            entries: [
+              _entry(
+                mood: MoodType.sad,
+                createdAt: yesterday.add(const Duration(hours: 12)),
+                intensity: 5,
+                id: 'y',
+              ),
+            ],
+            now: now,
+            weekStart: weekStart,
+          );
+
+          // Yesterday's negativity is absorbed by EWMA (slow signal)
+          // but does NOT carry into today's atmosphere (fast signal).
+          // The spec §2.2 atmosphere contract is "today only".
+          expect(result.atmosphere, Atmosphere.calmSunny);
+          expect(result.last7Days.first.avgScore, isNull);
+          expect(result.last7Days.first.entryCount, 0);
+          // EWMA folded yesterday's S=-1.0 → H = -0.15 → Weathering.
+          expect(result.gardenHealth, closeTo(-0.15, 1e-9));
+          expect(result.plantTier, PlantTier.weathering);
+        },
+      );
+    });
   });
 }
