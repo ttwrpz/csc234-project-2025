@@ -27,9 +27,9 @@ Map<String, dynamic> _$WeeklyGardenToJson(_WeeklyGarden instance) =>
       'weekId': instance.weekId,
       'weekStart': instance.weekStart.toIso8601String(),
       'weekEnd': instance.weekEnd.toIso8601String(),
-      'entries': instance.entries,
+      'entries': instance.entries.map((e) => e.toJson()).toList(),
       'healthHistory': instance.healthHistory,
-      'summary': instance.summary,
+      'summary': instance.summary.toJson(),
       'archivedAt': instance.archivedAt.toIso8601String(),
       'schemaV': instance.schemaV,
     };

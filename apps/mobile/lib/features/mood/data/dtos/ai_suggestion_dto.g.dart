@@ -31,7 +31,7 @@ Map<String, dynamic> _$AiSuggestionDtoToJson(_AiSuggestionDto instance) =>
       'requestId': instance.requestId,
       'mood': instance.mood,
       'confidence': instance.confidence,
-      'alternative': instance.alternative,
+      'alternative': instance.alternative?.toJson(),
       'rationale': instance.rationale,
       'flag': instance.flag,
       'latencyMs': instance.latencyMs,
