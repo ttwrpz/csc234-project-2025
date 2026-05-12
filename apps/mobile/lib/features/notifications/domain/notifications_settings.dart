@@ -43,11 +43,20 @@ class FcmTokenRecord {
 }
 
 /// Per-user notification preferences. Maps 1:1 to the Firestore document
-/// at `users/{uid}/settings/notifications` (HB-003 §"Settings doc shape").
+/// at `users/{uid}/settings/notifications` (HB-003 §"Settings doc shape",
+/// extended in S5 Day 2 per HB-007 to gate the tiered intervention
+/// dispatcher).
 ///
 /// Rules:
-/// - [cheerUpEnabled] gates the cheer-up push channel only; other product
-///   notifications (none today) would gain their own flag here.
+/// - [cheerUpEnabled] is the legacy single-channel gate consumed by the
+///   `sendCheerUpPush` Cloud Function. Kept as a backward-compat shim in
+///   S5: when ALL three tier flags go off, the shim flips false so the
+///   CF stops firing — matching the previous user-visible behaviour.
+///   When any tier remains enabled, the shim stays true.
+/// - [tier1Enabled] / [tier2Enabled] / [tier3Enabled] are the new
+///   per-tier opt-outs the intervention dispatcher reads. Defaults are
+///   all `true` so a fresh install grants all three channels until the
+///   user opts out in Settings.
 /// - [tokens] is the device fan-out list. The setter [withToken] dedups
 ///   on `token`: same-token re-registration replaces the existing entry
 ///   so `lastSeenAt` advances without duplicating rows.
@@ -55,15 +64,53 @@ class FcmTokenRecord {
 abstract class NotificationsSettings with _$NotificationsSettings {
   const factory NotificationsSettings({
     @Default(true) bool cheerUpEnabled,
+    @Default(true) bool tier1Enabled,
+    @Default(true) bool tier2Enabled,
+    @Default(true) bool tier3Enabled,
     @Default(<FcmTokenRecord>[]) List<FcmTokenRecord> tokens,
     DateTime? updatedAt,
   }) = _NotificationsSettings;
 
   const NotificationsSettings._();
 
-  /// Default factory for first-write: `cheerUpEnabled = true` per O13,
-  /// no tokens yet.
+  /// Default factory for first-write: all four flags `true`, no tokens
+  /// yet. New users start fully opted-in to every intervention tier and
+  /// to the legacy cheer-up channel; the cheer-up shim is recomputed on
+  /// every per-tier toggle (see [withTier1Enabled] etc.) so it never
+  /// drifts out of sync.
   factory NotificationsSettings.initial() => const NotificationsSettings();
+
+  /// `true` if at least one tier opt-out is still enabled. The legacy
+  /// `cheerUpEnabled` shim is kept in lock-step with this getter: when
+  /// the last tier flips off, the shim flips false so the cheer-up CF
+  /// stops firing too.
+  bool get anyTierEnabled => tier1Enabled || tier2Enabled || tier3Enabled;
+
+  /// Returns a copy with [tier1Enabled] set to [value]. Also re-derives
+  /// [cheerUpEnabled] so it stays `true` while any tier is enabled and
+  /// flips `false` only when all three tier flags are off. The S3
+  /// `sendCheerUpPush` CF still reads `cheerUpEnabled` (see
+  /// `functions/src/sendCheerUpPush.ts`) — keeping the field in
+  /// lock-step preserves its behaviour while the dispatcher feature
+  /// flag rolls out.
+  NotificationsSettings withTier1Enabled(bool value) {
+    final next = copyWith(tier1Enabled: value);
+    return next.copyWith(cheerUpEnabled: next.anyTierEnabled);
+  }
+
+  /// Returns a copy with [tier2Enabled] set to [value]. See
+  /// [withTier1Enabled] for the cheer-up shim derivation.
+  NotificationsSettings withTier2Enabled(bool value) {
+    final next = copyWith(tier2Enabled: value);
+    return next.copyWith(cheerUpEnabled: next.anyTierEnabled);
+  }
+
+  /// Returns a copy with [tier3Enabled] set to [value]. See
+  /// [withTier1Enabled] for the cheer-up shim derivation.
+  NotificationsSettings withTier3Enabled(bool value) {
+    final next = copyWith(tier3Enabled: value);
+    return next.copyWith(cheerUpEnabled: next.anyTierEnabled);
+  }
 
   /// Returns a new settings object with [record] merged into [tokens].
   /// If a record with the same `token` already exists, it is replaced

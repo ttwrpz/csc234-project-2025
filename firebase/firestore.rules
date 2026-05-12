@@ -140,31 +140,49 @@ service cloud.firestore {
         allow delete: if false;
       }
 
-      // Per-user notification preferences (WBS 6.3, HB-003).
+      // Per-user notification preferences (WBS 6.3, HB-003; extended
+      // S5 Day 2 per HB-007 with three per-tier opt-out flags).
       // One doc per user at users/{uid}/settings/notifications carrying
-      // the cheer-up toggle and the FCM token fan-out list. Field-level
-      // validation via diff().affectedKeys() restricts updates to the
-      // canonical schema; Cloud Function reads use the admin SDK.
+      // the cheer-up shim, the three tier toggles, and the FCM token
+      // fan-out list. Field-level validation via diff().affectedKeys()
+      // restricts updates to the canonical schema; Cloud Function reads
+      // use the admin SDK.
+      //
+      // TODO(security-reviewer): audit before Day 4.
+      // Migration write path: `set(merge: true)` from
+      // NotificationsFirestoreDatasource may carry all four bool flags
+      // at once (one-time repair for legacy docs that only had
+      // `cheerUpEnabled`). The rule below accepts the four-flag schema
+      // on both create and update; legacy doc-shapes are no longer
+      // writable so the migration is forward-only.
       match /settings/{settingId} {
         allow read: if isOwner(uid);
 
         allow create: if isOwner(uid)
           && settingId == 'notifications'
           && request.resource.data.cheerUpEnabled is bool
+          && request.resource.data.tier1Enabled is bool
+          && request.resource.data.tier2Enabled is bool
+          && request.resource.data.tier3Enabled is bool
           && request.resource.data.tokens is list
           && request.resource.data.tokens.size() <= 25
           && request.resource.data.updatedAt == request.time
           && request.resource.data.keys().hasOnly(
-              ['cheerUpEnabled','tokens','updatedAt']);
+              ['cheerUpEnabled','tier1Enabled','tier2Enabled',
+               'tier3Enabled','tokens','updatedAt']);
 
         allow update: if isOwner(uid)
           && settingId == 'notifications'
           && request.resource.data.cheerUpEnabled is bool
+          && request.resource.data.tier1Enabled is bool
+          && request.resource.data.tier2Enabled is bool
+          && request.resource.data.tier3Enabled is bool
           && request.resource.data.tokens is list
           && request.resource.data.tokens.size() <= 25
           && request.resource.data.updatedAt == request.time
           && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['cheerUpEnabled','tokens','updatedAt']);
+             .hasOnly(['cheerUpEnabled','tier1Enabled','tier2Enabled',
+                       'tier3Enabled','tokens','updatedAt']);
 
         // Notification preferences are never deleted from the client —
         // disabling cheer-up reminders mutates the doc instead. Account

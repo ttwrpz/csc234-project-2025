@@ -31,6 +31,34 @@ abstract class FcmTokenRepository {
     required bool enabled,
   });
 
+  /// Toggles the Tier 1 (gentle nudge) intervention channel. The
+  /// dispatcher in `features/intervention/` reads this flag before
+  /// composing a notification. Writes also re-derive
+  /// `NotificationsSettings.cheerUpEnabled` so the legacy
+  /// `sendCheerUpPush` Cloud Function stops firing only when ALL three
+  /// tier flags are off (HB-007 S5 Day 2).
+  Future<Result<void, NotificationFailure>> setTier1Enabled({
+    required String uid,
+    required bool enabled,
+  });
+
+  /// Toggles the Tier 2 (journaling check-in) intervention channel. See
+  /// [setTier1Enabled] for the cheer-up shim semantics.
+  Future<Result<void, NotificationFailure>> setTier2Enabled({
+    required String uid,
+    required bool enabled,
+  });
+
+  /// Toggles the Tier 3 (Hotline 1323 reminder) intervention channel.
+  /// See [setTier1Enabled] for the cheer-up shim semantics. Note that
+  /// Tier 3 quote content is CURATED ONLY — disabling the channel
+  /// suppresses delivery but never affects the deterministic safety
+  /// rule on the Cloud Function side.
+  Future<Result<void, NotificationFailure>> setTier3Enabled({
+    required String uid,
+    required bool enabled,
+  });
+
   /// Streams the user's current notifications settings document, or
   /// `null` if no document exists yet (first-run state). Returns `null`
   /// from the method itself when [uid] is empty — callers gate on

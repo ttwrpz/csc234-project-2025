@@ -1,6 +1,7 @@
 @Tags(['golden'])
 library;
 
+import 'package:core/core.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,11 +10,53 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:moodbloom/features/auth/data/providers.dart';
 import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
 import 'package:moodbloom/features/auth/domain/entities/biometric_capability.dart';
+import 'package:moodbloom/features/notifications/data/providers.dart';
+import 'package:moodbloom/features/notifications/domain/fcm_token_repository.dart';
+import 'package:moodbloom/features/notifications/domain/notification_failure.dart';
+import 'package:moodbloom/features/notifications/domain/notifications_settings.dart';
 import 'package:moodbloom/features/settings/data/theme_mode_storage.dart';
 import 'package:moodbloom/features/settings/domain/entities/theme_mode_preference.dart';
 import 'package:moodbloom/features/settings/presentation/controllers/theme_mode_controller.dart';
 import 'package:moodbloom/features/settings/presentation/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// No-op fake of [FcmTokenRepository] so the golden test renders the
+/// notification preference tier toggles without spinning up Firestore.
+class _StubFcmRepo implements FcmTokenRepository {
+  @override
+  Future<Result<void, NotificationFailure>> upsertToken({
+    required String uid,
+  }) async => const Ok(null);
+
+  @override
+  Future<Result<void, NotificationFailure>> setEnabled({
+    required String uid,
+    required bool enabled,
+  }) async => const Ok(null);
+
+  @override
+  Future<Result<void, NotificationFailure>> setTier1Enabled({
+    required String uid,
+    required bool enabled,
+  }) async => const Ok(null);
+
+  @override
+  Future<Result<void, NotificationFailure>> setTier2Enabled({
+    required String uid,
+    required bool enabled,
+  }) async => const Ok(null);
+
+  @override
+  Future<Result<void, NotificationFailure>> setTier3Enabled({
+    required String uid,
+    required bool enabled,
+  }) async => const Ok(null);
+
+  @override
+  Stream<NotificationsSettings>? watchSettings({required String uid}) {
+    return Stream<NotificationsSettings>.value(NotificationsSettings.initial());
+  }
+}
 
 String _serialize(ThemeModePreference preference) => switch (preference) {
   ThemeModePreference.system => 'system',
@@ -55,6 +98,7 @@ Future<void> _pumpSettingsAt(
             userOptedIn: false,
           ),
         ),
+        fcmTokenRepositoryProvider.overrideWithValue(_StubFcmRepo()),
       ],
       child: MaterialApp(
         theme: buildLightTheme(),
