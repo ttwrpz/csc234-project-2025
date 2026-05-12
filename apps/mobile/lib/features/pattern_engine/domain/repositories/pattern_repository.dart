@@ -28,4 +28,20 @@ abstract class PatternRepository {
     required String userId,
     required String dateId,
   });
+
+  /// Streams every pattern document with a `dateId` between [startDateId]
+  /// and [endDateId] inclusive — used by the (S5) Insights screen to
+  /// render historical Tier markers and the `H_t` overlay without
+  /// recomputing the algorithms. The dateId format matches the storage
+  /// convention (`yyyy-MM-dd`); the data layer orders the snapshot by
+  /// document id which is the natural date order.
+  ///
+  /// Emits an empty list when the user has no patterns yet. Errors flow
+  /// through the stream's error channel — the consumer (the Insights
+  /// repository impl) maps them to its own failure type.
+  Stream<List<PatternResult>> watchRange({
+    required String userId,
+    required String startDateId,
+    required String endDateId,
+  });
 }

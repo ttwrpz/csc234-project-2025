@@ -39,6 +39,23 @@ class _FakeDatasource implements PatternsFirestoreDatasource {
     watches.add((userId: userId, dateId: dateId));
     return const Stream<PatternResult?>.empty();
   }
+
+  final List<({String userId, String startDateId, String endDateId})>
+  rangeWatches = [];
+
+  @override
+  Stream<List<PatternResult>> watchPatternResults({
+    required String userId,
+    required String startDateId,
+    required String endDateId,
+  }) {
+    rangeWatches.add((
+      userId: userId,
+      startDateId: startDateId,
+      endDateId: endDateId,
+    ));
+    return const Stream<List<PatternResult>>.empty();
+  }
 }
 
 /// Reference [PatternResult] used across the happy-path tests.

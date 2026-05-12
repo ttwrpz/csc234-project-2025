@@ -54,4 +54,31 @@ class PatternsFirestoreDatasource {
       return PatternResult.fromJson(data);
     });
   }
+
+  /// Streams every pattern document with id in `[startDateId, endDateId]`
+  /// inclusive — used by the (S5) Insights screen for historical reads.
+  ///
+  /// Firestore document ids are strings, so the inclusive range filter is
+  /// `FieldPath.documentId() >= startDateId && <= endDateId`. The dateId
+  /// format is `yyyy-MM-dd` which sorts lexicographically the same as
+  /// chronologically, so document-id ordering is calendar-correct.
+  Stream<List<PatternResult>> watchPatternResults({
+    required String userId,
+    required String startDateId,
+    required String endDateId,
+  }) {
+    final col = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('patterns');
+    return col
+        .where(FieldPath.documentId, isGreaterThanOrEqualTo: startDateId)
+        .where(FieldPath.documentId, isLessThanOrEqualTo: endDateId)
+        .orderBy(FieldPath.documentId)
+        .snapshots()
+        .map(
+          (snap) =>
+              snap.docs.map((d) => PatternResult.fromJson(d.data())).toList(),
+        );
+  }
 }

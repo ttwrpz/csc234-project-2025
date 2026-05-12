@@ -54,6 +54,20 @@ class PatternRepositoryImpl implements PatternRepository {
     required String dateId,
   }) => _datasource.watchPatternResult(userId: userId, dateId: dateId);
 
+  @override
+  Stream<List<PatternResult>> watchRange({
+    required String userId,
+    required String startDateId,
+    required String endDateId,
+  }) {
+    if (userId.isEmpty) return Stream.value(const <PatternResult>[]);
+    return _datasource.watchPatternResults(
+      userId: userId,
+      startDateId: startDateId,
+      endDateId: endDateId,
+    );
+  }
+
   PatternFailure _failureFor(FirebaseException e) {
     switch (e.code) {
       case 'permission-denied':
