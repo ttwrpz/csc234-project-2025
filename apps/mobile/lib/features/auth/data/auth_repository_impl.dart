@@ -4,19 +4,23 @@ import '../domain/auth_credentials.dart';
 import '../domain/auth_failure.dart';
 import '../domain/auth_repository.dart';
 import '../domain/entities/app_user.dart';
+import 'datasources/delete_account_functions_datasource.dart';
 import 'datasources/firebase_auth_datasource.dart';
 import 'mappers/app_user_mapper.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
     required FirebaseAuthDatasource datasource,
+    required DeleteAccountFunctionsDatasource deleteAccountDatasource,
     AppUserMapper mapper = const AppUserMapper(),
     Logger logger = const Logger('auth.repo'),
   }) : _datasource = datasource,
+       _deleteAccountDatasource = deleteAccountDatasource,
        _mapper = mapper,
        _logger = logger;
 
   final FirebaseAuthDatasource _datasource;
+  final DeleteAccountFunctionsDatasource _deleteAccountDatasource;
   final AppUserMapper _mapper;
   final Logger _logger;
 
@@ -93,18 +97,74 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Result<void, AuthFailure>> reauthenticate(
     AuthCredentials creds,
   ) async {
-    // Stub for HB-004 step 1 — the real Firebase Auth wiring lands in
-    // step 2 (HB-004 brief §"Data shape"). Returns a marker failure so
-    // any caller that hits this path before step 2 ships fails loudly.
-    _logger.warn('reauthenticate not yet implemented (HB-004 step 2)');
-    return const Err(AuthFailure.unknown('reauthenticate: not implemented'));
+    try {
+      switch (creds) {
+        case PasswordCredentials(:final email, :final password):
+          await _datasource.reauthenticateWithPassword(
+            email: email,
+            password: password,
+          );
+        case GoogleCredentials(:final idToken):
+          await _datasource.reauthenticateWithGoogleIdToken(idToken);
+        case BiometricCredentials():
+          // Biometric reauth path is platform-keystore-backed and lands in
+          // a follow-up (no v1.5 caller asks for it). Surface a marker
+          // failure so any caller wiring biometric reauth before that
+          // path ships fails loudly rather than silently bypassing the
+          // reauth fence.
+          _logger.warn('biometric reauth not yet implemented');
+          return const Err(
+            AuthFailure.unknown('biometric reauth: not implemented'),
+          );
+      }
+      return const Ok(null);
+    } on AuthDatasourceException catch (e) {
+      _logger.warn('reauthenticate failed: ${e.failure.runtimeType}');
+      return Err(e.failure);
+    }
   }
 
   @override
   Future<Result<void, AuthFailure>> deleteAccount() async {
-    // Stub for HB-004 step 1 — the Cloud Function call + local
-    // currentUser.delete() land in step 2.
-    _logger.warn('deleteAccount not yet implemented (HB-004 step 2)');
-    return const Err(AuthFailure.unknown('deleteAccount: not implemented'));
+    // Server-side cascade via the admin-SDK callable per ADR-0009. The CF
+    // wipes every subcollection under `users/{uid}/` plus any user-owned
+    // Storage media, then resets the profile-doc fields. It deliberately
+    // does NOT delete the Firebase Auth record — that's left to
+    // `deleteCurrentUser` so the use case can sequence reauth →
+    // cascade → local-Auth-delete → signOut with a single recent-login
+    // window.
+    try {
+      await _deleteAccountDatasource.call();
+      return const Ok(null);
+    } on DeleteAccountDatasourceException catch (e) {
+      // Log only the typed exception runtime — no uid, no payload. The
+      // caller already knows it's the delete path.
+      _logger.warn('deleteAccount CF failed: ${e.runtimeType}');
+      return Err(_mapDeleteAccountException(e));
+    }
+  }
+
+  AuthFailure _mapDeleteAccountException(DeleteAccountDatasourceException e) {
+    return switch (e) {
+      DeleteAccountUnauthenticatedException() =>
+        const AuthFailure.userNotFound(),
+      DeleteAccountNetworkException() => const AuthFailure.network(),
+      DeleteAccountUnknownException(:final cause) => AuthFailure.unknown(cause),
+    };
+  }
+
+  @override
+  Future<Result<void, AuthFailure>> deleteCurrentUser() async {
+    try {
+      await _datasource.deleteCurrentUser();
+      return const Ok(null);
+    } on AuthDatasourceException catch (e) {
+      // `requiresRecentLogin` is a normal post-cascade outcome when the
+      // CF + Storage cleanup pushes the call out past the ~5-minute
+      // window; the caller knows to proceed to signOut anyway per
+      // ADR-0009 §"Good" point 5. Other failures are still surfaced.
+      _logger.warn('deleteCurrentUser failed: ${e.failure.runtimeType}');
+      return Err(e.failure);
+    }
   }
 }

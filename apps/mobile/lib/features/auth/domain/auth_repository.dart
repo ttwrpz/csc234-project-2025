@@ -54,14 +54,32 @@ abstract class AuthRepository {
   /// variant before crossing the data/domain boundary.
   Future<Result<void, AuthFailure>> reauthenticate(AuthCredentials creds);
 
-  /// Calls the `deleteAccount` Cloud Function (admin-SDK cascade across
-  /// Firestore + Storage + Auth per ADR-0009) and then deletes the
-  /// local Firebase Auth user record. Idempotent: a re-run on an
-  /// already-deleted uid returns `Ok(null)` because the CF returns
-  /// `{ ok: true, alreadyDeleted: true }` and the local Auth user is
-  /// already null.
+  /// Calls the admin-SDK Cloud Function that cascades the user's
+  /// Firestore + Storage data per ADR-0009. **Does not** touch the
+  /// local Firebase Auth user — that's owned by [deleteCurrentUser],
+  /// which the use case calls right after. Idempotent: a re-run on a
+  /// uid whose data is already gone returns `Ok(null)` because the CF
+  /// returns `{ ok: true, alreadyDeleted: true }`.
   ///
   /// Reauth must precede this call — the use case orchestrates that
   /// sequencing via [DeleteAccountUseCase].
   Future<Result<void, AuthFailure>> deleteAccount();
+
+  /// Deletes the locally-signed-in Firebase Auth user via
+  /// `currentUser.delete()`. Called by [DeleteAccountUseCase] AFTER the
+  /// server cascade has run, so the data is already gone by the time
+  /// this method executes.
+  ///
+  /// Returns:
+  ///   - `Ok(null)` when the auth user is gone (or was already gone).
+  ///   - `Err(AuthFailure.requiresRecentLogin())` when Firebase Auth's
+  ///     recent-login window has expired. The caller proceeds to
+  ///     signOut anyway per ADR-0009 §"Good" point 5 — the local
+  ///     session is the only thing the window guards against, and
+  ///     the server data is already gone.
+  ///   - `Err(AuthFailure.unknown(cause))` for any other failure.
+  ///
+  /// Implementations must NOT throw; every Firebase error must map to
+  /// a sealed variant before crossing the data/domain boundary.
+  Future<Result<void, AuthFailure>> deleteCurrentUser();
 }
