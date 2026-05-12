@@ -231,19 +231,74 @@ service cloud.firestore {
         allow delete: if false;
       }
 
-      // S5-stub denials. Both collections are reserved for the new
-      // tier-aware dispatcher (ADR-0011 §5). Reads allowed so the S5
-      // dispatcher's read-side wiring lands without rule churn; writes
-      // denied in v1.0 because the dispatcher is gated off via the
-      // `interventionDispatchEnabled` Remote Config flag.
+      // TODO(security-reviewer): audit before Day 2.
+      // Per-user intervention audit log (HB-007, ADR-0012).
+      // Append-only: every doc is one dispatched intervention with a
+      // server-time `dispatchedAt`. Same-day re-dispatches collapse on
+      // the deterministic id `${tier}-${epochMs}` (the second create
+      // fails with `already-exists`, which the repository impl treats
+      // as the idempotent path).
+      //
+      // Update is restricted to a SINGLE one-way transition:
+      // `optedOut: false → true` (TC-34 "I'm okay" tap). Every other
+      // field is immutable post-create — Tier 3 audit invariant per
+      // ADR-0012. Delete is denied; account-deletion paths use the
+      // admin SDK.
       match /interventions/{id} {
         allow read: if isOwner(uid);
-        allow write: if false;
+
+        allow create: if isOwner(uid)
+          && request.resource.data.dispatchedAt == request.time
+          && request.resource.data.tier in ['one','two','three']
+          && request.resource.data.quoteId is string
+          && request.resource.data.quoteId.size() <= 128
+          && request.resource.data.cooldownUntil is timestamp
+          && request.resource.data.cooldownUntil > request.time
+          && (request.resource.data.get('optedOut', false) == false)
+          && request.resource.data.schemaV == 1
+          && request.resource.data.keys().hasOnly(
+              ['dispatchId','tier','dispatchedAt','quoteId',
+               'cooldownUntil','optedOut','schemaV']);
+
+        // One-way opt-out toggle. The only diff allowed is
+        // `optedOut: false → true`. Tier / dispatchedAt / quoteId /
+        // cooldownUntil / schemaV are all immutable.
+        allow update: if isOwner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['optedOut'])
+          && resource.data.get('optedOut', false) == false
+          && request.resource.data.optedOut == true;
+
+        allow delete: if false;
       }
 
+      // TODO(security-reviewer): audit before Day 2.
+      // Per-tier (or global) cooldown doc — HB-007 OQ-B default is
+      // global ("one anchor across all tiers"). Doc id is the cooldown
+      // `type` ('global' for v1; future per-tier values like 'tier_three'
+      // remain reachable without rule churn). `lastDispatchedAt` and
+      // `cooldownUntil` are the only mutable fields; both must be a
+      // server timestamp at or after `request.time`.
       match /cooldowns/{type} {
         allow read: if isOwner(uid);
-        allow write: if false;
+
+        allow create: if isOwner(uid)
+          && type.matches('^[a-z_]{1,32}$')
+          && request.resource.data.lastDispatchedAt == request.time
+          && request.resource.data.cooldownUntil is timestamp
+          && request.resource.data.cooldownUntil > request.time
+          && request.resource.data.keys().hasOnly(
+              ['lastDispatchedAt','cooldownUntil']);
+
+        allow update: if isOwner(uid)
+          && type.matches('^[a-z_]{1,32}$')
+          && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['lastDispatchedAt','cooldownUntil'])
+          && request.resource.data.lastDispatchedAt == request.time
+          && request.resource.data.cooldownUntil is timestamp
+          && request.resource.data.cooldownUntil > request.time;
+
+        allow delete: if false;
       }
 
       // Weekly Harvest archive (HB-005 Track 6.1; ADR-0010 §6).
