@@ -16,7 +16,7 @@ import '../../garden/data/providers.dart' show debugPlantTierOverrideProvider;
 import '../../garden/domain/entities/plant_tier.dart';
 import '../../harvest/presentation/controllers/weekly_summary_controller.dart';
 import '../../mood/data/sync/connectivity_provider.dart';
-import '../../notifications/presentation/widgets/notifications_toggle_tile.dart';
+import '../../notifications/presentation/widgets/tier_toggle_tile.dart';
 import '../../tokens/presentation/controllers/token_visibility_controller.dart';
 import '../domain/entities/theme_mode_preference.dart';
 import 'controllers/theme_mode_controller.dart';
@@ -296,7 +296,25 @@ class _PreferencesCluster extends ConsumerWidget {
                 .setVisible(visible: v),
           ),
           const Divider(height: 1),
-          const NotificationsToggleTile(),
+          // ── Notification reminders sub-zone (S5 Day 2, HB-007) ──
+          // Three per-tier opt-outs replace the legacy single
+          // cheer-up toggle. The header uses the user-facing label
+          // "Notification reminders" — internal tier numbers stay out
+          // of the UI per CLAUDE.md copy rules.
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text(
+              'Notification reminders',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ),
+          const TierToggleTile(tier: InterventionTier.one),
+          const TierToggleTile(tier: InterventionTier.two),
+          const TierToggleTile(tier: InterventionTier.three),
         ],
       ),
     );

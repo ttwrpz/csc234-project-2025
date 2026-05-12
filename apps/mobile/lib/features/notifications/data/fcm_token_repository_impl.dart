@@ -96,6 +96,65 @@ class FcmTokenRepositoryImpl implements FcmTokenRepository {
   }
 
   @override
+  Future<Result<void, NotificationFailure>> setTier1Enabled({
+    required String uid,
+    required bool enabled,
+  }) => _setTier(uid: uid, enabled: enabled, tier: _Tier.one);
+
+  @override
+  Future<Result<void, NotificationFailure>> setTier2Enabled({
+    required String uid,
+    required bool enabled,
+  }) => _setTier(uid: uid, enabled: enabled, tier: _Tier.two);
+
+  @override
+  Future<Result<void, NotificationFailure>> setTier3Enabled({
+    required String uid,
+    required bool enabled,
+  }) => _setTier(uid: uid, enabled: enabled, tier: _Tier.three);
+
+  /// Shared transaction for the three per-tier setters. The entity's
+  /// `withTierNEnabled` helpers re-derive `cheerUpEnabled` from the
+  /// resulting tier-flag triple so the legacy cheer-up CF stays in
+  /// lock-step (HB-007 S5 Day 2). When the user toggles the LAST
+  /// remaining tier off, the local cheer-up mirror flips false too so
+  /// SharedPreferences doesn't lag the remote state.
+  Future<Result<void, NotificationFailure>> _setTier({
+    required String uid,
+    required bool enabled,
+    required _Tier tier,
+  }) async {
+    if (uid.isEmpty) {
+      return const Err(NotificationFailure.tokenUnavailable());
+    }
+    try {
+      await _firestore.mutate(uid, (current) {
+        switch (tier) {
+          case _Tier.one:
+            return current.withTier1Enabled(enabled);
+          case _Tier.two:
+            return current.withTier2Enabled(enabled);
+          case _Tier.three:
+            return current.withTier3Enabled(enabled);
+        }
+      });
+      // Best-effort local mirror sync: the cheer-up shim has been
+      // re-derived inside the transaction. Reading the local mirror
+      // back here would require a second Firestore round-trip — skip
+      // it. The local mirror only ever drives the cold-start initial
+      // value of the cheer-up toggle (which is itself being phased out
+      // by the three new tier toggles) so a brief skew is harmless.
+      return const Ok(null);
+    } on FirebaseException catch (e) {
+      _logger.warn('setTier${tier.label} firebase error: ${e.code}');
+      return const Err(NotificationFailure.network());
+    } catch (e) {
+      _logger.error('setTier${tier.label} unknown error', error: e);
+      return Err(NotificationFailure.unknown(e));
+    }
+  }
+
+  @override
   Stream<NotificationsSettings>? watchSettings({required String uid}) {
     if (uid.isEmpty) return null;
     return _firestore.watch(uid);
@@ -104,4 +163,16 @@ class FcmTokenRepositoryImpl implements FcmTokenRepository {
   /// Subscribes to `onTokenRefresh`. Callers (the controller) own the
   /// subscription lifecycle.
   Stream<String> onTokenRefresh() => _fcm.onTokenRefresh;
+}
+
+/// Private discriminator for the shared `_setTier` helper. The numeric
+/// label is used only in log lines — the public API surfaces three
+/// named methods so callers never have to plumb an enum through.
+enum _Tier {
+  one('1'),
+  two('2'),
+  three('3');
+
+  const _Tier(this.label);
+  final String label;
 }

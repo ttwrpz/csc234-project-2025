@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$NotificationsSettings {
 
- bool get cheerUpEnabled; List<FcmTokenRecord> get tokens; DateTime? get updatedAt;
+ bool get cheerUpEnabled; bool get tier1Enabled; bool get tier2Enabled; bool get tier3Enabled; List<FcmTokenRecord> get tokens; DateTime? get updatedAt;
 /// Create a copy of NotificationsSettings
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $NotificationsSettingsCopyWith<NotificationsSettings> get copyWith => _$Notifica
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationsSettings&&(identical(other.cheerUpEnabled, cheerUpEnabled) || other.cheerUpEnabled == cheerUpEnabled)&&const DeepCollectionEquality().equals(other.tokens, tokens)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationsSettings&&(identical(other.cheerUpEnabled, cheerUpEnabled) || other.cheerUpEnabled == cheerUpEnabled)&&(identical(other.tier1Enabled, tier1Enabled) || other.tier1Enabled == tier1Enabled)&&(identical(other.tier2Enabled, tier2Enabled) || other.tier2Enabled == tier2Enabled)&&(identical(other.tier3Enabled, tier3Enabled) || other.tier3Enabled == tier3Enabled)&&const DeepCollectionEquality().equals(other.tokens, tokens)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,cheerUpEnabled,const DeepCollectionEquality().hash(tokens),updatedAt);
+int get hashCode => Object.hash(runtimeType,cheerUpEnabled,tier1Enabled,tier2Enabled,tier3Enabled,const DeepCollectionEquality().hash(tokens),updatedAt);
 
 @override
 String toString() {
-  return 'NotificationsSettings(cheerUpEnabled: $cheerUpEnabled, tokens: $tokens, updatedAt: $updatedAt)';
+  return 'NotificationsSettings(cheerUpEnabled: $cheerUpEnabled, tier1Enabled: $tier1Enabled, tier2Enabled: $tier2Enabled, tier3Enabled: $tier3Enabled, tokens: $tokens, updatedAt: $updatedAt)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $NotificationsSettingsCopyWith<$Res>  {
   factory $NotificationsSettingsCopyWith(NotificationsSettings value, $Res Function(NotificationsSettings) _then) = _$NotificationsSettingsCopyWithImpl;
 @useResult
 $Res call({
- bool cheerUpEnabled, List<FcmTokenRecord> tokens, DateTime? updatedAt
+ bool cheerUpEnabled, bool tier1Enabled, bool tier2Enabled, bool tier3Enabled, List<FcmTokenRecord> tokens, DateTime? updatedAt
 });
 
 
@@ -62,9 +62,12 @@ class _$NotificationsSettingsCopyWithImpl<$Res>
 
 /// Create a copy of NotificationsSettings
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? cheerUpEnabled = null,Object? tokens = null,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? cheerUpEnabled = null,Object? tier1Enabled = null,Object? tier2Enabled = null,Object? tier3Enabled = null,Object? tokens = null,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 cheerUpEnabled: null == cheerUpEnabled ? _self.cheerUpEnabled : cheerUpEnabled // ignore: cast_nullable_to_non_nullable
+as bool,tier1Enabled: null == tier1Enabled ? _self.tier1Enabled : tier1Enabled // ignore: cast_nullable_to_non_nullable
+as bool,tier2Enabled: null == tier2Enabled ? _self.tier2Enabled : tier2Enabled // ignore: cast_nullable_to_non_nullable
+as bool,tier3Enabled: null == tier3Enabled ? _self.tier3Enabled : tier3Enabled // ignore: cast_nullable_to_non_nullable
 as bool,tokens: null == tokens ? _self.tokens : tokens // ignore: cast_nullable_to_non_nullable
 as List<FcmTokenRecord>,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
@@ -152,10 +155,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool cheerUpEnabled,  List<FcmTokenRecord> tokens,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool cheerUpEnabled,  bool tier1Enabled,  bool tier2Enabled,  bool tier3Enabled,  List<FcmTokenRecord> tokens,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NotificationsSettings() when $default != null:
-return $default(_that.cheerUpEnabled,_that.tokens,_that.updatedAt);case _:
+return $default(_that.cheerUpEnabled,_that.tier1Enabled,_that.tier2Enabled,_that.tier3Enabled,_that.tokens,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -173,10 +176,10 @@ return $default(_that.cheerUpEnabled,_that.tokens,_that.updatedAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool cheerUpEnabled,  List<FcmTokenRecord> tokens,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool cheerUpEnabled,  bool tier1Enabled,  bool tier2Enabled,  bool tier3Enabled,  List<FcmTokenRecord> tokens,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _NotificationsSettings():
-return $default(_that.cheerUpEnabled,_that.tokens,_that.updatedAt);case _:
+return $default(_that.cheerUpEnabled,_that.tier1Enabled,_that.tier2Enabled,_that.tier3Enabled,_that.tokens,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -193,10 +196,10 @@ return $default(_that.cheerUpEnabled,_that.tokens,_that.updatedAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool cheerUpEnabled,  List<FcmTokenRecord> tokens,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool cheerUpEnabled,  bool tier1Enabled,  bool tier2Enabled,  bool tier3Enabled,  List<FcmTokenRecord> tokens,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _NotificationsSettings() when $default != null:
-return $default(_that.cheerUpEnabled,_that.tokens,_that.updatedAt);case _:
+return $default(_that.cheerUpEnabled,_that.tier1Enabled,_that.tier2Enabled,_that.tier3Enabled,_that.tokens,_that.updatedAt);case _:
   return null;
 
 }
@@ -208,10 +211,13 @@ return $default(_that.cheerUpEnabled,_that.tokens,_that.updatedAt);case _:
 
 
 class _NotificationsSettings extends NotificationsSettings {
-  const _NotificationsSettings({this.cheerUpEnabled = true, final  List<FcmTokenRecord> tokens = const <FcmTokenRecord>[], this.updatedAt}): _tokens = tokens,super._();
+  const _NotificationsSettings({this.cheerUpEnabled = true, this.tier1Enabled = true, this.tier2Enabled = true, this.tier3Enabled = true, final  List<FcmTokenRecord> tokens = const <FcmTokenRecord>[], this.updatedAt}): _tokens = tokens,super._();
   
 
 @override@JsonKey() final  bool cheerUpEnabled;
+@override@JsonKey() final  bool tier1Enabled;
+@override@JsonKey() final  bool tier2Enabled;
+@override@JsonKey() final  bool tier3Enabled;
  final  List<FcmTokenRecord> _tokens;
 @override@JsonKey() List<FcmTokenRecord> get tokens {
   if (_tokens is EqualUnmodifiableListView) return _tokens;
@@ -231,16 +237,16 @@ _$NotificationsSettingsCopyWith<_NotificationsSettings> get copyWith => __$Notif
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationsSettings&&(identical(other.cheerUpEnabled, cheerUpEnabled) || other.cheerUpEnabled == cheerUpEnabled)&&const DeepCollectionEquality().equals(other._tokens, _tokens)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationsSettings&&(identical(other.cheerUpEnabled, cheerUpEnabled) || other.cheerUpEnabled == cheerUpEnabled)&&(identical(other.tier1Enabled, tier1Enabled) || other.tier1Enabled == tier1Enabled)&&(identical(other.tier2Enabled, tier2Enabled) || other.tier2Enabled == tier2Enabled)&&(identical(other.tier3Enabled, tier3Enabled) || other.tier3Enabled == tier3Enabled)&&const DeepCollectionEquality().equals(other._tokens, _tokens)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,cheerUpEnabled,const DeepCollectionEquality().hash(_tokens),updatedAt);
+int get hashCode => Object.hash(runtimeType,cheerUpEnabled,tier1Enabled,tier2Enabled,tier3Enabled,const DeepCollectionEquality().hash(_tokens),updatedAt);
 
 @override
 String toString() {
-  return 'NotificationsSettings(cheerUpEnabled: $cheerUpEnabled, tokens: $tokens, updatedAt: $updatedAt)';
+  return 'NotificationsSettings(cheerUpEnabled: $cheerUpEnabled, tier1Enabled: $tier1Enabled, tier2Enabled: $tier2Enabled, tier3Enabled: $tier3Enabled, tokens: $tokens, updatedAt: $updatedAt)';
 }
 
 
@@ -251,7 +257,7 @@ abstract mixin class _$NotificationsSettingsCopyWith<$Res> implements $Notificat
   factory _$NotificationsSettingsCopyWith(_NotificationsSettings value, $Res Function(_NotificationsSettings) _then) = __$NotificationsSettingsCopyWithImpl;
 @override @useResult
 $Res call({
- bool cheerUpEnabled, List<FcmTokenRecord> tokens, DateTime? updatedAt
+ bool cheerUpEnabled, bool tier1Enabled, bool tier2Enabled, bool tier3Enabled, List<FcmTokenRecord> tokens, DateTime? updatedAt
 });
 
 
@@ -268,9 +274,12 @@ class __$NotificationsSettingsCopyWithImpl<$Res>
 
 /// Create a copy of NotificationsSettings
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? cheerUpEnabled = null,Object? tokens = null,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? cheerUpEnabled = null,Object? tier1Enabled = null,Object? tier2Enabled = null,Object? tier3Enabled = null,Object? tokens = null,Object? updatedAt = freezed,}) {
   return _then(_NotificationsSettings(
 cheerUpEnabled: null == cheerUpEnabled ? _self.cheerUpEnabled : cheerUpEnabled // ignore: cast_nullable_to_non_nullable
+as bool,tier1Enabled: null == tier1Enabled ? _self.tier1Enabled : tier1Enabled // ignore: cast_nullable_to_non_nullable
+as bool,tier2Enabled: null == tier2Enabled ? _self.tier2Enabled : tier2Enabled // ignore: cast_nullable_to_non_nullable
+as bool,tier3Enabled: null == tier3Enabled ? _self.tier3Enabled : tier3Enabled // ignore: cast_nullable_to_non_nullable
 as bool,tokens: null == tokens ? _self._tokens : tokens // ignore: cast_nullable_to_non_nullable
 as List<FcmTokenRecord>,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,

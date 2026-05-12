@@ -1,9 +1,14 @@
+import 'package:core/core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/auth/data/providers.dart';
 import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
 import 'package:moodbloom/features/auth/domain/entities/biometric_capability.dart';
+import 'package:moodbloom/features/notifications/data/providers.dart';
+import 'package:moodbloom/features/notifications/domain/fcm_token_repository.dart';
+import 'package:moodbloom/features/notifications/domain/notification_failure.dart';
+import 'package:moodbloom/features/notifications/domain/notifications_settings.dart';
 import 'package:moodbloom/features/settings/data/theme_mode_storage.dart';
 import 'package:moodbloom/features/settings/domain/entities/theme_mode_preference.dart';
 import 'package:moodbloom/features/settings/presentation/controllers/theme_mode_controller.dart';
@@ -11,6 +16,46 @@ import 'package:moodbloom/features/settings/presentation/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../helpers/pump_app.dart';
+
+/// No-op fake of [FcmTokenRepository] so the Settings screen can render
+/// the three [TierToggleTile]s without spinning up a real Firestore.
+/// All writes succeed; the watchSettings stream emits a default settings
+/// document with every flag enabled.
+class _StubFcmRepo implements FcmTokenRepository {
+  @override
+  Future<Result<void, NotificationFailure>> upsertToken({
+    required String uid,
+  }) async => const Ok(null);
+
+  @override
+  Future<Result<void, NotificationFailure>> setEnabled({
+    required String uid,
+    required bool enabled,
+  }) async => const Ok(null);
+
+  @override
+  Future<Result<void, NotificationFailure>> setTier1Enabled({
+    required String uid,
+    required bool enabled,
+  }) async => const Ok(null);
+
+  @override
+  Future<Result<void, NotificationFailure>> setTier2Enabled({
+    required String uid,
+    required bool enabled,
+  }) async => const Ok(null);
+
+  @override
+  Future<Result<void, NotificationFailure>> setTier3Enabled({
+    required String uid,
+    required bool enabled,
+  }) async => const Ok(null);
+
+  @override
+  Stream<NotificationsSettings>? watchSettings({required String uid}) {
+    return Stream<NotificationsSettings>.value(NotificationsSettings.initial());
+  }
+}
 
 /// Maps a [ThemeModePreference] to the legacy serialised string used by
 /// pre-existing tests. The new value `followDeviceTime` serialises as
@@ -58,6 +103,11 @@ Future<void> _pumpSettings(
           userOptedIn: false,
         ),
       ),
+      // S5 Day 2: the three per-tier toggles now in the Settings
+      // preferences zone read from `fcmTokenRepositoryProvider` as
+      // soon as a signed-in user is available. Stub it out so the
+      // screen renders without spinning up a real Firestore.
+      fcmTokenRepositoryProvider.overrideWithValue(_StubFcmRepo()),
     ],
     child: const SettingsScreen(),
   );

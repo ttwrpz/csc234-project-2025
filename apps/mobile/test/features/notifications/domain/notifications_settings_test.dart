@@ -19,11 +19,87 @@ void main() {
       lastSeenAt: DateTime.utc(2026, 5, 7, 12),
     );
 
-    test('initial() defaults: cheer-up enabled, no tokens', () {
+    test('initial() defaults: every flag enabled, no tokens', () {
       final s = NotificationsSettings.initial();
       expect(s.cheerUpEnabled, isTrue);
+      expect(s.tier1Enabled, isTrue);
+      expect(s.tier2Enabled, isTrue);
+      expect(s.tier3Enabled, isTrue);
       expect(s.tokens, isEmpty);
       expect(s.updatedAt, isNull);
+    });
+
+    test('anyTierEnabled — true when any tier flag is true', () {
+      final s = NotificationsSettings.initial();
+      expect(s.anyTierEnabled, isTrue);
+      expect(s.copyWith(tier1Enabled: false).anyTierEnabled, isTrue);
+      expect(
+        s.copyWith(tier1Enabled: false, tier2Enabled: false).anyTierEnabled,
+        isTrue,
+      );
+    });
+
+    test('anyTierEnabled — false only when ALL three are false', () {
+      final s = NotificationsSettings.initial().copyWith(
+        tier1Enabled: false,
+        tier2Enabled: false,
+        tier3Enabled: false,
+      );
+      expect(s.anyTierEnabled, isFalse);
+    });
+
+    test(
+      'withTier1Enabled — keeps cheer-up shim true while another tier is on',
+      () {
+        final s = NotificationsSettings.initial().withTier1Enabled(false);
+        expect(s.tier1Enabled, isFalse);
+        expect(s.tier2Enabled, isTrue);
+        expect(s.tier3Enabled, isTrue);
+        // Shim stays true because Tier 2 + Tier 3 remain on.
+        expect(s.cheerUpEnabled, isTrue);
+      },
+    );
+
+    test(
+      'withTier3Enabled(false) on the last enabled tier flips cheerUpEnabled off',
+      () {
+        final s = NotificationsSettings.initial()
+            .withTier1Enabled(false)
+            .withTier2Enabled(false)
+            .withTier3Enabled(false);
+        expect(s.tier1Enabled, isFalse);
+        expect(s.tier2Enabled, isFalse);
+        expect(s.tier3Enabled, isFalse);
+        // All three tiers off → cheer-up CF should stop firing.
+        expect(s.cheerUpEnabled, isFalse);
+      },
+    );
+
+    test('re-enabling a tier flips cheerUpEnabled back on', () {
+      final off = NotificationsSettings.initial()
+          .withTier1Enabled(false)
+          .withTier2Enabled(false)
+          .withTier3Enabled(false);
+      expect(off.cheerUpEnabled, isFalse);
+
+      final reEnabled = off.withTier2Enabled(true);
+      expect(reEnabled.tier2Enabled, isTrue);
+      expect(reEnabled.cheerUpEnabled, isTrue);
+    });
+
+    test('copyWith — new tier flags round-trip independently', () {
+      final s = NotificationsSettings.initial().copyWith(
+        tier1Enabled: false,
+        tier2Enabled: true,
+        tier3Enabled: false,
+      );
+      expect(s.tier1Enabled, isFalse);
+      expect(s.tier2Enabled, isTrue);
+      expect(s.tier3Enabled, isFalse);
+      // Direct copyWith bypasses the `withTierN` shim re-derivation —
+      // by design, so callers (e.g. the migration helper) can write a
+      // legacy-mirrored snapshot without the helper inferring a stale
+      // shim from the partially-built state.
     });
 
     test('withToken — appends a new token', () {
