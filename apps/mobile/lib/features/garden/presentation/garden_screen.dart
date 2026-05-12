@@ -11,9 +11,13 @@ import '../../history/presentation/widgets/mood_entry_tile.dart';
 import '../../mood/data/providers.dart';
 import '../../mood/domain/entities/mood_entry.dart';
 import '../../tokens/data/providers.dart';
+import '../../tokens/domain/entities/skin_state.dart';
+import '../../tokens/domain/services/skin_catalog.dart';
 import '../../tokens/presentation/controllers/token_visibility_controller.dart';
+import '../../tokens/presentation/widgets/skin_modal_sheet.dart';
 import '../../tokens/presentation/widgets/token_balance_chip.dart';
 import '../data/providers.dart';
+import '../domain/entities/flower_species.dart';
 import '../domain/entities/garden_state.dart';
 import '../domain/entities/intervention_state.dart';
 import 'controllers/cheer_up_controller.dart';
@@ -21,6 +25,7 @@ import 'widgets/cheer_up_banner.dart';
 import 'widgets/daily_score_strip.dart';
 import 'widgets/garden_summary_row.dart';
 import 'widgets/hotline_footer.dart';
+import 'widgets/per_flower_detail_modal.dart';
 import 'widgets/sky_header.dart';
 
 /// Home screen — pivot feature #7. ADR-0010 redesign: the canvas now
@@ -54,6 +59,13 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
     // and the onShown idempotency guard. We watch the bool field so the
     // banner re-renders when "Not now" is tapped.
     final cheerUp = ref.watch(cheerUpControllerProvider);
+    // TC-6 — read the user's per-species selected skins so the live
+    // home garden renders the chosen alternate-skin tints. Past
+    // archived gardens never receive this (the harvest archive surface
+    // passes `null`).
+    final skinState =
+        ref.watch(skinStateStreamProvider).value ?? SkinState.empty();
+    final speciesAccent = _speciesAccentFrom(skinState);
 
     final mb = Theme.of(context).extension<MbColors>()!;
     final theme = Theme.of(context);
@@ -142,6 +154,18 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
           bannerDismissed: cheerUp.bannerDismissed,
           onDismissBanner: () =>
               ref.read(cheerUpControllerProvider.notifier).onDismissed(),
+          // TC-7: tapping a flower opens the per-entry preview sheet.
+          // Routed via the SkyHeader → GardenBed callback chain so this
+          // wiring stays inside the home screen's presentation layer
+          // (no router changes — architect sign-off rule).
+          onFlowerTap: (entry) =>
+              PerFlowerDetailModal.show(context, entry),
+          // Garden top-bar affordance for the skin modal (HB-008 Day 1
+          // TC-8..10 entry point). Placed next to the token chip so the
+          // user reads "I have N tokens → tap to spend them" without
+          // hunting in Settings.
+          onCustomizeSkins: () => SkinModalSheet.show(context),
+          speciesAccent: speciesAccent,
         ),
       ),
     );
@@ -156,6 +180,34 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
     }
     return 'friend';
   }
+
+  /// Builds the per-species accent map for the GardenBed painter from
+  /// the user's [SkinState]. Only includes species where (a) the user
+  /// has selected a skin AND (b) that skin is an alternate (not the
+  /// species default). Default-selected species fall back to the
+  /// built-in look — the painter sees them as absent keys.
+  ///
+  /// Pure function — separated so the unit-test surface for TC-6 can
+  /// verify it directly without spinning up a full widget tree.
+  static Map<FlowerSpecies, Color> _speciesAccentFrom(SkinState state) {
+    const accents = <int, Color>{
+      0: Color(0xFFD96E5C),
+      1: Color(0xFFE8A23B),
+      2: Color(0xFF7CA8D6),
+      3: Color(0xFFA493C8),
+      4: Color(0xFF5C9A78),
+      5: Color(0xFFE6A4B4),
+    };
+    final out = <FlowerSpecies, Color>{};
+    for (final species in FlowerSpecies.values) {
+      final selectedId = state.selectedFor(species);
+      if (selectedId == null) continue;
+      final skin = SkinCatalog.byId(selectedId);
+      if (skin == null || skin.isDefault) continue;
+      out[species] = accents[skin.paletteSeed % accents.length]!;
+    }
+    return out;
+  }
 }
 
 class _GardenView extends StatelessWidget {
@@ -166,6 +218,9 @@ class _GardenView extends StatelessWidget {
     required this.greetingName,
     required this.bannerDismissed,
     required this.onDismissBanner,
+    required this.onFlowerTap,
+    required this.onCustomizeSkins,
+    required this.speciesAccent,
   });
 
   final GardenState state;
@@ -178,6 +233,20 @@ class _GardenView extends StatelessWidget {
   final String greetingName;
   final bool bannerDismissed;
   final VoidCallback onDismissBanner;
+
+  /// TC-7 — opens the per-flower detail modal. Forwarded to the
+  /// SkyHeader → GardenBed callback chain. Stateless so the wiring is
+  /// trivial; the modal itself owns its dismiss + route side effects.
+  final void Function(MoodEntry entry) onFlowerTap;
+
+  /// TC-8..10 — opens the skin customization modal. Wired to the top-
+  /// bar "Customize" icon next to the token chip.
+  final VoidCallback onCustomizeSkins;
+
+  /// TC-6 — per-species accent override forwarded to the SkyHeader's
+  /// inner [GardenBed]. Empty map when the user has no alternate skin
+  /// selected (default rendering, byte-for-byte identical to pre-S5).
+  final Map<FlowerSpecies, Color> speciesAccent;
 
   /// Tablet breakpoint: the canvas + score strip shift into a 60% left
   /// column with the recent-moods list on a 40% right column. Phones
@@ -265,12 +334,14 @@ class _GardenView extends StatelessWidget {
             state: state,
             greetingName: greetingName,
             recentEntries: weekEntries,
+            onFlowerTap: onFlowerTap,
+            speciesAccent: speciesAccent.isEmpty ? null : speciesAccent,
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
             child: GardenSummaryRow(
               state: state,
-              tokenChip: const _GardenTokenChip(),
+              tokenChip: _GardenTokenChip(onCustomize: onCustomizeSkins),
             ),
           ),
           if (triggered && !bannerDismissed)
@@ -346,13 +417,15 @@ class _GardenView extends StatelessWidget {
             // was anchored at 320dp. 420dp gives the bed more vertical
             // room without crowding out the DailyScoreStrip below.
             height: isDesktop ? 420 : 360,
+            onFlowerTap: onFlowerTap,
+            speciesAccent: speciesAccent.isEmpty ? null : speciesAccent,
           ),
         ),
         Padding(
           padding: const EdgeInsets.only(top: 16),
           child: GardenSummaryRow(
             state: state,
-            tokenChip: const _GardenTokenChip(),
+            tokenChip: _GardenTokenChip(onCustomize: onCustomizeSkins),
           ),
         ),
         if (triggered && !bannerDismissed)
@@ -470,8 +543,19 @@ class _GardenView extends StatelessWidget {
 /// renders a `TokenBalanceChip` only when the user has the toggle on
 /// AND a balance is available. Hidden state collapses to a zero-sized
 /// box so the SkyHeader's existing top-bar layout is undisturbed.
+///
+/// HB-008 Day 1 — when a non-null [onCustomize] callback is supplied,
+/// pairs the chip with a small "Customize" icon button so the user
+/// can open the [SkinModalSheet] without diving into Settings. The
+/// button is collapsed when the chip is hidden (so the visibility
+/// toggle still suppresses the entire token surface on the home page).
 class _GardenTokenChip extends ConsumerWidget {
-  const _GardenTokenChip();
+  const _GardenTokenChip({this.onCustomize});
+
+  /// When non-null, renders an "open skin modal" button next to the
+  /// chip. Null preserves the chip-only rendering for any non-home
+  /// callers.
+  final VoidCallback? onCustomize;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -479,6 +563,45 @@ class _GardenTokenChip extends ConsumerWidget {
     if (!visible) return const SizedBox.shrink();
     final balance = ref.watch(tokenBalanceStreamProvider).value;
     if (balance == null) return const SizedBox.shrink();
-    return TokenBalanceChip(balance: balance.balance);
+    final chip = TokenBalanceChip(balance: balance.balance);
+    final customize = onCustomize;
+    if (customize == null) return chip;
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        chip,
+        const SizedBox(width: 6),
+        // Compact icon button — 32 dp tap target is below the
+        // Material 48 dp minimum so we wrap it in a Semantics + sized
+        // SizedBox.expand to bring the effective hit-area up. v1.0
+        // polish parity with `_OverflowBadge`'s tiny pill idiom — the
+        // home page already has a dense top-right cluster, so the
+        // customize affordance opts into the same compact size.
+        Semantics(
+          label: 'Customize flower skins',
+          button: true,
+          child: ExcludeSemantics(
+            child: SizedBox(
+              width: 32,
+              height: 32,
+              child: Material(
+                color: Colors.transparent,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: customize,
+                  child: Icon(
+                    Icons.brush_outlined,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
