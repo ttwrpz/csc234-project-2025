@@ -20,6 +20,7 @@ import '../../notifications/presentation/widgets/tier_toggle_tile.dart';
 import '../../tokens/presentation/controllers/token_visibility_controller.dart';
 import '../domain/entities/theme_mode_preference.dart';
 import 'controllers/theme_mode_controller.dart';
+import 'widgets/delete_account_dialog.dart';
 
 /// Settings screen — restyled in Phase C and re-grouped in this round so
 /// related preferences live in clearly-zoned [MbCard] clusters: Profile,
@@ -120,20 +121,48 @@ class SettingsScreen extends ConsumerWidget {
             MbCard(
               clipBehavior: Clip.hardEdge,
               padding: EdgeInsets.zero,
-              child: ListTile(
-                leading: const Icon(
-                  Icons.logout,
-                  color: MoodBloomColors.coralText,
-                ),
-                title: const Text(
-                  'Sign out',
-                  style: TextStyle(
-                    color: MoodBloomColors.coralText,
-                    fontWeight: FontWeight.w600,
-                    shadows: <Shadow>[],
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(
+                      Icons.logout,
+                      color: MoodBloomColors.coralText,
+                    ),
+                    title: const Text(
+                      'Sign out',
+                      style: TextStyle(
+                        color: MoodBloomColors.coralText,
+                        fontWeight: FontWeight.w600,
+                        shadows: <Shadow>[],
+                      ),
+                    ),
+                    onTap: () => _confirmSignOut(context, ref),
                   ),
-                ),
-                onTap: () => _confirmSignOut(context, ref),
+                  const Divider(height: 1),
+                  // WBS 2.4 — destructive account deletion. Two-step
+                  // confirmation lives in [DeleteAccountDialog]; this
+                  // tile is the only entry point so we don't have a
+                  // second copy of the destructive flow rotting in the
+                  // Debug zone (which still has the data-only wipe).
+                  ListTile(
+                    leading: Icon(
+                      Icons.delete_forever_outlined,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    title: Text(
+                      'Delete account',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontWeight: FontWeight.w600,
+                        shadows: const <Shadow>[],
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'Permanently remove your account and all data.',
+                    ),
+                    onTap: () => DeleteAccountDialog.show(context),
+                  ),
+                ],
               ),
             ),
 

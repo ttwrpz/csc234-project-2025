@@ -20,6 +20,12 @@ sealed class AuthFailure extends Failure {
   const factory AuthFailure.biometricUnavailable() = _BiometricUnavailable;
   const factory AuthFailure.biometricCancelled() = _BiometricCancelled;
   const factory AuthFailure.biometricFailed(String reason) = _BiometricFailed;
+  // Surfaced by `AuthRepository.deleteCurrentUser()` when Firebase Auth's
+  // ~5-minute recent-login window has elapsed. Per ADR-0009 §"Good" point
+  // 5, this is a *recoverable* state from a data-integrity standpoint —
+  // the server cascade has already run, so the local Auth record being
+  // orphaned is acceptable. The use case logs and proceeds to signOut.
+  const factory AuthFailure.requiresRecentLogin() = _RequiresRecentLogin;
   const factory AuthFailure.unknown(Object? cause) = _Unknown;
 }
 
@@ -81,6 +87,13 @@ class _BiometricFailed extends AuthFailure {
   const _BiometricFailed(this.reason)
     : super(message: 'Couldn’t verify — please sign in again.');
   final String reason;
+}
+
+class _RequiresRecentLogin extends AuthFailure {
+  const _RequiresRecentLogin()
+    : super(
+        message: 'For your security, please sign in again before continuing.',
+      );
 }
 
 class _Unknown extends AuthFailure {

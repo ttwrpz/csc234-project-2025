@@ -171,6 +171,84 @@ class FirebaseAuthDatasource {
     }
   }
 
+  /// Reauthenticates the locally-signed-in user with [email]/[password].
+  /// Required by Firebase Auth to refresh the recent-login window before
+  /// destructive operations like `currentUser.delete()`. Maps Firebase
+  /// codes to sealed [AuthFailure] variants — no `FirebaseAuthException`
+  /// crosses the data/domain boundary.
+  Future<void> reauthenticateWithPassword({
+    required String email,
+    required String password,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw AuthDatasourceException(const AuthFailure.userNotFound());
+    }
+    try {
+      final credential = fb.EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(credential);
+    } on fb.FirebaseAuthException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } on PlatformException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } catch (e) {
+      throw AuthDatasourceException(AuthFailure.unknown(e));
+    }
+  }
+
+  /// Reauthenticates the locally-signed-in user against a freshly-minted
+  /// Google ID token. The token comes from the same `google_sign_in` flow
+  /// that powers initial sign-in; the data layer wraps it in a
+  /// `GoogleAuthProvider.credential` and calls
+  /// `currentUser.reauthenticateWithCredential`.
+  Future<void> reauthenticateWithGoogleIdToken(String idToken) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw AuthDatasourceException(const AuthFailure.userNotFound());
+    }
+    try {
+      final credential = fb.GoogleAuthProvider.credential(idToken: idToken);
+      await user.reauthenticateWithCredential(credential);
+    } on fb.FirebaseAuthException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } on PlatformException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } catch (e) {
+      throw AuthDatasourceException(AuthFailure.unknown(e));
+    }
+  }
+
+  /// Deletes the locally-signed-in Firebase Auth user record. Called by
+  /// [AuthRepositoryImpl.deleteCurrentUser] AFTER the server cascade has
+  /// run (per ADR-0009 §5.2 — the CF deletes data, the client deletes the
+  /// Auth user). No-ops when the user is already null (idempotent —
+  /// matches the use case's "Ok if already gone" contract).
+  ///
+  /// Maps `requires-recent-login` to [AuthFailure.requiresRecentLogin] so
+  /// the caller can distinguish the recoverable case from a hard
+  /// failure. Other Firebase codes map to [AuthFailure.unknown] —
+  /// `currentUser.delete()` is otherwise documented to succeed once
+  /// reauth has run.
+  Future<void> deleteCurrentUser() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    try {
+      await user.delete();
+    } on fb.FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        throw AuthDatasourceException(const AuthFailure.requiresRecentLogin());
+      }
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } on PlatformException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } catch (e) {
+      throw AuthDatasourceException(AuthFailure.unknown(e));
+    }
+  }
+
   AuthFailure _codeToFailure(String code, Object cause) {
     switch (code) {
       case 'invalid-email':

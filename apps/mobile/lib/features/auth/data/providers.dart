@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart' show StateProvider;
 
@@ -8,6 +9,7 @@ import '../domain/entities/biometric_capability.dart';
 import '../domain/repositories/biometric_repository.dart';
 import '../domain/usecases/authenticate_with_biometric.dart';
 import '../domain/usecases/check_biometric_capability.dart';
+import '../domain/usecases/delete_account.dart';
 import '../domain/usecases/register_with_email.dart';
 import '../domain/usecases/set_biometric_opt_in.dart';
 import '../domain/usecases/sign_in_with_email.dart';
@@ -17,6 +19,7 @@ import '../domain/usecases/watch_auth_state.dart';
 import 'auth_repository_impl.dart';
 import 'datasources/biometric_datasource.dart';
 import 'datasources/biometric_preference_datasource.dart';
+import 'datasources/delete_account_functions_datasource.dart';
 import 'datasources/firebase_auth_datasource.dart';
 import 'repositories/biometric_repository_impl.dart';
 
@@ -24,9 +27,29 @@ final firebaseAuthDatasourceProvider = Provider<FirebaseAuthDatasource>((ref) {
   return FirebaseAuthDatasource(auth: ref.watch(firebaseAuthProvider));
 });
 
+/// Auth-feature-local handle to `FirebaseFunctions` pinned to the same
+/// region as the rest of the project's callables (`asia-southeast1`).
+/// Defined here rather than reusing `features/mood/data/providers.dart`'s
+/// `firebaseFunctionsProvider` because that module already imports from
+/// this one — a cross-import would create a cycle. Tests override this
+/// provider directly with a fake.
+final authFirebaseFunctionsProvider = Provider<FirebaseFunctions>(
+  (ref) => FirebaseFunctions.instanceFor(region: 'asia-southeast1'),
+);
+
+final deleteAccountFunctionsDatasourceProvider =
+    Provider<DeleteAccountFunctionsDatasource>(
+      (ref) => DeleteAccountFunctionsDatasource(
+        ref.watch(authFirebaseFunctionsProvider),
+      ),
+    );
+
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl(
     datasource: ref.watch(firebaseAuthDatasourceProvider),
+    deleteAccountDatasource: ref.watch(
+      deleteAccountFunctionsDatasourceProvider,
+    ),
   );
 });
 
@@ -57,6 +80,13 @@ final signInWithGoogleUseCaseProvider = Provider<SignInWithGoogleUseCase>((
 
 final signOutUseCaseProvider = Provider<SignOutUseCase>((ref) {
   return SignOutUseCase(ref.watch(authRepositoryProvider));
+});
+
+/// WBS 2.4 — the destructive use case. Composes reauth → server cascade
+/// → local Auth delete → signOut in one orchestrated call. Consumed by
+/// the Settings screen's delete-account dialog.
+final deleteAccountUseCaseProvider = Provider<DeleteAccountUseCase>((ref) {
+  return DeleteAccountUseCase(ref.watch(authRepositoryProvider));
 });
 
 final watchAuthStateUseCaseProvider = Provider<WatchAuthStateUseCase>((ref) {

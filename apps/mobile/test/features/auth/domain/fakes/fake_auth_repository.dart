@@ -14,6 +14,8 @@ class FakeAuthRepository implements AuthRepository {
     this.signOutResult,
     this.reauthenticateResult,
     this.deleteAccountResult,
+    this.deleteCurrentUserResult,
+    this.currentUserOverride,
   });
 
   Result<AppUser, AuthFailure>? signInResult;
@@ -22,15 +24,18 @@ class FakeAuthRepository implements AuthRepository {
   Result<void, AuthFailure>? signOutResult;
   Result<void, AuthFailure>? reauthenticateResult;
   Result<void, AuthFailure>? deleteAccountResult;
+  Result<void, AuthFailure>? deleteCurrentUserResult;
+  AppUser? currentUserOverride;
   final List<({String email, String password})> signInCalls = [];
   final List<({String email, String password})> registerCalls = [];
   final List<AuthCredentials> reauthenticateCalls = [];
   int googleCalls = 0;
   int signOutCalls = 0;
   int deleteAccountCalls = 0;
+  int deleteCurrentUserCalls = 0;
 
   @override
-  AppUser? get currentUser => null;
+  AppUser? get currentUser => currentUserOverride;
 
   @override
   Stream<AppUser?> watchAuthState() async* {
@@ -80,5 +85,11 @@ class FakeAuthRepository implements AuthRepository {
   Future<Result<void, AuthFailure>> deleteAccount() async {
     deleteAccountCalls += 1;
     return deleteAccountResult ?? const Ok(null);
+  }
+
+  @override
+  Future<Result<void, AuthFailure>> deleteCurrentUser() async {
+    deleteCurrentUserCalls += 1;
+    return deleteCurrentUserResult ?? const Ok(null);
   }
 }
