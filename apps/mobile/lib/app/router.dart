@@ -13,6 +13,7 @@ import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/garden/presentation/garden_screen.dart';
 import '../features/history/presentation/entry_detail_screen.dart';
 import '../features/history/presentation/history_screen.dart';
+import '../features/insights/presentation/screens/insights_screen.dart';
 import '../features/mood/data/providers.dart' as mood_providers;
 import '../features/mood/presentation/log_mood_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
@@ -181,11 +182,26 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           // 3 — Patterns / Analytics
+          //
+          // `/analytics` is the read-mode "Patterns" dashboard. The
+          // (S5) `/insights` sub-route is a deeper read with the
+          // Pattern-Engine output (mood score time-series + tier
+          // markers) gated behind the bipolar / medical disclaimer ack
+          // dialog (spec §4, TC-36 / TC-37). It nests under the
+          // Patterns branch so the bottom-nav highlight stays on the
+          // Patterns tab while the user reads insights.
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/analytics',
                 builder: (c, s) => const AnalyticsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'insights',
+                    name: 'insights',
+                    builder: (c, s) => const InsightsScreen(),
+                  ),
+                ],
               ),
             ],
           ),

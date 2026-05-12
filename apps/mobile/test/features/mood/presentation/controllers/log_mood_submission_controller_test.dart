@@ -104,6 +104,13 @@ class _FakePatternRepo implements PatternRepository {
     required String userId,
     required String dateId,
   }) => const Stream<PatternResult?>.empty();
+
+  @override
+  Stream<List<PatternResult>> watchRange({
+    required String userId,
+    required String startDateId,
+    required String endDateId,
+  }) => const Stream<List<PatternResult>>.empty();
 }
 
 class _FakeTokenRepo implements TokenRepository {

@@ -2,6 +2,7 @@ import 'package:analytics_pkg/analytics_pkg.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../mood/data/providers.dart';
@@ -52,6 +53,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             ),
             const SizedBox(height: MoodBloomSpacing.md),
             _ChartCard(state: state, window: _window),
+            const SizedBox(height: MoodBloomSpacing.md),
+            const _InsightsEntryCard(),
             const SizedBox(height: MoodBloomSpacing.md),
             // Defence in depth: hide the slot when the flag is off so
             // the card consumes zero layout space — the widget also
@@ -334,6 +337,65 @@ class _MostFrequentCard extends StatelessWidget {
             ),
             overflow: TextOverflow.ellipsis,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tappable entry-point card to the (S5) Insights screen. Lives on the
+/// Patterns dashboard so the deeper Pattern-Engine read is discoverable
+/// without claiming its own bottom-nav slot. Surfaced as a card (not a
+/// link) so the affordance reads as a primary action, but the route is
+/// gated behind the bipolar / medical disclaimer ack — the Insights
+/// screen handles that gate itself (spec §4 TC-36 / TC-37).
+class _InsightsEntryCard extends StatelessWidget {
+  const _InsightsEntryCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final theme = Theme.of(context);
+    return MbCard(
+      padding: const EdgeInsets.all(16),
+      onTap: () => context.goNamed('insights'),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.insights_outlined,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Pattern insights',
+                  style: MbFonts.nunito(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: mb.text,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'See the gentle ups and downs your garden has been '
+                  'noticing lately.',
+                  style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right, color: mb.textDim),
         ],
       ),
     );

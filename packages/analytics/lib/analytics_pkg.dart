@@ -10,4 +10,7 @@ export 'src/chart_mood_category.dart';
 export 'src/mood_line_chart.dart';
 export 'src/mood_line_chart_theme.dart';
 export 'src/mood_point.dart';
+export 'src/mood_score_chart.dart';
+export 'src/mood_score_chart_theme.dart';
+export 'src/mood_score_point.dart';
 export 'src/mood_window.dart';
