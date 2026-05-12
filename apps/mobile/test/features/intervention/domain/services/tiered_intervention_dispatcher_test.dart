@@ -1,6 +1,7 @@
 import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/disclaimer/domain/disclaimer_copy.dart';
+import 'package:moodbloom/features/intervention/data/quote_library_impl.dart';
 import 'package:moodbloom/features/intervention/domain/entities/ai_allowed_tier.dart';
 import 'package:moodbloom/features/intervention/domain/entities/quote.dart';
 import 'package:moodbloom/features/intervention/domain/entities/quote_context.dart';
@@ -11,12 +12,18 @@ import 'package:moodbloom/features/intervention/domain/services/quote_safety_fil
 import 'package:moodbloom/features/intervention/domain/services/tiered_intervention_dispatcher.dart';
 import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
-/// Recording fake of the curated [QuoteLibrary]. Returns deterministic
-/// placeholder text per tier; the Day-2 HB-008 agent ships the real impl
-/// with the team-reviewed pools. TC-40's assertion is on
-/// `_RecordingAIQuoteRepository.calls.isEmpty` for Tier 3 — the placeholder
-/// text choice does not affect that.
-class _FakeQuoteLibrary implements QuoteLibrary {
+/// Day-2 update (HB-008): the Tier 3 determinism case below wires the real
+/// [QuoteLibraryImpl] so TC-40's body-content assertion verifies the
+/// dispatch contains one of the team-reviewed Tier 3 phrases. The
+/// `recordingFake.calls.isEmpty` invariant survives unchanged.
+///
+/// Recording variant that wraps the real impl so we can observe which
+/// `pick*` methods were called and with what seeds, while still serving
+/// honest pool text.
+class _RecordingQuoteLibrary implements QuoteLibrary {
+  _RecordingQuoteLibrary();
+
+  final QuoteLibrary _real = const QuoteLibraryImpl();
   final List<DateTime> tier1Seeds = [];
   final List<DateTime> tier2Seeds = [];
   final List<DateTime> tier3Seeds = [];
@@ -24,34 +31,19 @@ class _FakeQuoteLibrary implements QuoteLibrary {
   @override
   Quote pickTier1({required DateTime seed}) {
     tier1Seeds.add(seed);
-    return const Quote(
-      id: 'curated-t1-placeholder',
-      text: 'curated-tier1-placeholder',
-      source: QuoteSource.curated,
-      tier: Tier.one,
-    );
+    return _real.pickTier1(seed: seed);
   }
 
   @override
   Quote pickTier2({required DateTime seed}) {
     tier2Seeds.add(seed);
-    return const Quote(
-      id: 'curated-t2-placeholder',
-      text: 'curated-tier2-placeholder',
-      source: QuoteSource.curated,
-      tier: Tier.two,
-    );
+    return _real.pickTier2(seed: seed);
   }
 
   @override
   Quote pickTier3({required DateTime seed}) {
     tier3Seeds.add(seed);
-    return const Quote(
-      id: 'curated-t3-placeholder',
-      text: 'curated-tier3-placeholder',
-      source: QuoteSource.curated,
-      tier: Tier.three,
-    );
+    return _real.pickTier3(seed: seed);
   }
 }
 
@@ -115,7 +107,7 @@ void main() {
     test(
       'Tier.three dispatch NEVER calls AIQuoteRepository.requestSuggestion',
       () async {
-        final lib = _FakeQuoteLibrary();
+        final lib = _RecordingQuoteLibrary();
         final ai = _RecordingAIQuoteRepository();
         final filter = _FakeSafetyFilter();
         final dispatcher = TieredInterventionDispatcher(
@@ -143,10 +135,24 @@ void main() {
         expect(lib.tier3Seeds, hasLength(1));
         expect(lib.tier3Seeds.first, equals(now));
 
-        // Invariant 4: returned body carries the curated text + the
-        // disclaimer footer — TC-38 for Tier 3 in one shot.
+        // Invariant 4: returned body carries one of the real curated
+        // Tier 3 phrases + the disclaimer footer — TC-38 for Tier 3 in
+        // one shot. With the Day-2 wire-up, `lib` now serves the real
+        // [QuoteLibraryImpl.tier3Pool], so the body must contain one of
+        // those 8 team-reviewed strings verbatim.
         final dispatch = result.getOrNull()!;
-        expect(dispatch.body, contains('curated-tier3-placeholder'));
+        expect(
+          QuoteLibraryImpl.tier3Pool.any(
+            (phrase) => dispatch.body.contains(phrase),
+          ),
+          isTrue,
+          reason:
+              'HB-008: Tier 3 body must contain one of the curated pool phrases.',
+        );
+        // Every Tier 3 phrase already contains the Hotline 1323 marker;
+        // assert that too, so an accidental edit to the pool that loses
+        // the hotline fails this test (not just the pool sanity test).
+        expect(dispatch.body, contains('1323'));
         expect(dispatch.body, contains(DisclaimerCopy.notificationFooter));
         expect(dispatch.tier, Tier.three);
         expect(dispatch.ctas, contains('open_crisis'));
@@ -157,7 +163,7 @@ void main() {
 
   group('TieredInterventionDispatcher — Tier 1 hybrid path', () {
     test('happy path: AI suggestion + filter accept → AI quote', () async {
-      final lib = _FakeQuoteLibrary();
+      final lib = _RecordingQuoteLibrary();
       final ai = _RecordingAIQuoteRepository(suggestion: 'gemini-safe-phrase');
       final filter = _FakeSafetyFilter();
       final dispatcher = TieredInterventionDispatcher(
@@ -181,7 +187,7 @@ void main() {
     });
 
     test('AI network failure → curated Tier 1 fallback', () async {
-      final lib = _FakeQuoteLibrary();
+      final lib = _RecordingQuoteLibrary();
       final ai = _RecordingAIQuoteRepository()
         ..failNext = const QuoteFailure.network();
       final filter = _FakeSafetyFilter();
@@ -200,11 +206,19 @@ void main() {
       expect(ai.calls, hasLength(1)); // attempted
       expect(filter.calls, isEmpty); // never reached
       expect(lib.tier1Seeds, hasLength(1));
-      expect(dispatch.body, contains('curated-tier1-placeholder'));
+      // Real Tier 1 pool now serves the fallback — body must contain
+      // one of the team-reviewed phrases.
+      expect(
+        QuoteLibraryImpl.tier1Pool.any(
+          (phrase) => dispatch.body.contains(phrase),
+        ),
+        isTrue,
+        reason: 'Body must contain one of the curated Tier 1 phrases.',
+      );
     });
 
     test('filter reject → curated Tier 1 fallback (fail-closed)', () async {
-      final lib = _FakeQuoteLibrary();
+      final lib = _RecordingQuoteLibrary();
       final ai = _RecordingAIQuoteRepository(suggestion: 'gemini-naughty');
       final filter = _FakeSafetyFilter(rejectAll: true);
       final dispatcher = TieredInterventionDispatcher(
@@ -222,7 +236,13 @@ void main() {
       expect(ai.calls, hasLength(1));
       expect(filter.calls, hasLength(1));
       expect(lib.tier1Seeds, hasLength(1));
-      expect(dispatch.body, contains('curated-tier1-placeholder'));
+      expect(
+        QuoteLibraryImpl.tier1Pool.any(
+          (phrase) => dispatch.body.contains(phrase),
+        ),
+        isTrue,
+        reason: 'Body must contain one of the curated Tier 1 phrases.',
+      );
     });
   });
 
@@ -230,7 +250,7 @@ void main() {
     test(
       'Tier.two → AIQuoteRepository called with AiAllowedTier.two',
       () async {
-        final lib = _FakeQuoteLibrary();
+        final lib = _RecordingQuoteLibrary();
         final ai = _RecordingAIQuoteRepository(suggestion: 'journal-prompt');
         final filter = _FakeSafetyFilter();
         final dispatcher = TieredInterventionDispatcher(
