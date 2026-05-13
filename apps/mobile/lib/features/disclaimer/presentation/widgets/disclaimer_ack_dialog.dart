@@ -35,6 +35,13 @@ class DisclaimerAckDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final mb = Theme.of(context).extension<MbColors>()!;
     return AlertDialog(
+      // A11y sweep (S5 8.4): the disclaimer body is ~250 chars; at 200%
+      // type on a small phone the AlertDialog clips by default. Setting
+      // `scrollable: true` wraps the content + actions in a
+      // SingleChildScrollView so the dialog stays readable on every
+      // dynamic-type setting. The dialog remains barrier-non-dismissible
+      // — only the "I understand" button can pop it.
+      scrollable: true,
       icon: Icon(
         Icons.medical_information_outlined,
         color: mb.textDim,

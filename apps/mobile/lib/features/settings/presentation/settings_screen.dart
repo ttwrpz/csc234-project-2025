@@ -237,24 +237,30 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [MoodBloomColors.seed, MoodBloomColors.amber],
+    // A11y sweep (S5 8.4): the initial letter is purely decorative — the
+    // adjacent column already announces the user's display name and email
+    // to screen readers, so reading "T" or "?" before the name would be
+    // noise. Exclude this subtree from semantics.
+    return ExcludeSemantics(
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [MoodBloomColors.seed, MoodBloomColors.amber],
+          ),
+          borderRadius: BorderRadius.circular(16),
         ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: MbFonts.nunito(
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: MbFonts.nunito(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
         ),
       ),
     );
