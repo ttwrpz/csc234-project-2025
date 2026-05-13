@@ -81,7 +81,14 @@ class CheerUpBanner extends StatelessWidget {
           children: [
             const Padding(
               padding: EdgeInsets.only(top: 2),
-              child: Text('🌸', style: TextStyle(fontSize: 22)),
+              // A11y sweep (S5 8.4): the cherry-blossom is purely
+              // ornamental — the surrounding Semantics(label:) already
+              // covers the full locked sentence. Excluding stops screen
+              // readers from announcing "cherry blossom emoji" before
+              // the sentence.
+              child: ExcludeSemantics(
+                child: Text('🌸', style: TextStyle(fontSize: 22)),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
