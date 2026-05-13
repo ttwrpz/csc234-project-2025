@@ -4,12 +4,14 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../auth/data/providers.dart';
-import '../../../garden/data/providers.dart' show interventionStateRepositoryProvider;
+import '../../../garden/data/providers.dart'
+    show interventionStateRepositoryProvider;
 import '../../../mood/data/providers.dart' show myMoodsStreamProvider;
 import '../../../mood/domain/entities/mood_entry.dart';
 import '../../../mood/domain/services/mood_score.dart';
 import '../../../notifications/presentation/controllers/notifications_controller.dart';
-import '../../../pattern_engine/data/providers.dart' show patternRepositoryProvider;
+import '../../../pattern_engine/data/providers.dart'
+    show patternRepositoryProvider;
 import '../../../pattern_engine/domain/entities/pattern_result.dart';
 import '../../../pattern_engine/domain/entities/tier.dart';
 import '../../data/providers.dart';
@@ -230,8 +232,7 @@ class InterventionController extends Notifier<InterventionControllerState> {
     final week1Start = firstThursday.subtract(
       Duration(days: firstThursdayWeekday - 1),
     );
-    final week =
-        ((thursday.difference(week1Start).inDays) / 7).floor() + 1;
+    final week = ((thursday.difference(week1Start).inDays) / 7).floor() + 1;
     final ww = week.toString().padLeft(2, '0');
     return '${thursday.year}-W$ww';
   }
@@ -273,10 +274,7 @@ class InterventionController extends Notifier<InterventionControllerState> {
       case _ when failure.toString().contains('TierDisabled'):
         return; // silent path
       default:
-        logger.warn(
-          'dispatch failed',
-          data: failure.runtimeType.toString(),
-        );
+        logger.warn('dispatch failed', data: failure.runtimeType.toString());
     }
   }
 
