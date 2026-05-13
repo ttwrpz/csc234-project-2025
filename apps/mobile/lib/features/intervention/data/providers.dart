@@ -1,13 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/providers.dart' show firestoreProvider;
+import '../../auth/data/providers.dart' show currentUserStreamProvider;
 import '../../mood/data/providers.dart' show firebaseFunctionsProvider;
 import '../domain/repositories/ai_quote_repository.dart';
+import '../domain/repositories/intervention_repository.dart';
 import '../domain/repositories/quote_library.dart';
 import '../domain/services/quote_safety_filter.dart';
 import 'ai_quote_repository_impl.dart';
+import 'datasources/interventions_firestore_datasource.dart';
 import 'datasources/suggest_quote_functions_datasource.dart';
 import 'quote_library_impl.dart';
 import 'quote_safety_filter_impl.dart';
+import 'repositories/intervention_repository_impl.dart';
 
 /// Riverpod providers for the Day-2 quote infrastructure. Consumed by the
 /// Day-3 dispatcher-wire-up step; co-located with the `_impl` files so
@@ -44,5 +49,25 @@ final suggestQuoteFunctionsDatasourceProvider =
 final aiQuoteRepositoryProvider = Provider<AIQuoteRepository>(
   (ref) => AIQuoteRepositoryImpl(
     datasource: ref.watch(suggestQuoteFunctionsDatasourceProvider),
+  ),
+);
+
+/// Thin Firestore datasource for the
+/// `users/{uid}/interventions/{dispatchId}` audit-log collection. Pulled
+/// out so tests can override the cloud surface without spinning up a real
+/// `FirebaseFirestore`.
+final interventionsFirestoreDatasourceProvider =
+    Provider<InterventionsFirestoreDatasource>(
+      (ref) => InterventionsFirestoreDatasource(ref.watch(firestoreProvider)),
+    );
+
+/// Firestore-backed [InterventionRepository]. Writes are append-only at
+/// the rule level (`optedOut` is the only mutable field). The controller
+/// invokes [InterventionRepository.writeRecord] AFTER the dispatcher
+/// returns Ok; [markOptedOut] is called when the user taps "I'm okay".
+final interventionRepositoryProvider = Provider<InterventionRepository>(
+  (ref) => InterventionRepositoryImpl(
+    datasource: ref.watch(interventionsFirestoreDatasourceProvider),
+    uidGetter: () => ref.read(currentUserStreamProvider).value?.uid,
   ),
 );
