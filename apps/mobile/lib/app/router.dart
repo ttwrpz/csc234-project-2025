@@ -14,6 +14,10 @@ import '../features/garden/presentation/garden_screen.dart';
 import '../features/history/presentation/entry_detail_screen.dart';
 import '../features/history/presentation/history_screen.dart';
 import '../features/insights/presentation/screens/insights_screen.dart';
+import '../features/intervention/domain/entities/intervention_dispatch.dart';
+import '../features/intervention/presentation/screens/breathing_screen.dart';
+import '../features/intervention/presentation/screens/crisis_resources_screen.dart';
+import '../features/intervention/presentation/screens/journaling_prompt_screen.dart';
 import '../features/mood/data/providers.dart' as mood_providers;
 import '../features/mood/presentation/log_mood_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
@@ -121,6 +125,43 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/biometric-gate',
         builder: (context, state) => const BiometricGateScreen(),
+      ),
+      // Intervention surfaces — full-screen routes opened from the
+      // [InterventionBanner] (or the FCM notification tap-action when
+      // background dispatch lands). Each route accepts the
+      // [InterventionDispatch] via `state.extra` so the screen renders
+      // the dispatcher-composed body verbatim; deep-link visits with no
+      // extra fall back to the [DispatchSafeDefaults] constants.
+      // Authorized by the engineer brief; HB-007 §"Files to extend".
+      GoRoute(
+        path: '/intervention/breathing',
+        name: 'intervention.breathing',
+        builder: (context, state) {
+          final dispatch = state.extra is InterventionDispatch
+              ? state.extra as InterventionDispatch
+              : null;
+          return BreathingScreen(dispatch: dispatch);
+        },
+      ),
+      GoRoute(
+        path: '/intervention/journal',
+        name: 'intervention.journal',
+        builder: (context, state) {
+          final dispatch = state.extra is InterventionDispatch
+              ? state.extra as InterventionDispatch
+              : null;
+          return JournalingPromptScreen(dispatch: dispatch);
+        },
+      ),
+      GoRoute(
+        path: '/intervention/crisis',
+        name: 'intervention.crisis',
+        builder: (context, state) {
+          final dispatch = state.extra is InterventionDispatch
+              ? state.extra as InterventionDispatch
+              : null;
+          return CrisisResourcesScreen(dispatch: dispatch);
+        },
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

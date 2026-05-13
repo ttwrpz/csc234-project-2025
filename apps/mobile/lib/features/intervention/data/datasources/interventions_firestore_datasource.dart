@@ -60,9 +60,9 @@ class InterventionsFirestoreDatasource {
     required String uid,
     required String dispatchId,
   }) async {
-    await _collection(uid).doc(dispatchId).update(<String, Object?>{
-      'optedOut': true,
-    });
+    await _collection(
+      uid,
+    ).doc(dispatchId).update(<String, Object?>{'optedOut': true});
   }
 
   /// Streams the most-recent [limit] records for [uid], newest first.

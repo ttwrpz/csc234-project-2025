@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/settings/presentation/controllers/theme_mode_controller.dart';
+import 'intervention_banner_host.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -29,6 +30,14 @@ class MoodBloomApp extends ConsumerWidget {
       darkTheme: buildDarkTheme(),
       themeMode: themeMode,
       routerConfig: router,
+      // The intervention banner host wraps every route so the Tier 1/2/3
+      // banner can surface from any tab (Garden / History / Patterns /
+      // Settings) once the [interventionControllerProvider] reaches
+      // [InterventionPending]. The host is a transparent Stack — when
+      // the controller is idle, the banner collapses to `SizedBox.shrink()`
+      // and the routed `child` interacts normally.
+      builder: (context, child) =>
+          InterventionBannerHost(child: child ?? const SizedBox.shrink()),
     );
   }
 }
