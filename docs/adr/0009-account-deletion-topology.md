@@ -51,3 +51,28 @@ Account deletion is a single callable Cloud Function `deleteAccount` (region `as
 - CLAUDE.md "do-not-do list" — `firestore.rules` not edited by this work; `functions/src/*` is edited under security-reviewer sign-off (HB-004 audit checklist).
 - CLAUDE.md "Never log PII" — satisfied via the logger allowlist and the PII canary test.
 - ADR-0003 reuse — region pinning, App Check enforcement, structured-log conventions, secret-handling ceremony (not applicable here — no Gemini key) are reused; only the new cascade path is additive.
+
+## Amendments
+
+### 2026-05-13 — deployed function name + App Check posture
+
+The deployed Cloud Function exporting this cascade is named `wipeUserData`
+(see `functions/src/index.ts:22`), not `deleteAccount` as written in
+§"Decision" line 16. The function was originally introduced in S4 polish
+as a debug-reset tool and the Sprint 5 account-deletion implementation
+correctly reused it rather than introducing a parallel `deleteAccount` CF
+(which would have duplicated the SUBCOLLECTIONS list and risked drift).
+References elsewhere in this ADR that say "deleteAccount" should be read
+as "wipeUserData."
+
+`enforceAppCheck: true` (§"Decision" line ~16) is deferred to v1.6
+alongside the Flutter-web `firebase_app_check.activate(...)` initialization.
+The v1.5 posture matches the rest of the CF suite: enabling App Check on
+one of five callables would create an asymmetric attack surface (an
+attacker who can call `analyzeMoodText` from a tampered client can equally
+call `wipeUserData`) without a meaningful security gain. See
+`functions/src/analyzeMoodText.ts:307-321` for the same precedent.
+
+The rate-limit-doc cleanup step (`rateLimits.*` collections) and the
+Storage media cleanup step (`users/{uid}/media/` prefix) are now both
+implemented in the cascade body (see commit `c163bfe0`).
