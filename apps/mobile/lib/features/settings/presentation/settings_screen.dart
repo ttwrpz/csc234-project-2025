@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:core/core.dart';
 import 'package:drift/drift.dart' show TableInfo;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -17,6 +18,7 @@ import '../../garden/domain/entities/plant_tier.dart';
 import '../../harvest/presentation/controllers/weekly_summary_controller.dart';
 import '../../mood/data/sync/connectivity_provider.dart';
 import '../../notifications/presentation/widgets/tier_toggle_tile.dart';
+import '../../tokens/data/providers.dart' show tokenRepositoryProvider;
 import '../../tokens/presentation/controllers/token_visibility_controller.dart';
 import '../domain/entities/theme_mode_preference.dart';
 import 'controllers/theme_mode_controller.dart';
@@ -496,6 +498,22 @@ class _DebugCluster extends ConsumerWidget {
             },
           ),
           const Divider(height: 1),
+          // v1.5 polish (Wave A) — debug-only token grant. Bumps
+          // `tokenBalance += 10` via the same TokenRepository the live
+          // award path uses, but skips the daily-cap fields so QA can
+          // run repeatedly without the 10/day ceiling kicking in. Wrapped
+          // here under `if (kDebugMode)` (via the enclosing _DebugCluster)
+          // so release builds never render the tile.
+          ListTile(
+            leading: const Icon(Icons.toll_outlined),
+            title: const Text('Grant 10 tokens (debug)'),
+            subtitle: const Text(
+              'Adds 10 to your token balance without logging a mood. '
+              'Debug only.',
+            ),
+            onTap: () => _grantDebugTokens(context, ref),
+          ),
+          const Divider(height: 1),
           // Cycle the plant tier through the 5 ecosystem states
           // (Storm Season → Weathering → Resting → Thriving → Flourishing
           // → off). The override is held by `debugPlantTierOverrideProvider`
@@ -572,6 +590,39 @@ class _DebugCluster extends ConsumerWidget {
             onTap: () => _wipeAccountData(context, ref),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Debug-only — grants the signed-in user 10 tokens via
+  /// [TokenRepository.grantDebug] and surfaces the resulting balance in
+  /// a snackbar. Mirrors the read-compute-write transaction the live
+  /// award path uses; the daily-cap fields are NOT mutated so QA can
+  /// call this repeatedly without hitting the 10/day ceiling. The
+  /// signed-out branch surfaces a no-op snackbar because there's no
+  /// `users/{uid}/` doc to write to.
+  Future<void> _grantDebugTokens(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final user = ref.read(currentUserStreamProvider).value;
+    if (user == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Sign in first to grant tokens.')),
+      );
+      return;
+    }
+    final repo = ref.read(tokenRepositoryProvider);
+    final result = await repo.grantDebug(userId: user.uid, amount: 10);
+    if (!context.mounted) return;
+    result.fold(
+      ok: (_) => messenger.showSnackBar(
+        const SnackBar(content: Text('Granted 10 tokens')),
+      ),
+      err: (failure) => messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            "Couldn't grant tokens (${failure.runtimeType}).",
+          ),
+        ),
       ),
     );
   }

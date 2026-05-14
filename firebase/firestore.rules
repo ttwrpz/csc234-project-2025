@@ -148,7 +148,6 @@ service cloud.firestore {
       // restricts updates to the canonical schema; Cloud Function reads
       // use the admin SDK.
       //
-      // TODO(security-reviewer): audit before Day 4.
       // Migration write path: `set(merge: true)` from
       // NotificationsFirestoreDatasource may carry all four bool flags
       // at once (one-time repair for legacy docs that only had
@@ -249,7 +248,6 @@ service cloud.firestore {
         allow delete: if false;
       }
 
-      // TODO(security-reviewer): audit before Day 2.
       // Per-user intervention audit log (HB-007, ADR-0012).
       // Append-only: every doc is one dispatched intervention with a
       // server-time `dispatchedAt`. Same-day re-dispatches collapse on
@@ -290,7 +288,6 @@ service cloud.firestore {
         allow delete: if false;
       }
 
-      // TODO(security-reviewer): audit before Day 2.
       // Per-tier (or global) cooldown doc — HB-007 OQ-B default is
       // global ("one anchor across all tiers"). Doc id is the cooldown
       // `type` ('global' for v1; future per-tier values like 'tier_three'

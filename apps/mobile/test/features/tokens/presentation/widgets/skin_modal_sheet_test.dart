@@ -66,6 +66,12 @@ class _FakeTokenRepo implements TokenRepository {
   }
 
   @override
+  Future<Result<TokenAward, TokenFailure>> grantDebug({
+    required String userId,
+    required int amount,
+  }) async => const Err(TokenFailure.unknown('not exercised in widget test'));
+
+  @override
   Stream<TokenBalance> watchBalance({required String userId}) =>
       Stream<TokenBalance>.value(
         TokenBalance(

@@ -32,4 +32,21 @@ abstract class TokenRepository {
   /// garden-screen chip; emits a fresh [TokenBalance] every time the
   /// user-doc changes (token award, skin purchase in S5, etc).
   Stream<TokenBalance> watchBalance({required String userId});
+
+  /// Debug-only escape hatch that increments `tokenBalance` by [amount]
+  /// without touching the daily-cap fields (`tokensEarnedToday`,
+  /// `lastTokenEarnedDate`). Exists so QA / reviewers can grant
+  /// themselves tokens during testing without manufacturing a week of
+  /// mood logs. Production callers MUST gate invocations behind
+  /// `kDebugMode` — the Firestore rule only permits monotonic-up
+  /// increments to `tokenBalance`, so the write succeeds in release
+  /// builds too, but no production surface should expose this path.
+  ///
+  /// Returns the [TokenAward] (award integer + resulting balance) on
+  /// success so the caller can render a snackbar with the post-grant
+  /// state without a separate read.
+  Future<Result<TokenAward, TokenFailure>> grantDebug({
+    required String userId,
+    required int amount,
+  });
 }

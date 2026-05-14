@@ -545,10 +545,13 @@ class _GardenView extends StatelessWidget {
 /// box so the SkyHeader's existing top-bar layout is undisturbed.
 ///
 /// HB-008 Day 1 — when a non-null [onCustomize] callback is supplied,
-/// pairs the chip with a small "Customize" icon button so the user
-/// can open the [SkinModalSheet] without diving into Settings. The
-/// button is collapsed when the chip is hidden (so the visibility
-/// toggle still suppresses the entire token surface on the home page).
+/// pairs the chip with a labelled "Customize" pill button so the user
+/// can open the [SkinModalSheet] without diving into Settings. v1.5
+/// polish (Wave A) — the affordance was previously a 32 dp brush icon
+/// that users were missing entirely; replaced with a labelled outlined
+/// pill so the action is read at a glance. The pill is collapsed when
+/// the chip is hidden (so the visibility toggle still suppresses the
+/// entire token surface on the home page).
 class _GardenTokenChip extends ConsumerWidget {
   const _GardenTokenChip({this.onCustomize});
 
@@ -566,42 +569,66 @@ class _GardenTokenChip extends ConsumerWidget {
     final chip = TokenBalanceChip(balance: balance.balance);
     final customize = onCustomize;
     if (customize == null) return chip;
-    final theme = Theme.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         chip,
-        const SizedBox(width: 6),
-        // Compact icon button — 32 dp tap target is below the
-        // Material 48 dp minimum so we wrap it in a Semantics + sized
-        // SizedBox.expand to bring the effective hit-area up. v1.0
-        // polish parity with `_OverflowBadge`'s tiny pill idiom — the
-        // home page already has a dense top-right cluster, so the
-        // customize affordance opts into the same compact size.
-        Semantics(
-          label: 'Customize flower skins',
-          button: true,
-          child: ExcludeSemantics(
-            child: SizedBox(
-              width: 32,
-              height: 32,
-              child: Material(
-                color: Colors.transparent,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: customize,
-                  child: Icon(
-                    Icons.brush_outlined,
-                    size: 18,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ),
-            ),
+        const SizedBox(width: 8),
+        _CustomizePill(onTap: customize),
+      ],
+    );
+  }
+}
+
+/// Labelled outlined pill button — opens the skin customization modal.
+/// v1.5 polish (Wave A) replacement for the earlier 32 dp brush icon
+/// which users were missing. Mirrors the visual idiom of
+/// `_ViewPatternsButton` (subtle filled-tonal pill with brand-hue
+/// border) so the new affordance reads as a peer of the existing
+/// Patterns CTA, not a new surface.
+class _CustomizePill extends StatelessWidget {
+  const _CustomizePill({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final fg = isDark ? const Color(0xFFCDE8DA) : theme.colorScheme.primary;
+    final bg = isDark
+        ? theme.colorScheme.primary.withValues(alpha: 0.32)
+        : theme.colorScheme.primary.withValues(alpha: 0.08);
+    final border = isDark
+        ? const Color(0xFFCDE8DA).withValues(alpha: 0.45)
+        : theme.colorScheme.primary.withValues(alpha: 0.25);
+
+    return Semantics(
+      button: true,
+      label: 'Customize flower skins',
+      child: TextButton.icon(
+        onPressed: onTap,
+        style: TextButton.styleFrom(
+          foregroundColor: fg,
+          backgroundColor: bg,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          minimumSize: const Size(0, 36),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
+            side: BorderSide(color: border),
           ),
         ),
-      ],
+        icon: Icon(Icons.brush_outlined, size: 16, color: fg),
+        label: Text(
+          'Customize',
+          style: MbFonts.nunito(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: fg,
+          ),
+        ),
+      ),
     );
   }
 }

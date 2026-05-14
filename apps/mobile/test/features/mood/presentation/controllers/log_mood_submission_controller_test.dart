@@ -143,6 +143,12 @@ class _FakeTokenRepo implements TokenRepository {
   @override
   Stream<TokenBalance> watchBalance({required String userId}) =>
       const Stream<TokenBalance>.empty();
+
+  @override
+  Future<Result<TokenAward, TokenFailure>> grantDebug({
+    required String userId,
+    required int amount,
+  }) async => const Err(TokenFailure.unknown('not exercised in this test'));
 }
 
 class _RecordingUseCase implements RunPatternEngineUseCase {
