@@ -52,6 +52,19 @@ class _FakeDatasource implements TokenBalanceFirestoreDatasource {
     watches.add((userId: userId));
     return const Stream<TokenBalance>.empty();
   }
+
+  @override
+  Future<TokenAward> grantDebug({
+    required String userId,
+    required int amount,
+  }) async => TokenAward(
+        award: amount,
+        updated: TokenBalance(
+          balance: amount,
+          earnedToday: 0,
+          lastEarnedDate: null,
+        ),
+      );
 }
 
 void main() {

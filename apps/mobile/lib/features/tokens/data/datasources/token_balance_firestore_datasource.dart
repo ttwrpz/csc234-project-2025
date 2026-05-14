@@ -65,6 +65,37 @@ class TokenBalanceFirestoreDatasource {
     });
   }
 
+  /// Debug-only grant that bumps `tokenBalance` by [amount] inside a
+  /// transaction without mutating `tokensEarnedToday` /
+  /// `lastTokenEarnedDate`. Mirrors [awardForLog] for the read-compute-
+  /// write idiom so concurrent grants from two devices never lose an
+  /// increment. The Firestore rule permits monotonic-up writes to
+  /// `tokenBalance` from any owner, so no rule changes are needed.
+  ///
+  /// Returns a [TokenAward] with `award = amount` and the resulting
+  /// balance so the caller can render an immediate snackbar without a
+  /// follow-up read.
+  Future<TokenAward> grantDebug({
+    required String userId,
+    required int amount,
+  }) async {
+    final ref = _firestore.collection('users').doc(userId);
+
+    return _firestore.runTransaction<TokenAward>((tx) async {
+      final snap = await tx.get(ref);
+      final current = _balanceFromSnapshot(snap);
+      final next = TokenBalance(
+        balance: current.balance + amount,
+        earnedToday: current.earnedToday,
+        lastEarnedDate: current.lastEarnedDate,
+      );
+
+      tx.update(ref, <String, Object?>{'tokenBalance': next.balance});
+
+      return TokenAward(award: amount, updated: next);
+    });
+  }
+
   /// Streams the live token-balance snapshot. Empty / missing fields
   /// resolve to a fresh-user default ({balance: 0, earnedToday: 0,
   /// lastEarnedDate: null}) so the chip renders sensibly during the

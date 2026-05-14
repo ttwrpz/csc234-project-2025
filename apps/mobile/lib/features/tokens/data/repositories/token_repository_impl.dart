@@ -60,6 +60,27 @@ class TokenRepositoryImpl implements TokenRepository {
   Stream<TokenBalance> watchBalance({required String userId}) =>
       _datasource.watchBalance(userId: userId);
 
+  @override
+  Future<Result<TokenAward, TokenFailure>> grantDebug({
+    required String userId,
+    required int amount,
+  }) async {
+    if (userId.isEmpty || amount <= 0) {
+      return const Err(TokenFailure.network());
+    }
+    try {
+      final award = await _datasource.grantDebug(
+        userId: userId,
+        amount: amount,
+      );
+      return Ok(award);
+    } on FirebaseException catch (e) {
+      return Err(_failureFor(e));
+    } catch (e) {
+      return Err(TokenFailure.unknown(e.runtimeType.toString()));
+    }
+  }
+
   TokenFailure _failureFor(FirebaseException e) {
     switch (e.code) {
       case 'permission-denied':
