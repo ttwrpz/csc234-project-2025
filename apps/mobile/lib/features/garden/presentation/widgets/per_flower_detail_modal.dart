@@ -28,12 +28,67 @@ class PerFlowerDetailModal extends StatelessWidget {
 
   final MoodEntry entry;
 
-  /// Convenience launcher.
+  /// Stable key on the ConstrainedBox that caps the centered-dialog
+  /// width. Exposed so widget tests can assert the chosen breakpoint
+  /// without false-positives from Dialog's internal sizing layers.
+  @visibleForTesting
+  static const Key dialogConstraintsKey =
+      ValueKey('perFlowerDetailModal.dialogConstraints');
+
+  /// Breakpoints mirror `_AppShell._tabletMin` / `_desktopMin` in
+  /// `apps/mobile/lib/app/router.dart`. Keep these aligned with the
+  /// shell so the chrome we pick here matches the navigation layout at
+  /// the same viewport width.
+  static const double _tabletMin = 600;
+  static const double _desktopMin = 900;
+
+  /// Dialog max-width on desktop. 560 dp comfortably holds the
+  /// sprite + title row at top and the 3-line note card below without
+  /// padding the columns out — this modal carries less information than
+  /// the skin grid, so it doesn't need the grid's wider 640 dp cap.
+  static const double _desktopDialogMaxWidth = 560;
+
+  /// Dialog max-width on tablet. 480 dp is the spot where the sprite +
+  /// title row still reads as a single tight unit; wider feels lonely.
+  static const double _tabletDialogMaxWidth = 480;
+
+  /// Cap the dialog at 80% of the viewport so the home page underneath
+  /// stays peeking through — same compositional cue the phone bottom
+  /// sheet gives via its mainAxisSize.min Column.
+  static const double _dialogMaxHeightFraction = 0.8;
+
+  /// Responsive launcher — bottom sheet on phone, centered dialog on
+  /// tablet + desktop. Picks presentation off `MediaQuery.sizeOf` at the
+  /// call site so a window-resize before the tap closes is respected.
   static Future<void> show(BuildContext context, MoodEntry entry) {
-    return showModalBottomSheet<void>(
+    final size = MediaQuery.sizeOf(context);
+    if (size.width < _tabletMin) {
+      return showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => PerFlowerDetailModal(entry: entry),
+      );
+    }
+    final dialogMaxWidth = size.width >= _desktopMin
+        ? _desktopDialogMaxWidth
+        : _tabletDialogMaxWidth;
+    final dialogMaxHeight = size.height * _dialogMaxHeightFraction;
+    return showDialog<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => PerFlowerDetailModal(entry: entry),
+      builder: (_) => Dialog(
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusSky),
+        ),
+        child: ConstrainedBox(
+          key: dialogConstraintsKey,
+          constraints: BoxConstraints(
+            maxWidth: dialogMaxWidth,
+            maxHeight: dialogMaxHeight,
+          ),
+          child: PerFlowerDetailModal(entry: entry),
+        ),
+      ),
     );
   }
 
@@ -45,36 +100,51 @@ class PerFlowerDetailModal extends StatelessWidget {
     final color = palette.colorOf(entry.mood.mbKind);
     final species = FlowerSpecies.forMood(entry.mood);
     final note = entry.text.trim();
+    // Bottom-sheet vs centered-dialog mode. The drag-handle and the
+    // safe-area inset only make sense in the sheet presentation; in a
+    // dialog they read as misplaced furniture.
+    final isPhoneWidth = MediaQuery.sizeOf(context).width < _tabletMin;
+    final bottomPad = isPhoneWidth
+        ? MediaQuery.viewPaddingOf(context).bottom + MoodBloomSpacing.lg
+        : MoodBloomSpacing.lg;
 
     return Container(
       decoration: BoxDecoration(
         color: mb.bg,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(MoodBloomSpacing.radiusSky),
-        ),
+        // Only round the top corners when we're in the bottom-sheet
+        // presentation. In the dialog the parent `Dialog` already clips
+        // with a uniform radius so any inner rounding would double up
+        // visually.
+        borderRadius: isPhoneWidth
+            ? const BorderRadius.vertical(
+                top: Radius.circular(MoodBloomSpacing.radiusSky),
+              )
+            : null,
       ),
       padding: EdgeInsets.fromLTRB(
         MoodBloomSpacing.pagePadding,
         12,
         MoodBloomSpacing.pagePadding,
-        MediaQuery.viewPaddingOf(context).bottom + MoodBloomSpacing.lg,
+        bottomPad,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Handle
-          Center(
-            child: Container(
-              width: 38,
-              height: 4,
-              decoration: BoxDecoration(
-                color: mb.textDim.withValues(alpha: 0.35),
-                borderRadius: BorderRadius.circular(2),
+          if (isPhoneWidth) ...[
+            // Handle — only meaningful in the bottom-sheet idiom.
+            Center(
+              child: Container(
+                width: 38,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: mb.textDim.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
