@@ -37,6 +37,8 @@ class GardenBed extends StatefulWidget {
     required this.tier,
     this.size = const Size(320, 140),
     this.showOverflowBadge = false,
+    this.onFlowerTap,
+    this.speciesAccent,
     @visibleForTesting this.animate = true,
   });
 
@@ -56,6 +58,27 @@ class GardenBed extends StatefulWidget {
   /// `@visibleForTesting`: callers in production never set this. Tests
   /// pass `false` so frame-deterministic goldens reproduce.
   final bool animate;
+
+  /// Per-flower tap router — TC-7 (S5 — flower skin system Day 1).
+  /// When non-null, the bed renders invisible hot-spots on top of each
+  /// painted flower (using the same x-placement math the painter uses
+  /// internally). Tapping a hot-spot dispatches the corresponding
+  /// [MoodEntry] back to the caller, which typically opens
+  /// `PerFlowerDetailModal`. Null disables the overlay entirely so
+  /// existing call-sites (history thumbnails, harvest archive) keep
+  /// their non-interactive canvas semantics.
+  final void Function(MoodEntry entry)? onFlowerTap;
+
+  /// Per-species petal-accent override — TC-6 (flower skin system).
+  /// Maps a species to the accent colour the user picked for that
+  /// species' alternate skin. Absent species fall back to the species'
+  /// built-in default colour. The default-skin path keeps the existing
+  /// look exactly; only alternates shift hue.
+  ///
+  /// Past harvested gardens never receive this override — the archive
+  /// rendering surface passes `null` so historical weeks keep their
+  /// snapshot look. Only the live home canvas opts in.
+  final Map<FlowerSpecies, Color>? speciesAccent;
 
   /// When `true`, render a small "+N more" pill in the top-right
   /// corner whenever `entries.length > _maxPlants` so the user knows
@@ -138,6 +161,7 @@ class _GardenBedState extends State<GardenBed> with TickerProviderStateMixin {
       tier: widget.tier,
       palette: mb,
       phase: phase,
+      speciesAccent: widget.speciesAccent,
     );
 
     final canvas = SizedBox(
@@ -152,24 +176,70 @@ class _GardenBedState extends State<GardenBed> with TickerProviderStateMixin {
             ),
     );
 
+    final overlayChildren = <Widget>[];
+    if (widget.onFlowerTap != null && shown.isNotEmpty) {
+      // Per-flower hit-spots — TC-7 (S5). The placements use the same
+      // math as the painter (`_PlantPlacement`) so the InkWell columns
+      // sit directly over the rendered flowers regardless of canvas
+      // width. Hit boxes are 32 dp wide × full bed height so a casual
+      // tap anywhere along the stem also opens the entry — the user
+      // doesn't have to hit the petal pixel-perfectly.
+      final placements = _computeXPositions(shown, widget.size.width);
+      for (var i = 0; i < placements.length; i += 1) {
+        final cx = placements[i];
+        final entry = shown[i];
+        overlayChildren.add(
+          Positioned(
+            left: cx - 16,
+            top: 0,
+            width: 32,
+            height: widget.size.height,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => widget.onFlowerTap?.call(entry),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    if (widget.showOverflowBadge && hidden > 0) {
+      overlayChildren.add(
+        Positioned(top: 6, right: 6, child: _OverflowBadge(extra: hidden)),
+      );
+    }
+
     return Semantics(
       container: true,
       label: GardenBed._semanticsLabel(shown, widget.tier),
       child: ExcludeSemantics(
-        child: widget.showOverflowBadge && hidden > 0
-            ? Stack(
-                children: [
-                  canvas,
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: _OverflowBadge(extra: hidden),
-                  ),
-                ],
-              )
-            : canvas,
+        child: overlayChildren.isEmpty
+            ? canvas
+            : Stack(children: [canvas, ...overlayChildren]),
       ),
     );
+  }
+
+  /// Mirrors the `_PlantPlacement` math in [_GardenBedPainter.paint].
+  /// Kept in sync with the painter so per-flower hot-spots sit directly
+  /// over the rendered plants. Returns the list in the SAME order as
+  /// [shown] so callers can pair each x with its entry by index.
+  static List<double> _computeXPositions(
+    List<MoodEntry> shown,
+    double canvasWidth,
+  ) {
+    final n = shown.length;
+    final stride = canvasWidth / (n + 1);
+    return [
+      for (var i = 0; i < n; i += 1)
+        () {
+          final baseX = stride * (i + 1);
+          final jitter = (shown[i].id.hashCode % 21) - 10;
+          return (baseX + jitter).clamp(28.0, canvasWidth - 28.0);
+        }(),
+    ];
   }
 }
 
@@ -211,6 +281,7 @@ class _GardenBedPainter extends CustomPainter {
     required this.tier,
     required this.palette,
     required this.phase,
+    this.speciesAccent,
   });
 
   final List<MoodEntry> entries;
@@ -220,6 +291,12 @@ class _GardenBedPainter extends CustomPainter {
   /// 0..1 looped animation phase. Drives the sway / butterfly drift /
   /// lantern pulse — 0 in tests so goldens stay deterministic.
   final double phase;
+
+  /// Optional per-species accent override (TC-6 flower skin system).
+  /// `null` keeps the species' built-in palette; a non-null value
+  /// recolours the petal/bud layer for plants of that species so the
+  /// user's chosen alternate skin reads at canvas scale.
+  final Map<FlowerSpecies, Color>? speciesAccent;
 
   // ───── shared species palette ─────
   static const _stemGreen = Color(0xFF4C8B6A);
@@ -374,6 +451,18 @@ class _GardenBedPainter extends CustomPainter {
     }
   }
 
+  /// Returns the user's selected accent colour for [species] when an
+  /// alternate skin is active, falling back to [fallback] otherwise.
+  /// The fallback path preserves the painter's prior hardcoded look —
+  /// default-skinned plants render byte-for-byte the same as before
+  /// the skin system landed (TC-6 only changes the live render of
+  /// alternate-skinned plants; default users see no change).
+  Color _accentFor(FlowerSpecies species, Color fallback) {
+    final override = speciesAccent;
+    if (override == null) return fallback;
+    return override[species] ?? fallback;
+  }
+
   // ───── species 1: sunflower (Joy) ─────
   // Growth stages:
   //   0 stormSeason  — short stem (50dp), tightly closed green bud
@@ -466,8 +555,10 @@ class _GardenBedPainter extends CustomPainter {
       canvas.drawOval(const Rect.fromLTWH(7.5, -3.5, 16, 7), backPetal);
       canvas.restore();
     }
-    // Front petal layer (bright yellow).
-    final frontPetal = Paint()..color = _sunflowerYellow;
+    // Front petal layer (bright yellow). Recolours to the user's
+    // selected accent when an alternate sunflower skin is active.
+    final frontPetal = Paint()
+      ..color = _accentFor(FlowerSpecies.sunflower, _sunflowerYellow);
     for (var i = 0; i < rayCount; i += 1) {
       canvas.save();
       canvas.rotate((i / rayCount) * 2 * math.pi);
@@ -643,7 +734,8 @@ class _GardenBedPainter extends CustomPainter {
   }) {
     canvas.save();
     canvas.translate(center.dx, center.dy);
-    final petal = Paint()..color = _forgetMeNotBlue;
+    final petal = Paint()
+      ..color = _accentFor(FlowerSpecies.forgetMeNot, _forgetMeNotBlue);
     for (var i = 0; i < 5; i += 1) {
       canvas.save();
       canvas.rotate((i / 5) * 2 * math.pi);
@@ -733,7 +825,8 @@ class _GardenBedPainter extends CustomPainter {
       canvas.drawOval(const Rect.fromLTWH(-9, -14, 18, 14), backPetal);
       canvas.restore();
     }
-    final frontPetal = Paint()..color = _poppyRed;
+    final frontPetal = Paint()
+      ..color = _accentFor(FlowerSpecies.poppy, _poppyRed);
     for (var i = 0; i < petalCount; i += 1) {
       canvas.save();
       canvas.rotate((i / petalCount) * 2 * math.pi + (math.pi / 8));
@@ -906,7 +999,8 @@ class _GardenBedPainter extends CustomPainter {
       3 => 6,
       _ => 8,
     };
-    final budOuter = Paint()..color = _lavenderPurple;
+    final budOuter = Paint()
+      ..color = _accentFor(FlowerSpecies.lavender, _lavenderPurple);
     final budInner = Paint()..color = _lavenderPurpleDeep;
     for (var i = 0; i < budCount; i += 1) {
       final y = tipY + (i * 4.0);
@@ -1091,7 +1185,21 @@ class _GardenBedPainter extends CustomPainter {
       old.entries.length != entries.length ||
       !_sameEntryIds(old.entries, entries) ||
       old.palette != palette ||
-      old.phase != phase;
+      old.phase != phase ||
+      !_sameAccentMap(old.speciesAccent, speciesAccent);
+
+  static bool _sameAccentMap(
+    Map<FlowerSpecies, Color>? a,
+    Map<FlowerSpecies, Color>? b,
+  ) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    if (a.length != b.length) return false;
+    for (final entry in a.entries) {
+      if (b[entry.key] != entry.value) return false;
+    }
+    return true;
+  }
 
   static bool _sameEntryIds(List<MoodEntry> a, List<MoodEntry> b) {
     if (a.length != b.length) return false;

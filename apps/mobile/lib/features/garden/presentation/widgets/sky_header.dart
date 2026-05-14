@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../mood/domain/entities/mood_entry.dart';
 import '../../domain/entities/atmosphere.dart';
+import '../../domain/entities/flower_species.dart';
 import '../../domain/entities/garden_state.dart';
 import '../../domain/entities/plant_tier.dart';
 import 'atmosphere_overlay.dart';
@@ -36,6 +37,8 @@ class SkyHeader extends StatelessWidget {
     required this.greetingName,
     this.recentEntries = const <MoodEntry>[],
     this.height = 320,
+    this.onFlowerTap,
+    this.speciesAccent,
   });
 
   /// Computed garden snapshot — drives both the plant tier and the
@@ -64,6 +67,18 @@ class SkyHeader extends StatelessWidget {
   /// callers pass ~420 dp so the canvas reads as a hero on a wide
   /// viewport instead of a thin band.
   final double height;
+
+  /// Per-flower tap router — TC-7 (S5 flower-skin Day 1). Forwarded
+  /// to the inner [GardenBed]; null disables the overlay so non-
+  /// interactive call-sites (harvest archive thumbnails) keep the
+  /// canvas tap-free.
+  final void Function(MoodEntry entry)? onFlowerTap;
+
+  /// Per-species accent override — TC-6 (flower-skin Day 1).
+  /// Forwarded to the inner [GardenBed]'s painter so plants whose
+  /// species has an alternate skin selected render with the chosen
+  /// petal tint. Null leaves the species' built-in palette intact.
+  final Map<FlowerSpecies, Color>? speciesAccent;
 
   /// Height of the garden bed anchored above the ground line. Bumped
   /// from 100 dp to 140 dp so the tallest species (sunflower at ~110 dp
@@ -167,6 +182,8 @@ class SkyHeader extends StatelessWidget {
                       entries: recentEntries,
                       tier: state.plantTier,
                       size: Size(constraints.maxWidth, _plantRowHeight),
+                      onFlowerTap: onFlowerTap,
+                      speciesAccent: speciesAccent,
                     ),
                   ),
                 ),
