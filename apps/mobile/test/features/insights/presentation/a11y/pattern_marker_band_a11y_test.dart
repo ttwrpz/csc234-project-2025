@@ -1,5 +1,6 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/insights/domain/entities/daily_insight.dart';
 import 'package:moodbloom/features/insights/presentation/widgets/pattern_marker_band.dart';
@@ -23,9 +24,8 @@ import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 ///   2. The Tooltip message text is also reachable (long-press affordance
 ///      so sighted-but-low-vision users can read the trigger date).
 
-Widget _wrap(Widget child) => MaterialApp(
-  theme: buildLightTheme(),
-  home: Scaffold(body: child),
+Widget _wrap(Widget child) => ProviderScope(
+  child: MaterialApp(theme: buildLightTheme(), home: Scaffold(body: child)),
 );
 
 DailyInsight _day(DateTime date, {Tier? tier}) => DailyInsight(

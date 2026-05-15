@@ -4,10 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/daily_insight.dart';
 import '../controllers/insights_controller.dart';
+import '../widgets/chart_reading_guide.dart';
 import '../widgets/insights_disclaimer_gate.dart';
+import '../widgets/insights_layout.dart';
 import '../widgets/insights_window_chips.dart';
 import '../widgets/mood_score_chart.dart';
 import '../widgets/pattern_marker_band.dart';
+import '../widgets/recent_triggers_card.dart';
+import '../widgets/tier_band_legend.dart';
 
 /// (S5) Insights screen — visualises Pattern Engine output as a
 /// mood-score time-series with a Garden-Health overlay and tier-trigger
@@ -47,18 +51,60 @@ class _InsightsBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mb = Theme.of(context).extension<MbColors>()!;
-    final gate = ref.watch(insightsGateProvider);
     final preset = ref.watch(insightsWindowPresetProvider);
     final stream = ref.watch(insightsStreamProvider);
+    final gate = ref.watch(insightsGateProvider);
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        MoodBloomSpacing.pagePadding,
-        MoodBloomSpacing.pagePadding,
-        MoodBloomSpacing.pagePadding,
-        MoodBloomSpacing.lg,
-      ),
+    // Resolve the chart card once for all three layouts. The gate
+    // dominates: until ack lands the chart slot shows the pre-ack card.
+    Widget chartSlot;
+    List<DailyInsight> insightsForRails;
+    if (gate != InsightsGateState.ready) {
+      chartSlot = const _PreAckCard();
+      insightsForRails = const <DailyInsight>[];
+    } else {
+      chartSlot = stream.when(
+        loading: () => const _LoadingCard(),
+        error: (_, _) => const _ErrorCard(),
+        data: (insights) => insights == null
+            ? const _LoadingCard()
+            : _ChartCard(insights: insights),
+      );
+      insightsForRails = stream.value ?? const <DailyInsight>[];
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isPhone =
+            constraints.maxWidth < InsightsLayout.phoneTabletBreakpoint;
+        return InsightsLayout(
+          header: const _Header(),
+          // Phone collapses the guide behind an expansion tile; the
+          // larger layouts always show the guide expanded so the rail
+          // never has a tap-to-reveal interaction.
+          readingGuide: ChartReadingGuide(alwaysExpanded: !isPhone),
+          windowChips: InsightsWindowChips(
+            value: preset,
+            onChanged: (p) =>
+                ref.read(insightsWindowPresetProvider.notifier).state = p,
+          ),
+          chart: chartSlot,
+          tierLegend: const TierBandLegend(),
+          recentTriggers: RecentTriggersCard(insights: insightsForRails),
+        );
+      },
+    );
+  }
+}
+
+class _Header extends ConsumerWidget {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Insights',
@@ -75,27 +121,6 @@ class _InsightsBody extends ConsumerWidget {
           'A gentle read of how your garden has been moving lately.',
           style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
         ),
-        const SizedBox(height: MoodBloomSpacing.md),
-        InsightsWindowChips(
-          value: preset,
-          onChanged: (p) =>
-              ref.read(insightsWindowPresetProvider.notifier).state = p,
-        ),
-        const SizedBox(height: MoodBloomSpacing.md),
-        // Gate dominates: if the user has not acknowledged the
-        // disclaimer, the chart card never renders, regardless of
-        // whether the stream has data. The dialog scheduler is the
-        // sibling `InsightsDisclaimerGate` above.
-        if (gate != InsightsGateState.ready)
-          const _PreAckCard()
-        else
-          stream.when(
-            loading: () => const _LoadingCard(),
-            error: (_, _) => const _ErrorCard(),
-            data: (insights) => insights == null
-                ? const _LoadingCard()
-                : _ChartCard(insights: insights),
-          ),
       ],
     );
   }
@@ -223,32 +248,36 @@ class _ChartCard extends StatelessWidget {
           const SizedBox(height: 8),
           PatternMarkerBand(insights: insights),
           const SizedBox(height: 8),
-          _LegendRow(),
+          _ChartKeyRow(),
+          const SizedBox(height: 6),
+          Text(
+            'Empty slots are quiet days — never a streak break.',
+            style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
+          ),
         ],
       ),
     );
   }
 }
 
-class _LegendRow extends StatelessWidget {
+/// HB-009 Decision C-4 — inline "How to read this" footnote row,
+/// directly under the marker band. Replaces the legacy `_LegendRow`
+/// that used engineering jargon ("Tier 1 day"); the new copy maps
+/// the tier numerals to the public-facing words ("gentle / invitation
+/// / care") that match the dispatcher's surface copy.
+class _ChartKeyRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final mb = Theme.of(context).extension<MbColors>()!;
     final primary = Theme.of(context).colorScheme.primary;
     return Wrap(
       spacing: 16,
       runSpacing: 6,
       children: [
         _LegendDot(color: primary, label: 'Mood score'),
-        _LegendDot(color: MoodBloomColors.amber, label: 'Garden health'),
-        _LegendDot(color: MoodBloomColors.amber, label: 'Tier 1 day'),
-        _LegendDot(color: MoodBloomColors.coral, label: 'Tier 2 day'),
-        _LegendDot(color: MoodBloomColors.coralText, label: 'Tier 3 day'),
-        const SizedBox.shrink(),
-        Text(
-          'Empty slots are quiet days — never a streak break.',
-          style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
-        ),
+        _LegendDot(color: MoodBloomColors.amber, label: 'Rolling rhythm'),
+        _LegendDot(color: MoodBloomColors.amber, label: 'Tier 1 gentle'),
+        _LegendDot(color: MoodBloomColors.coral, label: 'Tier 2 invitation'),
+        _LegendDot(color: MoodBloomColors.coralText, label: 'Tier 3 care'),
       ],
     );
   }
