@@ -1,18 +1,23 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart' show StateProvider;
 
+import '../../../app/feature_flags.dart' show kEnableWebauthn;
 import '../../../app/providers.dart';
 import '../domain/auth_repository.dart';
 import '../domain/entities/app_user.dart';
 import '../domain/entities/biometric_capability.dart';
+import '../domain/entities/webauthn_credential.dart';
 import '../domain/repositories/biometric_repository.dart';
 import '../domain/repositories/pin_repository.dart';
+import '../domain/repositories/webauthn_repository.dart';
 import '../domain/services/pin_hasher.dart';
 import '../domain/usecases/authenticate_with_biometric.dart';
 import '../domain/usecases/change_pin.dart';
 import '../domain/usecases/check_biometric_capability.dart';
 import '../domain/usecases/delete_account.dart';
+import '../domain/usecases/register_webauthn.dart';
 import '../domain/usecases/register_with_email.dart';
 import '../domain/usecases/remove_pin.dart';
 import '../domain/usecases/set_biometric_opt_in.dart';
@@ -21,6 +26,7 @@ import '../domain/usecases/sign_in_with_email.dart';
 import '../domain/usecases/sign_in_with_google.dart';
 import '../domain/usecases/sign_out.dart';
 import '../domain/usecases/verify_pin.dart';
+import '../domain/usecases/verify_webauthn.dart';
 import '../domain/usecases/watch_auth_state.dart';
 import 'auth_repository_impl.dart';
 import 'datasources/biometric_datasource.dart';
@@ -29,9 +35,13 @@ import 'datasources/delete_account_functions_datasource.dart';
 import 'datasources/firebase_auth_datasource.dart';
 import 'datasources/pin_firestore_datasource.dart';
 import 'datasources/privacy_lock_preference_datasource.dart';
+import 'datasources/webauthn_browser_datasource.dart';
+import 'datasources/webauthn_credential_firestore_datasource.dart';
+import 'datasources/webauthn_functions_datasource.dart';
 import 'pin_hasher_impl.dart';
 import 'pin_repository_impl.dart';
 import 'repositories/biometric_repository_impl.dart';
+import 'webauthn_repository_impl.dart';
 
 final firebaseAuthDatasourceProvider = Provider<FirebaseAuthDatasource>((ref) {
   return FirebaseAuthDatasource(auth: ref.watch(firebaseAuthProvider));
@@ -255,4 +265,77 @@ final privacyLockMasterEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select((f) => f.historyPrivacyLockEnabled),
   );
+});
+
+// ────────────────────────────────────────────────────────────────────────
+// WebAuthn fallback factor (ADR-0014) — v1.5 ships DARK behind
+// `kEnableWebauthn` (build-time const in `feature_flags.dart`). When the
+// flag is `false` (the v1.5 default), every consumer of these providers
+// short-circuits to a hidden / no-op state — the JS-interop datasource
+// is never instantiated and the Firestore credential stream is never
+// subscribed. See ADR-0014 §"Cuts to make first if a day slips" #3.
+
+/// True only when WebAuthn is reachable on the current platform AND the
+/// build-time flag enables the surface. v1.5 always returns `false`
+/// because `kEnableWebauthn` is `false` — the JS-interop binding is
+/// never instantiated. v1.5.1 (or v1.6) flips the const, at which point
+/// the second clause (`kIsWeb` — Android/iOS use `local_auth`) becomes
+/// the gating check.
+final webauthnAvailableProvider = Provider<bool>((_) {
+  if (!kEnableWebauthn) return false;
+  return kIsWeb;
+});
+
+final webauthnFunctionsDatasourceProvider =
+    Provider<WebauthnFunctionsDatasource>(
+      (ref) => WebauthnFunctionsDatasource(
+        ref.watch(authFirebaseFunctionsProvider),
+      ),
+    );
+
+final webauthnCredentialFirestoreDatasourceProvider =
+    Provider<WebauthnCredentialFirestoreDatasource>(
+      (ref) =>
+          WebauthnCredentialFirestoreDatasource(ref.watch(firestoreProvider)),
+    );
+
+/// The JS-interop seam over `navigator.credentials.create()` / `.get()`.
+/// v1.5 hands out the unsupported stub — the production `package:web`
+/// binding lands in v1.5.1 when `kEnableWebauthn` flips. Widget tests
+/// override this provider directly with a `_FakeWebauthnBrowserDatasource`.
+final webauthnBrowserDatasourceProvider = Provider<WebauthnBrowserDatasource>(
+  (_) => const WebauthnBrowserDatasourceUnsupportedStub(),
+);
+
+final webauthnRepositoryProvider = Provider<WebauthnRepository>((ref) {
+  return WebauthnRepositoryImpl(
+    functions: ref.watch(webauthnFunctionsDatasourceProvider),
+    browser: ref.watch(webauthnBrowserDatasourceProvider),
+    firestore: ref.watch(webauthnCredentialFirestoreDatasourceProvider),
+  );
+});
+
+final registerWebauthnUseCaseProvider = Provider<RegisterWebauthnUseCase>(
+  (ref) => RegisterWebauthnUseCase(ref.watch(webauthnRepositoryProvider)),
+);
+
+final verifyWebauthnUseCaseProvider = Provider<VerifyWebauthnUseCase>(
+  (ref) => VerifyWebauthnUseCase(ref.watch(webauthnRepositoryProvider)),
+);
+
+/// Streams the registered credential (or null when none). When
+/// `kEnableWebauthn` is `false`, this provider returns a closed stream
+/// that always emits `null` — the JS-interop binding is never reached
+/// and the Firestore subscription is never opened.
+final webauthnCredentialProvider = StreamProvider<WebauthnCredential?>((ref) {
+  if (!kEnableWebauthn) {
+    return Stream<WebauthnCredential?>.value(null);
+  }
+  final user = ref.watch(currentUserStreamProvider).value;
+  if (user == null) {
+    return Stream<WebauthnCredential?>.value(null);
+  }
+  return ref
+      .watch(webauthnRepositoryProvider)
+      .watchCredential(uid: user.uid);
 });
