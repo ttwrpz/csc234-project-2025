@@ -54,6 +54,10 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             const SizedBox(height: MoodBloomSpacing.md),
             _ChartCard(state: state, window: _window),
             const SizedBox(height: MoodBloomSpacing.md),
+            // HB-009 Decision D — the CTA card to Insights sits directly
+            // under the chart so the deeper read is the most prominent
+            // affordance on the Patterns tab. Visual weight is primary-
+            // tinted; copy mirrors the Insights screen subtitle.
             const _InsightsEntryCard(),
             const SizedBox(height: MoodBloomSpacing.md),
             // Defence in depth: hide the slot when the flag is off so
@@ -343,12 +347,14 @@ class _MostFrequentCard extends StatelessWidget {
   }
 }
 
-/// Tappable entry-point card to the (S5) Insights screen. Lives on the
-/// Patterns dashboard so the deeper Pattern-Engine read is discoverable
-/// without claiming its own bottom-nav slot. Surfaced as a card (not a
-/// link) so the affordance reads as a primary action, but the route is
-/// gated behind the bipolar / medical disclaimer ack — the Insights
-/// screen handles that gate itself (spec §4 TC-36 / TC-37).
+/// Tappable entry-point card to the (S5) Insights screen. HB-009
+/// Decision D — primary-tinted CTA card that sits directly under the
+/// Patterns chart. Promoted from a subdued "more info" link to the
+/// most prominent affordance on this tab, because the Insights screen
+/// is where the Pattern-Engine output actually lives.
+///
+/// The route stays gated behind the bipolar / medical disclaimer ack —
+/// the Insights screen handles that gate itself (spec §4 TC-36 / TC-37).
 class _InsightsEntryCard extends StatelessWidget {
   const _InsightsEntryCard();
 
@@ -356,47 +362,64 @@ class _InsightsEntryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
     final theme = Theme.of(context);
-    return MbCard(
-      padding: const EdgeInsets.all(16),
-      onTap: () => context.goNamed('insights'),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+    final primary = theme.colorScheme.primary;
+    return Semantics(
+      button: true,
+      label:
+          'Open detailed insights. See your mood-score timeline, '
+          'rolling rhythm, and the gentle nudges your garden has '
+          'noticed lately.',
+      child: MbCard(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          // Primary-tinted background per HB-009 Decision D §2 —
+          // 8% alpha is dim enough to keep the cream card surface
+          // legible in light mode and the navy card surface legible
+          // in dark mode.
+          color: primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusCardLg),
+          border: Border.all(color: primary.withValues(alpha: 0.18)),
+        ),
+        onTap: () => context.goNamed('insights'),
+        child: Row(
+          children: [
+            // 56 dp leading circle (vs 40 dp before) so the icon reads
+            // as the primary action, not as a chevron-row decoration.
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(Icons.insights_outlined, color: primary, size: 28),
             ),
-            child: Icon(
-              Icons.insights_outlined,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Pattern insights',
-                  style: MbFonts.nunito(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: mb.text,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Open detailed insights',
+                    style: MbFonts.nunito(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: mb.text,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'See the gentle ups and downs your garden has been '
-                  'noticing lately.',
-                  style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    'See your mood-score timeline, rolling rhythm, and '
+                    'the gentle nudges your garden has noticed lately.',
+                    style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Icon(Icons.chevron_right, color: mb.textDim),
-        ],
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right, color: primary),
+          ],
+        ),
       ),
     );
   }

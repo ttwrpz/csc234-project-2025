@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../mood/domain/entities/mood_type.dart';
 import '../../../pattern_engine/domain/entities/tier.dart';
+import 'pattern_engine_trigger_kind.dart';
 
 part 'daily_insight.freezed.dart';
 
@@ -22,6 +23,12 @@ part 'daily_insight.freezed.dart';
 ///  * `entryCount` — number of mood entries logged on [date].
 ///  * `triggeredTier` — Pattern Engine output (null = no algorithm
 ///    fired). Drives the marker band on the chart.
+///  * `triggerReasonKey` — which of the 5 algorithms produced the trigger
+///    (null on no-trigger days). Surfaced to the marker-tap popover so
+///    the popover can render a plain-English reason without re-running
+///    the engine. Resolution rule when multiple algorithms fire: highest
+///    tier first, then the strongest within the tier — see
+///    [PatternEngineTriggerKind] doc.
 ///
 /// Pure-Dart entity — imports only `freezed_annotation` and sibling
 /// domain enums, per the domain-purity rule in CLAUDE.md.
@@ -34,6 +41,7 @@ abstract class DailyInsight with _$DailyInsight {
     required MoodType? dominantEmotion,
     required int entryCount,
     required Tier? triggeredTier,
+    @Default(null) PatternEngineTriggerKind? triggerReasonKey,
   }) = _DailyInsight;
 
   /// Convenience factory for an "empty slot" day (no entries, no
@@ -46,5 +54,6 @@ abstract class DailyInsight with _$DailyInsight {
     dominantEmotion: null,
     entryCount: 0,
     triggeredTier: null,
+    triggerReasonKey: null,
   );
 }
