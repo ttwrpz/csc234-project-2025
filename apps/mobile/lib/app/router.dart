@@ -5,9 +5,14 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../features/analytics/presentation/analytics_screen.dart';
+import 'providers.dart';
+
+import '../features/auth/data/history_unlocked_this_session_provider.dart';
 import '../features/auth/data/providers.dart';
 import '../features/auth/domain/entities/app_user.dart';
 import '../features/auth/presentation/biometric_gate_screen.dart';
+import '../features/auth/presentation/screens/pin_verify_screen.dart';
+import '../features/auth/presentation/screens/privacy_setup_flow_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/garden/presentation/garden_screen.dart';
@@ -68,8 +73,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     // 2.2: on sign-out (non-null → null), clear the session-scoped biometric
     // unlock flag so a future re-sign-in re-prompts. Correct security
     // behaviour: a fresh login should re-verify biometric on cold boot.
+    // ADR-0013: the History privacy unlock is cleared on the same edge,
+    // so a fresh sign-in always re-prompts on the History route.
     if (previous?.value != null && next.value == null) {
       ref.read(biometricUnlockedThisSessionProvider.notifier).state = false;
+      ref.read(historyUnlockedThisSessionProvider.notifier).lock();
     }
   });
 
@@ -107,6 +115,30 @@ final routerProvider = Provider<GoRouter>((ref) {
           return '/biometric-gate';
         }
       }
+
+      // 4. History privacy gate (ADR-0013). Guards `/history` and any
+      // sub-route (`/history/:id` and future deep links). Mirrors the
+      // existing cold-boot biometric gate pattern: gracefully exits
+      // when any precondition isn't ready (no flag, no opt-in, no
+      // PIN). Open Follow-up #2: the redirect must not loop —
+      // `/unlock-history` itself short-circuits the gate, and the
+      // `/privacy/setup` modal route is also exempt so toggling
+      // ON during setup doesn't fire the gate on a Settings-sourced
+      // visit.
+      final isHistoryRoute = loc == '/history' || loc.startsWith('/history/');
+      final isUnlockRoute = loc == '/unlock-history';
+      final isPrivacySetup = loc == '/privacy/setup';
+      if (isHistoryRoute && !isUnlockRoute && !isPrivacySetup) {
+        final flags = ref.read(featureFlagsProvider);
+        final userOptedIn = ref.read(privacyLockEnabledProvider);
+        if (flags.historyPrivacyLockEnabled && userOptedIn) {
+          final unlock = ref.read(historyUnlockedThisSessionProvider);
+          final unlocked = unlock.isUnlocked(now: DateTime.now().toUtc());
+          if (!unlocked) {
+            return '/unlock-history?returnTo=${Uri.encodeComponent(loc)}';
+          }
+        }
+      }
       return null;
     },
     routes: [
@@ -125,6 +157,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/biometric-gate',
         builder: (context, state) => const BiometricGateScreen(),
+      ),
+      // ADR-0013 — History privacy gate (biometric + PIN fallback).
+      // Reachable via the redirect clause #4 above when the user has
+      // opted in. `returnTo` is URL-encoded by the redirect so any
+      // `/history/<id>` deep link survives the round-trip.
+      GoRoute(
+        path: '/unlock-history',
+        builder: (context, state) {
+          final returnTo = state.uri.queryParameters['returnTo'];
+          return PinVerifyScreen(returnTo: returnTo);
+        },
+      ),
+      // ADR-0013 Decision G — first-time setup flow for the History
+      // privacy gate. Modal route reached via Settings → PRIVACY →
+      // "Set up PIN" or by flipping the master switch ON. Pops with
+      // `true` on success and `false` on cancellation.
+      GoRoute(
+        path: '/privacy/setup',
+        builder: (context, state) => const PrivacySetupFlowScreen(),
       ),
       // Intervention surfaces — full-screen routes opened from the
       // [InterventionBanner] (or the FCM notification tap-action when
