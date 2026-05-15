@@ -1,13 +1,13 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/insights/domain/entities/daily_insight.dart';
 import 'package:moodbloom/features/insights/presentation/widgets/pattern_marker_band.dart';
 import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
-Widget wrap(Widget child) => MaterialApp(
-  theme: buildLightTheme(),
-  home: Scaffold(body: child),
+Widget wrap(Widget child) => ProviderScope(
+  child: MaterialApp(theme: buildLightTheme(), home: Scaffold(body: child)),
 );
 
 DailyInsight _day(DateTime date, {Tier? tier}) => DailyInsight(
