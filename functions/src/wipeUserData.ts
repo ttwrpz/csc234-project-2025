@@ -53,6 +53,7 @@ const SUBCOLLECTIONS = [
   'interventions',
   'moods',
   'patterns',
+  'security',
   'settings',
   'weeklyGardens',
 ] as const;

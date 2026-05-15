@@ -469,6 +469,33 @@ describe('wipeUserData handler', () => {
   });
 
   // -------------------------------------------------------------------------
+  // ADR-0014 §"Compliance + rollback": the users/{uid}/security/** subtree
+  // (PIN doc today + WebAuthn credentials tomorrow) is drained by the same
+  // cascade. Pre-fix this subcollection was orphaned because SUBCOLLECTIONS
+  // didn't list 'security'.
+  // -------------------------------------------------------------------------
+  describe('security subcollection drain (ADR-0014)', () => {
+    test('users/{uid}/security/pin is included in the cascade', async () => {
+      const uid = 'test-uid';
+      seedFullAccount(uid);
+      docStore.set(`users/${uid}/security/pin`, {
+        algorithm: 'pbkdf2-sha256',
+        iterations: 100000,
+        saltBase64: 'AAA=',
+        hashBase64: 'BBB=',
+      });
+
+      const out = await handleWipeUserData(call(uid) as never);
+
+      expect(out).toMatchObject({ ok: true, alreadyDeleted: false });
+      const outDone = out as Extract<typeof out, { alreadyDeleted: false }>;
+      expect(outDone.deleted.security).toBe(1);
+      // The PIN doc itself is gone from the store.
+      expect(docStore.has(`users/${uid}/security/pin`)).toBe(false);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // PII discipline (broader — confirms nothing sensitive leaks anywhere).
   // -------------------------------------------------------------------------
   describe('PII canary on logs', () => {
