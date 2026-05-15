@@ -114,7 +114,8 @@ class _PinVerifyScreenState extends ConsumerState<PinVerifyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mb = Theme.of(context).extension<MbColors>()!;
+    final theme = Theme.of(context);
+    final mb = theme.extension<MbColors>()!;
     final lockedRemaining = _lockedUntil != null
         ? _lockedUntil!.difference(DateTime.now().toUtc())
         : Duration.zero;
@@ -165,7 +166,20 @@ class _PinVerifyScreenState extends ConsumerState<PinVerifyScreen> {
                     '${lockedRemaining.inSeconds + 1}s.',
                     style: MbFonts.nunito(
                       fontSize: 13,
-                      color: MoodBloomColors.coralText,
+                      // Wave C dark-mode contrast sweep — mirror the
+                      // brightness-aware pick used by PinKeypad's error
+                      // text. `coralText` is the historical light-theme
+                      // binding (6.04:1 PASS on cream `mb.bg`) but fails
+                      // dark AA at ~2.54:1; `colorScheme.error` resolves
+                      // to `MoodBloomColors.coral` and is the right
+                      // dark-mode swap (8.25:1 PASS). The design-system
+                      // has no theme-aware destructive-text token yet
+                      // (v1.6 chore); picking at the binding site keeps
+                      // Wave C compliant with "do not modify token
+                      // values".
+                      color: theme.brightness == Brightness.dark
+                          ? theme.colorScheme.error
+                          : MoodBloomColors.coralText,
                       fontWeight: FontWeight.w600,
                     ),
                     textAlign: TextAlign.center,
