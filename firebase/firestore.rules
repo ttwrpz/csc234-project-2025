@@ -316,6 +316,70 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // Per-user PIN hash for the History privacy gate (ADR-0013
+      // Decision E §3). One sub-doc at users/{uid}/security/pin
+      // holding the PBKDF2-SHA-256 output plus the rate-limit anchor.
+      // Verification is client-side; this rule's job is to
+      //   1. confine read/write to the owner,
+      //   2. enforce the field allow-list so no extra keys land,
+      //   3. enforce the algorithm + iteration-count lower bound, and
+      //   4. block reads when `lockedUntil > request.time` so a
+      //      tampered client cannot bypass the rate limit by skipping
+      //      the failure-write.
+      //
+      // Delete is denied — PIN reset is a "re-set" (write a fresh
+      // hash on top), not a one-tap delete. See ADR-0013 §"Reset
+      // flow (v1.5)" and the data layer's PinRepositoryImpl.remove()
+      // which writes an unrecoverable random hash to "remove."
+      //
+      // TODO(security-reviewer): final audit before tag — confirm
+      // the field allow-list matches the data layer's write, confirm
+      // the iterations lower bound matches the hasher's constant
+      // (PinHasher.minIterations), and exercise the lockedUntil read
+      // gate with the emulator.
+      match /security/{docId} {
+        function pinAllowedKeys() {
+          return ['algorithm','iterations','saltBase64','hashBase64',
+                  'createdAt','failedAttempts','lockedUntil'];
+        }
+
+        function pinShapeValid() {
+          return docId == 'pin'
+            && request.resource.data.algorithm == 'pbkdf2-sha256'
+            && request.resource.data.iterations is int
+            && request.resource.data.iterations >= 100000
+            && request.resource.data.saltBase64 is string
+            && request.resource.data.hashBase64 is string
+            && request.resource.data.createdAt is timestamp
+            && request.resource.data.failedAttempts is int
+            && request.resource.data.failedAttempts >= 0
+            && (request.resource.data.lockedUntil == null
+                || request.resource.data.lockedUntil is timestamp)
+            && request.resource.data.keys().hasOnly(pinAllowedKeys());
+        }
+
+        // Read gate: owner only, AND the rate-limit lockout is over.
+        // The `get('lockedUntil', null)` guard tolerates the
+        // first-time-no-lock-set state without failing the rule.
+        allow read: if isOwner(uid)
+          && docId == 'pin'
+          && (resource.data.get('lockedUntil', null) == null
+              || request.time >= resource.data.lockedUntil);
+
+        // Create (first-time setup) — same shape constraints as
+        // update; the doc is `set()` from the client so the same rule
+        // covers both paths.
+        allow create: if isOwner(uid) && pinShapeValid();
+
+        // Update (re-setup, rotate, rate-limit-anchor bump). The
+        // field allow-list is the same — no auxiliary fields land
+        // outside the canonical schema.
+        allow update: if isOwner(uid) && pinShapeValid();
+
+        // Delete denied — see header comment.
+        allow delete: if false;
+      }
+
       // Weekly Harvest archive (HB-005 Track 6.1; ADR-0010 §6).
       // Write-once-on-archive: history is a record, not a redo. Each
       // doc id is the ISO-8601 weekId formatted `YYYY-Www`; the

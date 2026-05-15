@@ -22,7 +22,14 @@ mixin _$FeatureFlags {
 /// `patterns/{date}.triggeredTier` field, attaches the Quote
 /// Library safety filter and the Bipolar/medical disclaimer
 /// footer, and flips this flag to `true`. See ADR-0011 §4.
- bool get interventionDispatchEnabled;
+ bool get interventionDispatchEnabled;/// Master kill-switch for the History privacy gate (ADR-0013).
+/// Default `true`: the gate is honored when the user has opted in
+/// via Settings. Flipping to `false` short-circuits the router
+/// redirect — users are never locked out of `/history`, the
+/// PRIVACY card in Settings is hidden, and existing stored PIN
+/// hashes stay at rest (no data loss). Use this if a critical
+/// post-release bug surfaces.
+ bool get historyPrivacyLockEnabled;
 /// Create a copy of FeatureFlags
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -33,16 +40,16 @@ $FeatureFlagsCopyWith<FeatureFlags> get copyWith => _$FeatureFlagsCopyWithImpl<F
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FeatureFlags&&(identical(other.aiPatternAnalysisEnabled, aiPatternAnalysisEnabled) || other.aiPatternAnalysisEnabled == aiPatternAnalysisEnabled)&&(identical(other.geminiDetectionEnabled, geminiDetectionEnabled) || other.geminiDetectionEnabled == geminiDetectionEnabled)&&(identical(other.interventionDispatchEnabled, interventionDispatchEnabled) || other.interventionDispatchEnabled == interventionDispatchEnabled));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FeatureFlags&&(identical(other.aiPatternAnalysisEnabled, aiPatternAnalysisEnabled) || other.aiPatternAnalysisEnabled == aiPatternAnalysisEnabled)&&(identical(other.geminiDetectionEnabled, geminiDetectionEnabled) || other.geminiDetectionEnabled == geminiDetectionEnabled)&&(identical(other.interventionDispatchEnabled, interventionDispatchEnabled) || other.interventionDispatchEnabled == interventionDispatchEnabled)&&(identical(other.historyPrivacyLockEnabled, historyPrivacyLockEnabled) || other.historyPrivacyLockEnabled == historyPrivacyLockEnabled));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,aiPatternAnalysisEnabled,geminiDetectionEnabled,interventionDispatchEnabled);
+int get hashCode => Object.hash(runtimeType,aiPatternAnalysisEnabled,geminiDetectionEnabled,interventionDispatchEnabled,historyPrivacyLockEnabled);
 
 @override
 String toString() {
-  return 'FeatureFlags(aiPatternAnalysisEnabled: $aiPatternAnalysisEnabled, geminiDetectionEnabled: $geminiDetectionEnabled, interventionDispatchEnabled: $interventionDispatchEnabled)';
+  return 'FeatureFlags(aiPatternAnalysisEnabled: $aiPatternAnalysisEnabled, geminiDetectionEnabled: $geminiDetectionEnabled, interventionDispatchEnabled: $interventionDispatchEnabled, historyPrivacyLockEnabled: $historyPrivacyLockEnabled)';
 }
 
 
@@ -53,7 +60,7 @@ abstract mixin class $FeatureFlagsCopyWith<$Res>  {
   factory $FeatureFlagsCopyWith(FeatureFlags value, $Res Function(FeatureFlags) _then) = _$FeatureFlagsCopyWithImpl;
 @useResult
 $Res call({
- bool aiPatternAnalysisEnabled, bool geminiDetectionEnabled, bool interventionDispatchEnabled
+ bool aiPatternAnalysisEnabled, bool geminiDetectionEnabled, bool interventionDispatchEnabled, bool historyPrivacyLockEnabled
 });
 
 
@@ -70,11 +77,12 @@ class _$FeatureFlagsCopyWithImpl<$Res>
 
 /// Create a copy of FeatureFlags
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? aiPatternAnalysisEnabled = null,Object? geminiDetectionEnabled = null,Object? interventionDispatchEnabled = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? aiPatternAnalysisEnabled = null,Object? geminiDetectionEnabled = null,Object? interventionDispatchEnabled = null,Object? historyPrivacyLockEnabled = null,}) {
   return _then(_self.copyWith(
 aiPatternAnalysisEnabled: null == aiPatternAnalysisEnabled ? _self.aiPatternAnalysisEnabled : aiPatternAnalysisEnabled // ignore: cast_nullable_to_non_nullable
 as bool,geminiDetectionEnabled: null == geminiDetectionEnabled ? _self.geminiDetectionEnabled : geminiDetectionEnabled // ignore: cast_nullable_to_non_nullable
 as bool,interventionDispatchEnabled: null == interventionDispatchEnabled ? _self.interventionDispatchEnabled : interventionDispatchEnabled // ignore: cast_nullable_to_non_nullable
+as bool,historyPrivacyLockEnabled: null == historyPrivacyLockEnabled ? _self.historyPrivacyLockEnabled : historyPrivacyLockEnabled // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -160,10 +168,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool aiPatternAnalysisEnabled,  bool geminiDetectionEnabled,  bool interventionDispatchEnabled)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool aiPatternAnalysisEnabled,  bool geminiDetectionEnabled,  bool interventionDispatchEnabled,  bool historyPrivacyLockEnabled)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FeatureFlags() when $default != null:
-return $default(_that.aiPatternAnalysisEnabled,_that.geminiDetectionEnabled,_that.interventionDispatchEnabled);case _:
+return $default(_that.aiPatternAnalysisEnabled,_that.geminiDetectionEnabled,_that.interventionDispatchEnabled,_that.historyPrivacyLockEnabled);case _:
   return orElse();
 
 }
@@ -181,10 +189,10 @@ return $default(_that.aiPatternAnalysisEnabled,_that.geminiDetectionEnabled,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool aiPatternAnalysisEnabled,  bool geminiDetectionEnabled,  bool interventionDispatchEnabled)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool aiPatternAnalysisEnabled,  bool geminiDetectionEnabled,  bool interventionDispatchEnabled,  bool historyPrivacyLockEnabled)  $default,) {final _that = this;
 switch (_that) {
 case _FeatureFlags():
-return $default(_that.aiPatternAnalysisEnabled,_that.geminiDetectionEnabled,_that.interventionDispatchEnabled);case _:
+return $default(_that.aiPatternAnalysisEnabled,_that.geminiDetectionEnabled,_that.interventionDispatchEnabled,_that.historyPrivacyLockEnabled);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +209,10 @@ return $default(_that.aiPatternAnalysisEnabled,_that.geminiDetectionEnabled,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool aiPatternAnalysisEnabled,  bool geminiDetectionEnabled,  bool interventionDispatchEnabled)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool aiPatternAnalysisEnabled,  bool geminiDetectionEnabled,  bool interventionDispatchEnabled,  bool historyPrivacyLockEnabled)?  $default,) {final _that = this;
 switch (_that) {
 case _FeatureFlags() when $default != null:
-return $default(_that.aiPatternAnalysisEnabled,_that.geminiDetectionEnabled,_that.interventionDispatchEnabled);case _:
+return $default(_that.aiPatternAnalysisEnabled,_that.geminiDetectionEnabled,_that.interventionDispatchEnabled,_that.historyPrivacyLockEnabled);case _:
   return null;
 
 }
@@ -216,7 +224,7 @@ return $default(_that.aiPatternAnalysisEnabled,_that.geminiDetectionEnabled,_tha
 
 
 class _FeatureFlags extends FeatureFlags {
-  const _FeatureFlags({required this.aiPatternAnalysisEnabled, required this.geminiDetectionEnabled, required this.interventionDispatchEnabled}): super._();
+  const _FeatureFlags({required this.aiPatternAnalysisEnabled, required this.geminiDetectionEnabled, required this.interventionDispatchEnabled, required this.historyPrivacyLockEnabled}): super._();
   
 
 @override final  bool aiPatternAnalysisEnabled;
@@ -230,6 +238,14 @@ class _FeatureFlags extends FeatureFlags {
 /// Library safety filter and the Bipolar/medical disclaimer
 /// footer, and flips this flag to `true`. See ADR-0011 §4.
 @override final  bool interventionDispatchEnabled;
+/// Master kill-switch for the History privacy gate (ADR-0013).
+/// Default `true`: the gate is honored when the user has opted in
+/// via Settings. Flipping to `false` short-circuits the router
+/// redirect — users are never locked out of `/history`, the
+/// PRIVACY card in Settings is hidden, and existing stored PIN
+/// hashes stay at rest (no data loss). Use this if a critical
+/// post-release bug surfaces.
+@override final  bool historyPrivacyLockEnabled;
 
 /// Create a copy of FeatureFlags
 /// with the given fields replaced by the non-null parameter values.
@@ -241,16 +257,16 @@ _$FeatureFlagsCopyWith<_FeatureFlags> get copyWith => __$FeatureFlagsCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FeatureFlags&&(identical(other.aiPatternAnalysisEnabled, aiPatternAnalysisEnabled) || other.aiPatternAnalysisEnabled == aiPatternAnalysisEnabled)&&(identical(other.geminiDetectionEnabled, geminiDetectionEnabled) || other.geminiDetectionEnabled == geminiDetectionEnabled)&&(identical(other.interventionDispatchEnabled, interventionDispatchEnabled) || other.interventionDispatchEnabled == interventionDispatchEnabled));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FeatureFlags&&(identical(other.aiPatternAnalysisEnabled, aiPatternAnalysisEnabled) || other.aiPatternAnalysisEnabled == aiPatternAnalysisEnabled)&&(identical(other.geminiDetectionEnabled, geminiDetectionEnabled) || other.geminiDetectionEnabled == geminiDetectionEnabled)&&(identical(other.interventionDispatchEnabled, interventionDispatchEnabled) || other.interventionDispatchEnabled == interventionDispatchEnabled)&&(identical(other.historyPrivacyLockEnabled, historyPrivacyLockEnabled) || other.historyPrivacyLockEnabled == historyPrivacyLockEnabled));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,aiPatternAnalysisEnabled,geminiDetectionEnabled,interventionDispatchEnabled);
+int get hashCode => Object.hash(runtimeType,aiPatternAnalysisEnabled,geminiDetectionEnabled,interventionDispatchEnabled,historyPrivacyLockEnabled);
 
 @override
 String toString() {
-  return 'FeatureFlags(aiPatternAnalysisEnabled: $aiPatternAnalysisEnabled, geminiDetectionEnabled: $geminiDetectionEnabled, interventionDispatchEnabled: $interventionDispatchEnabled)';
+  return 'FeatureFlags(aiPatternAnalysisEnabled: $aiPatternAnalysisEnabled, geminiDetectionEnabled: $geminiDetectionEnabled, interventionDispatchEnabled: $interventionDispatchEnabled, historyPrivacyLockEnabled: $historyPrivacyLockEnabled)';
 }
 
 
@@ -261,7 +277,7 @@ abstract mixin class _$FeatureFlagsCopyWith<$Res> implements $FeatureFlagsCopyWi
   factory _$FeatureFlagsCopyWith(_FeatureFlags value, $Res Function(_FeatureFlags) _then) = __$FeatureFlagsCopyWithImpl;
 @override @useResult
 $Res call({
- bool aiPatternAnalysisEnabled, bool geminiDetectionEnabled, bool interventionDispatchEnabled
+ bool aiPatternAnalysisEnabled, bool geminiDetectionEnabled, bool interventionDispatchEnabled, bool historyPrivacyLockEnabled
 });
 
 
@@ -278,11 +294,12 @@ class __$FeatureFlagsCopyWithImpl<$Res>
 
 /// Create a copy of FeatureFlags
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? aiPatternAnalysisEnabled = null,Object? geminiDetectionEnabled = null,Object? interventionDispatchEnabled = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? aiPatternAnalysisEnabled = null,Object? geminiDetectionEnabled = null,Object? interventionDispatchEnabled = null,Object? historyPrivacyLockEnabled = null,}) {
   return _then(_FeatureFlags(
 aiPatternAnalysisEnabled: null == aiPatternAnalysisEnabled ? _self.aiPatternAnalysisEnabled : aiPatternAnalysisEnabled // ignore: cast_nullable_to_non_nullable
 as bool,geminiDetectionEnabled: null == geminiDetectionEnabled ? _self.geminiDetectionEnabled : geminiDetectionEnabled // ignore: cast_nullable_to_non_nullable
 as bool,interventionDispatchEnabled: null == interventionDispatchEnabled ? _self.interventionDispatchEnabled : interventionDispatchEnabled // ignore: cast_nullable_to_non_nullable
+as bool,historyPrivacyLockEnabled: null == historyPrivacyLockEnabled ? _self.historyPrivacyLockEnabled : historyPrivacyLockEnabled // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

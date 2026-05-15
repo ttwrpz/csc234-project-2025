@@ -78,6 +78,9 @@ final featureFlagsProvider = Provider<FeatureFlags>((ref) {
       interventionDispatchEnabled: source.getBool(
         'intervention_dispatch_enabled',
       ),
+      historyPrivacyLockEnabled: source.getBool(
+        'history_privacy_lock_enabled',
+      ),
     );
   } catch (_) {
     // Source throws if RC hasn't been initialised yet (e.g. before

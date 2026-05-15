@@ -24,6 +24,15 @@ abstract class FeatureFlags with _$FeatureFlags {
     /// Library safety filter and the Bipolar/medical disclaimer
     /// footer, and flips this flag to `true`. See ADR-0011 §4.
     required bool interventionDispatchEnabled,
+
+    /// Master kill-switch for the History privacy gate (ADR-0013).
+    /// Default `true`: the gate is honored when the user has opted in
+    /// via Settings. Flipping to `false` short-circuits the router
+    /// redirect — users are never locked out of `/history`, the
+    /// PRIVACY card in Settings is hidden, and existing stored PIN
+    /// hashes stay at rest (no data loss). Use this if a critical
+    /// post-release bug surfaces.
+    required bool historyPrivacyLockEnabled,
   }) = _FeatureFlags;
 
   const FeatureFlags._();
@@ -32,6 +41,7 @@ abstract class FeatureFlags with _$FeatureFlags {
     aiPatternAnalysisEnabled: true,
     geminiDetectionEnabled: true,
     interventionDispatchEnabled: false,
+    historyPrivacyLockEnabled: true,
   );
 }
 
