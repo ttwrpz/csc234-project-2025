@@ -8,9 +8,11 @@ import '../../mood/domain/entities/mood_type.dart';
 import '../../mood/domain/mood_repository.dart';
 import '../../mood/domain/services/mood_score.dart';
 import '../../pattern_engine/domain/entities/pattern_result.dart';
+import '../../pattern_engine/domain/entities/tier.dart';
 import '../../pattern_engine/domain/repositories/pattern_repository.dart';
 import '../domain/entities/daily_insight.dart';
 import '../domain/entities/insight_window.dart';
+import '../domain/entities/pattern_engine_trigger_kind.dart';
 import '../domain/repositories/insights_repository.dart';
 
 /// Joins `users/{uid}/moods/*` with `users/{uid}/patterns/{date}` into the
@@ -143,10 +145,50 @@ class InsightsRepositoryImpl implements InsightsRepository {
           dominantEmotion: entries.isEmpty ? null : _dominantEmotion(entries),
           entryCount: entries.length,
           triggeredTier: pattern?.triggeredTier,
+          triggerReasonKey: _reasonFor(pattern),
         ),
       );
     }
     return out;
+  }
+
+  /// Picks the dominant algorithm that fired on a given day so the
+  /// Insights marker-tap popover can show ONE plain-English reason.
+  ///
+  /// Resolution rule (HB-009 §C-3):
+  ///  * No tier triggered → `null` (no marker, no popover content).
+  ///  * Tier 1 has one source: Mann-Kendall.
+  ///  * Tier 2 has one source: sliding 5-of-7.
+  ///  * Tier 3 has three possible sources, ordered by acuity:
+  ///    3-consecutive → z-score → CUSUM. We pick the first one whose
+  ///    flag tripped, since each maps to a different copy line. If a
+  ///    legacy doc (pre-engine-flags) carries `triggeredTier = three`
+  ///    with none of the three Tier-3 flags asserted, return `null`
+  ///    rather than guess — the popover renders without the algorithm
+  ///    line (graceful degradation).
+  static PatternEngineTriggerKind? _reasonFor(PatternResult? pattern) {
+    if (pattern == null) return null;
+    final tier = pattern.triggeredTier;
+    if (tier == null) return null;
+    switch (tier) {
+      case Tier.one:
+        final z = pattern.mannKendallZ;
+        if (z != null && z < -1.96) return PatternEngineTriggerKind.mannKendall;
+        return null;
+      case Tier.two:
+        if (pattern.slidingNegCount >= 5) {
+          return PatternEngineTriggerKind.sliding5of7;
+        }
+        return null;
+      case Tier.three:
+        if (pattern.consecutiveHighIntensity >= 3) {
+          return PatternEngineTriggerKind.threeConsecutive;
+        }
+        final z = pattern.zScoreToday;
+        if (z != null && z < -2.5) return PatternEngineTriggerKind.zScore;
+        if (pattern.cusumC > 0) return PatternEngineTriggerKind.cusum;
+        return null;
+    }
   }
 
   static List<DailyInsight> _emptyWindow(InsightWindow window) => [

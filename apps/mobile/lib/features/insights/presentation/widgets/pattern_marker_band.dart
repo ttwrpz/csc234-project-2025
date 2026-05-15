@@ -1,8 +1,11 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../pattern_engine/domain/entities/tier.dart';
 import '../../domain/entities/daily_insight.dart';
+import 'marker_detail_sheet.dart';
+import 'recent_triggers_card.dart' show insightsFocusedDayIndexProvider;
 
 /// Horizontal strip of small badge dots aligned to the chart's X axis,
 /// one badge per [DailyInsight] day that fired a tier. Tier 1 = amber,
@@ -10,28 +13,56 @@ import '../../domain/entities/daily_insight.dart';
 /// without a trigger render a transparent placeholder so the dots stay
 /// aligned with the chart's date ticks.
 ///
+/// Each tier-trigger dot is a tap target. Tapping opens
+/// [MarkerDetailSheet] — phone shows a modal bottom sheet, tablet and
+/// desktop show a centred dialog. The popover surfaces the date, tier
+/// name, plain-English reason, and (optionally) a link to the matching
+/// intervention surface. Untriggered placeholder dots are NOT tappable.
+///
+/// HB-009 v1.5 cut: the band reads
+/// [insightsFocusedDayIndexProvider] and scales the matching dot by
+/// 1.6x for 600ms when the [RecentTriggersCard] focuses a day, giving
+/// the user a visual anchor without re-implementing fl_chart focus.
+/// Chart-line focus is deferred to v1.6 per HB-009 "Engineering notes" §2.
+///
 /// Every badge carries a `Semantics(label: ...)` so screen readers
 /// announce "Tier N trigger on Mon May 10" rather than a bare dot.
-class PatternMarkerBand extends StatelessWidget {
+class PatternMarkerBand extends ConsumerWidget {
   const PatternMarkerBand({super.key, required this.insights});
 
   final List<DailyInsight> insights;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final mb = Theme.of(context).extension<MbColors>()!;
     final hasAny = insights.any((d) => d.triggeredTier != null);
+    final focused = ref.watch(insightsFocusedDayIndexProvider);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          for (final d in insights)
+          for (var i = 0; i < insights.length; i++)
             Expanded(
               child: Center(
                 child: _Marker(
-                  tier: d.triggeredTier,
-                  date: d.date,
+                  insight: insights[i],
                   placeholderColor: hasAny ? mb.line : Colors.transparent,
+                  isFocused: focused == i,
+                  onTap: insights[i].triggeredTier == null
+                      ? null
+                      : () {
+                          // The user picked this dot directly — clear
+                          // any stale focus from the Recent Triggers
+                          // list so the next tap on a list row still
+                          // animates.
+                          ref
+                                  .read(
+                                    insightsFocusedDayIndexProvider.notifier,
+                                  )
+                                  .state =
+                              null;
+                          MarkerDetailSheet.show(context, insights[i]);
+                        },
                 ),
               ),
             ),
@@ -43,17 +74,20 @@ class PatternMarkerBand extends StatelessWidget {
 
 class _Marker extends StatelessWidget {
   const _Marker({
-    required this.tier,
-    required this.date,
+    required this.insight,
     required this.placeholderColor,
+    required this.isFocused,
+    required this.onTap,
   });
 
-  final Tier? tier;
-  final DateTime date;
+  final DailyInsight insight;
   final Color placeholderColor;
+  final bool isFocused;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final tier = insight.triggeredTier;
     if (tier == null) {
       return Container(
         width: 6,
@@ -64,17 +98,33 @@ class _Marker extends StatelessWidget {
         ),
       );
     }
-    final color = _colorFor(tier!);
-    final tierLabel = _labelFor(tier!);
-    final dateLabel = _shortDate(date);
+    final color = _colorFor(tier);
+    final tierLabel = _labelFor(tier);
+    final dateLabel = _shortDate(insight.date);
+    final dot = AnimatedScale(
+      scale: isFocused ? 1.6 : 1.0,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutBack,
+      child: Container(
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      ),
+    );
     return Semantics(
+      button: true,
       label: '$tierLabel trigger on $dateLabel',
       child: Tooltip(
         message: '$tierLabel · $dateLabel',
-        child: Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        child: InkResponse(
+          onTap: onTap,
+          radius: 18,
+          child: Padding(
+            // Pad the hit target so the visible 10 dp dot still hands
+            // a ~36 dp tap target to the user (a11y minimum).
+            padding: const EdgeInsets.all(8),
+            child: dot,
+          ),
         ),
       ),
     );
