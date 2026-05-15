@@ -110,7 +110,8 @@ class _PinKeypadState extends State<PinKeypad> {
 
   @override
   Widget build(BuildContext context) {
-    final mb = Theme.of(context).extension<MbColors>()!;
+    final theme = Theme.of(context);
+    final mb = theme.extension<MbColors>()!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -123,7 +124,20 @@ class _PinKeypadState extends State<PinKeypad> {
               widget.errorText!,
               style: MbFonts.nunito(
                 fontSize: 13,
-                color: MoodBloomColors.coralText,
+                // Wave C dark-mode contrast sweep — `coralText` is the
+                // design-system "destructive text on cream" token, and
+                // by its own docstring is not dark-safe (~2.54:1 over
+                // dark `mb.bg`). The design system has no brightness-
+                // aware destructive-text token yet (v1.6 chore), so the
+                // widget picks the right hue at runtime: `coralText` on
+                // light (6.04:1 PASS — the historical binding), `coral`
+                // on dark (8.25:1 PASS via the theme's pinned error
+                // tone). The decision lives here rather than in a token
+                // because Wave C's constraint is "do not modify token
+                // values"; choosing-at-binding-site honours that.
+                color: theme.brightness == Brightness.dark
+                    ? theme.colorScheme.error
+                    : MoodBloomColors.coralText,
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
