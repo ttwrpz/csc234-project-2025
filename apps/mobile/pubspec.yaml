@@ -35,6 +35,11 @@ dependencies:
   path_provider: ^2.1.4
   synchronized: ^3.3.0
   local_auth: ^3.0.0
+  # Promoted from transitive (was pulled in via `uuid`) to a direct dep so
+  # the PIN fallback layer can rely on `Hmac<Sha256>` without sprouting a
+  # transitive-dep version-pin risk. PBKDF2 is hand-rolled on top of
+  # `crypto`'s `Hmac` primitive — see ADR-0013 Open Follow-up #1.
+  crypto: ^3.0.7
   core:
     path: ../../packages/core
   design_system:
