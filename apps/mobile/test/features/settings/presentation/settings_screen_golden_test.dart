@@ -99,6 +99,10 @@ Future<void> _pumpSettingsAt(
           ),
         ),
         fcmTokenRepositoryProvider.overrideWithValue(_StubFcmRepo()),
+        // ADR-0013 (v1.5 Wave E): hide the PRIVACY section in
+        // golden tests so the layout stays stable. Wave E ships
+        // its own goldens for the PRIVACY card.
+        privacyLockMasterEnabledProvider.overrideWithValue(false),
       ],
       child: MaterialApp(
         theme: buildLightTheme(),

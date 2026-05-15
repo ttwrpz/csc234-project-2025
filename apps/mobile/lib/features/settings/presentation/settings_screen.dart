@@ -12,6 +12,7 @@ import '../../../app/providers.dart';
 import '../../auth/data/providers.dart';
 import '../../mood/data/providers.dart' show firebaseFunctionsProvider;
 import '../../auth/presentation/widgets/biometric_settings_tile.dart';
+import '../../auth/presentation/widgets/privacy_settings_tile.dart';
 import '../../disclaimer/presentation/widgets/disclaimer_panel.dart';
 import '../../garden/data/providers.dart' show debugPlantTierOverrideProvider;
 import '../../garden/domain/entities/plant_tier.dart';
@@ -116,6 +117,27 @@ class SettingsScreen extends ConsumerWidget {
             ),
 
             const SizedBox(height: 18),
+
+            // ── Privacy zone (ADR-0013) ──
+            // Hidden when signed out (defence in depth — the tile
+            // itself renders a disabled affordance, but skipping the
+            // section entirely keeps the visual hierarchy clean for
+            // the unauthenticated sign-out → sign-in transition).
+            // Also hidden when the Remote Config kill-switch is off,
+            // so a v1.5 rollback can yank the feature without leaving
+            // the Settings UI dangling.
+            if (user != null &&
+                ref.watch(privacyLockMasterEnabledProvider))
+              ...const [
+                MbSectionLabel('PRIVACY'),
+                SizedBox(height: 6),
+                MbCard(
+                  clipBehavior: Clip.hardEdge,
+                  padding: EdgeInsets.zero,
+                  child: PrivacySettingsTile(),
+                ),
+                SizedBox(height: 18),
+              ],
 
             // ── Account zone ──
             const MbSectionLabel('ACCOUNT'),

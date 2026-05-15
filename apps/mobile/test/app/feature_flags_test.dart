@@ -30,11 +30,13 @@ void main() {
         aiPatternAnalysisEnabled: true,
         geminiDetectionEnabled: false,
         interventionDispatchEnabled: false,
+        historyPrivacyLockEnabled: true,
       );
       const b = FeatureFlags(
         aiPatternAnalysisEnabled: true,
         geminiDetectionEnabled: false,
         interventionDispatchEnabled: false,
+        historyPrivacyLockEnabled: true,
       );
       expect(a, equals(b));
       expect(a.hashCode, equals(b.hashCode));
@@ -45,11 +47,13 @@ void main() {
         aiPatternAnalysisEnabled: true,
         geminiDetectionEnabled: true,
         interventionDispatchEnabled: false,
+        historyPrivacyLockEnabled: true,
       );
       const b = FeatureFlags(
         aiPatternAnalysisEnabled: false,
         geminiDetectionEnabled: true,
         interventionDispatchEnabled: false,
+        historyPrivacyLockEnabled: true,
       );
       expect(a, isNot(equals(b)));
     });
@@ -61,11 +65,13 @@ void main() {
           aiPatternAnalysisEnabled: true,
           geminiDetectionEnabled: true,
           interventionDispatchEnabled: false,
+          historyPrivacyLockEnabled: true,
         );
         const b = FeatureFlags(
           aiPatternAnalysisEnabled: true,
           geminiDetectionEnabled: true,
           interventionDispatchEnabled: true,
+          historyPrivacyLockEnabled: true,
         );
         expect(a, isNot(equals(b)));
       },
@@ -78,6 +84,7 @@ void main() {
         aiPatternAnalysisEnabled: true,
         geminiDetectionEnabled: true,
         interventionDispatchEnabled: false,
+        historyPrivacyLockEnabled: true,
       );
       final updated = original.copyWith(geminiDetectionEnabled: false);
       expect(updated.aiPatternAnalysisEnabled, isTrue);
@@ -90,6 +97,7 @@ void main() {
         aiPatternAnalysisEnabled: true,
         geminiDetectionEnabled: true,
         interventionDispatchEnabled: false,
+        historyPrivacyLockEnabled: true,
       );
       final updated = original.copyWith(interventionDispatchEnabled: true);
       expect(updated.aiPatternAnalysisEnabled, isTrue);
@@ -102,6 +110,7 @@ void main() {
         aiPatternAnalysisEnabled: false,
         geminiDetectionEnabled: true,
         interventionDispatchEnabled: false,
+        historyPrivacyLockEnabled: true,
       );
       final copy = original.copyWith();
       expect(copy, equals(original));

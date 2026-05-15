@@ -7,20 +7,30 @@ import '../domain/auth_repository.dart';
 import '../domain/entities/app_user.dart';
 import '../domain/entities/biometric_capability.dart';
 import '../domain/repositories/biometric_repository.dart';
+import '../domain/repositories/pin_repository.dart';
+import '../domain/services/pin_hasher.dart';
 import '../domain/usecases/authenticate_with_biometric.dart';
+import '../domain/usecases/change_pin.dart';
 import '../domain/usecases/check_biometric_capability.dart';
 import '../domain/usecases/delete_account.dart';
 import '../domain/usecases/register_with_email.dart';
+import '../domain/usecases/remove_pin.dart';
 import '../domain/usecases/set_biometric_opt_in.dart';
+import '../domain/usecases/setup_pin.dart';
 import '../domain/usecases/sign_in_with_email.dart';
 import '../domain/usecases/sign_in_with_google.dart';
 import '../domain/usecases/sign_out.dart';
+import '../domain/usecases/verify_pin.dart';
 import '../domain/usecases/watch_auth_state.dart';
 import 'auth_repository_impl.dart';
 import 'datasources/biometric_datasource.dart';
 import 'datasources/biometric_preference_datasource.dart';
 import 'datasources/delete_account_functions_datasource.dart';
 import 'datasources/firebase_auth_datasource.dart';
+import 'datasources/pin_firestore_datasource.dart';
+import 'datasources/privacy_lock_preference_datasource.dart';
+import 'pin_hasher_impl.dart';
+import 'pin_repository_impl.dart';
 import 'repositories/biometric_repository_impl.dart';
 
 final firebaseAuthDatasourceProvider = Provider<FirebaseAuthDatasource>((ref) {
@@ -152,3 +162,97 @@ final biometricCapabilityProvider = FutureProvider<BiometricCapability>((ref) {
 /// from `legacy.dart` to keep the trivially-ergonomic toggle without
 /// expanding the surface area to a full `Notifier` class for one bool.
 final biometricUnlockedThisSessionProvider = StateProvider<bool>((_) => false);
+
+// ────────────────────────────────────────────────────────────────────────
+// PIN fallback factor (ADR-0013)
+
+final pinFirestoreDatasourceProvider = Provider<PinFirestoreDatasource>((ref) {
+  return PinFirestoreDatasource(ref.watch(firestoreProvider));
+});
+
+final pinHasherProvider = Provider<PinHasher>((ref) => PinHasherImpl());
+
+final pinRepositoryProvider = Provider<PinRepository>((ref) {
+  return PinRepositoryImpl(
+    firestore: ref.watch(pinFirestoreDatasourceProvider),
+    hasher: ref.watch(pinHasherProvider),
+  );
+});
+
+final setupPinUseCaseProvider = Provider<SetupPinUseCase>((ref) {
+  return SetupPinUseCase(ref.watch(pinRepositoryProvider));
+});
+
+final verifyPinUseCaseProvider = Provider<VerifyPinUseCase>((ref) {
+  return VerifyPinUseCase(ref.watch(pinRepositoryProvider));
+});
+
+final changePinUseCaseProvider = Provider<ChangePinUseCase>((ref) {
+  return ChangePinUseCase(ref.watch(pinRepositoryProvider));
+});
+
+final removePinUseCaseProvider = Provider<RemovePinUseCase>((ref) {
+  return RemovePinUseCase(ref.watch(pinRepositoryProvider));
+});
+
+/// Reads the user's PIN-set state. Returns `true` when a PIN document
+/// exists at `users/{uid}/security/pin`. The Settings PRIVACY card
+/// uses this to choose between "Set up PIN" and "Change PIN" tiles.
+///
+/// `userId` is read from [currentUserStreamProvider]; when signed out,
+/// the future resolves to `false` (the PRIVACY card is hidden by
+/// upstream conditional anyway — ADR-0013 Open Follow-up #4).
+final pinIsSetProvider = FutureProvider<bool>((ref) async {
+  final user = ref.watch(currentUserStreamProvider).value;
+  if (user == null) return false;
+  final repo = ref.watch(pinRepositoryProvider);
+  final hash = await repo.read(userId: user.uid);
+  return hash != null;
+});
+
+/// SharedPreferences-backed user-opt-in flag for the History privacy
+/// gate (ADR-0013 Decision A — default OFF).
+final privacyLockPreferenceDatasourceProvider =
+    Provider<PrivacyLockPreferenceDatasource>((ref) {
+      final prefs = ref.watch(sharedPreferencesProvider).requireValue;
+      return PrivacyLockPreferenceDatasource(prefs);
+    });
+
+/// Notifier exposing the user's "Require unlock to view history" toggle.
+/// The router redirect reads `state.value` synchronously to decide
+/// whether to gate `/history`; the Settings tile updates it on flip.
+class PrivacyLockEnabledNotifier extends Notifier<bool> {
+  @override
+  bool build() {
+    return ref
+        .watch(privacyLockPreferenceDatasourceProvider)
+        .isEnabled();
+  }
+
+  /// Persists the new state to SharedPreferences and refreshes the
+  /// reactive value. Callers (the Settings switch) should only call
+  /// this once the setup flow has actually completed — the toggle is
+  /// not the source of truth for "is there a PIN to verify against."
+  Future<void> set(bool enabled) async {
+    await ref
+        .read(privacyLockPreferenceDatasourceProvider)
+        .setEnabled(enabled);
+    state = enabled;
+  }
+}
+
+final privacyLockEnabledProvider =
+    NotifierProvider<PrivacyLockEnabledNotifier, bool>(
+      PrivacyLockEnabledNotifier.new,
+    );
+
+/// Derived from the Remote Config kill-switch. Hidden from the
+/// Settings UI and short-circuited by the router redirect when `false`.
+/// Separate from [privacyLockEnabledProvider] (the user's per-account
+/// opt-in) so the rollback path can be tested independently of any
+/// stored preferences. ADR-0013 "Compliance Check" §"feature-flag".
+final privacyLockMasterEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select((f) => f.historyPrivacyLockEnabled),
+  );
+});
