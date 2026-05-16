@@ -17,8 +17,10 @@ import '../../disclaimer/presentation/widgets/disclaimer_panel.dart';
 import '../../garden/data/providers.dart' show debugPlantTierOverrideProvider;
 import '../../garden/domain/entities/plant_tier.dart';
 import '../../harvest/presentation/controllers/weekly_summary_controller.dart';
+import '../../intervention/presentation/controllers/intervention_controller.dart';
 import '../../mood/data/sync/connectivity_provider.dart';
 import '../../notifications/presentation/widgets/tier_toggle_tile.dart';
+import '../../pattern_engine/domain/entities/tier.dart' as engine;
 import '../../tokens/data/providers.dart' show tokenRepositoryProvider;
 import '../../tokens/presentation/controllers/token_visibility_controller.dart';
 import '../domain/entities/theme_mode_preference.dart';
@@ -559,6 +561,51 @@ class _DebugCluster extends ConsumerWidget {
               'the 7-day boundary. Debug only.',
             ),
             onTap: () => _forceHarvest(context, ref),
+          ),
+          const Divider(height: 1),
+          // v1.5 final polish — debug-only Tier dispatch triggers. Bypass the
+          // cooldown gate AND per-tier opt-outs so QA can demo each banner →
+          // screen flow on demand. ADR-0012's Tier 3 determinism guarantee
+          // is preserved: the dispatcher's type-level fence still routes
+          // Tier 3 to the curated pool only.
+          ListTile(
+            leading: const Icon(Icons.air_outlined),
+            title: const Text('Trigger Tier 1 banner (debug)'),
+            subtitle: const Text(
+              'Fires a Tier 1 dispatch → "gentle nudge" banner appears, '
+              'opens the 2-minute breathing screen.',
+            ),
+            onTap: () => ref
+                .read(interventionControllerProvider.notifier)
+                .debugDispatch(engine.Tier.one),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.edit_note_outlined),
+            title: const Text('Trigger Tier 2 banner (debug)'),
+            subtitle: const Text(
+              'Fires a Tier 2 dispatch → "journaling invitation" banner '
+              'appears, opens the journaling prompt screen.',
+            ),
+            onTap: () => ref
+                .read(interventionControllerProvider.notifier)
+                .debugDispatch(engine.Tier.two),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(
+              Icons.volunteer_activism_outlined,
+              color: MoodBloomColors.coralText,
+            ),
+            title: const Text('Trigger Tier 3 banner (debug)'),
+            subtitle: const Text(
+              'Fires a Tier 3 dispatch → "care" banner appears, opens the '
+              'crisis-resources screen with Hotline 1323. Curated copy only — '
+              'Tier 3 never calls Gemini (ADR-0012).',
+            ),
+            onTap: () => ref
+                .read(interventionControllerProvider.notifier)
+                .debugDispatch(engine.Tier.three),
           ),
           const Divider(height: 1),
           // Clear local cache + offline DB. User asked for this in

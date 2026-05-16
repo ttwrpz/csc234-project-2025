@@ -179,36 +179,44 @@ class _GardenBedState extends State<GardenBed> with TickerProviderStateMixin {
     final overlayChildren = <Widget>[];
     if (widget.onFlowerTap != null && shown.isNotEmpty) {
       // Per-flower hit-spots — TC-7 (S5). The placements use the same
-      // math as the painter (`_PlantPlacement`) so the InkWell columns
-      // sit directly over the rendered flowers regardless of canvas
-      // width. v1.5 polish — bumped the hit width from the original
-      // 32 dp (below Material's 48 dp minimum) toward 64 dp so users
-      // tapping in low-attention states still register the tap. The
-      // half-width is clamped to half the inter-flower stride so two
-      // adjacent flowers' hit boxes never overlap (a dense 25-plant
-      // week stays per-plant addressable, just at the painted width).
-      // Height still spans the full bed so a casual tap anywhere along
-      // the stem opens the entry.
+      // math as the painter (`_PlantPlacement`) so the hit circles sit
+      // directly over the rendered flowers regardless of canvas width.
+      // v1.5 final polish — switched from a full-height rectangle to a
+      // round hit-spot centred on the bloom. The rectangle caught taps
+      // in the empty grass below each flower (and the empty sky above)
+      // that felt unintentional; the circle matches the visual silhouette
+      // so taps register where the user sees a flower.
+      //
+      // Diameter target: ≥ 48 dp (Material minimum), capped by the inter-
+      // flower stride so dense rows stay per-plant addressable. The
+      // circle's centre sits at ~35% of the bed height (where the bloom
+      // is painted) rather than at vertical middle.
       final placements = _computeXPositions(shown, widget.size.width);
       final stride = widget.size.width / (shown.length + 1);
-      // 32 dp half-width gives a 64 dp tap target; clamp by stride/2
-      // so neighbours never overlap. Material 48 dp minimum is honoured
-      // as long as stride ≥ 48 dp (true for ≤ 6 plants on a 320 dp bed).
-      final halfWidth = math.min(32.0, stride / 2);
-      final hitWidth = halfWidth * 2;
+      // Diameter = min(64, stride - 4) clamped to ≥ 48. The -4 keeps a
+      // 2-dp gap between adjacent circles so a tap "between flowers"
+      // doesn't accidentally fire either.
+      final diameter = math.max(48.0, math.min(64.0, stride - 4.0));
+      final radius = diameter / 2;
+      final centreY = widget.size.height * 0.35;
       for (var i = 0; i < placements.length; i += 1) {
         final cx = placements[i];
         final entry = shown[i];
         overlayChildren.add(
           Positioned(
-            left: cx - halfWidth,
-            top: 0,
-            width: hitWidth,
-            height: widget.size.height,
+            left: cx - radius,
+            top: centreY - radius,
+            width: diameter,
+            height: diameter,
             child: Material(
               color: Colors.transparent,
-              child: InkWell(
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkResponse(
                 onTap: () => widget.onFlowerTap?.call(entry),
+                radius: radius,
+                containedInkWell: true,
+                customBorder: const CircleBorder(),
                 child: const SizedBox.expand(),
               ),
             ),

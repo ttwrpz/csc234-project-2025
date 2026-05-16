@@ -48,7 +48,13 @@ class LockedSkinChip extends StatelessWidget {
     final iconColor = affordable
         ? primary
         : primary.withValues(alpha: 0.45);
-    final textColor = affordable ? mb.text : mb.textDim;
+    // v1.5 final polish — keep the price text at full strength even when
+    // unaffordable so the cost is always legible (was mb.textDim, which
+    // stacked with the alpha-dimmed background and dropped contrast
+    // below the WCAG 4.5:1 floor in both light and dark themes). The
+    // unaffordable state is now communicated via the icon + border
+    // opacity instead, leaving the number itself readable.
+    final textColor = mb.text;
     final borderColor = affordable
         ? primary.withValues(alpha: 0.30)
         : mb.textDim.withValues(alpha: 0.30);
@@ -64,9 +70,11 @@ class LockedSkinChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: affordable
-                ? mb.card
-                : mb.card.withValues(alpha: 0.6),
+            // v1.5 final polish — drop the alpha on unaffordable so the
+            // background stays opaque. The dimming cue lives in the
+            // border + icon alpha only; the chip's text contrast is now
+            // ≥ 4.5:1 in both themes regardless of affordable state.
+            color: mb.card,
             borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
             border: Border.all(color: borderColor, width: 1),
           ),
