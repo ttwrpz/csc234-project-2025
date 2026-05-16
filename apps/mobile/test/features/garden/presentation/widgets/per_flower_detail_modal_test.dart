@@ -245,15 +245,15 @@ void main() {
         );
         await tester.pump();
 
-        // The bed wires per-flower hit-spots as InkWell columns —
-        // `garden_bed.dart` adds a `Positioned` per visible entry when
-        // `onFlowerTap != null`. Tapping the first InkWell inside the
-        // bed must dispatch the first (most-recent) entry by sort order.
-        // The bed sorts entries by `createdAt` descending, so entry 'a'
-        // (10:00) is at index 0.
+        // The bed wires per-flower hit-spots as round InkResponse hit-
+        // spots (v1.5 final polish — switched from InkWell rectangles to
+        // CircleBorder-shaped InkResponses so the tap area matches the
+        // flower silhouette). One per visible entry when `onFlowerTap !=
+        // null`. The bed sorts entries by `createdAt` descending, so
+        // entry 'a' (10:00) is at index 0.
         final inkWell = find.descendant(
           of: find.byType(GardenBed),
-          matching: find.byType(InkWell),
+          matching: find.byType(InkResponse),
         );
         expect(
           inkWell,
@@ -276,7 +276,7 @@ void main() {
     );
 
     testWidgets(
-      'without onFlowerTap the bed does NOT mount InkWell hit-spots',
+      'without onFlowerTap the bed does NOT mount hit-spots',
       (tester) async {
         await pumpApp(
           tester,
@@ -295,10 +295,11 @@ void main() {
         await tester.pump();
 
         // No callback → no Positioned hit-spots in the Stack. The bed
-        // falls back to a bare CustomPaint canvas — no InkWell anywhere.
+        // falls back to a bare CustomPaint canvas — no InkResponse
+        // anywhere.
         final inkWell = find.descendant(
           of: find.byType(GardenBed),
-          matching: find.byType(InkWell),
+          matching: find.byType(InkResponse),
         );
         expect(inkWell, findsNothing);
       },

@@ -300,6 +300,30 @@ class InterventionController extends Notifier<InterventionControllerState> {
   void complete() {
     state = const InterventionIdle();
   }
+
+  /// Debug-only manual trigger for a specific tier. Bypasses the cooldown
+  /// gate AND the user's per-tier opt-out flags so QA / demo can drive
+  /// each banner → screen flow on demand. Production callers MUST gate
+  /// invocations behind `kDebugMode` — there is no production surface that
+  /// should reach this path. ADR-0012's Tier 3 determinism guarantee is
+  /// preserved: the dispatcher's type-level fence still routes Tier 3 to
+  /// the curated pool only.
+  Future<void> debugDispatch(Tier tier) async {
+    const logger = Logger('intervention.controller.debug');
+    final ctx = await _buildContext();
+    final useCase = await _useCase();
+    if (useCase == null) {
+      logger.warn('debug dispatch skipped — use case unavailable');
+      return;
+    }
+    final result = await useCase(tier: tier, context: ctx);
+    switch (result) {
+      case Ok(:final value):
+        state = InterventionPending(value);
+      case Err(:final failure):
+        logger.warn('debug dispatch failed', data: failure.runtimeType.toString());
+    }
+  }
 }
 
 /// Public Riverpod provider for the controller. The view (the banner host
