@@ -179,44 +179,48 @@ class _GardenBedState extends State<GardenBed> with TickerProviderStateMixin {
     final overlayChildren = <Widget>[];
     if (widget.onFlowerTap != null && shown.isNotEmpty) {
       // Per-flower hit-spots — TC-7 (S5). The placements use the same
-      // math as the painter (`_PlantPlacement`) so the hit circles sit
+      // math as the painter (`_PlantPlacement`) so the hit-capsules sit
       // directly over the rendered flowers regardless of canvas width.
-      // v1.5 final polish — switched from a full-height rectangle to a
-      // round hit-spot centred on the bloom. The rectangle caught taps
-      // in the empty grass below each flower (and the empty sky above)
-      // that felt unintentional; the circle matches the visual silhouette
-      // so taps register where the user sees a flower.
       //
-      // Diameter target: ≥ 48 dp (Material minimum), capped by the inter-
-      // flower stride so dense rows stay per-plant addressable. The
-      // circle's centre sits at ~35% of the bed height (where the bloom
-      // is painted) rather than at vertical middle.
+      // v1.5 final polish (round 2) — switched from a small floating
+      // circle to a tall capsule (StadiumBorder) that hugs the FULL
+      // vertical silhouette of the plant: bloom at the top, stem, leaves
+      // all the way to ground level. The user reported the small circle
+      // felt offset (it sat at 35% bed height but tall species like the
+      // sunflower paint their bloom higher, while shorter species like
+      // forget-me-not paint lower — no single fixed offset works), AND
+      // too small for comfortable tap. The capsule resolves both: wider
+      // tap target, covers wherever the user instinctively taps, still
+      // not square (rounded ends match the soft visual language).
       final placements = _computeXPositions(shown, widget.size.width);
       final stride = widget.size.width / (shown.length + 1);
-      // Diameter = min(64, stride - 4) clamped to ≥ 48. The -4 keeps a
-      // 2-dp gap between adjacent circles so a tap "between flowers"
-      // doesn't accidentally fire either.
-      final diameter = math.max(48.0, math.min(64.0, stride - 4.0));
-      final radius = diameter / 2;
-      final centreY = widget.size.height * 0.35;
+      // Width = min(72, stride - 6) clamped to ≥ 48. The -6 keeps a
+      // 3-dp gap on each side between adjacent capsules so a tap
+      // "between flowers" doesn't accidentally fire either capsule.
+      final capsuleWidth = math.max(48.0, math.min(72.0, stride - 6.0));
+      // Capsule covers ~85% of the bed height — top inset matches the
+      // canvas's sky band (where no flower can be), bottom inset is the
+      // grass strip. Adapt the inset to the bed height so taller beds
+      // get proportional padding.
+      final verticalInset = widget.size.height * 0.075;
+      final capsuleHeight = widget.size.height - 2 * verticalInset;
       for (var i = 0; i < placements.length; i += 1) {
         final cx = placements[i];
         final entry = shown[i];
         overlayChildren.add(
           Positioned(
-            left: cx - radius,
-            top: centreY - radius,
-            width: diameter,
-            height: diameter,
+            left: cx - capsuleWidth / 2,
+            top: verticalInset,
+            width: capsuleWidth,
+            height: capsuleHeight,
             child: Material(
               color: Colors.transparent,
-              shape: const CircleBorder(),
+              shape: const StadiumBorder(),
               clipBehavior: Clip.antiAlias,
               child: InkResponse(
                 onTap: () => widget.onFlowerTap?.call(entry),
-                radius: radius,
                 containedInkWell: true,
-                customBorder: const CircleBorder(),
+                customBorder: const StadiumBorder(),
                 child: const SizedBox.expand(),
               ),
             ),

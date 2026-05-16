@@ -13,6 +13,7 @@ import '../../auth/data/providers.dart';
 import '../../mood/data/providers.dart' show firebaseFunctionsProvider;
 import '../../auth/presentation/widgets/biometric_settings_tile.dart';
 import '../../auth/presentation/widgets/privacy_settings_tile.dart';
+import '../../auth/presentation/widgets/webauthn_settings_tile.dart';
 import '../../disclaimer/presentation/widgets/disclaimer_panel.dart';
 import '../../garden/data/providers.dart' show debugPlantTierOverrideProvider;
 import '../../garden/domain/entities/plant_tier.dart';
@@ -136,7 +137,19 @@ class SettingsScreen extends ConsumerWidget {
                 MbCard(
                   clipBehavior: Clip.hardEdge,
                   padding: EdgeInsets.zero,
-                  child: PrivacySettingsTile(),
+                  child: Column(
+                    children: [
+                      PrivacySettingsTile(),
+                      Divider(height: 1),
+                      // v1.5 final — WebAuthn / security-key tile per
+                      // ADR-0014. Always visible so users see the
+                      // feature exists; tile renders a "v1.5.1
+                      // preview" state when kEnableWebauthn is false
+                      // (the v1.5 default) and a real registration
+                      // affordance when the flag flips on.
+                      WebauthnSettingsTile(),
+                    ],
+                  ),
                 ),
                 SizedBox(height: 18),
               ],

@@ -17,6 +17,7 @@ import '../../../pattern_engine/domain/entities/tier.dart';
 import '../../data/providers.dart';
 import '../../domain/entities/intervention_dispatch.dart';
 import '../../domain/entities/intervention_failure.dart';
+import '../../domain/entities/intervention_record.dart';
 import '../../domain/entities/quote_context.dart';
 import '../../domain/services/cooldown_guard.dart';
 import '../../domain/services/tiered_intervention_dispatcher.dart';
@@ -303,25 +304,55 @@ class InterventionController extends Notifier<InterventionControllerState> {
 
   /// Debug-only manual trigger for a specific tier. Bypasses the cooldown
   /// gate AND the user's per-tier opt-out flags so QA / demo can drive
-  /// each banner → screen flow on demand. Production callers MUST gate
-  /// invocations behind `kDebugMode` — there is no production surface that
-  /// should reach this path. ADR-0012's Tier 3 determinism guarantee is
-  /// preserved: the dispatcher's type-level fence still routes Tier 3 to
-  /// the curated pool only.
+  /// each banner → screen flow on demand AND can re-trigger repeatedly
+  /// without waiting 24h between fires. Production callers MUST gate
+  /// invocations behind `kDebugMode` — there is no production surface
+  /// that should reach this path. ADR-0012's Tier 3 determinism
+  /// guarantee is preserved: the dispatcher's type-level fence still
+  /// routes Tier 3 to the curated pool only.
+  ///
+  /// Implementation: we call the dispatcher DIRECTLY rather than going
+  /// through `DispatchInterventionUseCase`, which would consult the
+  /// `CooldownGuard` and reject the second-and-subsequent calls in a
+  /// 24-hour window. We do still write the audit doc to
+  /// `users/{uid}/interventions/{id}` so the dispatch is observable in
+  /// Firestore — that's harmless for production observability and
+  /// keeps the integration tests happy. We do NOT advance the cooldown
+  /// anchor (which would be the production behaviour) — that's what
+  /// lets debug-trigger fire repeatedly.
   Future<void> debugDispatch(Tier tier) async {
     const logger = Logger('intervention.controller.debug');
     final ctx = await _buildContext();
-    final useCase = await _useCase();
-    if (useCase == null) {
-      logger.warn('debug dispatch skipped — use case unavailable');
-      return;
-    }
-    final result = await useCase(tier: tier, context: ctx);
+    final dispatcher = TieredInterventionDispatcher(
+      quoteLibrary: ref.read(quoteLibraryProvider),
+      aiQuoteRepository: ref.read(aiQuoteRepositoryProvider),
+      safetyFilter: ref.read(quoteSafetyFilterProvider),
+      now: DateTime.now,
+    );
+    final result = await dispatcher.dispatch(tier: tier, context: ctx);
     switch (result) {
       case Ok(:final value):
+        // Write the audit doc best-effort (don't block the banner if
+        // Firestore is unreachable — debug path).
+        final repo = ref.read(interventionRepositoryProvider);
+        unawaited(
+          repo.writeRecord(
+            InterventionRecord(
+              dispatchId: value.dispatchId,
+              tier: value.tier,
+              dispatchedAt: value.dispatchedAt,
+              quoteId: value.quoteId,
+              cooldownUntil:
+                  value.dispatchedAt.add(CooldownGuard.cooldownWindow),
+            ),
+          ),
+        );
         state = InterventionPending(value);
       case Err(:final failure):
-        logger.warn('debug dispatch failed', data: failure.runtimeType.toString());
+        logger.warn(
+          'debug dispatch failed',
+          data: failure.runtimeType.toString(),
+        );
     }
   }
 }
