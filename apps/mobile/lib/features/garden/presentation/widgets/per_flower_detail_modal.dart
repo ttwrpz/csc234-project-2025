@@ -32,8 +32,9 @@ class PerFlowerDetailModal extends StatelessWidget {
   /// width. Exposed so widget tests can assert the chosen breakpoint
   /// without false-positives from Dialog's internal sizing layers.
   @visibleForTesting
-  static const Key dialogConstraintsKey =
-      ValueKey('perFlowerDetailModal.dialogConstraints');
+  static const Key dialogConstraintsKey = ValueKey(
+    'perFlowerDetailModal.dialogConstraints',
+  );
 
   /// Breakpoints mirror `_AppShell._tabletMin` / `_desktopMin` in
   /// `apps/mobile/lib/app/router.dart`. Keep these aligned with the
@@ -202,11 +203,7 @@ class PerFlowerDetailModal extends StatelessWidget {
               note.isEmpty ? '—' : note,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: MbFonts.nunito(
-                fontSize: 13,
-                height: 1.5,
-                color: mb.text,
-              ),
+              style: MbFonts.nunito(fontSize: 13, height: 1.5, color: mb.text),
             ),
           ),
           const SizedBox(height: 18),

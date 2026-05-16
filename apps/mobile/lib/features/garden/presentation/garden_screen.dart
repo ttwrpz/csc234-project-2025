@@ -158,8 +158,7 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
           // Routed via the SkyHeader → GardenBed callback chain so this
           // wiring stays inside the home screen's presentation layer
           // (no router changes — architect sign-off rule).
-          onFlowerTap: (entry) =>
-              PerFlowerDetailModal.show(context, entry),
+          onFlowerTap: (entry) => PerFlowerDetailModal.show(context, entry),
           // Garden top-bar affordance for the skin modal (HB-008 Day 1
           // TC-8..10 entry point). Placed next to the token chip so the
           // user reads "I have N tokens → tap to spend them" without

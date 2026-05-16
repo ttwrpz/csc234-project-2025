@@ -396,13 +396,25 @@ class _GardenBedPainter extends CustomPainter {
     // Paint back-row first so front-row plants overlap them.
     placements.sort((a, b) => b.depth.compareTo(a.depth));
 
+    // Per-tier vertical scale. Plants stay alive in every tier — this
+    // is a "growth confidence" modulation, never a wilt. Flourishing
+    // bumps the plant 10% larger; Storm Season pulls it back 8% so the
+    // bed reads as more contracted/sheltered, but all stems + petals +
+    // leaves are still rendered (ADR-0010 §4). The painter's growth
+    // stage already drops petal counts on lower tiers; this scale is
+    // an additional global multiplier on top of that, applied here at
+    // the placement site so back-row depth scaling composes cleanly.
+    final tierScale = _tierScaleFor(tier);
     for (final p in placements) {
       // Gentle plant sway — each plant has its own phase offset (from
       // entry id hash) so the bed doesn't oscillate in lockstep.
       final swayPhase =
           (phase + (p.entry.id.hashCode % 100) / 100.0) * 2 * math.pi;
       final swayDx = math.sin(swayPhase) * 1.6;
-      final scale = p.depth > 0 ? 0.85 : 1.0; // back row 15% smaller
+      // Back row 15% smaller AND tier scale stacked. Flourishing front
+      // row → 1.10×; Storm Season back row → 0.85 × 0.92 ≈ 0.78×.
+      final depthScale = p.depth > 0 ? 0.85 : 1.0;
+      final scale = depthScale * tierScale;
       canvas.save();
       canvas.translate(p.cx + swayDx, groundY);
       canvas.scale(scale);
@@ -451,6 +463,22 @@ class _GardenBedPainter extends CustomPainter {
     PlantTier.flourishing => 4,
   };
 
+  /// Per-tier uniform scale factor applied to every plant in the bed.
+  /// Stacks with the back-row depth scale (0.85×) at the placement
+  /// site. Flourishing reads as larger and more present; Storm Season
+  /// reads as more contracted/sheltered but is still rendered with
+  /// stem + petals + leaves (ADR-0010 §4 "plants never die"). v1.5
+  /// polish (2026-05-16) — tier differentiation pass; the bed used to
+  /// only differ between tiers via petal count, which the user
+  /// reported as too subtle on a glance.
+  static double _tierScaleFor(PlantTier tier) => switch (tier) {
+    PlantTier.flourishing => 1.10,
+    PlantTier.thriving => 1.04,
+    PlantTier.resting => 1.0,
+    PlantTier.weathering => 0.95,
+    PlantTier.stormSeason => 0.92,
+  };
+
   void _drawPlant(Canvas canvas, MoodEntry entry, double cx, double groundY) {
     final species = FlowerSpecies.forMood(entry.mood);
     final stage = _growthStage;
@@ -476,10 +504,35 @@ class _GardenBedPainter extends CustomPainter {
   /// default-skinned plants render byte-for-byte the same as before
   /// the skin system landed (TC-6 only changes the live render of
   /// alternate-skinned plants; default users see no change).
+  ///
+  /// Tier-aware: the returned colour is then run through
+  /// [_tierSaturate] so Flourishing reads slightly more vivid and
+  /// Storm Season slightly more muted while still rendering a fully
+  /// alive, coloured plant (plants are never desaturated to grey —
+  /// ADR-0010 §4). Resting and Thriving pass through unchanged.
   Color _accentFor(FlowerSpecies species, Color fallback) {
     final override = speciesAccent;
-    if (override == null) return fallback;
-    return override[species] ?? fallback;
+    final base = override == null ? fallback : (override[species] ?? fallback);
+    return _tierSaturate(base);
+  }
+
+  /// Applies the per-tier saturation modulation. The factor is bounded
+  /// at 0.78 (Storm Season) so petals never desaturate to grey — even
+  /// the most heavily-weighted tier still renders unambiguously
+  /// coloured flowers. Flourishing pushes saturation modestly above
+  /// 1.0 by lerping the colour toward a brighter HSL-saturated cousin.
+  Color _tierSaturate(Color base) {
+    final factor = switch (tier) {
+      PlantTier.flourishing => 1.08,
+      PlantTier.thriving => 1.0,
+      PlantTier.resting => 0.95,
+      PlantTier.weathering => 0.86,
+      PlantTier.stormSeason => 0.78,
+    };
+    if (factor == 1.0) return base;
+    final hsl = HSLColor.fromColor(base);
+    final newSat = (hsl.saturation * factor).clamp(0.0, 1.0);
+    return hsl.withSaturation(newSat).toColor();
   }
 
   // ───── species 1: sunflower (Joy) ─────
