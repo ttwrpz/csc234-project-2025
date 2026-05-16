@@ -111,13 +111,15 @@ class SkyHeader extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              // Sky gradient. Atmosphere-aware: the base palette comes
-              // from the theme's MbColors (warm-cream in light, cool
-              // navy in dark), and a per-atmosphere blend pulls the
-              // sky toward grey on lightRain and a deep storm-blue on
-              // storm so the entire canvas — not just the plant-row
-              // overlay — reads as rainy. Sunny atmospheres pass the
-              // theme palette through unchanged.
+              // Sky gradient. Atmosphere-aware AND tier-aware: the base
+              // palette comes from the theme's MbColors (warm-cream in
+              // light, cool navy in dark), a per-atmosphere blend pulls
+              // the sky toward grey on lightRain and a deep storm-blue
+              // on storm, AND a per-tier tint biases sunny skies toward
+              // golden-green for Flourishing or cool overcast for
+              // Weathering/Storm Season so the 5 tiers read distinctly
+              // even when the atmosphere is the same (v1.5 polish —
+              // "the 5 tiers look too similar" user feedback).
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -125,7 +127,7 @@ class SkyHeader extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       stops: const [0, 0.55, 1],
-                      colors: _skyColorsFor(atmosphere, mb),
+                      colors: _skyColorsFor(atmosphere, state.plantTier, mb),
                     ),
                   ),
                 ),
@@ -305,31 +307,65 @@ class SkyHeader extends StatelessWidget {
     Atmosphere.storm => 0.10,
   };
 
-  /// Sky gradient colours per atmosphere. Sunny atmospheres pass the
-  /// theme's `MbColors` palette through unchanged. Rainy atmospheres
-  /// blend the palette toward stormy greys so the whole canvas — not
-  /// just the falling drops + plant-row overlay — reads as rainy.
-  /// User feedback (v1.0 polish) was that subtle drop animations on
-  /// the warm cream sky were easy to miss; this pulls the sky itself
-  /// into the weather.
-  static List<Color> _skyColorsFor(Atmosphere a, MbColors mb) {
-    switch (a) {
-      case Atmosphere.calmSunny:
-      case Atmosphere.brightSunny:
-        return [mb.skyTop, mb.skyMid, mb.skyBot];
-      case Atmosphere.lightRain:
-        return [
-          Color.lerp(mb.skyTop, const Color(0xFFB6C0CC), 0.55)!,
-          Color.lerp(mb.skyMid, const Color(0xFFC8D2DD), 0.45)!,
-          Color.lerp(mb.skyBot, const Color(0xFFD8DFE7), 0.35)!,
-        ];
-      case Atmosphere.storm:
-        return [
-          Color.lerp(mb.skyTop, const Color(0xFF3D454F), 0.78)!,
-          Color.lerp(mb.skyMid, const Color(0xFF555F6A), 0.65)!,
-          Color.lerp(mb.skyBot, const Color(0xFF8590A0), 0.45)!,
-        ];
-    }
+  /// Sky gradient colours per atmosphere + plant tier. The atmosphere
+  /// drives the base palette (sunny → warm theme colours; rainy →
+  /// stormy greys). The tier then applies a directional tint on top:
+  /// Flourishing/Thriving warm the sky toward sunlit gold-green;
+  /// Resting stays neutral; Weathering/Storm Season cool the sky
+  /// toward overcast even when the atmosphere would otherwise be
+  /// sunny. The net effect is that the five tier states read as
+  /// distinct skies at a glance instead of collapsing into the same
+  /// canvas (v1.5 polish — "the 5 tiers look too similar" feedback).
+  ///
+  /// The tier tint is applied per-stop with a small lerp amount so
+  /// it never overrides the atmosphere; rainy days still read as
+  /// rainy, but a Storm-Season rainy sky is darker and cooler than a
+  /// Weathering rainy sky.
+  static List<Color> _skyColorsFor(Atmosphere a, PlantTier tier, MbColors mb) {
+    final base = switch (a) {
+      Atmosphere.calmSunny ||
+      Atmosphere.brightSunny => [mb.skyTop, mb.skyMid, mb.skyBot],
+      Atmosphere.lightRain => [
+        Color.lerp(mb.skyTop, const Color(0xFFB6C0CC), 0.55)!,
+        Color.lerp(mb.skyMid, const Color(0xFFC8D2DD), 0.45)!,
+        Color.lerp(mb.skyBot, const Color(0xFFD8DFE7), 0.35)!,
+      ],
+      Atmosphere.storm => [
+        Color.lerp(mb.skyTop, const Color(0xFF3D454F), 0.78)!,
+        Color.lerp(mb.skyMid, const Color(0xFF555F6A), 0.65)!,
+        Color.lerp(mb.skyBot, const Color(0xFF8590A0), 0.45)!,
+      ],
+    };
+    return _applyTierTint(base, tier);
+  }
+
+  /// Applies a per-tier tint on top of the atmosphere palette. The
+  /// tint is a soft directional bias — small enough to never override
+  /// rainy weather, large enough that a sunny Flourishing sky reads
+  /// distinctly warmer than a sunny Resting sky. Tints are applied
+  /// to all three gradient stops (top, mid, bot) so the bias reads
+  /// across the full canvas, not just the horizon line.
+  ///
+  /// Tier targets (warm → cool):
+  ///   * Flourishing  — soft sunlit gold  (0xFFFFE9B0) at 0.22
+  ///   * Thriving     — fresh meadow      (0xFFD8EBD0) at 0.16
+  ///   * Resting      — neutral, no tint
+  ///   * Weathering   — soft overcast     (0xFFB6BFC9) at 0.18
+  ///   * Storm Season — deeper grey-blue  (0xFF5A6470) at 0.22
+  ///
+  /// Storm Season's cool bias is intentionally compassionate — a
+  /// muted slate, not an alarming charcoal. The garden is sheltered,
+  /// never threatened (ADR-0010 §4).
+  static List<Color> _applyTierTint(List<Color> base, PlantTier tier) {
+    final (Color tint, double t) = switch (tier) {
+      PlantTier.flourishing => (const Color(0xFFFFE9B0), 0.22),
+      PlantTier.thriving => (const Color(0xFFD8EBD0), 0.16),
+      PlantTier.resting => (Colors.transparent, 0.0),
+      PlantTier.weathering => (const Color(0xFFB6BFC9), 0.18),
+      PlantTier.stormSeason => (const Color(0xFF5A6470), 0.22),
+    };
+    if (t == 0) return base;
+    return [for (final c in base) Color.lerp(c, tint, t)!];
   }
 
   /// Compassionate, no-streak-shaming caption per the plant tier and

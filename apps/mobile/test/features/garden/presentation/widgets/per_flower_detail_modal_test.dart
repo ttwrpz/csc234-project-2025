@@ -59,9 +59,7 @@ void main() {
       // Intensity dots — one MbIntensityDots widget with the value we
       // passed in. Reading the field directly is more diagnostic than
       // counting filled dots from the painter.
-      final dots = tester.widget<MbIntensityDots>(
-        find.byType(MbIntensityDots),
-      );
+      final dots = tester.widget<MbIntensityDots>(find.byType(MbIntensityDots));
       expect(dots.value, 4, reason: 'modal forwards entry.intensity verbatim');
     });
 
@@ -96,19 +94,18 @@ void main() {
       },
     );
 
-    testWidgets(
-      'sprite uses the mood-to-species mapping (anxious → fern)',
-      (tester) async {
-        await pumpApp(
-          tester,
-          child: PerFlowerDetailModal(
-            entry: _entry(id: 'e-4', mood: MoodType.anxious),
-          ),
-        );
-        final sprite = tester.widget<FlowerSprite>(find.byType(FlowerSprite));
-        expect(sprite.species, FlowerSpecies.fern);
-      },
-    );
+    testWidgets('sprite uses the mood-to-species mapping (anxious → fern)', (
+      tester,
+    ) async {
+      await pumpApp(
+        tester,
+        child: PerFlowerDetailModal(
+          entry: _entry(id: 'e-4', mood: MoodType.anxious),
+        ),
+      );
+      final sprite = tester.widget<FlowerSprite>(find.byType(FlowerSprite));
+      expect(sprite.species, FlowerSpecies.fern);
+    });
 
     testWidgets('"Open entry" CTA navigates to /history/<id>', (tester) async {
       // The modal calls `Navigator.of(context).pop()` BEFORE
@@ -147,10 +144,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp.router(
-          routerConfig: router,
-          theme: buildLightTheme(),
-        ),
+        MaterialApp.router(routerConfig: router, theme: buildLightTheme()),
       );
 
       await tester.tap(find.text('open'));
@@ -187,10 +181,7 @@ void main() {
         );
       }
 
-      await pumpApp(
-        tester,
-        child: Builder(builder: host),
-      );
+      await pumpApp(tester, child: Builder(builder: host));
 
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
@@ -275,34 +266,31 @@ void main() {
       },
     );
 
-    testWidgets(
-      'without onFlowerTap the bed does NOT mount hit-spots',
-      (tester) async {
-        await pumpApp(
-          tester,
-          child: Scaffold(
-            body: Center(
-              child: GardenBed(
-                entries: [
-                  _entry(id: 'z', mood: MoodType.happy),
-                ],
-                tier: PlantTier.flourishing,
-                animate: false,
-              ),
+    testWidgets('without onFlowerTap the bed does NOT mount hit-spots', (
+      tester,
+    ) async {
+      await pumpApp(
+        tester,
+        child: Scaffold(
+          body: Center(
+            child: GardenBed(
+              entries: [_entry(id: 'z', mood: MoodType.happy)],
+              tier: PlantTier.flourishing,
+              animate: false,
             ),
           ),
-        );
-        await tester.pump();
+        ),
+      );
+      await tester.pump();
 
-        // No callback → no Positioned hit-spots in the Stack. The bed
-        // falls back to a bare CustomPaint canvas — no InkResponse
-        // anywhere.
-        final inkWell = find.descendant(
-          of: find.byType(GardenBed),
-          matching: find.byType(InkResponse),
-        );
-        expect(inkWell, findsNothing);
-      },
-    );
+      // No callback → no Positioned hit-spots in the Stack. The bed
+      // falls back to a bare CustomPaint canvas — no InkResponse
+      // anywhere.
+      final inkWell = find.descendant(
+        of: find.byType(GardenBed),
+        matching: find.byType(InkResponse),
+      );
+      expect(inkWell, findsNothing);
+    });
   });
 }

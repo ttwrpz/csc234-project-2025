@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/entities/garden_state.dart';
+import '../../domain/entities/plant_tier.dart';
 import 'sky_header.dart' show SkyHeader;
 
 /// Page-flow card holding the garden's meta info: the compassionate
@@ -39,16 +40,14 @@ class GardenSummaryRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Garden today',
-                  style: MbFonts.nunito(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: mb.textDim,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-                const SizedBox(height: 4),
+                // Tier pill — colored at-a-glance badge identifying the
+                // ecosystem state. v1.5 polish: previously the only
+                // tier signal was the tagline below, which buried the
+                // state name in a longer sentence. The pill surfaces
+                // the name + a colored dot up front so the five
+                // states read distinctly across the row.
+                _TierPill(tier: state.plantTier, isEmpty: state.isEmpty),
+                const SizedBox(height: 6),
                 Text(
                   SkyHeader.tierTagline(state),
                   style: MbFonts.nunito(
@@ -119,4 +118,141 @@ class _ViewPatternsButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Colored at-a-glance badge identifying which of the five ecosystem
+/// tiers the garden is currently in. Sits above the tagline so the
+/// user reads "Thriving" or "Storm Season" as a named state before
+/// the longer compassionate sentence. v1.5 polish (2026-05-16) — the
+/// original design surfaced tier only through the tagline copy, which
+/// buried the name and let the five states blur together; the pill
+/// lifts the tier name into a glanceable colored chip.
+///
+/// Colors are deliberately compassionate, not alarming — Storm Season
+/// uses a soft coral (warm pink-amber) rather than a red, in keeping
+/// with the no-fix-your-mood / "weather passes, roots hold" tone.
+class _TierPill extends StatelessWidget {
+  const _TierPill({required this.tier, required this.isEmpty});
+
+  final PlantTier tier;
+
+  /// When true, the user has logged no entries yet. In that case the
+  /// pill collapses entirely so the empty-state tagline ("Plant your
+  /// first mood — a fresh canvas awaits.") doesn't get prefixed with
+  /// a tier badge that wouldn't reflect anything the user did.
+  final bool isEmpty;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isEmpty) return const SizedBox.shrink();
+    final palette = _paletteFor(tier);
+    return Semantics(
+      label: 'Garden state: ${_labelFor(tier)}',
+      container: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: palette.bg,
+          borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
+          border: Border.all(color: palette.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Colored dot reinforces the pill background colour and
+            // gives a one-glance hue cue for users with mild color
+            // vision differences — the dot is denser saturation than
+            // the soft pill bg, so the contrast reads even on a
+            // monochrome scan.
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: palette.dot,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              _labelFor(tier),
+              style: MbFonts.nunito(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: palette.fg,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _labelFor(PlantTier tier) => switch (tier) {
+    PlantTier.flourishing => 'Flourishing',
+    PlantTier.thriving => 'Thriving',
+    PlantTier.resting => 'Resting',
+    PlantTier.weathering => 'Weathering',
+    PlantTier.stormSeason => 'Storm Season',
+  };
+
+  /// Per-tier palette (background, border, foreground, dot). All four
+  /// colors are picked to clear WCAG AA against the cream MbCard
+  /// surface in light theme and against the dark navy surface in dark
+  /// theme — the foreground text is the same hue family as the dot but
+  /// substantially darker so the label stays readable on the pill bg.
+  static _TierPillPalette _paletteFor(PlantTier tier) => switch (tier) {
+    // Bright meadow green — full life.
+    PlantTier.flourishing => const _TierPillPalette(
+      bg: Color(0xFFD9F0DD),
+      border: Color(0xFF6DBE7A),
+      fg: Color(0xFF1F5A2E),
+      dot: Color(0xFF2E9B49),
+    ),
+    // Soft mint — growth in progress.
+    PlantTier.thriving => const _TierPillPalette(
+      bg: Color(0xFFE3F1E5),
+      border: Color(0xFF8FBFA3),
+      fg: Color(0xFF285C44),
+      dot: Color(0xFF4FA37F),
+    ),
+    // Neutral warm grey — quiet, dormant.
+    PlantTier.resting => const _TierPillPalette(
+      bg: Color(0xFFEEEAE0),
+      border: Color(0xFFC9C0AE),
+      fg: Color(0xFF5A5448),
+      dot: Color(0xFF8B8473),
+    ),
+    // Soft amber — light overcast, gentle weather.
+    PlantTier.weathering => const _TierPillPalette(
+      bg: Color(0xFFF4E7CD),
+      border: Color(0xFFD9B96A),
+      fg: Color(0xFF6E4F1B),
+      dot: Color(0xFFC68A1E),
+    ),
+    // Soft coral — compassionate, never red-alarm.
+    PlantTier.stormSeason => const _TierPillPalette(
+      bg: Color(0xFFFDE3DA),
+      border: Color(0xFFE9A892),
+      fg: Color(0xFF7A3925),
+      dot: Color(0xFFCC6347),
+    ),
+  };
+}
+
+/// Internal record-shaped struct for the four colors a tier pill needs.
+/// Not exported — the pill is the only consumer.
+@immutable
+class _TierPillPalette {
+  const _TierPillPalette({
+    required this.bg,
+    required this.border,
+    required this.fg,
+    required this.dot,
+  });
+
+  final Color bg;
+  final Color border;
+  final Color fg;
+  final Color dot;
 }
