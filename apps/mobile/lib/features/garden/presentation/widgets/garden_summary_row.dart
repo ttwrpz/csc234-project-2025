@@ -62,8 +62,80 @@ class GardenSummaryRow extends StatelessWidget {
           ),
           if (tokenChip != null) ...[const SizedBox(width: 12), tokenChip!],
           const SizedBox(width: 12),
-          _ViewPatternsButton(onTap: () => context.go('/analytics')),
+          // Two pill CTAs stacked vertically so the row stays compact on
+          // narrow widths. "Take a breath" routes to the same 2-minute
+          // breathing screen the Tier 1 dispatcher opens — the user can
+          // initiate it any time, not only when the Pattern Engine fires.
+          // Passing a null `extra` makes BreathingScreen fall back to
+          // DispatchSafeDefaults.tier1 copy + footer (router supports
+          // this exact path already).
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _BreathButton(
+                onTap: () =>
+                    context.goNamed('intervention.breathing'),
+              ),
+              const SizedBox(height: 6),
+              _ViewPatternsButton(onTap: () => context.go('/analytics')),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+}
+
+/// Self-initiated entry point to the 2-minute breathing screen.
+/// v1.5 polish — a peer CTA to "Patterns" so the user can take a breath
+/// any time, not only when Tier 1 has fired. Routes via `goNamed
+/// ('intervention.breathing')` with no extra; BreathingScreen handles
+/// the null-dispatch case by surfacing `DispatchSafeDefaults.tier1` copy
+/// (the canonical Tier 1 invitation + disclaimer footer). Compassionate
+/// imperative wording per CLAUDE.md — "Take a breath" not "Calm down".
+class _BreathButton extends StatelessWidget {
+  const _BreathButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final fg = isDark ? const Color(0xFFFFE7BD) : const Color(0xFF8A5A1F);
+    final bg = isDark
+        ? const Color(0xFFFFE7BD).withValues(alpha: 0.18)
+        : const Color(0xFFFFE7BD).withValues(alpha: 0.55);
+    final border = isDark
+        ? const Color(0xFFFFE7BD).withValues(alpha: 0.45)
+        : const Color(0xFF8A5A1F).withValues(alpha: 0.25);
+
+    return Semantics(
+      button: true,
+      label: 'Take a 2-minute breath',
+      child: TextButton.icon(
+        onPressed: onTap,
+        style: TextButton.styleFrom(
+          foregroundColor: fg,
+          backgroundColor: bg,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          minimumSize: const Size(0, 36),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
+            side: BorderSide(color: border),
+          ),
+        ),
+        icon: Icon(Icons.air_outlined, size: 16, color: fg),
+        label: Text(
+          'Take a breath',
+          style: MbFonts.nunito(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: fg,
+          ),
+        ),
       ),
     );
   }
