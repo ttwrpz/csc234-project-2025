@@ -6,9 +6,9 @@ part 'notifications_settings.freezed.dart';
 /// Firestore so the rule check stays a simple `in [...]` comparison.
 enum NotificationPlatform { android, web, iOS }
 
-/// One device registration. Multiple devices per user is supported per
-/// O11: a token is stored once per (token) — re-registering the same
-/// token simply refreshes [lastSeenAt].
+/// One device registration. Multiple devices per user supported: a
+/// token is stored once per (token) — re-registering the same token
+/// simply refreshes [lastSeenAt].
 class FcmTokenRecord {
   const FcmTokenRecord({
     required this.token,
@@ -43,14 +43,12 @@ class FcmTokenRecord {
 }
 
 /// Per-user notification preferences. Maps 1:1 to the Firestore document
-/// at `users/{uid}/settings/notifications` (HB-003 §"Settings doc shape",
-/// extended in S5 Day 2 per HB-007 to gate the tiered intervention
-/// dispatcher).
+/// at `users/{uid}/settings/notifications`.
 ///
 /// Rules:
 /// - [cheerUpEnabled] is the legacy single-channel gate consumed by the
-///   `sendCheerUpPush` Cloud Function. Kept as a backward-compat shim in
-///   S5: when ALL three tier flags go off, the shim flips false so the
+///   `sendCheerUpPush` Cloud Function. Kept as a backward-compat shim:
+///   when ALL three tier flags go off, the shim flips false so the
 ///   CF stops firing — matching the previous user-visible behaviour.
 ///   When any tier remains enabled, the shim stays true.
 /// - [tier1Enabled] / [tier2Enabled] / [tier3Enabled] are the new
@@ -88,7 +86,7 @@ abstract class NotificationsSettings with _$NotificationsSettings {
 
   /// Returns a copy with [tier1Enabled] set to [value]. Also re-derives
   /// [cheerUpEnabled] so it stays `true` while any tier is enabled and
-  /// flips `false` only when all three tier flags are off. The S3
+  /// flips `false` only when all three tier flags are off. The
   /// `sendCheerUpPush` CF still reads `cheerUpEnabled` (see
   /// `functions/src/sendCheerUpPush.ts`) — keeping the field in
   /// lock-step preserves its behaviour while the dispatcher feature

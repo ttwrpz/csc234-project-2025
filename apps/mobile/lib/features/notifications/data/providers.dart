@@ -24,7 +24,7 @@ final fcmDatasourceProvider = Provider<FcmDatasource>((ref) {
 /// If SharedPreferences is still resolving (e.g. early frames in a
 /// widget test that hasn't yet pumped), this provider returns `null`.
 /// Consumers tolerate the null and fall back to a transient default
-/// (cheer-up enabled per O13) until the real instance arrives.
+/// until the real instance arrives.
 final notificationsPreferenceDatasourceProvider =
     Provider<NotificationsPreferenceDatasource?>((ref) {
       final prefs = ref.watch(sharedPreferencesProvider);

@@ -3,7 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Thin wrapper around `flutter_local_notifications` for the cheer-up
-/// channel. The S5 intervention flow drives real notifications via FCM in
+/// channel. The intervention flow drives real notifications via FCM in
 /// production; this datasource exists so the Settings debug zone can fire
 /// a one-shot local notification to verify the system tray rendering
 /// without waiting for a server push.

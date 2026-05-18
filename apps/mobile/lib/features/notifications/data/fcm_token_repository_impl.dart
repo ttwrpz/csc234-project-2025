@@ -11,11 +11,10 @@ import 'datasources/notifications_preference_datasource.dart';
 /// Default implementation of [FcmTokenRepository].
 ///
 /// Persistence model: a single document per user at
-/// `users/{uid}/settings/notifications` (HB-003 §"Settings doc shape").
-/// Multi-device support comes from the `tokens` array, deduped on the
-/// `token` field. Transactions (inside the datasource) guarantee that
-/// concurrent toggles or refresh-driven re-registers do not clobber
-/// each other's writes.
+/// `users/{uid}/settings/notifications`. Multi-device support comes from
+/// the `tokens` array, deduped on the `token` field. Transactions
+/// (inside the datasource) guarantee that concurrent toggles or
+/// refresh-driven re-registers do not clobber each other's writes.
 class FcmTokenRepositoryImpl implements FcmTokenRepository {
   FcmTokenRepositoryImpl({
     required NotificationsFirestoreDatasource firestore,
@@ -78,8 +77,8 @@ class FcmTokenRepositoryImpl implements FcmTokenRepository {
     }
     try {
       // Mirror locally first — the UI may resubscribe before Firestore
-      // confirms. Best-effort per HB-003: a failure here does not block
-      // the remote write.
+      // confirms. Best-effort: a failure here does not block the remote
+      // write.
       await _preference?.setCheerUpEnabled(enabled);
       await _firestore.mutate(
         uid,
@@ -116,9 +115,9 @@ class FcmTokenRepositoryImpl implements FcmTokenRepository {
   /// Shared transaction for the three per-tier setters. The entity's
   /// `withTierNEnabled` helpers re-derive `cheerUpEnabled` from the
   /// resulting tier-flag triple so the legacy cheer-up CF stays in
-  /// lock-step (HB-007 S5 Day 2). When the user toggles the LAST
-  /// remaining tier off, the local cheer-up mirror flips false too so
-  /// SharedPreferences doesn't lag the remote state.
+  /// lock-step. When the user toggles the LAST remaining tier off, the
+  /// local cheer-up mirror flips false too so SharedPreferences doesn't
+  /// lag the remote state.
   Future<Result<void, NotificationFailure>> _setTier({
     required String uid,
     required bool enabled,

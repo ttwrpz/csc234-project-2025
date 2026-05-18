@@ -24,8 +24,7 @@ abstract class FcmTokenRepository {
   Future<Result<void, NotificationFailure>> upsertToken({required String uid});
 
   /// Toggles the cheer-up push channel on/off for [uid]. The Cloud
-  /// Function check this flag before composing a payload (HB-003
-  /// §"Notification fan-out").
+  /// Function checks this flag before composing a payload.
   Future<Result<void, NotificationFailure>> setEnabled({
     required String uid,
     required bool enabled,
@@ -36,7 +35,7 @@ abstract class FcmTokenRepository {
   /// composing a notification. Writes also re-derive
   /// `NotificationsSettings.cheerUpEnabled` so the legacy
   /// `sendCheerUpPush` Cloud Function stops firing only when ALL three
-  /// tier flags are off (HB-007 S5 Day 2).
+  /// tier flags are off.
   Future<Result<void, NotificationFailure>> setTier1Enabled({
     required String uid,
     required bool enabled,

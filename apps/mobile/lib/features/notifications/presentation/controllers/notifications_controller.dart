@@ -9,8 +9,7 @@ import '../../domain/notification_failure.dart';
 import '../../domain/notifications_settings.dart';
 
 /// View-state of the notification preference toggles. Carries the legacy
-/// cheer-up boolean alongside the three new per-tier flags introduced in
-/// S5 Day 2 (HB-007 follow-up).
+/// cheer-up boolean alongside the three per-tier flags.
 ///
 /// The cold-start initial values come from two places:
 /// - [enabled] (the cheer-up shim) is hydrated synchronously from
@@ -77,8 +76,7 @@ class NotificationsToggleState {
 class NotificationsController extends Notifier<NotificationsToggleState> {
   /// Synchronous preference datasource if SharedPreferences has resolved,
   /// `null` during the brief window between provider-scope init and the
-  /// FutureProvider's first emission. While null we treat the toggle as
-  /// `true` per O13.
+  /// FutureProvider's first emission.
   NotificationsPreferenceDatasource? get _preference =>
       ref.read(notificationsPreferenceDatasourceProvider);
 
@@ -92,18 +90,16 @@ class NotificationsController extends Notifier<NotificationsToggleState> {
     // Firestore-backed repo is read lazily inside the auth listener so
     // unauthenticated test fixtures that override
     // `currentUserStreamProvider` to emit `null` never trigger the
-    // Firestore provider's initialization path. This mirrors the
-    // pre-S5 lazy-read shape of the controller.
+    // Firestore provider's initialization path.
     ref.listen(currentUserStreamProvider, (_, async) {
       final uid = async.value?.uid;
       if (uid == null || uid.isEmpty) return;
       _attachRemoteStream(uid);
     }, fireImmediately: true);
     return NotificationsToggleState(
-      // Default flipped to `false` in v1.0 polish (2026-05-10): cheer-
-      // up reminders must be off until the user explicitly grants
-      // notification permission. See `NotificationsPreferenceDatasource`
-      // docstring for the rationale.
+      // Off by default: cheer-up reminders must be off until the user
+      // explicitly grants notification permission. See
+      // `NotificationsPreferenceDatasource` docstring for the rationale.
       enabled: _preference?.isCheerUpEnabled() ?? false,
     );
   }
