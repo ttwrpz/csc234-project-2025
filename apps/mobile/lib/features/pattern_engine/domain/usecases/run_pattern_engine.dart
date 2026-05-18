@@ -16,12 +16,12 @@ import '../entities/tier.dart';
 ///
 /// Stateless and pure — no I/O, no Firebase, no Flutter, no Riverpod
 /// (the Riverpod provider lives in `data/providers.dart` to keep the
-/// domain layer pure per CLAUDE.md). The Day-3 post-save wire-up calls
-/// this from `LogMoodController` after every successful mood log; the
-/// result is then handed to the data layer for upsert at
+/// domain layer pure per CLAUDE.md). The post-save wire-up calls this
+/// from `LogMoodController` after every successful mood log; the result
+/// is then handed to the data layer for upsert at
 /// `users/{uid}/patterns/{dateId}`.
 ///
-/// Per HB-004 §"RunPatternEngineUseCase" + HB-006 sub-track A:
+/// Steps:
 ///  1. Aggregate `entries` by `localMidnight(entry.createdAt)` into a
 ///     list of [DailyScore] (sorted ascending by day).
 ///  2. Run all 5 algorithms.

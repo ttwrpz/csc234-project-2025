@@ -4,19 +4,15 @@ import '../../garden/domain/entities/intervention_state.dart';
 import '../../mood/domain/entities/mood_entry.dart';
 import '../../mood/domain/entities/mood_type.dart';
 
-/// Legacy pure-Dart pattern detector. Implements the Sprint-3-era 2-rule
+/// Legacy pure-Dart pattern detector. Implements the legacy 2-rule
 /// trigger model (5-of-7 negative days + 3-consecutive heavy negatives)
 /// plus the 48h cooldown / 10-day escalation gates.
 ///
-/// **Deprecated as of v1.0.** Replaced by `RunPatternEngineUseCase` in
+/// **Deprecated.** Replaced by `RunPatternEngineUseCase` in
 /// `apps/mobile/lib/features/pattern_engine/domain/usecases/run_pattern_engine.dart`,
 /// which runs five academic-grade algorithms (Mann-Kendall, sliding 5-of-7,
-/// 3-consecutive S ≤ -0.6, Z-score, CUSUM) per ADR-0011 + spec §2.4. The
-/// dispatcher (`cheer_up_controller`) still consults this function while
-/// the new dispatcher path is gated behind the `interventionDispatchEnabled`
-/// Remote Config flag (default `false` in v1.0). Sprint 5 re-points the
-/// dispatcher at `users/{uid}/patterns/{date}.triggeredTier` and flips the
-/// flag on; this file then becomes a regression baseline only.
+/// 3-consecutive S ≤ -0.6, Z-score, CUSUM). Retained as a regression
+/// baseline only.
 ///
 /// Rules (preserved exactly for the legacy code path):
 ///  * **5-of-7 days**: at least 5 distinct local-midnight days within the
@@ -25,10 +21,9 @@ import '../../mood/domain/entities/mood_type.dart';
 ///    contain ≥1 entry with `mood.category != positive` AND
 ///    `intensity ≥ 4`. Mixed neg types count.
 ///
-/// Note (ADR-0010): `okay` was reclassified from `negativeMild` → `positive`
-/// in `MoodType.category`. The `mood.category != positive` predicate below is
-/// unchanged but its behaviour shifted accordingly — `okay` entries no longer
-/// contribute to the 5-of-7 or 3-consecutive counts.
+/// Note: `okay` is classified as `positive` in `MoodType.category`, so
+/// the `mood.category != positive` predicate below excludes `okay` entries
+/// from the 5-of-7 or 3-consecutive counts.
 ///  * **48h cooldown**: if `lastTriggeredAt` is within 48h of `now`,
 ///    suppress (`triggered: false`, `reason: 'cooldown'`).
 ///  * **10-day escalation**: if currently triggering AND
@@ -37,9 +32,7 @@ import '../../mood/domain/entities/mood_type.dart';
 /// `now` is injected so tests can pin "today". `lastTriggeredAt` and
 /// `firstTriggeredAt` come from persistence.
 @Deprecated(
-  'Replaced by RunPatternEngineUseCase. See ADR-0011. Retained as a regression '
-  'baseline; the new dispatcher reads users/{uid}/patterns/{date}.triggeredTier '
-  'in S5.',
+  'Replaced by RunPatternEngineUseCase. Retained as a regression baseline.',
 )
 InterventionState detectPattern(
   List<MoodEntry> entries, {

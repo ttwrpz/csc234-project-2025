@@ -1,8 +1,7 @@
 /// Tier of intervention triggered by the Pattern Engine.
 ///
 /// Higher tier dominates when multiple algorithms fire on the same day:
-/// `three > two > one > null` (no trigger). See HB-004 §"Domain shape — Tier"
-/// and ADR-0010 §8 / ADR-0011 §2.
+/// `three > two > one > null` (no trigger).
 ///
 /// Pure-Dart enum — no Flutter / Firebase imports per the domain-purity rule
 /// in CLAUDE.md.
@@ -13,11 +12,11 @@ enum Tier {
   /// Moderate — sliding 5-of-7 fired (sustained lows).
   two,
 
-  /// Acute — 3-consecutive / Z-score / CUSUM fired (lands Day 3).
+  /// Acute — 3-consecutive / Z-score / CUSUM fired.
   three;
 
   /// Returns the higher of [a] and [b], treating `null` as the lowest tier.
-  /// The orchestrator (Day 3) folds per-algorithm Tier hits through this.
+  /// The orchestrator folds per-algorithm Tier hits through this.
   static Tier? escalate(Tier? a, Tier? b) {
     if (a == null) return b;
     if (b == null) return a;

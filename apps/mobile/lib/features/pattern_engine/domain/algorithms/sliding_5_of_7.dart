@@ -13,8 +13,7 @@ import '../entities/daily_score.dart';
 /// Empty days (no entry) contribute **0** — they are NOT counted as negative
 /// even if surrounded by negative days. The predicate is calendar-day-based
 /// (`count(S_t < 0 in last 7 calendar days)`), NOT log-frequency-based —
-/// mirrors PHQ-9's "more than half the days." See HB-004 open question 1
-/// (architect default).
+/// mirrors PHQ-9's "more than half the days."
 ///
 /// The strict `< 0` boundary is intentional: a day whose `avgScore` is
 /// exactly 0.0 is not negative. (`avgScore = -0.0001` IS negative.)
