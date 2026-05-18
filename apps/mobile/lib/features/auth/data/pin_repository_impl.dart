@@ -11,7 +11,7 @@ import '../domain/repositories/pin_repository.dart';
 import '../domain/services/pin_hasher.dart';
 import 'datasources/pin_firestore_datasource.dart';
 
-/// Repository implementation for the PIN fallback factor (ADR-0013).
+/// Repository implementation for the PIN fallback factor.
 ///
 /// Composes the [PinFirestoreDatasource] (storage) with a [PinHasher]
 /// (PBKDF2-SHA-256 derivation + constant-time comparison) to provide
@@ -40,7 +40,7 @@ class PinRepositoryImpl implements PinRepository {
 
   static DateTime _systemClock() => DateTime.now().toUtc();
 
-  /// ADR-0013 rate-limit ladder.
+  /// Rate-limit ladder.
   static const int _softLockThreshold = 5;
   static const Duration _softLockDuration = Duration(seconds: 60);
   static const int _hardLockThreshold = 10;
@@ -191,9 +191,9 @@ class PinRepositoryImpl implements PinRepository {
 
   @override
   Future<Result<void, PinSetupFailure>> remove({required String userId}) async {
-    // Per ADR-0013 Decision E §3, the Firestore rule denies client
-    // delete. "Remove" is therefore implemented as a write of a
-    // random unrecoverable hash. The salt is fresh random bytes and
+    // The Firestore rule denies client delete. "Remove" is therefore
+    // implemented as a write of a random unrecoverable hash. The salt
+    // is fresh random bytes and
     // the derived key is also random — there is no PIN that derives
     // to this hash, so future verify attempts always fail (and the
     // owner can re-run setup, which overwrites this sentinel).
@@ -266,9 +266,8 @@ class PinRepositoryImpl implements PinRepository {
     };
   }
 
-  /// Lockout ladder per ADR-0013 Decision E §3.
-  /// At 10 failures → hard lock (30 min); at 5 → soft lock (60 s);
-  /// otherwise null (next attempt is allowed).
+  /// Lockout ladder. At 10 failures → hard lock (30 min); at 5 → soft
+  /// lock (60 s); otherwise null (next attempt is allowed).
   DateTime? _lockedUntilFor(int nextAttempts, DateTime now) {
     if (nextAttempts >= _hardLockThreshold) return now.add(_hardLockDuration);
     if (nextAttempts >= _softLockThreshold) return now.add(_softLockDuration);

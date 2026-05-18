@@ -2,9 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 
 import '../../domain/entities/app_user.dart';
 
-/// Converts a Firebase `User` into the domain [AppUser]. No DTO step — the
-/// architect's HB-001 default (open question 3) was "delete the DTO and add it
-/// in HB-002 when UserProfile upsert lands".
+/// Converts a Firebase `User` into the domain [AppUser]. No DTO step —
+/// a UserProfile DTO can be added if/when an upsert flow needs it.
 class AppUserMapper {
   const AppUserMapper();
 

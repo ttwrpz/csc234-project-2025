@@ -1,16 +1,15 @@
 import 'package:cloud_functions/cloud_functions.dart';
 
-/// Thin wrapper over the four WebAuthn Cloud Function callables (ADR-0014
-/// Decision B).
+/// Thin wrapper over the four WebAuthn Cloud Function callables.
 ///
 /// Each method passes the request payload verbatim and returns the raw
 /// response map; the repository owns the success/failure pattern-match
 /// and any base64url decoding.
 ///
-/// All four CFs use the `result-typed { ok, code }` discriminated union
-/// (ADR-0003 §"Wire format") — `unauthenticated` short-circuits to a
-/// thrown `FirebaseFunctionsException`; every business-level reject
-/// arrives as `{ ok: false, code: '<reason>' }`.
+/// All four CFs use the `result-typed { ok, code }` discriminated
+/// union — `unauthenticated` short-circuits to a thrown
+/// `FirebaseFunctionsException`; every business-level reject arrives
+/// as `{ ok: false, code: '<reason>' }`.
 class WebauthnFunctionsDatasource {
   const WebauthnFunctionsDatasource(this._functions);
 

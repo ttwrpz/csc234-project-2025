@@ -4,7 +4,7 @@ part 'pin_hash.freezed.dart';
 part 'pin_hash.g.dart';
 
 /// Cryptographic record of a user's PIN — derived once at setup time
-/// and verified locally on every unlock attempt (ADR-0013 Decision E §4).
+/// and verified locally on every unlock attempt.
 ///
 /// Stored under `users/{uid}/security/pin` (sub-document, NOT the root
 /// user doc — the security-sensitive fields keep a narrower rule
@@ -14,20 +14,19 @@ part 'pin_hash.g.dart';
 /// PBKDF2-SHA-256(pin, salt, iterations, dkLen=32). The salt is
 /// 16 random bytes per user, generated once at setup time.
 ///
-/// The [failedAttempts] / [lockedUntil] pair is the rate-limit anchor
-/// per ADR-0013 Decision E §3: 5 failed attempts → 60s lock; 10 failures
-/// in an hour → 30min lock. Both bounds are enforced ALSO at the
-/// Firestore rule level so a tampered client cannot bypass them by
-/// skipping the write.
+/// The [failedAttempts] / [lockedUntil] pair is the rate-limit anchor:
+/// 5 failed attempts → 60 s lock; 10 failures in an hour → 30 min
+/// lock. Both bounds are enforced ALSO at the Firestore rule level so
+/// a tampered client cannot bypass them by skipping the write.
 @freezed
 abstract class PinHash with _$PinHash {
   const factory PinHash({
-    /// PBKDF2 variant identifier. Fixed at `'pbkdf2-sha256'` for v1.5.
-    /// Stored explicitly so a future rotation (e.g. Argon2id in v2.0)
-    /// can be distinguished at read time without a schema migration.
+    /// PBKDF2 variant identifier. Fixed at `'pbkdf2-sha256'`. Stored
+    /// explicitly so a future rotation (e.g. Argon2id) can be
+    /// distinguished at read time without a schema migration.
     required String algorithm,
 
-    /// PBKDF2 iteration count. ADR-0013: ≥ 100 000.
+    /// PBKDF2 iteration count. ≥ 100 000.
     required int iterations,
 
     /// Base64-encoded 16-byte random salt. Per-user; generated once at

@@ -5,11 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/providers.dart';
 
-/// PRIVACY card tiles (ADR-0013 Decision F).
+/// PRIVACY card tiles.
 ///
 /// Renders the master "Require unlock to view history" switch plus
 /// the conditional "Set up PIN" / "Change PIN" tiles below it. All
-/// five states from Decision F are covered:
+/// five states are covered:
 ///   1. OFF, no PIN, no biometric — switch enabled, no PIN tiles.
 ///   2. OFF, no PIN, biometric present — switch enabled, no PIN tiles.
 ///   3. ON, PIN set, biometric present — switch ON, "Change PIN" tile.
@@ -18,10 +18,9 @@ import '../../data/providers.dart';
 ///   5. ON requested but no PIN set — reverted via snackbar (handled by
 ///      the flow router; this widget never lands in that state).
 ///
-/// Signed-out users see the switch disabled with the
-/// "Sign in first to set up a privacy lock." subtitle — defence in
-/// depth for ADR-0013 Open Follow-up #4 (the parent Settings screen
-/// already gates the PRIVACY section on `user != null`).
+/// Signed-out users see the switch disabled with the "Sign in first to
+/// set up a privacy lock." subtitle — defence in depth (the parent
+/// Settings screen already gates the PRIVACY section on `user != null`).
 class PrivacySettingsTile extends ConsumerWidget {
   const PrivacySettingsTile({super.key});
 
@@ -87,10 +86,10 @@ class PrivacySettingsTile extends ConsumerWidget {
     String userId,
   ) async {
     if (next) {
-      // Decision G — push the setup flow as a modal route. The flow
-      // pops with `true` on success, `false` on cancel. We only flip
-      // the persisted opt-in on `true` so a cancelled flow leaves
-      // the switch OFF (and any partial state cleared).
+      // Push the setup flow as a modal route. The flow pops with
+      // `true` on success, `false` on cancel. We only flip the
+      // persisted opt-in on `true` so a cancelled flow leaves the
+      // switch OFF (and any partial state cleared).
       final completed = await context.push<bool>('/privacy/setup');
       if (!context.mounted) return;
       if (completed == true) {
@@ -101,9 +100,9 @@ class PrivacySettingsTile extends ConsumerWidget {
 
     // Flipping OFF: persist the opt-out AND invalidate the stored PIN
     // hash so a re-enable goes through a full setup flow rather than
-    // silently reusing the prior PIN. Per ADR-0013 Decision E §3 the
-    // Firestore rule denies client-side delete; remove() writes a
-    // random unrecoverable hash in place.
+    // silently reusing the prior PIN. The Firestore rule denies
+    // client-side delete; remove() writes a random unrecoverable hash
+    // in place.
     await ref.read(privacyLockEnabledProvider.notifier).set(false);
     final result = await ref.read(removePinUseCaseProvider)(userId: userId);
     if (!context.mounted) return;
@@ -166,10 +165,9 @@ class _ChangePinTile extends StatelessWidget {
       title: const Text('Change PIN'),
       subtitle: const Text('Replace your existing PIN.'),
       trailing: const Icon(Icons.chevron_right),
-      // ADR-0013 "If you must cut for time" tier 2: Change-PIN UI is
-      // first on the chopping block. v1.5 ships the affordance but
-      // re-uses the setup flow (which overwrites the existing hash);
-      // a dedicated current-PIN + new-PIN screen ships in v1.6.
+      // The affordance re-uses the setup flow (which overwrites the
+      // existing hash); a dedicated current-PIN + new-PIN screen is
+      // a future enhancement.
       onTap: () => context.push('/privacy/setup'),
     );
   }

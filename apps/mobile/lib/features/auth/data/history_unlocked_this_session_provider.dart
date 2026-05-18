@@ -1,16 +1,16 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Sliding 5-minute idle window per ADR-0013 Decision D.
+/// Sliding 5-minute idle window.
 const Duration _idleWindow = Duration(minutes: 5);
 
-/// App-background threshold per ADR-0013 Decision D §5. A user who
-/// backgrounds the app for less than this keeps the unlock; longer
-/// backgrounds clear it so a roommate picking up a phone that was
-/// last looked at "this morning" can't browse the journal.
+/// App-background threshold. A user who backgrounds the app for less
+/// than this keeps the unlock; longer backgrounds clear it so a
+/// roommate picking up a phone that was last looked at "this morning"
+/// can't browse the journal.
 const Duration _backgroundResetThreshold = Duration(seconds: 30);
 
-/// State of the History route's session unlock (ADR-0013 Decision D).
+/// State of the History route's session unlock.
 ///
 /// Three semantically-distinct states are encoded:
 ///   - `lastActivityAt == null` → locked. Router redirects to
@@ -38,11 +38,9 @@ class HistoryUnlockState {
 
 /// Notifier owning the History unlock state plus the
 /// `WidgetsBindingObserver` that clears the unlock when the app has
-/// been backgrounded for > 30 s.
-///
-/// Per ADR-0013 Open Follow-up #3, the lifecycle observer lives next
-/// to this notifier rather than in `router.dart` so the router file
-/// stays lean.
+/// been backgrounded for > 30 s. The lifecycle observer lives next to
+/// this notifier rather than in `router.dart` so the router file stays
+/// lean.
 class HistoryUnlockedThisSessionNotifier extends Notifier<HistoryUnlockState>
     with WidgetsBindingObserver {
   /// Optional clock injection — tests pass a fake to control idle
@@ -70,7 +68,7 @@ class HistoryUnlockedThisSessionNotifier extends Notifier<HistoryUnlockState>
   /// Resets the sliding window — call this on every meaningful tap
   /// inside the History route (entry list tap, scroll-into-view,
   /// etc.). Tapping outside the History route should NOT touch this
-  /// timer (Decision D §4).
+  /// timer.
   void touch() {
     if (state.lastActivityAt == null) return;
     state = HistoryUnlockState(lastActivityAt: _now());

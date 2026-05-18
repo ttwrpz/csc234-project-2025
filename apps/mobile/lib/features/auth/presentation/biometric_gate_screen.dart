@@ -11,15 +11,14 @@ import 'widgets/brand_mark.dart';
 /// flips [biometricUnlockedThisSessionProvider] to true and navigates to
 /// `/home`.
 ///
-/// v1.6 fix — on cancellation or failure the screen **stays here** with
-/// an inline error message, a primary "Try again" button (re-runs the
-/// prompt), and a secondary "Sign out instead" link (explicit exit).
-/// The previous implementation force-ejected the user to `/sign-in` after
-/// any failure — including the trivial "user tapped cancel on the OS
-/// dialog" case — which surfaced as "the app suddenly signs me out
-/// several seconds after I close the biometric dialog." Letting the
-/// user drive the exit matches the biometric re-auth UX of banking +
-/// health apps.
+/// On cancellation or failure the screen **stays here** with an inline
+/// error message, a primary "Try again" button (re-runs the prompt),
+/// and a secondary "Sign out instead" link (explicit exit). Auto-
+/// ejecting to `/sign-in` after any failure — including the trivial
+/// "user tapped cancel on the OS dialog" case — would surface as "the
+/// app suddenly signs me out several seconds after I close the
+/// biometric dialog." Letting the user drive the exit matches the
+/// biometric re-auth UX of banking + health apps.
 class BiometricGateScreen extends ConsumerStatefulWidget {
   const BiometricGateScreen({super.key});
 

@@ -6,10 +6,10 @@ part 'sign_in_state.freezed.dart';
 /// per-button spinner state so only the actively-submitting button
 /// shows a loading indicator while the other is disabled.
 ///
-/// v1.6: previously a single `isSubmitting: bool` was shared by both
-/// flows, so pressing "Sign in" lit BOTH the email/password spinner
-/// AND the Google button's spinner at the same time. This enum splits
-/// the two states so each button only renders its own spinner.
+/// A single shared `isSubmitting: bool` would light BOTH the
+/// email/password spinner AND the Google button's spinner when only
+/// one flow is in flight; splitting the two states means each button
+/// only renders its own spinner.
 enum SignInSubmitMethod { none, password, google }
 
 /// Reactive state for [SignInScreen]. The `password` field is held in memory

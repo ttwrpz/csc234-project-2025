@@ -9,15 +9,15 @@ import '../../domain/entities/biometric_capability.dart';
 import 'pin_setup_screen.dart';
 
 /// `/privacy/setup` — the first-time setup orchestration screen for
-/// the History privacy gate (ADR-0013 Decision G).
+/// the History privacy gate.
 ///
 /// Sequences three steps:
-///   - G-1 (skipped when biometric isn't available): verify the user's
-///     existing biometric so we have an immediate test that they can
-///     unlock with the same factor the History gate will require.
-///   - G-2 (always): two-pass PIN setup via [PinSetupScreen].
-///   - G-3 (confirmation): "Privacy lock is on." card with a single
-///     "Done" button that pops back to Settings.
+///   - Biometric (skipped when biometric isn't available): verify the
+///     user's existing biometric so we have an immediate test that they
+///     can unlock with the same factor the History gate will require.
+///   - PIN (always): two-pass PIN setup via [PinSetupScreen].
+///   - Confirmation: "Privacy lock is on." card with a single "Done"
+///     button that pops back to Settings.
 ///
 /// Cancellation at any step rewinds the PRIVACY toggle to OFF —
 /// callers should only flip the toggle ON once this screen returns
@@ -40,7 +40,8 @@ class _PrivacySetupFlowScreenState
   @override
   void initState() {
     super.initState();
-    // Skip G-1 immediately if biometric isn't available on this device.
+    // Skip the biometric step immediately if biometric isn't available
+    // on this device.
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeSkipBiometric());
   }
 
@@ -163,9 +164,9 @@ class _PinStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserStreamProvider).value;
     if (user == null) {
-      // ADR-0013 Open Follow-up #4: the setup flow is unreachable when
-      // signed out. This branch is defensive — if it fires we bail
-      // back to Settings rather than render a half-state.
+      // The setup flow is unreachable when signed out. This branch is
+      // defensive — if it fires we bail back to Settings rather than
+      // render a half-state.
       WidgetsBinding.instance.addPostFrameCallback((_) => onCancel());
       return const SizedBox.shrink();
     }

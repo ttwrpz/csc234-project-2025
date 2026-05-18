@@ -40,7 +40,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     super.dispose();
   }
 
-  /// WebAuthn login entry point (web only). v1.5 ships `kEnableWebauthn`
+  /// WebAuthn login entry point (web only). Ships with `kEnableWebauthn`
   /// off, so this handler is unreachable in production builds; the
   /// snackbar is defence-in-depth for a future flag flip without the
   /// surrounding session-binding work in place.
@@ -176,9 +176,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           state.submittingWith == SignInSubmitMethod.google,
                     ),
                     // Web-only WebAuthn entry point, behind the
-                    // `kEnableWebauthn` build flag. Removed the native
-                    // "Use biometric" affordance in v1.6 — biometric
-                    // at the cold-boot sign-in stage was a no-op:
+                    // `kEnableWebauthn` build flag. No native "Use
+                    // biometric" affordance here — biometric at the
+                    // cold-boot sign-in stage is a no-op:
                     // `LocalAuthentication.authenticate()` returns
                     // success but produces no credentials, and the
                     // router redirect bounces the user back to
