@@ -6,8 +6,7 @@ import '../domain/repositories/disclaimer_repository.dart';
 import 'datasources/disclaimer_firestore_datasource.dart';
 import 'repositories/disclaimer_repository_impl.dart';
 
-/// Riverpod wiring for the bipolar / medical disclaimer service (S5
-/// feature 7.4, pulled forward into S4).
+/// Riverpod wiring for the bipolar / medical disclaimer service.
 ///
 /// The repository ack-state lives in `users/{uid}.insightsDisclaimerAcked`
 /// — a single boolean on the user doc, rule-guarded one-way (false → true
@@ -32,7 +31,7 @@ final disclaimerRepositoryProvider = Provider<DisclaimerRepository>(
 );
 
 /// Streams the current user's ack state. Emits `false` when no user is
-/// signed in (the S5 Insights screen is rendered after auth, but this
+/// signed in (the Insights screen is rendered after auth, but this
 /// provider is also consumed by Settings — the false default keeps the
 /// "tap to read more" affordance always discoverable).
 final disclaimerAckStreamProvider = StreamProvider<bool>((ref) {

@@ -7,9 +7,9 @@ import '../../domain/disclaimer_copy.dart';
 /// medical icon. Used by the Settings → About cluster (inside an
 /// `ExpansionTile`) and the onboarding "A note about MoodBloom" slide.
 ///
-/// No interactive elements — the dedicated `DisclaimerAckDialog` (S5)
-/// owns the "I understand" affordance. Keeping this widget stateless
-/// also makes the goldens and Settings widget tests simpler.
+/// No interactive elements — the dedicated `DisclaimerAckDialog` owns
+/// the "I understand" affordance. Keeping this widget stateless also
+/// makes the goldens and Settings widget tests simpler.
 class DisclaimerPanel extends StatelessWidget {
   const DisclaimerPanel({super.key});
 

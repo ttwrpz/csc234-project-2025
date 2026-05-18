@@ -1,7 +1,6 @@
 import 'package:core/core.dart';
 
-/// All failure modes for the bipolar / medical disclaimer ack store
-/// (S5 feature 7.4, pulled forward into S4).
+/// All failure modes for the bipolar / medical disclaimer ack store.
 ///
 /// Sealed so consumers that switch on the variants get exhaustive-switch
 /// help from the analyzer. Extends [Failure] directly — disclaimer
