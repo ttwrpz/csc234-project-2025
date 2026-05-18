@@ -3,8 +3,50 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show compute;
 
 import '../domain/services/pin_hasher.dart';
+
+/// Argument bundle for the off-isolate PBKDF2 worker. Kept as a plain
+/// class (not a record) because `compute()` serialises the argument
+/// across the isolate boundary and records aren't transferable on
+/// every Dart channel.
+class _Pbkdf2Args {
+  const _Pbkdf2Args({
+    required this.pinDigits,
+    required this.salt,
+    required this.iterations,
+  });
+
+  final String pinDigits;
+  final List<int> salt;
+  final int iterations;
+}
+
+/// Top-level (required by `compute`) PBKDF2 entry point. Inlines the
+/// algorithm so the worker isolate doesn't need to construct a
+/// `PinHasherImpl` (its `Random` field is fine to construct in any
+/// isolate but is irrelevant for derive — derive is stateless).
+List<int> _pbkdf2InIsolate(_Pbkdf2Args args) {
+  final passwordBytes = utf8.encode(args.pinDigits);
+  final hmac = Hmac(sha256, passwordBytes);
+
+  final saltWithCounter = Uint8List(args.salt.length + 4)
+    ..setRange(0, args.salt.length, args.salt);
+  // INT(1) big-endian: 0x00 0x00 0x00 0x01
+  saltWithCounter[args.salt.length + 3] = 1;
+
+  var u = Uint8List.fromList(hmac.convert(saltWithCounter).bytes);
+  final t = Uint8List(PinHasher.derivedKeyLengthBytes)
+    ..setRange(0, u.length, u);
+  for (var i = 1; i < args.iterations; i++) {
+    u = Uint8List.fromList(hmac.convert(u).bytes);
+    for (var j = 0; j < t.length; j++) {
+      t[j] ^= u[j];
+    }
+  }
+  return t;
+}
 
 /// Production [PinHasher] backed by `package:crypto`'s `Hmac<Sha256>`.
 ///
@@ -75,6 +117,37 @@ class PinHasherImpl implements PinHasher {
       }
     }
     return t;
+  }
+
+  /// Production override — pushes PBKDF2 onto a Flutter `compute()`
+  /// worker isolate so the main isolate stays responsive while the
+  /// 100 000-iteration loop runs (~1–3 s on mid-range Android).
+  /// Validation lives here too so the worker isolate never sees bad
+  /// inputs.
+  @override
+  Future<List<int>> deriveAsync({
+    required String pinDigits,
+    required List<int> salt,
+    required int iterations,
+  }) {
+    if (iterations < PinHasher.minIterations) {
+      throw ArgumentError.value(
+        iterations,
+        'iterations',
+        'must be at least ${PinHasher.minIterations}',
+      );
+    }
+    if (salt.length != PinHasher.saltLengthBytes) {
+      throw ArgumentError.value(
+        salt.length,
+        'salt.length',
+        'must be ${PinHasher.saltLengthBytes} bytes',
+      );
+    }
+    return compute(
+      _pbkdf2InIsolate,
+      _Pbkdf2Args(pinDigits: pinDigits, salt: salt, iterations: iterations),
+    );
   }
 
   @override

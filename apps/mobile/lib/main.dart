@@ -39,15 +39,27 @@ Future<void> main() async {
       }
 
       // Crashlytics — capture both Flutter framework errors and async errors
-      // from the platform dispatcher. Disabled in debug so dev crashes never
-      // pollute the production console.
+      // from the platform dispatcher.
       //
-      // Skipped on Web: firebase_crashlytics has no Web implementation; even
-      // touching `FirebaseCrashlytics.instance` (e.g. via
-      // `setCrashlyticsCollectionEnabled`) trips an assertion in the platform
-      // interface (`pluginConstants['isCrashlyticsCollectionEnabled'] != null`)
-      // because no Web plugin is registered. We gracefully no-op on Web —
-      // unhandled errors still surface in the browser console.
+      // Collection is ALWAYS enabled (including debug). The
+      // Settings → Debug → "Crash now" affordance only renders in
+      // debug builds, so gating on `!kDebugMode` meant QA could crash
+      // the app but the dashboard never received the report,
+      // defeating the affordance's only purpose. Crashlytics writes
+      // the report locally on crash and uploads on the NEXT app
+      // launch — to see your test crash in the dashboard, reopen the
+      // app after tapping "Crash now". Real dev-time framework
+      // exceptions still print to the console; they also upload,
+      // which is a small extra noise floor we accept in exchange for
+      // a working verify-wiring path.
+      //
+      // Skipped on Web: firebase_crashlytics has no Web implementation;
+      // even touching `FirebaseCrashlytics.instance` (e.g. via
+      // `setCrashlyticsCollectionEnabled`) trips an assertion in the
+      // platform interface
+      // (`pluginConstants['isCrashlyticsCollectionEnabled'] != null`)
+      // because no Web plugin is registered. We gracefully no-op on
+      // Web — unhandled errors still surface in the browser console.
       if (!kIsWeb) {
         FlutterError.onError =
             FirebaseCrashlytics.instance.recordFlutterFatalError;
@@ -56,7 +68,7 @@ Future<void> main() async {
           return true;
         };
         await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(
-          !kDebugMode,
+          true,
         );
       }
 
@@ -66,6 +78,10 @@ Future<void> main() async {
       // (rollback plan)" — production clients pick up server-side flips
       // within an hour.
       final rc = FirebaseRemoteConfig.instance;
+      // Defaults MUST stay in sync with `FeatureFlags.defaults()` in
+      // `apps/mobile/lib/app/feature_flags.dart` AND with the canonical
+      // template at `firebase/remoteconfig.template.json` (deployed
+      // via `firebase deploy --only remoteconfig`).
       await rc.setDefaults(<String, Object>{
         'ai_pattern_analysis_enabled': true,
         'gemini_detection_enabled': true,
@@ -73,6 +89,11 @@ Future<void> main() async {
         // patterns/{date} regardless, but no notification fires until
         // the dispatcher reading patterns/{date}.triggeredTier ships.
         'intervention_dispatch_enabled': false,
+        // Default true so the History privacy gate honours user opt-in
+        // out of the box. Flip to `false` via Remote Config to disable
+        // the gate globally if a critical post-release bug surfaces —
+        // stored PIN hashes stay at rest, no data loss.
+        'history_privacy_lock_enabled': true,
       });
       await rc.setConfigSettings(
         RemoteConfigSettings(

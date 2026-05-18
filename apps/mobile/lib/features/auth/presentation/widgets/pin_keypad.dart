@@ -228,11 +228,21 @@ class _Keys extends StatelessWidget {
   }
 }
 
+/// 88×88 dp cells with a 6 dp gutter put the physical hit area
+/// comfortably above the WCAG 2.5.5 44×44 target. Same dimension is
+/// shared by the digit keys and the blank spacer so the row alignment
+/// stays grid-perfect.
+const double _kKeypadCell = 88;
+const double _kKeypadGutter = 6;
+
 class _Spacer extends StatelessWidget {
   const _Spacer();
 
   @override
-  Widget build(BuildContext context) => const SizedBox(width: 72, height: 72);
+  Widget build(BuildContext context) => const SizedBox(
+    width: _kKeypadCell + _kKeypadGutter * 2,
+    height: _kKeypadCell + _kKeypadGutter * 2,
+  );
 }
 
 class _KeypadButton extends StatelessWidget {
@@ -254,30 +264,44 @@ class _KeypadButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
     final foreground = enabled ? mb.text : mb.textDim;
+    final tint = mb.text;
     final child = icon != null
-        ? Icon(icon, color: foreground, size: 24)
+        ? Icon(icon, color: foreground, size: 28)
         : Text(
             label!,
             style: MbFonts.fraunces(
-              fontSize: 24,
+              fontSize: 28,
               fontWeight: FontWeight.w500,
               color: foreground,
             ),
           );
+    // Material+InkWell with explicit high-alpha splash/highlight tints
+    // so the press effect lands visibly on the cream/navy theme (the
+    // default Material splash is washed out in this palette — same
+    // story as the Settings tiles). A subtle background tile gives the
+    // button an obvious "I am a button" affordance.
     return Semantics(
       label: semanticsLabel ?? label,
       button: true,
       enabled: enabled,
-      child: SizedBox(
-        width: 72,
-        height: 72,
-        child: TextButton(
-          onPressed: enabled ? onPressed : null,
-          style: TextButton.styleFrom(
-            shape: const CircleBorder(),
-            padding: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(_kKeypadGutter),
+        child: SizedBox(
+          width: _kKeypadCell,
+          height: _kKeypadCell,
+          child: Material(
+            color: enabled ? mb.card : mb.card.withValues(alpha: 0.5),
+            shape: CircleBorder(side: BorderSide(color: mb.line, width: 1)),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: enabled ? onPressed : null,
+              customBorder: const CircleBorder(),
+              splashColor: tint.withValues(alpha: 0.35),
+              highlightColor: tint.withValues(alpha: 0.18),
+              splashFactory: InkRipple.splashFactory,
+              child: Center(child: child),
+            ),
           ),
-          child: child,
         ),
       ),
     );
