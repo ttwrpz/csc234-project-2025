@@ -139,7 +139,19 @@ jobs:
 
       - name: flutter test --tags=golden (apps/mobile)
         working-directory: apps/mobile
-        run: flutter test --tags=golden
+        # Goldens were trimmed during the v1.5 polish wave (no
+        # @Tags(['golden']) suites remain today). flutter test exits
+        # 79 when no tests match the tag selector — treat that as a
+        # pass so the step survives until goldens are restored.
+        run: |
+          set +e
+          flutter test --tags=golden
+          rc=$?
+          if [ $rc -eq 79 ]; then
+            echo "No golden-tagged tests in the suite — skipping."
+            exit 0
+          fi
+          exit $rc
 
       - name: flutter test (packages/core)
         working-directory: packages/core
