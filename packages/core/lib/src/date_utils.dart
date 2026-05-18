@@ -6,8 +6,9 @@ library;
 /// to local *before* the date math is what makes "an entry at 23:59 local"
 /// land on the day the user expects.
 ///
-/// Extracted from `compute_garden_state.dart` and `compute_analytics_state.dart`
-/// (Sprint 4 WBS 5.4 — both had byte-identical `_atMidnightLocal` helpers).
+/// Extracted from `compute_garden_state.dart` and
+/// `compute_analytics_state.dart`, which both had byte-identical
+/// `_atMidnightLocal` helpers.
 DateTime localMidnight(DateTime dt) {
   final local = dt.toLocal();
   return DateTime(local.year, local.month, local.day);

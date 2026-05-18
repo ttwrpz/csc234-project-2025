@@ -58,11 +58,10 @@ class MbCard extends StatelessWidget {
     // Default-decoration path — uses an opaque `Material(color: mb.card)`
     // as the outermost widget so descendant InkWells (ListTiles inside
     // Settings clusters, etc.) can paint visible splash + highlight ON
-    // TOP of the card surface. v1.6 fix for "press effect renders
-    // behind the background" — the prior structure put the splash
-    // beneath the `Ink` decoration's paint layer (no-onTap → no
-    // Material at all; with-onTap → MaterialType.transparency below
-    // Ink), so inner taps had no visible feedback.
+    // TOP of the card surface. Without this, splashes paint beneath the
+    // `Ink` decoration's paint layer (no-onTap → no Material at all;
+    // with-onTap → MaterialType.transparency below Ink), so inner taps
+    // have no visible feedback.
     final radius = BorderRadius.circular(MoodBloomSpacing.radiusCardLg);
     final shape = RoundedRectangleBorder(
       borderRadius: radius,
@@ -74,11 +73,7 @@ class MbCard extends StatelessWidget {
       clipBehavior: clipBehavior,
       child: onTap == null
           ? content
-          : InkWell(
-              onTap: onTap,
-              borderRadius: radius,
-              child: content,
-            ),
+          : InkWell(onTap: onTap, borderRadius: radius, child: content),
     );
   }
 }

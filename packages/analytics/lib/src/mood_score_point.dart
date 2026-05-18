@@ -1,10 +1,10 @@
 /// A single (day, score) sample plotted on [MoodScoreLineChart]. The
-/// `score` is in the closed range `[-1, +1]` (spec §2.1 `S_t = v × i/5`).
+/// `score` is in the closed range `[-1, +1]` (`S_t = v × i/5`).
 ///
-/// `health` is the optional EWMA `H_t` overlay value (spec §2.3,
-/// α = 0.15). When null, the chart simply skips the overlay marker for
-/// that day; the primary mood-score line stays continuous via the
-/// `null` allowance below.
+/// `health` is the optional EWMA `H_t` overlay value (α = 0.15). When
+/// null, the chart simply skips the overlay marker for that day; the
+/// primary mood-score line stays continuous via the `null` allowance
+/// below.
 ///
 /// Pure Dart so the chart widget can be unit-tested without an emulator
 /// or any Riverpod / Firebase plumbing.

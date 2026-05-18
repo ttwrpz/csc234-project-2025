@@ -5,7 +5,7 @@ import 'tokens/colors.dart';
 import 'tokens/spacing.dart';
 import 'tokens/typography.dart';
 
-/// Builds the MoodBloom light theme from the "Sprint 2 Prototype" tokens.
+/// Builds the MoodBloom light theme.
 ThemeData buildLightTheme() {
   final mb = MbColors.light();
   final colorScheme = ColorScheme.fromSeed(
@@ -24,7 +24,7 @@ ThemeData buildLightTheme() {
   return _buildTheme(colorScheme: colorScheme, mb: mb);
 }
 
-/// Builds the MoodBloom dark theme from the "Sprint 2 Prototype" tokens.
+/// Builds the MoodBloom dark theme.
 ThemeData buildDarkTheme() {
   final mb = MbColors.dark();
   final colorScheme = ColorScheme.fromSeed(

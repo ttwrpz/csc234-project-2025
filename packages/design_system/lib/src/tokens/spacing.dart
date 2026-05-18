@@ -14,7 +14,6 @@ abstract final class MoodBloomSpacing {
   static const double radiusLg = 16;
   static const double radiusFull = 999;
 
-  // "Sprint 2 Prototype" additions — appended, not replaced.
   static const double pagePadding = 18;
   static const double radiusButton = 14;
   static const double radiusCardLg = 20;

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'mood_score_chart_theme.dart';
 import 'mood_score_point.dart';
 
-/// Mood-score time-series chart for the (S5) Insights screen. Plots two
+/// Mood-score time-series chart for the Insights screen. Plots two
 /// lines in the closed Y range `[-1, +1]`:
 ///
 ///   * the per-day mean mood-score `S_day` (primary, solid)
@@ -172,8 +172,7 @@ class MoodScoreLineChart extends StatelessWidget {
           lineTouchData: LineTouchData(
             handleBuiltInTouches: true,
             touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (_) =>
-                  Theme.of(context).colorScheme.surface,
+              getTooltipColor: (_) => Theme.of(context).colorScheme.surface,
               tooltipBorder: BorderSide(
                 color: Theme.of(context).colorScheme.outlineVariant,
                 width: 1,
@@ -267,8 +266,18 @@ class MoodScoreLineChart extends StatelessWidget {
   static String _friendlyDate(DateTime day) {
     const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${weekdays[day.weekday - 1]} · ${months[day.month - 1]} ${day.day}';
   }
@@ -284,8 +293,8 @@ class MoodScoreLineChart extends StatelessWidget {
     return 'Storm Season';
   }
 
-  /// 5 plant-tier bands keyed off `H_t` thresholds (spec §2.3). Each is
-  /// drawn at low alpha so the score line stays the dominant signal.
+  /// 5 plant-tier bands keyed off `H_t` thresholds. Each is drawn at
+  /// low alpha so the score line stays the dominant signal.
   static List<HorizontalRangeAnnotation> _bands(MoodScoreChartTheme theme) {
     // Defensive: fall back to a single neutral band if the caller passed
     // fewer than 5 colours.

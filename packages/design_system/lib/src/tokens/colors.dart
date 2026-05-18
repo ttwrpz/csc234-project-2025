@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// MoodBloom raw color tokens. Soft, garden-coded palette plus the
-/// "Sprint 2 Prototype" surface family. Names are preserved so existing
-/// consumers (e.g. `MoodBloomColors.moodHappy`) keep compiling; only the
-/// hex values for the 6 mood swatches and the cream surface have shifted.
+/// MoodBloom raw color tokens. Soft, garden-coded palette. Names are
+/// preserved so existing consumers (e.g. `MoodBloomColors.moodHappy`)
+/// keep compiling.
 abstract final class MoodBloomColors {
   // Brand
   static const Color seed = Color(0xFF2E7D5B); // primary deep-green
@@ -17,11 +16,9 @@ abstract final class MoodBloomColors {
   /// copy. Filled buttons can keep `coral` as their background since
   /// the foreground there is white (ratio is fine on white).
   ///
-  /// v1.6 — darkened from 0xFFA63B2E to 0xFF7A1E13 (~9.5:1 on the
-  /// cream surface) after user feedback that the previous tone still
-  /// read as low-contrast in light mode. Hue stays in the warm coral
-  /// family; saturation drops modestly so the colour reads as
-  /// "deliberate weight" rather than "alarm red".
+  /// Sits at ~9.5:1 on the cream surface for AAA contrast. Hue stays
+  /// in the warm coral family; saturation is dropped modestly so the
+  /// colour reads as "deliberate weight" rather than "alarm red".
   static const Color coralText = Color(0xFF7A1E13);
 
   // Neutrals (light mode)
@@ -80,7 +77,7 @@ class MbColors extends ThemeExtension<MbColors> {
     required this.aiBd,
   });
 
-  /// Light-mode token set from the "Sprint 2 Prototype".
+  /// Light-mode token set.
   factory MbColors.light() => const MbColors(
     bg: Color(0xFFFBFAF6),
     card: Color(0xFFFFFFFF),
@@ -103,7 +100,7 @@ class MbColors extends ThemeExtension<MbColors> {
     aiBd: Color(0xFFE6DFCC),
   );
 
-  /// Dark-mode token set from the "Sprint 2 Prototype".
+  /// Dark-mode token set.
   factory MbColors.dark() => const MbColors(
     bg: Color(0xFF161F2C),
     card: Color(0xFF22303F),
@@ -199,8 +196,7 @@ class MbColors extends ThemeExtension<MbColors> {
       line: Color.lerp(line, other.line, t)!,
       text: Color.lerp(text, other.text, t)!,
       textDim: Color.lerp(textDim, other.textDim, t)!,
-      destructiveText:
-          Color.lerp(destructiveText, other.destructiveText, t)!,
+      destructiveText: Color.lerp(destructiveText, other.destructiveText, t)!,
       skyTop: Color.lerp(skyTop, other.skyTop, t)!,
       skyMid: Color.lerp(skyMid, other.skyMid, t)!,
       skyBot: Color.lerp(skyBot, other.skyBot, t)!,

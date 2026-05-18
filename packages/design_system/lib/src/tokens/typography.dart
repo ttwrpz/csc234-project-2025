@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 
-/// MoodBloom typography. Pairs system body and display fonts with the
-/// "Sprint 2 Prototype" size/weight scale.
+/// MoodBloom typography. Pairs system body and display fonts.
 ///
-/// Originally this builder reached for `GoogleFonts.nunito*` / `fraunces`,
-/// but the package's runtime fetcher throws under tests when the font
-/// isn't bundled — and bundling 6 TTF assets is a heavier change than
-/// this PR is scoped for. The size scale, weights, and letter spacing
-/// are the prototype's; only the typeface family differs (system default
-/// instead of Nunito + Fraunces). Switching back is a one-line restore +
-/// adding the .ttf files under `apps/mobile/assets/fonts/` and
-/// registering them in `pubspec.yaml`.
+/// `GoogleFonts.nunito*` / `fraunces` would be the canonical choice, but
+/// the package's runtime fetcher throws under tests when the font isn't
+/// bundled, and bundling 6 TTF assets is out of scope. The size scale,
+/// weights, and letter spacing match the design system; only the
+/// typeface family differs (system default instead of Nunito + Fraunces).
+/// Switching back is a one-line restore + adding the .ttf files under
+/// `apps/mobile/assets/fonts/` and registering them in `pubspec.yaml`.
 abstract final class MoodBloomTypography {
   /// Kept as `null` so each `TextStyle` uses the platform default
   /// (Roboto on Android, San Francisco on iOS, system on web).
