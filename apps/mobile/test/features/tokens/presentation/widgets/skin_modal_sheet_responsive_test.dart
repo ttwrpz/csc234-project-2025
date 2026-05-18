@@ -150,8 +150,7 @@ void main() {
         expect(
           find.byType(BottomSheet),
           findsNothing,
-          reason:
-              'tablet launcher MUST promote the modal to a centered dialog',
+          reason: 'tablet launcher MUST promote the modal to a centered dialog',
         );
         expect(find.byType(SkinModalSheet), findsOneWidget);
 

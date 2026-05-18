@@ -20,7 +20,10 @@ void main() {
         selectedBySpecies: {FlowerSpecies.sunflower: 'sunflower_sunset'},
       );
       expect(s.isUnlocked(FlowerSpecies.sunflower, 'sunflower_sunset'), isTrue);
-      expect(s.isUnlocked(FlowerSpecies.sunflower, 'sunflower_moonlit'), isFalse);
+      expect(
+        s.isUnlocked(FlowerSpecies.sunflower, 'sunflower_moonlit'),
+        isFalse,
+      );
       // Cross-species lookup never leaks.
       expect(s.isUnlocked(FlowerSpecies.lavender, 'sunflower_sunset'), isFalse);
     });

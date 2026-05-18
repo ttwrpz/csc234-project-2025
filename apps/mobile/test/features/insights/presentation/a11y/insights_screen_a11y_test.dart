@@ -167,43 +167,41 @@ void main() {
       },
     );
 
-    testWidgets(
-      'dialog is non-dismissible — barrier-tap does NOT close it',
-      (tester) async {
-        final repo = _FakeDisclaimerRepo(initial: false);
-        await _pump(tester, disclaimerRepo: repo);
+    testWidgets('dialog is non-dismissible — barrier-tap does NOT close it', (
+      tester,
+    ) async {
+      final repo = _FakeDisclaimerRepo(initial: false);
+      await _pump(tester, disclaimerRepo: repo);
 
-        // Tap the top-left corner — well outside the dialog body.
-        await tester.tapAt(const Offset(5, 5));
-        await tester.pumpAndSettle();
+      // Tap the top-left corner — well outside the dialog body.
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
 
-        expect(
-          find.text(DisclaimerCopy.full),
-          findsOneWidget,
-          reason: 'barrierDismissible:false MUST keep dialog mounted.',
-        );
-        expect(repo.ackedUsers, isEmpty);
-      },
-    );
+      expect(
+        find.text(DisclaimerCopy.full),
+        findsOneWidget,
+        reason: 'barrierDismissible:false MUST keep dialog mounted.',
+      );
+      expect(repo.ackedUsers, isEmpty);
+    });
 
-    testWidgets(
-      'ack emitted true: dialog absent, chart visible immediately',
-      (tester) async {
-        final repo = _FakeDisclaimerRepo(initial: true);
-        await _pump(tester, disclaimerRepo: repo, insights: _seedInsights());
+    testWidgets('ack emitted true: dialog absent, chart visible immediately', (
+      tester,
+    ) async {
+      final repo = _FakeDisclaimerRepo(initial: true);
+      await _pump(tester, disclaimerRepo: repo, insights: _seedInsights());
 
-        expect(
-          find.text(DisclaimerCopy.full),
-          findsNothing,
-          reason: 'Pre-acked users must never see the dialog (TC-37).',
-        );
-        expect(
-          find.byType(MoodScoreChart),
-          findsOneWidget,
-          reason: 'Chart must render once ack state is true.',
-        );
-      },
-    );
+      expect(
+        find.text(DisclaimerCopy.full),
+        findsNothing,
+        reason: 'Pre-acked users must never see the dialog (TC-37).',
+      );
+      expect(
+        find.byType(MoodScoreChart),
+        findsOneWidget,
+        reason: 'Chart must render once ack state is true.',
+      );
+    });
   });
 
   group('InsightsScreen — window chip semantics', () {
@@ -228,5 +226,4 @@ void main() {
       },
     );
   });
-
 }

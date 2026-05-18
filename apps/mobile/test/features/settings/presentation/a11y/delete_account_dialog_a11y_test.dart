@@ -85,7 +85,8 @@ void main() {
         expect(
           find.text('Delete account?'),
           findsOneWidget,
-          reason: 'Step 1 title must include the question mark — "delete '
+          reason:
+              'Step 1 title must include the question mark — "delete '
               'account" alone reads imperative, not confirmational.',
         );
         // Body — communicates irreversibility.
@@ -159,98 +160,83 @@ void main() {
         expect(delete.hasFlag(SemanticsFlag.isButton), isTrue);
 
         // Cancel keeps the escape hatch reachable.
-        expect(
-          find.widgetWithText(TextButton, 'Cancel'),
-          findsOneWidget,
-        );
+        expect(find.widgetWithText(TextButton, 'Cancel'), findsOneWidget);
       },
     );
   });
 
   group('DeleteAccountDialog — 200% type readability', () {
-    testWidgets(
-      'step 1 renders without RenderFlex overflow at 200% type',
-      (tester) async {
-        final exceptions = <Object>[];
-        FlutterError.onError = (details) => exceptions.add(details.exception);
-        addTearDown(
-          () => FlutterError.onError = FlutterError.dumpErrorToConsole,
-        );
+    testWidgets('step 1 renders without RenderFlex overflow at 200% type', (
+      tester,
+    ) async {
+      final exceptions = <Object>[];
+      FlutterError.onError = (details) => exceptions.add(details.exception);
+      addTearDown(() => FlutterError.onError = FlutterError.dumpErrorToConsole);
 
-        await _pumpDialog(
-          tester,
-          repo: FakeAuthRepository(
-            currentUserOverride: const AppUser(
-              uid: 'u-1',
-              email: 'user@example.com',
-            ),
+      await _pumpDialog(
+        tester,
+        repo: FakeAuthRepository(
+          currentUserOverride: const AppUser(
+            uid: 'u-1',
+            email: 'user@example.com',
           ),
-          textScaler: const TextScaler.linear(2.0),
-          // Tablet width keeps the two action buttons on one Row at 2x.
-          surfaceSize: const Size(600, 900),
-        );
+        ),
+        textScaler: const TextScaler.linear(2.0),
+        // Tablet width keeps the two action buttons on one Row at 2x.
+        surfaceSize: const Size(600, 900),
+      );
 
-        final overflows = exceptions
-            .map((e) => e.toString())
-            .where(
-              (s) => s.contains('overflowed') || s.contains('RenderFlex'),
-            )
-            .toList();
-        expect(
-          overflows,
-          isEmpty,
-          reason:
-              'Step 1 dialog must not overflow at 200% type. Got: $overflows',
-        );
-      },
-    );
+      final overflows = exceptions
+          .map((e) => e.toString())
+          .where((s) => s.contains('overflowed') || s.contains('RenderFlex'))
+          .toList();
+      expect(
+        overflows,
+        isEmpty,
+        reason: 'Step 1 dialog must not overflow at 200% type. Got: $overflows',
+      );
+    });
 
-    testWidgets(
-      'step 2 renders without RenderFlex overflow at 200% type',
-      (tester) async {
-        final exceptions = <Object>[];
-        FlutterError.onError = (details) => exceptions.add(details.exception);
-        addTearDown(
-          () => FlutterError.onError = FlutterError.dumpErrorToConsole,
-        );
+    testWidgets('step 2 renders without RenderFlex overflow at 200% type', (
+      tester,
+    ) async {
+      final exceptions = <Object>[];
+      FlutterError.onError = (details) => exceptions.add(details.exception);
+      addTearDown(() => FlutterError.onError = FlutterError.dumpErrorToConsole);
 
-        await _pumpDialog(
-          tester,
-          repo: FakeAuthRepository(
-            currentUserOverride: const AppUser(
-              uid: 'u-1',
-              email: 'user@example.com',
-            ),
+      await _pumpDialog(
+        tester,
+        repo: FakeAuthRepository(
+          currentUserOverride: const AppUser(
+            uid: 'u-1',
+            email: 'user@example.com',
           ),
-          textScaler: const TextScaler.linear(2.0),
-          surfaceSize: const Size(600, 900),
-        );
+        ),
+        textScaler: const TextScaler.linear(2.0),
+        surfaceSize: const Size(600, 900),
+      );
 
-        // Advance to step 2 at 200% type. The password field + spinner
-        // are the overflow risk zone.
-        await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
-        await tester.pumpAndSettle();
+      // Advance to step 2 at 200% type. The password field + spinner
+      // are the overflow risk zone.
+      await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+      await tester.pumpAndSettle();
 
-        final overflows = exceptions
-            .map((e) => e.toString())
-            .where(
-              (s) => s.contains('overflowed') || s.contains('RenderFlex'),
-            )
-            .toList();
-        expect(
-          overflows,
-          isEmpty,
-          reason:
-              'Step 2 dialog must not overflow at 200% type. Got: $overflows',
-        );
+      final overflows = exceptions
+          .map((e) => e.toString())
+          .where((s) => s.contains('overflowed') || s.contains('RenderFlex'))
+          .toList();
+      expect(
+        overflows,
+        isEmpty,
+        reason: 'Step 2 dialog must not overflow at 200% type. Got: $overflows',
+      );
 
-        // Sanity — both load-bearing controls remain on screen.
-        expect(find.byType(TextField), findsOneWidget);
-        expect(
-          find.widgetWithText(FilledButton, 'Delete forever'),
-          findsOneWidget,
-        );
-      },
-    );
+      // Sanity — both load-bearing controls remain on screen.
+      expect(find.byType(TextField), findsOneWidget);
+      expect(
+        find.widgetWithText(FilledButton, 'Delete forever'),
+        findsOneWidget,
+      );
+    });
   });
 }

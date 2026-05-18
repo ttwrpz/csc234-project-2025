@@ -100,8 +100,9 @@ Future<void> _pump(
 
 void main() {
   group('NotificationsToggleTile — semantics', () {
-    testWidgets('switch announces title + role + off-state on initial load',
-        (tester) async {
+    testWidgets('switch announces title + role + off-state on initial load', (
+      tester,
+    ) async {
       await _pump(tester);
 
       // SwitchListTile composes Material's automatic Switch semantics —
@@ -123,8 +124,9 @@ void main() {
       // label assertion above is the load-bearing a11y contract.
     });
 
-    testWidgets('subtitle copy follows CLAUDE.md compassionate imperatives',
-        (tester) async {
+    testWidgets('subtitle copy follows CLAUDE.md compassionate imperatives', (
+      tester,
+    ) async {
       // CLAUDE.md "Copy rules — Other rules": no "must" / "should". The
       // subtitle must read as a soft permission note ("Off until you
       // grant…"), not a directive. Verifying the verbatim string locks
@@ -143,8 +145,9 @@ void main() {
   });
 
   group('NotificationsToggleTile — 200% type readability', () {
-    testWidgets('renders without RenderFlex overflow at 200% type',
-        (tester) async {
+    testWidgets('renders without RenderFlex overflow at 200% type', (
+      tester,
+    ) async {
       final exceptions = <Object>[];
       FlutterError.onError = (details) => exceptions.add(details.exception);
       addTearDown(() => FlutterError.onError = FlutterError.dumpErrorToConsole);

@@ -77,24 +77,27 @@ Future<void> _pumpDialog(
 
 void main() {
   group('DisclaimerAckDialog — semantics', () {
-    testWidgets('"I understand" button is announced as a button with its label',
-        (tester) async {
-      await _pumpDialog(tester);
+    testWidgets(
+      '"I understand" button is announced as a button with its label',
+      (tester) async {
+        await _pumpDialog(tester);
 
-      final semantics = tester.getSemantics(
-        find.widgetWithText(FilledButton, DisclaimerCopy.ackButton),
-      );
-      // The button must announce its action — the label IS the action
-      // verb, no separate Semantics wrapper needed. Verifying both the
-      // label and the `button` flag protects against a future refactor
-      // that drops the FilledButton for an InkWell without restoring the
-      // semantic role.
-      expect(semantics.label, equals(DisclaimerCopy.ackButton));
-      expect(semantics.hasFlag(SemanticsFlag.isButton), isTrue);
-    });
+        final semantics = tester.getSemantics(
+          find.widgetWithText(FilledButton, DisclaimerCopy.ackButton),
+        );
+        // The button must announce its action — the label IS the action
+        // verb, no separate Semantics wrapper needed. Verifying both the
+        // label and the `button` flag protects against a future refactor
+        // that drops the FilledButton for an InkWell without restoring the
+        // semantic role.
+        expect(semantics.label, equals(DisclaimerCopy.ackButton));
+        expect(semantics.hasFlag(SemanticsFlag.isButton), isTrue);
+      },
+    );
 
-    testWidgets('disclaimer body text is reachable in the semantics tree',
-        (tester) async {
+    testWidgets('disclaimer body text is reachable in the semantics tree', (
+      tester,
+    ) async {
       await _pumpDialog(tester);
 
       // The full disclaimer must be readable by screen readers — it is
@@ -106,8 +109,9 @@ void main() {
   });
 
   group('DisclaimerAckDialog — 200% type readability', () {
-    testWidgets('renders without RenderFlex overflow at 200% type',
-        (tester) async {
+    testWidgets('renders without RenderFlex overflow at 200% type', (
+      tester,
+    ) async {
       // Capture pump-time exceptions explicitly so an overflow surfaces
       // as a test failure rather than a red console banner. We use the
       // smallest realistic phone width (360 dp) — at this width plus
@@ -142,8 +146,9 @@ void main() {
       expect(find.text(DisclaimerCopy.full), findsOneWidget);
     });
 
-    testWidgets('content is wrapped in a scrollable so 200% type can scroll',
-        (tester) async {
+    testWidgets('content is wrapped in a scrollable so 200% type can scroll', (
+      tester,
+    ) async {
       // Asserts the structural fix landed inline: AlertDialog
       // `scrollable: true` wraps the content+actions in a
       // SingleChildScrollView. Without it the dialog would clip its tail
@@ -157,7 +162,8 @@ void main() {
       expect(
         scrollable,
         findsAtLeastNWidgets(1),
-        reason: 'AlertDialog(scrollable: true) must inject a scroll view '
+        reason:
+            'AlertDialog(scrollable: true) must inject a scroll view '
             'so 200% type does not clip',
       );
     });

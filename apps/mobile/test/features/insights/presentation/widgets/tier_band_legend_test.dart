@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/insights/presentation/widgets/tier_band_legend.dart';
 
-Widget _wrap(Widget child) =>
-    MaterialApp(theme: buildLightTheme(), home: Scaffold(body: child));
+Widget _wrap(Widget child) => MaterialApp(
+  theme: buildLightTheme(),
+  home: Scaffold(body: child),
+);
 
 void main() {
   group('TierBandLegend (HB-009 C-2)', () {
@@ -53,8 +55,12 @@ void main() {
             // "withered" appears in the subtitle as part of "never
             // withered" — that's the compassionate frame and it
             // explicitly negates the banned word.
-            if (word == 'wilted' || word == 'dying' || word == 'dead' ||
-                word == 'destroyed' || word == 'lost' || word == 'clear' ||
+            if (word == 'wilted' ||
+                word == 'dying' ||
+                word == 'dead' ||
+                word == 'destroyed' ||
+                word == 'lost' ||
+                word == 'clear' ||
                 word == 'delete') {
               expect(
                 data.contains(word),
@@ -67,15 +73,16 @@ void main() {
       },
     );
 
-    testWidgets('exposes a single semantics container labelled "Tier band legend"', (
-      tester,
-    ) async {
-      await tester.pumpWidget(_wrap(const TierBandLegend()));
+    testWidgets(
+      'exposes a single semantics container labelled "Tier band legend"',
+      (tester) async {
+        await tester.pumpWidget(_wrap(const TierBandLegend()));
 
-      expect(
-        find.bySemanticsLabel(RegExp(r'Tier band legend')),
-        findsOneWidget,
-      );
-    });
+        expect(
+          find.bySemanticsLabel(RegExp(r'Tier band legend')),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

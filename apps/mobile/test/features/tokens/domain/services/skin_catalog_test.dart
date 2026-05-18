@@ -6,9 +6,9 @@ void main() {
   group('SkinCatalog — read-only catalogue', () {
     test('every species has exactly one default skin', () {
       for (final species in FlowerSpecies.values) {
-        final defaults = SkinCatalog.forSpecies(species)
-            .where((s) => s.isDefault)
-            .toList(growable: false);
+        final defaults = SkinCatalog.forSpecies(
+          species,
+        ).where((s) => s.isDefault).toList(growable: false);
         expect(
           defaults,
           hasLength(1),
@@ -24,9 +24,9 @@ void main() {
       // only its default would surface as a "nothing to customize" row,
       // which the v1.0 design forbids.
       for (final species in FlowerSpecies.values) {
-        final alternates = SkinCatalog.forSpecies(species)
-            .where((s) => !s.isDefault)
-            .toList(growable: false);
+        final alternates = SkinCatalog.forSpecies(
+          species,
+        ).where((s) => !s.isDefault).toList(growable: false);
         expect(
           alternates,
           isNotEmpty,
@@ -59,7 +59,9 @@ void main() {
     });
 
     test('all skinIds are unique across the catalogue', () {
-      final ids = SkinCatalog.all().map((s) => s.skinId).toList(growable: false);
+      final ids = SkinCatalog.all()
+          .map((s) => s.skinId)
+          .toList(growable: false);
       expect(ids.toSet().length, equals(ids.length));
     });
 

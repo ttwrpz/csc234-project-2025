@@ -26,18 +26,21 @@ void main() {
       expect(repo.setupCalls.first.digits, '123456');
     });
 
-    test('mismatch surfaces PinSetupFailure.mismatch without storage', () async {
-      final repo = FakePinRepository(pinIsSet: false);
-      final useCase = SetupPinUseCase(repo);
-      final result = await useCase(
-        userId: _uid,
-        firstEntry: '123456',
-        confirmEntry: '654321',
-      );
-      final err = result as Err<void, PinSetupFailure>;
-      expect(err.failure.isMismatch, isTrue);
-      expect(repo.setupCalls, isEmpty);
-    });
+    test(
+      'mismatch surfaces PinSetupFailure.mismatch without storage',
+      () async {
+        final repo = FakePinRepository(pinIsSet: false);
+        final useCase = SetupPinUseCase(repo);
+        final result = await useCase(
+          userId: _uid,
+          firstEntry: '123456',
+          confirmEntry: '654321',
+        );
+        final err = result as Err<void, PinSetupFailure>;
+        expect(err.failure.isMismatch, isTrue);
+        expect(repo.setupCalls, isEmpty);
+      },
+    );
 
     test('non-6-digit input surfaces invalidFormat', () async {
       final repo = FakePinRepository(pinIsSet: false);
@@ -96,26 +99,30 @@ void main() {
       expect(result, isA<Err<void, PinVerifyFailure>>());
     });
 
-    test('non-6-digit input surfaces invalidFormat without calling repo',
-        () async {
-      final repo = FakePinRepository();
-      final useCase = VerifyPinUseCase(repo);
-      final result = await useCase(userId: _uid, pinDigits: '12345');
-      expect(result, isA<Err<void, PinVerifyFailure>>());
-      expect(repo.verifyCalls, isEmpty);
-    });
+    test(
+      'non-6-digit input surfaces invalidFormat without calling repo',
+      () async {
+        final repo = FakePinRepository();
+        final useCase = VerifyPinUseCase(repo);
+        final result = await useCase(userId: _uid, pinDigits: '12345');
+        expect(result, isA<Err<void, PinVerifyFailure>>());
+        expect(repo.verifyCalls, isEmpty);
+      },
+    );
 
-    test('locked failure carries the until timestamp through the getter',
-        () async {
-      final until = DateTime.utc(2026, 5, 14, 12, 0);
-      final repo = FakePinRepository(
-        nextVerifyResult: Err(PinVerifyFailure.locked(until: until)),
-      );
-      final useCase = VerifyPinUseCase(repo);
-      final result = await useCase(userId: _uid, pinDigits: '123456');
-      final err = result as Err<void, PinVerifyFailure>;
-      expect(err.failure.lockedUntil, equals(until));
-    });
+    test(
+      'locked failure carries the until timestamp through the getter',
+      () async {
+        final until = DateTime.utc(2026, 5, 14, 12, 0);
+        final repo = FakePinRepository(
+          nextVerifyResult: Err(PinVerifyFailure.locked(until: until)),
+        );
+        final useCase = VerifyPinUseCase(repo);
+        final result = await useCase(userId: _uid, pinDigits: '123456');
+        final err = result as Err<void, PinVerifyFailure>;
+        expect(err.failure.lockedUntil, equals(until));
+      },
+    );
   });
 
   group('ChangePinUseCase', () {
@@ -160,19 +167,21 @@ void main() {
       expect(repo.setupCalls.first.digits, '222222');
     });
 
-    test('invalid current-PIN format surfaces verifyFailure.invalidFormat',
-        () async {
-      final repo = FakePinRepository();
-      final useCase = ChangePinUseCase(repo);
-      final result = await useCase(
-        userId: _uid,
-        currentPin: '12345',
-        newPinFirstEntry: '222222',
-        newPinConfirmEntry: '222222',
-      );
-      expect(result, isA<ChangePinVerifyFailure>());
-      expect(repo.verifyCalls, isEmpty);
-    });
+    test(
+      'invalid current-PIN format surfaces verifyFailure.invalidFormat',
+      () async {
+        final repo = FakePinRepository();
+        final useCase = ChangePinUseCase(repo);
+        final result = await useCase(
+          userId: _uid,
+          currentPin: '12345',
+          newPinFirstEntry: '222222',
+          newPinConfirmEntry: '222222',
+        );
+        expect(result, isA<ChangePinVerifyFailure>());
+        expect(repo.verifyCalls, isEmpty);
+      },
+    );
   });
 
   group('RemovePinUseCase', () {

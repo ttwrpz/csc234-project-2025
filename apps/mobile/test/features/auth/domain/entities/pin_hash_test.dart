@@ -50,10 +50,7 @@ void main() {
 
     test('roundtrips through JSON', () {
       final lock = DateTime.utc(2026, 5, 14, 12, 30);
-      final hash = _hash(
-        failedAttempts: 3,
-        lockedUntil: lock,
-      );
+      final hash = _hash(failedAttempts: 3, lockedUntil: lock);
       final json = hash.toJson();
       final restored = PinHash.fromJson(json);
       expect(restored, equals(hash));

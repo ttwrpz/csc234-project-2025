@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/insights/presentation/widgets/chart_reading_guide.dart';
 
-Widget _wrap(Widget child) =>
-    MaterialApp(theme: buildLightTheme(), home: Scaffold(body: child));
+Widget _wrap(Widget child) => MaterialApp(
+  theme: buildLightTheme(),
+  home: Scaffold(body: child),
+);
 
 void main() {
   group('ChartReadingGuide (HB-009 C-1)', () {
@@ -23,7 +25,10 @@ void main() {
 
         expect(find.textContaining('The solid line'), findsOneWidget);
         expect(find.textContaining('rolling rhythm'), findsOneWidget);
-        expect(find.textContaining('Storm Season is sheltered'), findsOneWidget);
+        expect(
+          find.textContaining('Storm Season is sheltered'),
+          findsOneWidget,
+        );
       },
     );
 
@@ -41,38 +46,37 @@ void main() {
       },
     );
 
-    testWidgets(
-      'copy contains no CLAUDE.md banned words for the garden',
-      (tester) async {
-        await tester.pumpWidget(
-          _wrap(const ChartReadingGuide(alwaysExpanded: true)),
-        );
+    testWidgets('copy contains no CLAUDE.md banned words for the garden', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(const ChartReadingGuide(alwaysExpanded: true)),
+      );
 
-        // Iterate every Text in the tree and assert each banned token
-        // is absent. Captures any future edit that slips in a regression.
-        final banned = [
-          'delete',
-          'clear',
-          'lost',
-          'destroyed',
-          'wilted',
-          'wilting',
-          'dead',
-          'dying',
-        ];
-        final textFinder = find.byType(Text);
-        for (var i = 0; i < textFinder.evaluate().length; i++) {
-          final widget = tester.widget<Text>(textFinder.at(i));
-          final data = widget.data ?? '';
-          for (final word in banned) {
-            expect(
-              data.toLowerCase().contains(word),
-              isFalse,
-              reason: 'banned word "$word" leaked into guide copy: "$data"',
-            );
-          }
+      // Iterate every Text in the tree and assert each banned token
+      // is absent. Captures any future edit that slips in a regression.
+      final banned = [
+        'delete',
+        'clear',
+        'lost',
+        'destroyed',
+        'wilted',
+        'wilting',
+        'dead',
+        'dying',
+      ];
+      final textFinder = find.byType(Text);
+      for (var i = 0; i < textFinder.evaluate().length; i++) {
+        final widget = tester.widget<Text>(textFinder.at(i));
+        final data = widget.data ?? '';
+        for (final word in banned) {
+          expect(
+            data.toLowerCase().contains(word),
+            isFalse,
+            reason: 'banned word "$word" leaked into guide copy: "$data"',
+          );
         }
-      },
-    );
+      }
+    });
   });
 }

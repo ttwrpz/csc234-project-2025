@@ -114,24 +114,23 @@ Future<void> _pumpThreeTiles(
 
 void main() {
   group('TierToggleTile — semantics labels (compassionate copy)', () {
-    testWidgets(
-      'Tier 1 announces "Gentle nudges" + compassionate subtitle',
-      (tester) async {
-        await _pumpThreeTiles(tester);
-        expect(find.text('Gentle nudges'), findsOneWidget);
-        // Subtitle follows CLAUDE.md "compassionate imperatives" + the
-        // ecosystem "weathering" copy convention.
-        expect(
-          find.text(
-            'Quiet reminders when the garden has been weathering for a while.',
-          ),
-          findsOneWidget,
-          reason:
-              'Tier 1 subtitle MUST use the locked compassionate-copy '
-              'phrasing — any reword needs copy-reviewer sign-off.',
-        );
-      },
-    );
+    testWidgets('Tier 1 announces "Gentle nudges" + compassionate subtitle', (
+      tester,
+    ) async {
+      await _pumpThreeTiles(tester);
+      expect(find.text('Gentle nudges'), findsOneWidget);
+      // Subtitle follows CLAUDE.md "compassionate imperatives" + the
+      // ecosystem "weathering" copy convention.
+      expect(
+        find.text(
+          'Quiet reminders when the garden has been weathering for a while.',
+        ),
+        findsOneWidget,
+        reason:
+            'Tier 1 subtitle MUST use the locked compassionate-copy '
+            'phrasing — any reword needs copy-reviewer sign-off.',
+      );
+    });
 
     testWidgets(
       'Tier 2 announces "Journaling check-ins" + writing-prompt subtitle',
@@ -219,9 +218,7 @@ void main() {
 
         final overflows = exceptions
             .map((e) => e.toString())
-            .where(
-              (s) => s.contains('overflowed') || s.contains('RenderFlex'),
-            )
+            .where((s) => s.contains('overflowed') || s.contains('RenderFlex'))
             .toList();
         expect(
           overflows,

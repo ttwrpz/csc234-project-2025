@@ -7,7 +7,10 @@ import 'package:moodbloom/features/insights/presentation/widgets/pattern_marker_
 import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
 Widget wrap(Widget child) => ProviderScope(
-  child: MaterialApp(theme: buildLightTheme(), home: Scaffold(body: child)),
+  child: MaterialApp(
+    theme: buildLightTheme(),
+    home: Scaffold(body: child),
+  ),
 );
 
 DailyInsight _day(DateTime date, {Tier? tier}) => DailyInsight(

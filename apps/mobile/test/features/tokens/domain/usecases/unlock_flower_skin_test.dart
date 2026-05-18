@@ -12,9 +12,8 @@ import 'package:moodbloom/features/tokens/domain/usecases/unlock_flower_skin.dar
 /// Captures every call + lets each test pin a deterministic outcome.
 class _FakeSkinRepo implements SkinRepository {
   final List<({String userId, FlowerSkin skin})> unlockCalls = [];
-  final List<
-    ({String userId, FlowerSpecies species, String skinId})
-  > selectCalls = [];
+  final List<({String userId, FlowerSpecies species, String skinId})>
+  selectCalls = [];
 
   /// When non-null, the next `unlockAndSelect` returns this result.
   Result<SkinState, SkinFailure>? unlockResult;
@@ -66,19 +65,22 @@ void main() {
       useCase = UnlockFlowerSkinUseCase(repo);
     });
 
-    test('happy path → repo called with userId + canonical catalog skin', () async {
-      final catalogSkin = SkinCatalog.byId('sunflower_sunset')!;
-      final outcome = await useCase(
-        userId: 'uid-1',
-        skin: catalogSkin,
-        currentState: SkinState.empty(),
-      );
+    test(
+      'happy path → repo called with userId + canonical catalog skin',
+      () async {
+        final catalogSkin = SkinCatalog.byId('sunflower_sunset')!;
+        final outcome = await useCase(
+          userId: 'uid-1',
+          skin: catalogSkin,
+          currentState: SkinState.empty(),
+        );
 
-      expect(outcome, isA<Ok<SkinState, SkinFailure>>());
-      expect(repo.unlockCalls, hasLength(1));
-      expect(repo.unlockCalls.single.userId, 'uid-1');
-      expect(repo.unlockCalls.single.skin.skinId, 'sunflower_sunset');
-    });
+        expect(outcome, isA<Ok<SkinState, SkinFailure>>());
+        expect(repo.unlockCalls, hasLength(1));
+        expect(repo.unlockCalls.single.userId, 'uid-1');
+        expect(repo.unlockCalls.single.skin.skinId, 'sunflower_sunset');
+      },
+    );
 
     test('empty userId → Err(network), no repo call', () async {
       final catalogSkin = SkinCatalog.byId('sunflower_sunset')!;
@@ -133,27 +135,30 @@ void main() {
       expect(repo.unlockCalls, isEmpty);
     });
 
-    test('already-unlocked skin → Err(alreadyUnlocked), no repo call', () async {
-      final catalogSkin = SkinCatalog.byId('sunflower_sunset')!;
-      final state = SkinState(
-        unlockedBySpecies: {
-          FlowerSpecies.sunflower: {'sunflower_sunset'},
-        },
-        selectedBySpecies: const {},
-      );
-      final outcome = await useCase(
-        userId: 'uid-1',
-        skin: catalogSkin,
-        currentState: state,
-      );
-      expect(outcome, isA<Err<SkinState, SkinFailure>>());
-      outcome.fold(
-        ok: (_) => fail('expected Err'),
-        err: (f) =>
-            expect(f.runtimeType.toString(), contains('AlreadyUnlocked')),
-      );
-      expect(repo.unlockCalls, isEmpty);
-    });
+    test(
+      'already-unlocked skin → Err(alreadyUnlocked), no repo call',
+      () async {
+        final catalogSkin = SkinCatalog.byId('sunflower_sunset')!;
+        final state = SkinState(
+          unlockedBySpecies: {
+            FlowerSpecies.sunflower: {'sunflower_sunset'},
+          },
+          selectedBySpecies: const {},
+        );
+        final outcome = await useCase(
+          userId: 'uid-1',
+          skin: catalogSkin,
+          currentState: state,
+        );
+        expect(outcome, isA<Err<SkinState, SkinFailure>>());
+        outcome.fold(
+          ok: (_) => fail('expected Err'),
+          err: (f) =>
+              expect(f.runtimeType.toString(), contains('AlreadyUnlocked')),
+        );
+        expect(repo.unlockCalls, isEmpty);
+      },
+    );
 
     test('repo failure is surfaced verbatim to caller', () async {
       final catalogSkin = SkinCatalog.byId('sunflower_sunset')!;
@@ -174,30 +179,32 @@ void main() {
       expect(repo.unlockCalls, hasLength(1));
     });
 
-    test('uses catalog price even when caller passes a stale lower price',
-        () async {
-      // Defense-in-depth: a malicious or stale client could pass a
-      // FlowerSkin with cost: 1 even though the catalog has 50. The
-      // use case must forward the CANONICAL skin (from SkinCatalog) to
-      // the repository, never the stale caller-supplied entity.
-      const stale = FlowerSkin(
-        skinId: 'sunflower_sunset',
-        species: FlowerSpecies.sunflower,
-        displayName: 'Sunset Sunflower',
-        cost: 1, // wrong price
-        isDefault: false,
-        paletteSeed: 12,
-      );
-      final outcome = await useCase(
-        userId: 'uid-1',
-        skin: stale,
-        currentState: SkinState.empty(),
-      );
-      expect(outcome, isA<Ok<SkinState, SkinFailure>>());
-      // Repo was called with the canonical catalog cost (50), not the
-      // stale caller-supplied 1.
-      expect(repo.unlockCalls, hasLength(1));
-      expect(repo.unlockCalls.single.skin.cost, 50);
-    });
+    test(
+      'uses catalog price even when caller passes a stale lower price',
+      () async {
+        // Defense-in-depth: a malicious or stale client could pass a
+        // FlowerSkin with cost: 1 even though the catalog has 50. The
+        // use case must forward the CANONICAL skin (from SkinCatalog) to
+        // the repository, never the stale caller-supplied entity.
+        const stale = FlowerSkin(
+          skinId: 'sunflower_sunset',
+          species: FlowerSpecies.sunflower,
+          displayName: 'Sunset Sunflower',
+          cost: 1, // wrong price
+          isDefault: false,
+          paletteSeed: 12,
+        );
+        final outcome = await useCase(
+          userId: 'uid-1',
+          skin: stale,
+          currentState: SkinState.empty(),
+        );
+        expect(outcome, isA<Ok<SkinState, SkinFailure>>());
+        // Repo was called with the canonical catalog cost (50), not the
+        // stale caller-supplied 1.
+        expect(repo.unlockCalls, hasLength(1));
+        expect(repo.unlockCalls.single.skin.cost, 50);
+      },
+    );
   });
 }

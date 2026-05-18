@@ -82,7 +82,8 @@ class _RecordingController extends InterventionController {
 
 InterventionDispatch _tier3Dispatch() => InterventionDispatch(
   tier: Tier.three,
-  body: 'We care about you. If it helps to talk, the Thai Mental Health '
+  body:
+      'We care about you. If it helps to talk, the Thai Mental Health '
       'Hotline is free at 1323, 24 hours.\n\n'
       'MoodBloom is not a medical device. Not a substitute for professional '
       'care.',
@@ -157,69 +158,63 @@ void main() {
   });
 
   group('CrisisResourcesScreen — Hotline 1323 contrast (WCAG 2.2 AA)', () {
-    testWidgets(
-      'Hotline tile title contrast ≥ 4.5:1 on light theme',
-      (tester) async {
-        await tester.pumpWidget(
-          _makeApp(controller: _RecordingController()),
-        );
-        await _pushCrisis(tester);
+    testWidgets('Hotline tile title contrast ≥ 4.5:1 on light theme', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_makeApp(controller: _RecordingController()));
+      await _pushCrisis(tester);
 
-        // Read the resolved theme colors directly. The Hotline tile uses
-        // primaryContainer for its background and onPrimaryContainer for
-        // its text — verified at crisis_resources_screen.dart line 244.
-        final ctx = tester.element(find.byType(CrisisResourcesScreen));
-        final scheme = Theme.of(ctx).colorScheme;
-        final ratio = _contrastRatio(
-          scheme.onPrimaryContainer,
-          scheme.primaryContainer,
-        );
-        expect(
-          ratio,
-          greaterThanOrEqualTo(4.5),
-          reason:
-              'Hotline 1323 tile (light) — onPrimaryContainer vs '
-              'primaryContainer contrast is $ratio:1, WCAG AA requires ≥4.5:1. '
-              'This is the Tier 3 load-bearing affordance.',
-        );
-      },
-    );
+      // Read the resolved theme colors directly. The Hotline tile uses
+      // primaryContainer for its background and onPrimaryContainer for
+      // its text — verified at crisis_resources_screen.dart line 244.
+      final ctx = tester.element(find.byType(CrisisResourcesScreen));
+      final scheme = Theme.of(ctx).colorScheme;
+      final ratio = _contrastRatio(
+        scheme.onPrimaryContainer,
+        scheme.primaryContainer,
+      );
+      expect(
+        ratio,
+        greaterThanOrEqualTo(4.5),
+        reason:
+            'Hotline 1323 tile (light) — onPrimaryContainer vs '
+            'primaryContainer contrast is $ratio:1, WCAG AA requires ≥4.5:1. '
+            'This is the Tier 3 load-bearing affordance.',
+      );
+    });
 
-    testWidgets(
-      'Hotline tile title contrast ≥ 4.5:1 on dark theme',
-      (tester) async {
-        await tester.pumpWidget(
-          _makeApp(
-            controller: _RecordingController(),
-            brightness: Brightness.dark,
-          ),
-        );
-        await _pushCrisis(tester);
+    testWidgets('Hotline tile title contrast ≥ 4.5:1 on dark theme', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _makeApp(
+          controller: _RecordingController(),
+          brightness: Brightness.dark,
+        ),
+      );
+      await _pushCrisis(tester);
 
-        final ctx = tester.element(find.byType(CrisisResourcesScreen));
-        final scheme = Theme.of(ctx).colorScheme;
-        final ratio = _contrastRatio(
-          scheme.onPrimaryContainer,
-          scheme.primaryContainer,
-        );
-        expect(
-          ratio,
-          greaterThanOrEqualTo(4.5),
-          reason:
-              'Hotline 1323 tile (dark) — onPrimaryContainer vs '
-              'primaryContainer contrast is $ratio:1, WCAG AA requires ≥4.5:1.',
-        );
-      },
-    );
+      final ctx = tester.element(find.byType(CrisisResourcesScreen));
+      final scheme = Theme.of(ctx).colorScheme;
+      final ratio = _contrastRatio(
+        scheme.onPrimaryContainer,
+        scheme.primaryContainer,
+      );
+      expect(
+        ratio,
+        greaterThanOrEqualTo(4.5),
+        reason:
+            'Hotline 1323 tile (dark) — onPrimaryContainer vs '
+            'primaryContainer contrast is $ratio:1, WCAG AA requires ≥4.5:1.',
+      );
+    });
   });
 
   group('CrisisResourcesScreen — semantics labels', () {
     testWidgets(
       'Hotline tile is announced with a call-action label including "1323"',
       (tester) async {
-        await tester.pumpWidget(
-          _makeApp(controller: _RecordingController()),
-        );
+        await tester.pumpWidget(_makeApp(controller: _RecordingController()));
         await _pushCrisis(tester);
 
         // The tile wraps an InkWell + Material in a Semantics(button:
@@ -234,26 +229,21 @@ void main() {
       },
     );
 
-    testWidgets(
-      'all three resource cards are reachable via their title text',
-      (tester) async {
-        await tester.pumpWidget(
-          _makeApp(controller: _RecordingController()),
-        );
-        await _pushCrisis(tester);
+    testWidgets('all three resource cards are reachable via their title text', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_makeApp(controller: _RecordingController()));
+      await _pushCrisis(tester);
 
-        expect(find.text('Find a professional near you'), findsOneWidget);
-        expect(find.text('What to expect when you call'), findsOneWidget);
-        expect(find.text('Other resources'), findsOneWidget);
-      },
-    );
+      expect(find.text('Find a professional near you'), findsOneWidget);
+      expect(find.text('What to expect when you call'), findsOneWidget);
+      expect(find.text('Other resources'), findsOneWidget);
+    });
 
     testWidgets(
       '"I\'m okay for now" opt-out announces with dismiss-action context',
       (tester) async {
-        await tester.pumpWidget(
-          _makeApp(controller: _RecordingController()),
-        );
+        await tester.pumpWidget(_makeApp(controller: _RecordingController()));
         await _pushCrisis(tester);
 
         // The Tier 3 screen passes the custom label "I'm okay for now"
@@ -277,9 +267,7 @@ void main() {
         // _confirmExit(); we exercise the same path by reading the
         // PopScope and calling onPopInvokedWithResult directly. The dialog
         // structure under assertion is identical regardless of trigger.
-        await tester.pumpWidget(
-          _makeApp(controller: _RecordingController()),
-        );
+        await tester.pumpWidget(_makeApp(controller: _RecordingController()));
         await _pushCrisis(tester);
 
         // The dialog has 2 actions: TextButton("Stay") + FilledButton("Close").
@@ -346,9 +334,9 @@ void main() {
               routerConfig: router,
               theme: buildLightTheme(),
               builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: const TextScaler.linear(2.0),
-                ),
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: const TextScaler.linear(2.0)),
                 child: child!,
               ),
             ),
@@ -368,9 +356,7 @@ void main() {
 
         final overflows = exceptions
             .map((e) => e.toString())
-            .where(
-              (s) => s.contains('overflowed') || s.contains('RenderFlex'),
-            )
+            .where((s) => s.contains('overflowed') || s.contains('RenderFlex'))
             .toList();
         expect(
           overflows,

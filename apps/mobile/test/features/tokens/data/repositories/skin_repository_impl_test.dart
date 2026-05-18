@@ -15,9 +15,8 @@ class _FakeDatasource implements SkinFirestoreDatasource {
   SkinState? returnFromSelect;
 
   final List<({String userId, FlowerSkin skin})> unlockCalls = [];
-  final List<
-    ({String userId, FlowerSpecies species, String skinId})
-  > selectCalls = [];
+  final List<({String userId, FlowerSpecies species, String skinId})>
+  selectCalls = [];
 
   @override
   Future<SkinState> unlockAndSelect({
@@ -105,39 +104,43 @@ void main() {
       expect(ds.unlockCalls, isEmpty);
     });
 
-    test('SkinTransactionFailure(insufficient) → Err(insufficientTokens)',
-        () async {
-      ds.throwOnUnlock = const SkinTransactionFailure(
-        kind: SkinTransactionFailureKind.insufficientTokens,
-      );
-      final outcome = await repo.unlockAndSelect(
-        userId: 'uid-1',
-        skin: _catalogSkin,
-      );
-      expect(outcome, isA<Err<SkinState, SkinFailure>>());
-      outcome.fold(
-        ok: (_) => fail('expected Err'),
-        err: (f) =>
-            expect(f.runtimeType.toString(), contains('InsufficientTokens')),
-      );
-    });
+    test(
+      'SkinTransactionFailure(insufficient) → Err(insufficientTokens)',
+      () async {
+        ds.throwOnUnlock = const SkinTransactionFailure(
+          kind: SkinTransactionFailureKind.insufficientTokens,
+        );
+        final outcome = await repo.unlockAndSelect(
+          userId: 'uid-1',
+          skin: _catalogSkin,
+        );
+        expect(outcome, isA<Err<SkinState, SkinFailure>>());
+        outcome.fold(
+          ok: (_) => fail('expected Err'),
+          err: (f) =>
+              expect(f.runtimeType.toString(), contains('InsufficientTokens')),
+        );
+      },
+    );
 
-    test('SkinTransactionFailure(alreadyUnlocked) → Err(alreadyUnlocked)',
-        () async {
-      ds.throwOnUnlock = const SkinTransactionFailure(
-        kind: SkinTransactionFailureKind.alreadyUnlocked,
-      );
-      final outcome = await repo.unlockAndSelect(
-        userId: 'uid-1',
-        skin: _catalogSkin,
-      );
-      expect(outcome, isA<Err<SkinState, SkinFailure>>());
-      outcome.fold(
-        ok: (_) => fail('expected Err'),
-        err: (f) =>
-            expect(f.runtimeType.toString(), contains('AlreadyUnlocked')),
-      );
-    });
+    test(
+      'SkinTransactionFailure(alreadyUnlocked) → Err(alreadyUnlocked)',
+      () async {
+        ds.throwOnUnlock = const SkinTransactionFailure(
+          kind: SkinTransactionFailureKind.alreadyUnlocked,
+        );
+        final outcome = await repo.unlockAndSelect(
+          userId: 'uid-1',
+          skin: _catalogSkin,
+        );
+        expect(outcome, isA<Err<SkinState, SkinFailure>>());
+        outcome.fold(
+          ok: (_) => fail('expected Err'),
+          err: (f) =>
+              expect(f.runtimeType.toString(), contains('AlreadyUnlocked')),
+        );
+      },
+    );
 
     test('permission-denied → Err(permissionDenied)', () async {
       ds.throwOnUnlock = FirebaseException(
