@@ -47,8 +47,7 @@ Future<void> main() async {
       // `setCrashlyticsCollectionEnabled`) trips an assertion in the platform
       // interface (`pluginConstants['isCrashlyticsCollectionEnabled'] != null`)
       // because no Web plugin is registered. We gracefully no-op on Web —
-      // unhandled errors still surface in the browser console; production
-      // crash reporting on Web is a S5 follow-up (Sentry or similar).
+      // unhandled errors still surface in the browser console.
       if (!kIsWeb) {
         FlutterError.onError =
             FirebaseCrashlytics.instance.recordFlutterFatalError;
@@ -65,18 +64,14 @@ Future<void> main() async {
       // sane values even before the first fetchAndActivate completes. The
       // 60-min `minimumFetchInterval` matches CLAUDE.md "Feature flag
       // (rollback plan)" — production clients pick up server-side flips
-      // within an hour. Lowered briefly to 60s for the v1.0 demo (kickoff
-      // Open Question O-3); restored here in the v1.0.1 patch as documented
-      // in `docs/runbooks/feature-flag-rollback.md` §"Restoring the
-      // 60-minute interval".
+      // within an hour.
       final rc = FirebaseRemoteConfig.instance;
       await rc.setDefaults(<String, Object>{
         'ai_pattern_analysis_enabled': true,
         'gemini_detection_enabled': true,
-        // Default false in v1.0: the new client-side Pattern Engine
-        // writes patterns/{date} regardless, but no notification fires.
-        // S5 flips this to true once the new dispatcher reads
-        // patterns/{date}.triggeredTier (ADR-0011 §4).
+        // Default false: the client-side Pattern Engine writes
+        // patterns/{date} regardless, but no notification fires until
+        // the dispatcher reading patterns/{date}.triggeredTier ships.
         'intervention_dispatch_enabled': false,
       });
       await rc.setConfigSettings(
@@ -88,21 +83,21 @@ Future<void> main() async {
       // Fire-and-forget — must not block app startup.
       unawaited(rc.fetchAndActivate());
 
-      // FCM cheer-up channel (HB-003 §5.5b R-001 closure). Without
-      // this, Android 8+ silently drops notifications attached to the
-      // `cheer_up` channel id — the FCM SDK falls back to the channel
-      // declared in AndroidManifest.xml, but only if it's been created
-      // by the app at least once. Channel id MUST match the manifest
-      // meta-data (`com.google.firebase.messaging.default_notification_channel_id`)
+      // FCM cheer-up channel. Without this, Android 8+ silently drops
+      // notifications attached to the `cheer_up` channel id — the FCM
+      // SDK falls back to the channel declared in AndroidManifest.xml,
+      // but only if it's been created by the app at least once. Channel
+      // id MUST match the manifest meta-data
+      // (`com.google.firebase.messaging.default_notification_channel_id`)
       // and the Cloud Function payload (`functions/src/sendCheerUpPush.ts`)
       // — all three are the literal string `'cheer_up'`. Skipped on
       // Web because flutter_local_notifications has no Web impl; the
       // browser FCM service worker handles its own notification UX.
       if (!kIsWeb) {
         final plugin = FlutterLocalNotificationsPlugin();
-        // v1.6 fix — the plugin MUST be `.initialize`d before any other
-        // call (`requestNotificationsPermission`, `show`, channel ops)
-        // on Android. Without initialize, the Android binding is never
+        // The plugin MUST be `.initialize`d before any other call
+        // (`requestNotificationsPermission`, `show`, channel ops) on
+        // Android. Without initialize, the Android binding is never
         // wired up and `requestNotificationsPermission()` silently
         // returns `null` instead of triggering the OS POST_NOTIFICATIONS
         // dialog — which manifests as "the onboarding notification
@@ -130,8 +125,7 @@ Future<void> main() async {
 
       // google_sign_in 7.x requires `initialize()` to be called exactly
       // once before any other method, with its Future awaited. Skipped
-      // on Web because we use Firebase's `signInWithPopup` directly
-      // (see firebase_auth_datasource.dart §kIsWeb branch).
+      // on Web because we use Firebase's `signInWithPopup` directly.
       //
       // `serverClientId` MUST be the Web OAuth client_id from
       // google-services.json (the entry under `oauth_client` with

@@ -33,7 +33,7 @@ import '../features/settings/presentation/controllers/theme_mode_controller.dart
 import 'widgets/mb_bottom_nav.dart';
 import 'widgets/mb_side_nav.dart';
 
-// v1.6: route swaps render instantly to reduce perceived lag.
+// Route swaps render instantly to reduce perceived lag.
 NoTransitionPage<void> _noTransition(Widget child) =>
     NoTransitionPage<void>(child: child);
 
@@ -51,23 +51,18 @@ final onboardingCompleteProvider = FutureProvider<bool>((ref) async {
 /// `PrimaryScrollController` reading the matching controller from this
 /// provider, so the screen's scroll view (`primary: true` by default)
 /// attaches to a controller that's bound to THAT branch — never shared
-/// with sibling branches.
-///
-/// v1.6 rewrite: an earlier attempt put a single `PrimaryScrollController`
-/// around the whole `navigationShell` and swapped its `controller`
-/// argument by index. That broke because `StatefulShellRoute.indexedStack`
-/// keeps every branch's widget alive, so all five scroll views re-attached
-/// to whichever controller was currently in scope and clobbered each
-/// other's positions. Hoisting the controllers per-branch fixes both the
-/// "doesn't scroll to top on re-tap" and "loses scroll position on tab
-/// switch" symptoms.
-final branchScrollControllerProvider = Provider.family<ScrollController, int>(
-  (ref, _) {
-    final c = ScrollController();
-    ref.onDispose(c.dispose);
-    return c;
-  },
-);
+/// with sibling branches. A single shell-wide controller would not work:
+/// `StatefulShellRoute.indexedStack` keeps every branch's widget alive,
+/// so all five scroll views would re-attach to whichever controller was
+/// currently in scope and clobber each other's positions.
+final branchScrollControllerProvider = Provider.family<ScrollController, int>((
+  ref,
+  _,
+) {
+  final c = ScrollController();
+  ref.onDispose(c.dispose);
+  return c;
+});
 
 Widget _branchScope(ScrollController controller, Widget child) =>
     PrimaryScrollController(controller: controller, child: child);
@@ -81,17 +76,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     final prevUid = previous?.value?.uid;
     final nextUid = next.value?.uid;
 
-    // PR-3: drive the MoodSyncManager lifecycle off auth-state transitions.
+    // Drive the MoodSyncManager lifecycle off auth-state transitions.
     // Sign-in (or auth resolves with a non-null user on app start) → bootstrap
     // the sync manager so Drift is seeded once per uid and the live listener
     // attaches. Sign-out → shutdown so the previous user's listener and timers
     // are torn down before another sign-in re-attaches.
     //
-    // Skipped on Web: Drift's native connector is unavailable there
-    // (ADR-0004 §"Risks #1"). The repository's offlineFirstEnabledProvider
-    // already defaults to `!kIsWeb`, so reads/writes route through Firestore
-    // directly; bootstrapping the sync manager would only open a DB that
-    // throws on first query.
+    // Skipped on Web: Drift's native connector is unavailable there. The
+    // repository's offlineFirstEnabledProvider already defaults to
+    // `!kIsWeb`, so reads/writes route through Firestore directly;
+    // bootstrapping the sync manager would only open a DB that throws on
+    // first query.
     if (!kIsWeb) {
       final manager = ref.read(mood_providers.moodSyncManagerProvider);
       if (nextUid != null && nextUid != prevUid) {
@@ -103,11 +98,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
     }
 
-    // 2.2: on sign-out (non-null → null), clear the session-scoped biometric
+    // On sign-out (non-null → null), clear the session-scoped biometric
     // unlock flag so a future re-sign-in re-prompts. Correct security
     // behaviour: a fresh login should re-verify biometric on cold boot.
-    // ADR-0013: the History privacy unlock is cleared on the same edge,
-    // so a fresh sign-in always re-prompts on the History route.
+    // The History privacy unlock is cleared on the same edge, so a fresh
+    // sign-in always re-prompts on the History route.
     if (previous?.value != null && next.value == null) {
       ref.read(biometricUnlockedThisSessionProvider.notifier).state = false;
       ref.read(historyUnlockedThisSessionProvider.notifier).lock();
@@ -124,22 +119,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthRoute =
           loc == '/sign-in' || loc == '/sign-up' || loc == '/forgot-password';
 
-      // 1. Onboarding gate (preserved from 6.1).
       if (!onboardingDone && loc != '/onboarding') return '/onboarding';
       if (onboardingDone && loc == '/onboarding') {
         return refresh.value == null ? '/sign-in' : '/home';
       }
-      // 2. Auth gate.
       if (onboardingDone && refresh.value == null && !isAuthRoute) {
         return '/sign-in';
       }
       if (refresh.value != null && isAuthRoute) return '/home';
 
-      // 3. Biometric gate (WBS 2.2). Only inserts itself when (a) the user
-      // is signed in, (b) capability + opt-in are present AND ready
-      // synchronously, and (c) we haven't already unlocked this session.
-      // We avoid awaiting the FutureProvider here to keep redirects fast —
-      // if capability hasn't resolved yet, we let the user through and the
+      // Biometric gate. Only inserts itself when (a) the user is signed
+      // in, (b) capability + opt-in are present AND ready synchronously,
+      // and (c) we haven't already unlocked this session. We avoid
+      // awaiting the FutureProvider here to keep redirects fast — if
+      // capability hasn't resolved yet, we let the user through and the
       // gate will only kick in on the next router refresh once data lands.
       if (refresh.value != null &&
           loc != '/biometric-gate' &&
@@ -150,15 +143,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
       }
 
-      // 4. History privacy gate (ADR-0013). Guards `/history` and any
-      // sub-route (`/history/:id` and future deep links). Mirrors the
-      // existing cold-boot biometric gate pattern: gracefully exits
-      // when any precondition isn't ready (no flag, no opt-in, no
-      // PIN). Open Follow-up #2: the redirect must not loop —
-      // `/unlock-history` itself short-circuits the gate, and the
-      // `/privacy/setup` modal route is also exempt so toggling
-      // ON during setup doesn't fire the gate on a Settings-sourced
-      // visit.
+      // History privacy gate. Guards `/history` and any sub-route
+      // (`/history/:id` and future deep links). Mirrors the cold-boot
+      // biometric gate pattern: gracefully exits when any precondition
+      // isn't ready (no flag, no opt-in, no PIN). The redirect must not
+      // loop — `/unlock-history` itself short-circuits the gate, and
+      // the `/privacy/setup` modal route is also exempt so toggling ON
+      // during setup doesn't fire the gate on a Settings-sourced visit.
       final isHistoryRoute = loc == '/history' || loc.startsWith('/history/');
       final isUnlockRoute = loc == '/unlock-history';
       final isPrivacySetup = loc == '/privacy/setup';
@@ -197,10 +188,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/biometric-gate',
         pageBuilder: (c, s) => _noTransition(const BiometricGateScreen()),
       ),
-      // ADR-0013 — History privacy gate (biometric + PIN fallback).
-      // Reachable via the redirect clause #4 above when the user has
-      // opted in. `returnTo` is URL-encoded by the redirect so any
-      // `/history/<id>` deep link survives the round-trip.
+      // History privacy gate (biometric + PIN fallback). Reachable via
+      // the redirect above when the user has opted in. `returnTo` is
+      // URL-encoded by the redirect so any `/history/<id>` deep link
+      // survives the round-trip.
       GoRoute(
         path: '/unlock-history',
         pageBuilder: (c, s) {
@@ -208,10 +199,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           return _noTransition(PinVerifyScreen(returnTo: returnTo));
         },
       ),
-      // ADR-0013 Decision G — first-time setup flow for the History
-      // privacy gate. Modal route reached via Settings → PRIVACY →
-      // "Set up PIN" or by flipping the master switch ON. Pops with
-      // `true` on success and `false` on cancellation.
+      // First-time setup flow for the History privacy gate. Modal route
+      // reached via Settings → PRIVACY → "Set up PIN" or by flipping
+      // the master switch ON. Pops with `true` on success and `false`
+      // on cancellation.
       GoRoute(
         path: '/privacy/setup',
         pageBuilder: (c, s) => _noTransition(const PrivacySetupFlowScreen()),
@@ -226,12 +217,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         // swap positions vs the original prototype so navigation reads
         // chronologically (past on the left, predictive on the right).
         branches: [
-          // 0 — Home (formerly Garden)
-          //
-          // v1.6: intervention surfaces nest under /home so the shell
-          // (bottom nav on phone, sidebar on desktop) stays visible
-          // while the user breathes / journals / reads crisis resources.
-          // Named routes preserved so the InterventionBanner's
+          // Intervention surfaces nest under /home so the shell (bottom
+          // nav on phone, sidebar on desktop) stays visible while the
+          // user breathes / journals / reads crisis resources. Named
+          // routes are preserved so the InterventionBanner's
           // pushNamed('intervention.breathing', extra: dispatch) keeps
           // working — only the URL surface changes.
           StatefulShellBranch(
@@ -252,9 +241,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                       final dispatch = s.extra is InterventionDispatch
                           ? s.extra as InterventionDispatch
                           : null;
-                      return _noTransition(
-                        BreathingScreen(dispatch: dispatch),
-                      );
+                      return _noTransition(BreathingScreen(dispatch: dispatch));
                     },
                   ),
                   GoRoute(
@@ -285,7 +272,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // 1 — History
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -307,7 +293,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // 2 — Log mood (centre, highlighted)
+          // Log mood (centre, highlighted).
           //
           // Optional `?edit=<entryId>` puts the screen into edit mode:
           // the controller hydrates from the existing entry, the
@@ -339,15 +325,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // 3 — Patterns / Analytics
+          // Patterns / Analytics.
           //
           // `/analytics` is the read-mode "Patterns" dashboard. The
-          // (S5) `/insights` sub-route is a deeper read with the
+          // `/insights` sub-route is a deeper read with the
           // Pattern-Engine output (mood score time-series + tier
           // markers) gated behind the bipolar / medical disclaimer ack
-          // dialog (spec §4, TC-36 / TC-37). It nests under the
-          // Patterns branch so the bottom-nav highlight stays on the
-          // Patterns tab while the user reads insights.
+          // dialog. It nests under the Patterns branch so the
+          // bottom-nav highlight stays on the Patterns tab while the
+          // user reads insights.
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -369,7 +355,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // 4 — Settings
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -480,9 +465,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
 
   /// Sidebar + flexible body. The body fills the remaining width up to
   /// `_desktopBodyMax`, with internal horizontal padding that scales from
-  /// 24 dp at narrow desktop widths to 48 dp at wide ones. This is the
-  /// layout the user reported as "wasting space" — fixing the previous
-  /// hard 900 dp cap is the whole point of this method.
+  /// 24 dp at narrow desktop widths to 48 dp at wide ones.
   Widget _buildDesktop(
     BuildContext context,
     WidgetRef ref,
