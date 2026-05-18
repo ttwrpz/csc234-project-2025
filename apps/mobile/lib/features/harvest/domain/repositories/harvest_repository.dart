@@ -4,10 +4,10 @@ import '../entities/weekly_garden.dart';
 import '../harvest_failure.dart';
 
 /// Contract for any backing store that persists archived [WeeklyGarden]
-/// documents (HB-005 Track 6.1).
+/// documents.
 ///
 /// Implementations live in `data/` and may use Firestore, Drift, or a
-/// fake. The Day-4 concrete implementation writes to
+/// fake. The concrete implementation writes to
 /// `users/{userId}/weeklyGardens/{weekId}` via `set(merge: false)`. The
 /// firestore rule denies update + delete on this collection — calling
 /// [archive] for an existing weekId surfaces as
@@ -18,7 +18,7 @@ import '../harvest_failure.dart';
 abstract class HarvestRepository {
   /// Writes the [garden] to its `weeklyGardens/{garden.weekId}` doc.
   /// Returns [Err(HarvestFailure.alreadyArchived)] when the doc already
-  /// exists (write-once-on-archive per ADR-0010 §6).
+  /// exists (write-once-on-archive).
   Future<Result<WeeklyGarden, HarvestFailure>> archive({
     required String userId,
     required WeeklyGarden garden,

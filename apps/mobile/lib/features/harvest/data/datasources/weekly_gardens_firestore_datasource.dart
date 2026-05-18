@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/weekly_garden.dart';
 
 /// Thin Firestore wrapper for the `users/{userId}/weeklyGardens/{weekId}`
-/// collection (HB-005 Track 6.1; ADR-0010 §6).
+/// collection.
 ///
 /// One doc per ISO-8601 week; `weekId` IS the doc id, formatted
 /// `YYYY-Www`. The collection is write-once-on-archive — the firestore
@@ -30,7 +30,7 @@ class WeeklyGardensFirestoreDatasource {
   ///
   /// Implemented via a transaction that first verifies the doc does
   /// not already exist — without that pre-check, `set(merge: false)`
-  /// on a v1.x device with relaxed rules would silently overwrite a
+  /// on a device with relaxed rules would silently overwrite a
   /// previously-archived week. The transaction makes the write-once
   /// semantics enforceable in tests with a fake datasource that
   /// doesn't run firestore.rules.

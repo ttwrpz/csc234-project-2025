@@ -5,7 +5,7 @@ import '../../../mood/domain/services/mood_score.dart';
 import '../entities/weekly_garden.dart';
 
 /// Computes a [WeeklySummary] from a week's entries + per-day Garden
-/// Health history (HB-005 Track 6.1).
+/// Health history.
 ///
 /// Pure-Dart, no I/O. Stateless — instantiated as a const value. The
 /// archive use case calls this once per harvest; tests can also exercise

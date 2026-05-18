@@ -11,8 +11,7 @@ import '../data/providers.dart';
 import '../domain/entities/weekly_garden.dart';
 import 'archived_week_screen.dart';
 
-/// History tab listing the user's archived weeks newest-first
-/// (HB-005 Track 6.1, TC-12).
+/// History tab listing the user's archived weeks newest-first.
 ///
 /// Empty state: "Your first week is still growing." — uses
 /// approved vocabulary (no "no history yet"-style framing). Tap
@@ -127,13 +126,11 @@ class _WeeklyHarvestTile extends StatelessWidget {
   final VoidCallback onTap;
 
   /// Below this row width the inline garden thumbnail uses the smaller
-  /// slot so the entry text isn't squeezed. v1.6 polish: the previous
-  /// fix shrank `GardenBed.size` directly (72×60 phone, 110×90 desktop),
-  /// but the painter draws plants at ABSOLUTE pixel heights (sunflower
-  /// stem = 100 dp) — passing it a 60-dp tall canvas just clipped the
-  /// plants. We now render at the painter's natural reference size and
-  /// scale the WHOLE bed down via FittedBox so plants stay proportional
-  /// inside the slot.
+  /// slot so the entry text isn't squeezed. The painter draws plants at
+  /// ABSOLUTE pixel heights (sunflower stem = 100 dp) — passing it a
+  /// shorter canvas clips the plants. We render at the painter's natural
+  /// reference size and scale the whole bed down via FittedBox so plants
+  /// stay proportional inside the slot.
   static const double _phoneRow = 420;
 
   /// Reference canvas the GardenBed painter was tuned for. Plant heights

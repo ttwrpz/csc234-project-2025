@@ -1,6 +1,6 @@
 import 'package:core/core.dart';
 
-/// All failure modes for the Weekly Harvest data layer (HB-005 Track 6.1).
+/// All failure modes for the Weekly Harvest data layer.
 ///
 /// Sealed so consumers that switch on the variants get exhaustive-switch help
 /// from the analyzer. Extends [Failure] directly — harvest failures are

@@ -8,11 +8,10 @@ part 'weekly_garden.freezed.dart';
 part 'weekly_garden.g.dart';
 
 /// Archived snapshot of one 7-day garden, persisted at
-/// `users/{userId}/weeklyGardens/{weekId}` (HB-005 Track 6.1; ADR-0010 §6).
+/// `users/{userId}/weeklyGardens/{weekId}`.
 ///
 /// Write-once-on-archive: history is a record, not a redo. The Firestore
-/// rule denies update + delete on this collection — see firebase rules
-/// (architect-owned, lands in a separate commit).
+/// rule denies update + delete on this collection.
 ///
 /// `weekId` format: `'YYYY-Www'` (ISO-8601 week ordinal, two-digit week).
 /// `weekStart` is local-midnight Monday of the week; `weekEnd` is
