@@ -5,13 +5,13 @@ import '../entities/token_balance.dart';
 import '../token_failure.dart';
 
 /// Contract for any backing store that persists the user's token-economy
-/// state — pivot feature #10 (CLAUDE.md), ADR-0010 §7.
+/// state.
 ///
 /// Implementations live in `data/` and may use Firestore, Drift, or a
-/// fake. The Day-4 concrete implementation reads/writes three top-level
-/// fields on `users/{uid}` (`tokenBalance`, `tokensEarnedToday`,
-/// `lastTokenEarnedDate`) inside a Firestore transaction, so concurrent
-/// awards from two devices never lose an increment.
+/// fake. The concrete Firestore implementation reads/writes three
+/// top-level fields on `users/{uid}` (`tokenBalance`, `tokensEarnedToday`,
+/// `lastTokenEarnedDate`) inside a transaction, so concurrent awards from
+/// two devices never lose an increment.
 ///
 /// `awardForLog` is best-effort from the caller's perspective: the
 /// post-save controller logs the failure but never blocks the user's
@@ -30,7 +30,7 @@ abstract class TokenRepository {
 
   /// Streams the user's current token-balance snapshot. Used by the
   /// garden-screen chip; emits a fresh [TokenBalance] every time the
-  /// user-doc changes (token award, skin purchase in S5, etc).
+  /// user-doc changes (token award, skin purchase, etc).
   Stream<TokenBalance> watchBalance({required String userId});
 
   /// Debug-only escape hatch that increments `tokenBalance` by [amount]

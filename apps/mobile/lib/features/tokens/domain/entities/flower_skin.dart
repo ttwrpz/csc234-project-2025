@@ -7,8 +7,8 @@ part 'flower_skin.g.dart';
 
 /// One purchasable (or default) skin variant for a [FlowerSpecies].
 ///
-/// Skins are cosmetic-only — pivot feature #10 (CLAUDE.md), spec §5.
-/// Buying a skin never unlocks therapeutic features, never changes how
+/// Skins are cosmetic-only. Buying a skin never unlocks therapeutic
+/// features, never changes how
 /// pattern detection or interventions work; it only swaps the paint
 /// strategy used by the per-species painter.
 ///
@@ -20,11 +20,11 @@ part 'flower_skin.g.dart';
 /// can be unit-tested without spinning up a widget tree. The actual
 /// per-skin painting lives in `presentation/widgets/skin_preview.dart`
 /// (which interprets [paletteSeed] when rendering).
-/// Petal geometry kind for a [FlowerSkin]. v1.6 — drives a non-color
-/// visual differentiator so alternate skins read distinctly across the
-/// modal grid and the garden bed, not just as palette swaps. All
-/// existing skins ship as `classic` (the species' canonical petal shape)
-/// for byte-for-byte rendering parity.
+/// Petal geometry kind for a [FlowerSkin]. Drives a non-color visual
+/// differentiator so alternate skins read distinctly across the modal
+/// grid and the garden bed, not just as palette swaps. Existing skins
+/// ship as `classic` (the species' canonical petal shape) for
+/// byte-for-byte rendering parity.
 enum FlowerPetalShape { classic, rounded, pointed, star, heart }
 
 @freezed

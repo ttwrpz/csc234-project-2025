@@ -5,20 +5,20 @@ import '../../domain/entities/flower_skin.dart';
 import '../../domain/entities/skin_state.dart';
 
 /// Thin Firestore wrapper for the two skin-economy fields on the
-/// `users/{userId}` profile document — TC-6..10 (HB-008 Day 1).
+/// `users/{userId}` profile document.
 ///
 /// NOT a sub-collection. The fields live alongside `tokenBalance`,
 /// `displayName`, `photoUrl`, etc., so a single `users/{uid}` read
 /// returns the entire profile + skin state in one round-trip.
 ///
 /// Field shape:
-///   * `unlockedSkins` — `map<speciesName, [skinId]>` already in the
-///     schema (CLAUDE.md). Per-species list of owned non-default
-///     skinIds. NEVER includes the default (TC-10 — defaults are
-///     always available without purchase, so storing them would just
-///     bloat the doc).
-///   * `selectedSkins` — `map<speciesName, skinId>` new in S5. Absent
-///     species fall back to the built-in default at render time.
+///   * `unlockedSkins` — `map<speciesName, [skinId]>`: per-species list
+///     of owned non-default skinIds. NEVER includes the default
+///     (defaults are always available without purchase, so storing them
+///     would just bloat the doc).
+///   * `selectedSkins` — `map<speciesName, skinId>`: per-species active
+///     selection. Absent species fall back to the built-in default at
+///     render time.
 ///
 /// The unlock path runs inside a Firestore transaction so a concurrent
 /// token award from another device never races the spend: we read the
@@ -185,9 +185,7 @@ class SkinFirestoreDatasource {
     return out;
   }
 
-  static Map<String, String> _writeSelectedMap(
-    Map<FlowerSpecies, String> in_,
-  ) {
+  static Map<String, String> _writeSelectedMap(Map<FlowerSpecies, String> in_) {
     final out = <String, String>{};
     for (final entry in in_.entries) {
       out[entry.key.name] = entry.value;

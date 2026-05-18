@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Modal confirmation dialog for the spend flow — TC-9.
+/// Modal confirmation dialog for the spend flow.
 ///
 /// Wording per the brief: `"Spend N tokens to unlock {displayName}?"`,
 /// `[Cancel]` / `[Confirm]`. Cancel returns `false`; Confirm returns

@@ -3,8 +3,7 @@ import 'package:core/core.dart';
 import '../entities/token_award.dart';
 import '../entities/token_balance.dart';
 
-/// Pure-Dart token-award engine — pivot feature #10 (CLAUDE.md), ADR-0010
-/// §7.
+/// Pure-Dart token-award engine.
 ///
 /// MOOD-AGNOSTIC by construction. The function takes only the current
 /// [TokenBalance] state and `now` — there is no emotion-content
@@ -17,12 +16,12 @@ import '../entities/token_balance.dart';
 /// The mood-agnostic invariant is enforced two ways:
 ///   1. The function signature has no emotion-content parameter — the
 ///      type system makes it impossible to call with one.
-///   2. A file-level grep in `award_daily_tokens_test.dart` (TC-2)
-///      asserts this source file contains zero references to the
-///      emotion-feature filenames or class names. Any future change
-///      that adds such an import trips the test.
+///   2. A file-level grep in `award_daily_tokens_test.dart` asserts
+///      this source file contains zero references to the emotion-
+///      feature filenames or class names. Any future change that adds
+///      such an import trips the test.
 ///
-/// Algorithm (HB-005 §"Track 6.2 — Token economy"):
+/// Algorithm:
 ///   1. `today = localMidnight(now)`.
 ///   2. If `current.lastEarnedDate` is null OR a different calendar day
 ///      than `today`: this is the first log of the day. `award = 5`,
@@ -34,8 +33,8 @@ import '../entities/token_balance.dart';
 ///        * Else (cap reached): `award = 0`, every field unchanged.
 ///   4. `updated = TokenBalance(balance: current.balance + award, ...)`.
 ///
-/// The function NEVER decreases `balance`. Skin purchases (S5) use a
-/// separate `SpendTokensUseCase`, out of S4 scope.
+/// The function NEVER decreases `balance`. Skin purchases use a
+/// separate `SpendTokensUseCase`.
 ///
 /// "Same calendar day" is decided via [localMidnight] equality, not raw
 /// 24h elapsed. An entry at 23:59 yesterday + an entry at 00:01 today

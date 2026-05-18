@@ -6,7 +6,7 @@ import '../repositories/skin_repository.dart';
 import '../services/skin_catalog.dart';
 import '../skin_failure.dart';
 
-/// Use case for TC-9: spend N tokens to unlock + activate a flower skin.
+/// Use case for spending N tokens to unlock + activate a flower skin.
 ///
 /// Pure-Dart orchestration over [SkinRepository]; controllers invoke
 /// this use case rather than the repository directly so the
@@ -16,9 +16,9 @@ import '../skin_failure.dart';
 /// Validation done here (before any network call):
 ///   * `skin` must be in the catalog (rejects stale/forged skinIds).
 ///   * `skin.isDefault == false` (defaults are always available without
-///     purchase per TC-10 — calling this use case with a default skin
-///     would debit the user 0 tokens but still bump the field count;
-///     it's safer to surface it as "already unlocked").
+///     purchase — calling this use case with a default skin would debit
+///     the user 0 tokens but still bump the field count; it's safer to
+///     surface it as "already unlocked").
 ///   * `skin.skinId` must not already be in the user's pool.
 ///
 /// The atomic balance-debit + pool-append + selection-write happens

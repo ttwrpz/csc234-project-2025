@@ -8,9 +8,9 @@ part 'skin_state.freezed.dart';
 ///
 /// `unlockedBySpecies[species]` is the set of skinIds the user owns for
 /// that species (NEVER includes the default — defaults are always
-/// available without purchase per TC-10). `selectedBySpecies[species]`
-/// is the skinId currently active for that species' rendering; absent
-/// means "use the species default".
+/// available without purchase). `selectedBySpecies[species]` is the
+/// skinId currently active for that species' rendering; absent means
+/// "use the species default".
 ///
 /// Pure Dart — no Flutter/Firebase imports. The data layer maps this
 /// to/from the `unlockedSkins` + `selectedSkins` map fields on the

@@ -4,7 +4,7 @@ import 'package:core/core.dart';
 ///
 /// Sealed so consumers that switch on the variants get exhaustive-switch
 /// help from the analyzer. Mirrors the shape of `PatternFailure` —
-/// narrow on purpose: v1.0 only needs surface for "the award write
+/// narrow on purpose: we only need surface for "the award write
 /// failed and the next render should not assume it succeeded."
 ///
 /// Imports only `package:core/core.dart` — domain-purity rule per

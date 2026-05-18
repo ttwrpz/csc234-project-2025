@@ -6,17 +6,16 @@ import '../entities/skin_state.dart';
 import '../skin_failure.dart';
 
 /// Contract for any backing store that persists the user's flower-skin
-/// pool + selection — TC-6 through TC-10 (HB-008 Day 1).
+/// pool + selection.
 ///
 /// Implementations live in `data/` and may use Firestore or a fake.
 /// The concrete implementation maps to two top-level fields on
 /// `users/{uid}`:
-///   * `unlockedSkins: map<emotion, [skinId]>` — already in the schema
-///     (CLAUDE.md "Firestore data model"), per-species set of owned
-///     non-default skinIds.
-///   * `selectedSkins: map<emotion, skinId>` — new in S5, per-species
-///     active selection. Absent species fall back to the built-in
-///     default at render time.
+///   * `unlockedSkins: map<emotion, [skinId]>` — per-species set of
+///     owned non-default skinIds.
+///   * `selectedSkins: map<emotion, skinId>` — per-species active
+///     selection. Absent species fall back to the built-in default at
+///     render time.
 ///
 /// [unlockAndSelect] runs as a SINGLE Firestore transaction that:
 ///   1. Reads `tokenBalance` + `unlockedSkins[species]`.
@@ -38,7 +37,7 @@ abstract class SkinRepository {
   /// Atomically debits the user's token balance by `skin.cost`,
   /// appends `skin.skinId` to `unlockedSkins[skin.species]`, AND sets
   /// `selectedSkins[skin.species] = skin.skinId` so the freshly-bought
-  /// skin becomes active on the next render (TC-6).
+  /// skin becomes active on the next render.
   ///
   /// Returns [SkinFailure.insufficientTokens] when the live balance is
   /// below `skin.cost`, [SkinFailure.alreadyUnlocked] when the skinId

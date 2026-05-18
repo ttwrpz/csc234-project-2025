@@ -8,10 +8,10 @@ import 'package:flutter/material.dart';
 /// Icon choice: `Icons.local_florist` — matches the [TokenBalanceChip]
 /// so the visual vocabulary is consistent across the modal (the chip in
 /// the header reads "you have N tokens"; the chips on each locked skin
-/// read "this costs M tokens"). CLAUDE.md "no mood-contingent rewards"
-/// rule and ADR-0010 §7 — never a coin/money glyph.
+/// read "this costs M tokens"). The "no mood-contingent rewards" rule
+/// means never a coin/money glyph.
 ///
-/// Visual states (TC-8):
+/// Visual states:
 ///   * affordable → primary border + filled icon at full opacity.
 ///   * unaffordable → muted border + low-opacity icon + low-opacity
 ///     text. Still legible (WCAG AA contrast is preserved by leaning
@@ -45,15 +45,12 @@ class LockedSkinChip extends StatelessWidget {
     final theme = Theme.of(context);
     final mb = theme.extension<MbColors>()!;
     final primary = theme.colorScheme.primary;
-    final iconColor = affordable
-        ? primary
-        : primary.withValues(alpha: 0.45);
-    // v1.5 final polish — keep the price text at full strength even when
-    // unaffordable so the cost is always legible (was mb.textDim, which
-    // stacked with the alpha-dimmed background and dropped contrast
-    // below the WCAG 4.5:1 floor in both light and dark themes). The
-    // unaffordable state is now communicated via the icon + border
-    // opacity instead, leaving the number itself readable.
+    final iconColor = affordable ? primary : primary.withValues(alpha: 0.45);
+    // Keep the price text at full strength even when unaffordable so
+    // the cost is always legible (a dimmed text colour stacked with the
+    // alpha-dimmed background drops contrast below WCAG 4.5:1 in both
+    // themes). The unaffordable state is communicated via the icon +
+    // border opacity instead, leaving the number itself readable.
     final textColor = mb.text;
     final borderColor = affordable
         ? primary.withValues(alpha: 0.30)
@@ -70,9 +67,8 @@ class LockedSkinChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            // v1.5 final polish — drop the alpha on unaffordable so the
-            // background stays opaque. The dimming cue lives in the
-            // border + icon alpha only; the chip's text contrast is now
+            // Background stays opaque. The dimming cue lives in the
+            // border + icon alpha only; the chip's text contrast is
             // ≥ 4.5:1 in both themes regardless of affordable state.
             color: mb.card,
             borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
