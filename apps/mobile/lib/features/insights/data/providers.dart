@@ -6,7 +6,7 @@ import '../domain/repositories/insights_repository.dart';
 import '../domain/usecases/load_insights.dart';
 import 'insights_repository_impl.dart';
 
-/// Riverpod wiring for the (S5) Insights feature.
+/// Riverpod wiring for the Insights feature.
 ///
 /// The repository composes the existing mood and pattern-engine repos;
 /// no new Firestore collections are introduced. Tests can fake either

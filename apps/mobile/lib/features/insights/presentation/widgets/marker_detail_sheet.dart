@@ -9,7 +9,7 @@ import '../../../pattern_engine/domain/entities/tier.dart';
 import '../../domain/entities/daily_insight.dart';
 import '../../domain/entities/pattern_engine_trigger_kind.dart';
 
-/// HB-009 Decision C-3 — marker tap target popover.
+/// Marker tap target popover.
 ///
 /// Renders a bottom sheet on phone, a centred dialog on tablet/desktop.
 /// Surfaces, in order: the date, the tier name + matching colour swatch,
@@ -176,7 +176,7 @@ class MarkerDetailSheet extends ConsumerWidget {
   };
 
   /// Public-facing words for the three tiers — match the dispatcher's
-  /// surface copy in HB-007. Tier numbers are engineering jargon and
+  /// surface copy. Tier numbers are engineering jargon and
   /// stay out of the user-facing string.
   static String _tierName(Tier tier) => switch (tier) {
     Tier.one => 'A gentle nudge',
@@ -184,10 +184,9 @@ class MarkerDetailSheet extends ConsumerWidget {
     Tier.three => 'A care moment',
   };
 
-  /// Plain-English copy keyed off the algorithm that fired. See
-  /// HB-009 §C-3 table. A null reason key collapses to the
-  /// neutral observation copy so a graceful-degradation read of a
-  /// legacy pattern doc still renders cleanly.
+  /// Plain-English copy keyed off the algorithm that fired. A null reason
+  /// key collapses to the neutral observation copy so a
+  /// graceful-degradation read of a legacy pattern doc still renders cleanly.
   static String _reasonCopy(PatternEngineTriggerKind? key) {
     return switch (key) {
       PatternEngineTriggerKind.mannKendall =>

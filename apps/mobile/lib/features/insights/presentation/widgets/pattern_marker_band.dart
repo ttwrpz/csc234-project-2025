@@ -19,11 +19,10 @@ import 'recent_triggers_card.dart' show insightsFocusedDayIndexProvider;
 /// name, plain-English reason, and (optionally) a link to the matching
 /// intervention surface. Untriggered placeholder dots are NOT tappable.
 ///
-/// HB-009 v1.5 cut: the band reads
-/// [insightsFocusedDayIndexProvider] and scales the matching dot by
-/// 1.6x for 600ms when the [RecentTriggersCard] focuses a day, giving
-/// the user a visual anchor without re-implementing fl_chart focus.
-/// Chart-line focus is deferred to v1.6 per HB-009 "Engineering notes" §2.
+/// The band reads [insightsFocusedDayIndexProvider] and scales the
+/// matching dot by 1.6x for 600ms when the [RecentTriggersCard] focuses
+/// a day, giving the user a visual anchor without re-implementing
+/// fl_chart focus.
 ///
 /// Every badge carries a `Semantics(label: ...)` so screen readers
 /// announce "Tier N trigger on Mon May 10" rather than a bare dot.

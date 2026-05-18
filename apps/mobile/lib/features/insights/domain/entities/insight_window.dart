@@ -4,7 +4,7 @@ part 'insight_window.freezed.dart';
 
 /// User-visible window over which the Insights screen aggregates mood +
 /// pattern history. Default is 14 days — the Mann-Kendall trend test's
-/// natural span (spec §2.4 algorithm 1) and a comfortable mid-month read.
+/// natural span and a comfortable mid-month read.
 ///
 /// Pure-Dart entity — no Flutter / Firebase imports per the
 /// domain-purity rule in CLAUDE.md.

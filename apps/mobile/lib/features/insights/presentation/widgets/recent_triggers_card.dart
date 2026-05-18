@@ -8,15 +8,13 @@ import '../../domain/entities/daily_insight.dart';
 import '../../domain/entities/pattern_engine_trigger_kind.dart';
 import 'marker_detail_sheet.dart';
 
-/// HB-009 Decision (Recent triggers list) — the last 5 days that fired
-/// any tier, newest first.
+/// Recent triggers — the last 5 days that fired any tier, newest first.
 ///
 /// Each row reads `MMM D · tier-name · short reason`. Tapping a row
 /// (a) publishes the day index to [insightsFocusedDayIndexProvider] so
-/// the marker band animates a scale on that dot (v1.5 cut — see HB-009
-/// "Engineering notes" §2) and (b) opens the [MarkerDetailSheet] so the
-/// reader has the popover in front of them, mirroring the gesture they
-/// would have made on the marker directly.
+/// the marker band animates a scale on that dot and (b) opens the
+/// [MarkerDetailSheet] so the reader has the popover in front of them,
+/// mirroring the gesture they would have made on the marker directly.
 ///
 /// If the user has no trigger days yet the card collapses to a one-line
 /// neutral message — no streak-shaming, per CLAUDE.md copy rules.
@@ -230,6 +228,5 @@ class _TriggerRow extends StatelessWidget {
 /// The currently focused day index in the chart's window — published by
 /// [RecentTriggersCard] taps so [PatternMarkerBand] can scale the
 /// matching dot. Resets to `null` when the window changes or when the
-/// user taps a marker directly. v1.5 cut: marker-band scale only; chart-
-/// line focus is deferred to v1.6 (HB-009 "Engineering notes" §2).
+/// user taps a marker directly.
 final insightsFocusedDayIndexProvider = StateProvider<int?>((_) => null);

@@ -16,7 +16,7 @@ import '../domain/entities/pattern_engine_trigger_kind.dart';
 import '../domain/repositories/insights_repository.dart';
 
 /// Joins `users/{uid}/moods/*` with `users/{uid}/patterns/{date}` into the
-/// gap-filled [DailyInsight] list the (S5) Insights screen renders.
+/// gap-filled [DailyInsight] list the Insights screen renders.
 ///
 /// Composition strategy: a hand-rolled `_LatestCombiner` merges the two
 /// inbound streams without taking a dependency on rxdart (not in
@@ -25,7 +25,7 @@ import '../domain/repositories/insights_repository.dart';
 /// updates; it suppresses emission until the first event has landed on
 /// each source so consumers never see a half-joined snapshot.
 ///
-/// Aggregation rules (spec §2.1, §2.3, §4):
+/// Aggregation rules:
 ///   * `avgMoodScore` = mean of `computeMoodScore(mood, intensity).value`
 ///     across every mood entry whose local-midnight equals the day. Null
 ///     on days with zero entries.
@@ -99,7 +99,7 @@ class InsightsRepositoryImpl implements InsightsRepository {
 
     // 3. Walk from the Monday on-or-before `window.startDate` up to
     //    `window.endDate`, folding H_t day by day. Reset H_t to 0 each
-    //    Monday (matches the weekly harvest cycle, spec §11). Days
+    //    Monday (matches the weekly harvest cycle). Days
     //    without entries do NOT fold zero — carry the previous H_t.
     final foldStart = _mondayOnOrBefore(window.startDate);
     var h = 0.0;
@@ -155,7 +155,7 @@ class InsightsRepositoryImpl implements InsightsRepository {
   /// Picks the dominant algorithm that fired on a given day so the
   /// Insights marker-tap popover can show ONE plain-English reason.
   ///
-  /// Resolution rule (HB-009 §C-3):
+  /// Resolution rule:
   ///  * No tier triggered → `null` (no marker, no popover content).
   ///  * Tier 1 has one source: Mann-Kendall.
   ///  * Tier 2 has one source: sliding 5-of-7.

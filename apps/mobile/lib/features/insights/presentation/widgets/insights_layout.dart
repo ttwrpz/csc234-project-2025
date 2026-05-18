@@ -1,7 +1,7 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
-/// HB-009 Decision B — adaptive layout for the Insights screen.
+/// Adaptive layout for the Insights screen.
 ///
 /// The screen feeds five named slots into this wrapper:
 ///   * [header] — title + subtitle (always full-width at the top).
