@@ -9,12 +9,12 @@ import '../../../mood/domain/entities/mood_type.dart';
 /// Owns transport (request id, projection, exception mapping); the
 /// repository converts the raw payload to domain types.
 ///
-/// **PII fence (ADR-0007 §"PII fence")**: the projection MUST drop
-/// `text` and `mediaRefs` from each `MoodEntry` before serialising. The
-/// Zod `.strict()` schema on the server will reject payloads containing
-/// `text` at any nesting level, so a regression in the projection
-/// produces an `invalid_input` envelope at runtime — but the unit test
-/// on this datasource catches it at build time first.
+/// **PII fence**: the projection MUST drop `text` and `mediaRefs` from
+/// each `MoodEntry` before serialising. The Zod `.strict()` schema on
+/// the server will reject payloads containing `text` at any nesting
+/// level, so a regression in the projection produces an `invalid_input`
+/// envelope at runtime — but the unit test on this datasource catches
+/// it at build time first.
 class AnalyzePatternsFunctionsDatasource {
   AnalyzePatternsFunctionsDatasource(this._functions, {Uuid? uuid})
     : _uuid = uuid ?? const Uuid();

@@ -11,16 +11,15 @@ import '../../domain/entities/pattern_insight.dart';
 
 /// Pattern insights card slotted onto the analytics dashboard. Reads from
 /// `analyzePatterns` (Cloud Function) and renders 0..3 rows, each with a
-/// confidence chip + sample-size badge per ADR-0007.
+/// confidence chip + sample-size badge.
 ///
-/// Restyled to the Sprint 2 Prototype: header row carries a 26×26 sparkle
-/// avatar (linear primary→amber gradient) + "Insights" 13/600 + small
-/// "AI-assisted" caption, and each insight row is separated by a 1 px
-/// [MbColors.line] divider.
+/// The header row carries a sparkle avatar (linear primary→amber
+/// gradient) + "Insights" title + "AI-assisted" caption, and each insight
+/// row is separated by a 1 px [MbColors.line] divider.
 ///
 /// Hides itself entirely when `ai_pattern_analysis_enabled` Remote Config
 /// is false — both as defence in depth and to power the demo kill-switch
-/// rehearsal (per kickoff Open Question O-3).
+/// rehearsal.
 class PatternInsightCard extends ConsumerWidget {
   const PatternInsightCard({super.key});
 

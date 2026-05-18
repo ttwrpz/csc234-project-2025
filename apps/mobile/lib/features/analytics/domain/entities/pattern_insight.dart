@@ -8,7 +8,7 @@ part 'pattern_insight.g.dart';
 /// Lives in the domain layer and is decoded directly from the
 /// `analyzePatterns` Cloud Function payload. Confidence is server-clamped
 /// to [0, 1] and respects the sample-size floor (n < 10 → confidence
-/// ≤ 0.5) regardless of effect size — see ADR-0007.
+/// ≤ 0.5) regardless of effect size.
 @freezed
 abstract class PatternInsight with _$PatternInsight {
   const factory PatternInsight({
