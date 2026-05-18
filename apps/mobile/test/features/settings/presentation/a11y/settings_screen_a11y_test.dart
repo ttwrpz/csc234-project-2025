@@ -159,8 +159,7 @@ void main() {
       },
     );
 
-    testWidgets('Sign-out tile is announced with its label',
-        (tester) async {
+    testWidgets('Sign-out tile is announced with its label', (tester) async {
       await _pumpSettings(tester);
 
       // The Settings screen is a long ListView; on the default surface
@@ -182,7 +181,8 @@ void main() {
       expect(
         tile,
         findsAtLeastNWidgets(1),
-        reason: 'Sign out text must be wrapped by a ListTile so the action '
+        reason:
+            'Sign out text must be wrapped by a ListTile so the action '
             'is announced as a tappable row rather than bare text',
       );
     });

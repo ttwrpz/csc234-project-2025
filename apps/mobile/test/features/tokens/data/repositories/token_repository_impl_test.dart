@@ -58,13 +58,13 @@ class _FakeDatasource implements TokenBalanceFirestoreDatasource {
     required String userId,
     required int amount,
   }) async => TokenAward(
-        award: amount,
-        updated: TokenBalance(
-          balance: amount,
-          earnedToday: 0,
-          lastEarnedDate: null,
-        ),
-      );
+    award: amount,
+    updated: TokenBalance(
+      balance: amount,
+      earnedToday: 0,
+      lastEarnedDate: null,
+    ),
+  );
 }
 
 void main() {

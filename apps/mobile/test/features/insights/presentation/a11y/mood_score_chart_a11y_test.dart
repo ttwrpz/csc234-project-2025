@@ -30,9 +30,7 @@ import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
   theme: buildLightTheme(),
-  home: Scaffold(
-    body: SizedBox(height: 240, width: 360, child: child),
-  ),
+  home: Scaffold(body: SizedBox(height: 240, width: 360, child: child)),
 );
 
 void main() {
@@ -60,9 +58,7 @@ void main() {
         // (see packages/analytics/lib/src/mood_score_chart.dart:60).
         // RegExp keeps the test resilient to count-string formatting.
         expect(
-          find.bySemanticsLabel(
-            RegExp(r'Mood score chart for \d+ days'),
-          ),
+          find.bySemanticsLabel(RegExp(r'Mood score chart for \d+ days')),
           findsAtLeastNWidgets(1),
           reason:
               'Chart must announce its purpose + day-count so screen '
@@ -71,92 +67,84 @@ void main() {
       },
     );
 
-    testWidgets(
-      'empty chart announces "no data for the selected window"',
-      (tester) async {
-        await tester.pumpWidget(
-          _wrap(const MoodScoreChart(insights: [])),
+    testWidgets('empty chart announces "no data for the selected window"', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_wrap(const MoodScoreChart(insights: [])));
+      await tester.pumpAndSettle();
+
+      // Empty state branch in the analytics_pkg wrapper carries the
+      // friendly "no data" label so AT users hear something rather
+      // than silence.
+      expect(
+        find.bySemanticsLabel(RegExp('no data for the selected window')),
+        findsAtLeastNWidgets(1),
+        reason: 'Empty chart must still announce its state.',
+      );
+    });
+
+    testWidgets('individual data points are NOT each announced separately', (
+      tester,
+    ) async {
+      // A 30-day window would mean 30 line-chart dots. If each carried
+      // its own semantics label the focus stream would announce them
+      // all on tab traversal — useless and overwhelming. Verify the
+      // chart's single wrapping Semantics node is the only label-
+      // carrier within the chart subtree.
+      final today = DateTime(2026, 5, 13);
+      final insights = List<DailyInsight>.generate(30, (i) {
+        final date = today.subtract(Duration(days: 29 - i));
+        return DailyInsight(
+          date: date,
+          avgMoodScore: 0.5,
+          gardenHealthH: 0.3,
+          dominantEmotion: null,
+          entryCount: 1,
+          triggeredTier: null,
         );
-        await tester.pumpAndSettle();
+      });
 
-        // Empty state branch in the analytics_pkg wrapper carries the
-        // friendly "no data" label so AT users hear something rather
-        // than silence.
-        expect(
-          find.bySemanticsLabel(
-            RegExp('no data for the selected window'),
-          ),
-          findsAtLeastNWidgets(1),
-          reason: 'Empty chart must still announce its state.',
+      await tester.pumpWidget(_wrap(MoodScoreChart(insights: insights)));
+      await tester.pumpAndSettle();
+
+      // Count semantics nodes whose label matches the chart-label
+      // regex. There should be exactly one (the outer wrapper);
+      // never per-dot duplicates.
+      final chartLabels = tester
+          .widgetList<Semantics>(find.byType(Semantics))
+          .where(
+            (s) => (s.properties.label ?? '').startsWith('Mood score chart'),
+          )
+          .toList();
+      expect(
+        chartLabels.length,
+        equals(1),
+        reason:
+            'Exactly one chart Semantics node should exist — per-dot '
+            'announcements would flood the screen-reader focus stream.',
+      );
+    });
+
+    testWidgets('chart pumps without throwing under the project theme', (
+      tester,
+    ) async {
+      // Smoke — the chart depends on Theme.of(context).extension<MbColors>()
+      // for its tier-band colors. A theme missing the extension would
+      // crash on build; this test pins the dependency-on-theme contract.
+      final today = DateTime(2026, 5, 13);
+      final insights = List<DailyInsight>.generate(14, (i) {
+        return DailyInsight(
+          date: today.subtract(Duration(days: 13 - i)),
+          avgMoodScore: 0.2,
+          gardenHealthH: 0.1,
+          dominantEmotion: null,
+          entryCount: 1,
+          triggeredTier: null,
         );
-      },
-    );
-
-    testWidgets(
-      'individual data points are NOT each announced separately',
-      (tester) async {
-        // A 30-day window would mean 30 line-chart dots. If each carried
-        // its own semantics label the focus stream would announce them
-        // all on tab traversal — useless and overwhelming. Verify the
-        // chart's single wrapping Semantics node is the only label-
-        // carrier within the chart subtree.
-        final today = DateTime(2026, 5, 13);
-        final insights = List<DailyInsight>.generate(30, (i) {
-          final date = today.subtract(Duration(days: 29 - i));
-          return DailyInsight(
-            date: date,
-            avgMoodScore: 0.5,
-            gardenHealthH: 0.3,
-            dominantEmotion: null,
-            entryCount: 1,
-            triggeredTier: null,
-          );
-        });
-
-        await tester.pumpWidget(_wrap(MoodScoreChart(insights: insights)));
-        await tester.pumpAndSettle();
-
-        // Count semantics nodes whose label matches the chart-label
-        // regex. There should be exactly one (the outer wrapper);
-        // never per-dot duplicates.
-        final chartLabels = tester
-            .widgetList<Semantics>(find.byType(Semantics))
-            .where(
-              (s) =>
-                  (s.properties.label ?? '').startsWith('Mood score chart'),
-            )
-            .toList();
-        expect(
-          chartLabels.length,
-          equals(1),
-          reason:
-              'Exactly one chart Semantics node should exist — per-dot '
-              'announcements would flood the screen-reader focus stream.',
-        );
-      },
-    );
-
-    testWidgets(
-      'chart pumps without throwing under the project theme',
-      (tester) async {
-        // Smoke — the chart depends on Theme.of(context).extension<MbColors>()
-        // for its tier-band colors. A theme missing the extension would
-        // crash on build; this test pins the dependency-on-theme contract.
-        final today = DateTime(2026, 5, 13);
-        final insights = List<DailyInsight>.generate(14, (i) {
-          return DailyInsight(
-            date: today.subtract(Duration(days: 13 - i)),
-            avgMoodScore: 0.2,
-            gardenHealthH: 0.1,
-            dominantEmotion: null,
-            entryCount: 1,
-            triggeredTier: null,
-          );
-        });
-        await tester.pumpWidget(_wrap(MoodScoreChart(insights: insights)));
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-      },
-    );
+      });
+      await tester.pumpWidget(_wrap(MoodScoreChart(insights: insights)));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
   });
 }

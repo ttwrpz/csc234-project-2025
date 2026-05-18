@@ -128,16 +128,10 @@ void main() {
         ),
       );
       print(
-        row(
-          'Body text light (mb.text / mb.bg)',
-          contrast(lmb.text, lmb.bg),
-        ),
+        row('Body text light (mb.text / mb.bg)', contrast(lmb.text, lmb.bg)),
       );
       print(
-        row(
-          'Body text dark (mb.text / mb.bg)',
-          contrast(dmb.text, dmb.bg),
-        ),
+        row('Body text dark (mb.text / mb.bg)', contrast(dmb.text, dmb.bg)),
       );
       print(
         row(

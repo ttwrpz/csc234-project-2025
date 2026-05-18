@@ -85,74 +85,65 @@ void main() {
       },
     );
 
-    testWidgets(
-      'custom label propagates to the semantics tree verbatim',
-      (tester) async {
-        final controller = _CountingController();
-        await _pumpButton(
-          tester,
-          controller: controller,
-          label: "I'm okay for now",
-        );
+    testWidgets('custom label propagates to the semantics tree verbatim', (
+      tester,
+    ) async {
+      final controller = _CountingController();
+      await _pumpButton(
+        tester,
+        controller: controller,
+        label: "I'm okay for now",
+      );
 
-        // Tier 3 crisis screen passes "I'm okay for now". The same
-        // composed-label rule applies.
-        expect(
-          find.bySemanticsLabel(
-            "I'm okay for now, dismiss this reminder",
-          ),
-          findsOneWidget,
-          reason: 'Custom label must propagate into the Semantics wrapper.',
-        );
-      },
-    );
+      // Tier 3 crisis screen passes "I'm okay for now". The same
+      // composed-label rule applies.
+      expect(
+        find.bySemanticsLabel("I'm okay for now, dismiss this reminder"),
+        findsOneWidget,
+        reason: 'Custom label must propagate into the Semantics wrapper.',
+      );
+    });
 
-    testWidgets(
-      'semantic node carries the button role flag',
-      (tester) async {
-        final controller = _CountingController();
-        await _pumpButton(tester, controller: controller);
+    testWidgets('semantic node carries the button role flag', (tester) async {
+      final controller = _CountingController();
+      await _pumpButton(tester, controller: controller);
 
-        // Both the inner OutlinedButton and the wrapping Semantics carry
-        // the button flag. Verify via the visible button text — the
-        // resolved semantics on the OutlinedButton carries isButton: true.
-        final btn = tester.getSemantics(
-          find.byType(OutlinedButton),
-        );
-        expect(btn.hasFlag(SemanticsFlag.isButton), isTrue);
-      },
-    );
+      // Both the inner OutlinedButton and the wrapping Semantics carry
+      // the button flag. Verify via the visible button text — the
+      // resolved semantics on the OutlinedButton carries isButton: true.
+      final btn = tester.getSemantics(find.byType(OutlinedButton));
+      expect(btn.hasFlag(SemanticsFlag.isButton), isTrue);
+    });
   });
 
   group('InterventionOptOutButton — tap behavior', () {
-    testWidgets(
-      'tap calls controller.optOut() exactly once + onTapped after',
-      (tester) async {
-        final controller = _CountingController();
-        var callbackHits = 0;
-        await _pumpButton(
-          tester,
-          controller: controller,
-          onTapped: () => callbackHits += 1,
-        );
+    testWidgets('tap calls controller.optOut() exactly once + onTapped after', (
+      tester,
+    ) async {
+      final controller = _CountingController();
+      var callbackHits = 0;
+      await _pumpButton(
+        tester,
+        controller: controller,
+        onTapped: () => callbackHits += 1,
+      );
 
-        await tester.tap(find.byType(OutlinedButton));
-        // The button awaits optOut() then calls onTapped. Drain the
-        // micro-task queue.
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(find.byType(OutlinedButton));
+      // The button awaits optOut() then calls onTapped. Drain the
+      // micro-task queue.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
-        expect(
-          controller.optOutCalls,
-          equals(1),
-          reason: 'optOut must fire exactly once per tap.',
-        );
-        expect(
-          callbackHits,
-          equals(1),
-          reason: 'onTapped must run AFTER optOut resolves.',
-        );
-      },
-    );
+      expect(
+        controller.optOutCalls,
+        equals(1),
+        reason: 'optOut must fire exactly once per tap.',
+      );
+      expect(
+        callbackHits,
+        equals(1),
+        reason: 'onTapped must run AFTER optOut resolves.',
+      );
+    });
   });
 }

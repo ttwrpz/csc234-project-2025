@@ -186,9 +186,7 @@ void main() {
         // Use find.bySemanticsLabel with a regex to tolerate the future
         // "2 minute 0 second remaining" pluralisation refactor.
         expect(
-          find.bySemanticsLabel(
-            RegExp(r'^2 minutes? 0 seconds? remaining$'),
-          ),
+          find.bySemanticsLabel(RegExp(r'^2 minutes? 0 seconds? remaining$')),
           findsAtLeastNWidgets(1),
           reason: 'Initial label MUST read "2 minutes 0 seconds remaining".',
         );
@@ -246,76 +244,73 @@ void main() {
   });
 
   group('BreathingScreen — button labels', () {
-    testWidgets(
-      '"Done for now" announces as a button with its action verb',
-      (tester) async {
-        final controller = _RecordingController();
-        await tester.pumpWidget(
-          _makeApp(dispatch: _dispatch(), controller: controller),
-        );
-        await _pushBreathing(tester);
+    testWidgets('"Done for now" announces as a button with its action verb', (
+      tester,
+    ) async {
+      final controller = _RecordingController();
+      await tester.pumpWidget(
+        _makeApp(dispatch: _dispatch(), controller: controller),
+      );
+      await _pushBreathing(tester);
 
-        final done = tester.getSemantics(
-          find.widgetWithText(TextButton, 'Done for now'),
-        );
-        expect(done.label, equals('Done for now'));
-        expect(done.hasFlag(SemanticsFlag.isButton), isTrue);
-      },
-    );
+      final done = tester.getSemantics(
+        find.widgetWithText(TextButton, 'Done for now'),
+      );
+      expect(done.label, equals('Done for now'));
+      expect(done.hasFlag(SemanticsFlag.isButton), isTrue);
+    });
 
-    testWidgets(
-      '"I\'m okay" opt-out includes the action-context fragment',
-      (tester) async {
-        final controller = _RecordingController();
-        await tester.pumpWidget(
-          _makeApp(dispatch: _dispatch(), controller: controller),
-        );
-        await _pushBreathing(tester);
+    testWidgets('"I\'m okay" opt-out includes the action-context fragment', (
+      tester,
+    ) async {
+      final controller = _RecordingController();
+      await tester.pumpWidget(
+        _makeApp(dispatch: _dispatch(), controller: controller),
+      );
+      await _pushBreathing(tester);
 
-        // The shared InterventionOptOutButton wraps the OutlinedButton in
-        // a Semantics(label: '$label, dismiss this reminder'). Verify the
-        // wrapped label is reachable — a curt "I'm okay" without
-        // the action context can read dismissive at any tier.
-        expect(
-          find.bySemanticsLabel(RegExp("I'm okay, dismiss this reminder")),
-          findsAtLeastNWidgets(1),
-        );
-      },
-    );
+      // The shared InterventionOptOutButton wraps the OutlinedButton in
+      // a Semantics(label: '$label, dismiss this reminder'). Verify the
+      // wrapped label is reachable — a curt "I'm okay" without
+      // the action context can read dismissive at any tier.
+      expect(
+        find.bySemanticsLabel(RegExp("I'm okay, dismiss this reminder")),
+        findsAtLeastNWidgets(1),
+      );
+    });
 
-    testWidgets(
-      "tapping 'I'm okay' wires through controller.optOut() (soft)",
-      (tester) async {
-        // Documented soft assertion per breathing_screen_test.dart line
-        // 193 — the GoRouter test stack can clip the right-anchored
-        // button on smaller surfaces. The exact `optOutCalls == 1`
-        // assertion is covered in intervention_banner_test.dart, where
-        // the layout is deterministic.
-        final controller = _RecordingController();
-        await tester.pumpWidget(
-          _makeApp(dispatch: _dispatch(), controller: controller),
-        );
-        await _pushBreathing(tester);
+    testWidgets("tapping 'I'm okay' wires through controller.optOut() (soft)", (
+      tester,
+    ) async {
+      // Documented soft assertion per breathing_screen_test.dart line
+      // 193 — the GoRouter test stack can clip the right-anchored
+      // button on smaller surfaces. The exact `optOutCalls == 1`
+      // assertion is covered in intervention_banner_test.dart, where
+      // the layout is deterministic.
+      final controller = _RecordingController();
+      await tester.pumpWidget(
+        _makeApp(dispatch: _dispatch(), controller: controller),
+      );
+      await _pushBreathing(tester);
 
-        expect(find.byType(InterventionOptOutButton), findsOneWidget);
-        await tester.tap(
-          find.descendant(
-            of: find.byType(InterventionOptOutButton),
-            matching: find.byType(OutlinedButton),
-          ),
-          warnIfMissed: false,
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 200));
-        expect(
-          controller.optOutCalls,
-          anyOf(equals(0), equals(1)),
-          reason:
-              'Tap may miss under the constrained test surface — the wiring '
-              'is covered deterministically in intervention_banner_test.dart.',
-        );
-      },
-    );
+      expect(find.byType(InterventionOptOutButton), findsOneWidget);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(InterventionOptOutButton),
+          matching: find.byType(OutlinedButton),
+        ),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(
+        controller.optOutCalls,
+        anyOf(equals(0), equals(1)),
+        reason:
+            'Tap may miss under the constrained test surface — the wiring '
+            'is covered deterministically in intervention_banner_test.dart.',
+      );
+    });
   });
 
   group('BreathingScreen — 200% type readability', () {

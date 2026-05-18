@@ -386,6 +386,9 @@ describe("Firestore rules — users/{uid}/settings/notifications", () => {
   ): Record<string, unknown> {
     return {
       cheerUpEnabled: true,
+      tier1Enabled: true,
+      tier2Enabled: true,
+      tier3Enabled: true,
       tokens: [
         {
           token: "device-token-1",
@@ -443,6 +446,9 @@ describe("Firestore rules — users/{uid}/settings/notifications", () => {
   it("Case 22: update flipping cheerUpEnabled is allowed", async () => {
     await seedSettings(USER_A, {
       cheerUpEnabled: true,
+      tier1Enabled: true,
+      tier2Enabled: true,
+      tier3Enabled: true,
       tokens: [],
       updatedAt: Timestamp.now(),
     });
@@ -459,6 +465,9 @@ describe("Firestore rules — users/{uid}/settings/notifications", () => {
   it("Case 23: update introducing an unknown field is denied (affectedKeys)", async () => {
     await seedSettings(USER_A, {
       cheerUpEnabled: true,
+      tier1Enabled: true,
+      tier2Enabled: true,
+      tier3Enabled: true,
       tokens: [],
       updatedAt: Timestamp.now(),
     });

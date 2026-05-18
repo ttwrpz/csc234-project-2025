@@ -73,9 +73,7 @@ class FakePinRepository implements PinRepository {
   }
 
   @override
-  Future<Result<void, PinSetupFailure>> remove({
-    required String userId,
-  }) async {
+  Future<Result<void, PinSetupFailure>> remove({required String userId}) async {
     removeCalls.add(userId);
     if (nextRemoveResult is Ok<void, PinSetupFailure>) {
       pinIsSet = false;

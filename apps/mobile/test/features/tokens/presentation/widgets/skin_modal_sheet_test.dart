@@ -74,11 +74,7 @@ class _FakeTokenRepo implements TokenRepository {
   @override
   Stream<TokenBalance> watchBalance({required String userId}) =>
       Stream<TokenBalance>.value(
-        TokenBalance(
-          balance: _balance,
-          earnedToday: 0,
-          lastEarnedDate: null,
-        ),
+        TokenBalance(balance: _balance, earnedToday: 0, lastEarnedDate: null),
       );
 }
 
@@ -124,11 +120,7 @@ void main() {
     testWidgets('renders one section header per species (all six)', (
       tester,
     ) async {
-      await _pumpModal(
-        tester,
-        skinState: SkinState.empty(),
-        balance: 0,
-      );
+      await _pumpModal(tester, skinState: SkinState.empty(), balance: 0);
 
       // Section headers are rendered in uppercase — see
       // `_SpeciesSection._humanSpeciesName`. Asserting on the rendered
@@ -155,8 +147,7 @@ void main() {
           balance: 0,
         );
 
-        final lockedCount =
-            SkinCatalog.all().where((s) => !s.isDefault).length;
+        final lockedCount = SkinCatalog.all().where((s) => !s.isDefault).length;
         expect(
           find.byType(LockedSkinChip),
           findsNWidgets(lockedCount),
@@ -182,11 +173,7 @@ void main() {
         // `userBalance >= skin.cost`). This is the documented seam in
         // `locked_skin_chip.dart` — assertion mechanism: read each
         // LockedSkinChip widget's `affordable` field.
-        await _pumpModal(
-          tester,
-          skinState: SkinState.empty(),
-          balance: 75,
-        );
+        await _pumpModal(tester, skinState: SkinState.empty(), balance: 75);
 
         final chips = tester
             .widgetList<LockedSkinChip>(find.byType(LockedSkinChip))
@@ -227,11 +214,7 @@ void main() {
     testWidgets(
       'default skins (one per species) render without a LockedSkinChip',
       (tester) async {
-        await _pumpModal(
-          tester,
-          skinState: SkinState.empty(),
-          balance: 0,
-        );
+        await _pumpModal(tester, skinState: SkinState.empty(), balance: 0);
 
         // Defaults are `Selected` by default (TC-10 — see modal code:
         // `effectiveSelectedId = selectedId ?? defaultSkin.skinId`). They
@@ -253,45 +236,40 @@ void main() {
       },
     );
 
-    testWidgets(
-      'unlocked non-default skin renders WITHOUT a LockedSkinChip',
-      (tester) async {
-        // Pre-unlock `sunflower_sunset` (cost: 50). With it in the pool
-        // and selected, the sunflower section should NOT render a chip
-        // for sunset; the default sunflower also has no chip. Locked
-        // sunflower alternates (e.g. `sunflower_moonlit` at cost 100)
-        // still render their chip.
-        const sunflowerSunsetId = 'sunflower_sunset';
-        final state = SkinState(
-          unlockedBySpecies: const {
-            FlowerSpecies.sunflower: {sunflowerSunsetId},
-          },
-          selectedBySpecies: const {
-            FlowerSpecies.sunflower: sunflowerSunsetId,
-          },
-        );
-        await _pumpModal(tester, skinState: state, balance: 0);
+    testWidgets('unlocked non-default skin renders WITHOUT a LockedSkinChip', (
+      tester,
+    ) async {
+      // Pre-unlock `sunflower_sunset` (cost: 50). With it in the pool
+      // and selected, the sunflower section should NOT render a chip
+      // for sunset; the default sunflower also has no chip. Locked
+      // sunflower alternates (e.g. `sunflower_moonlit` at cost 100)
+      // still render their chip.
+      const sunflowerSunsetId = 'sunflower_sunset';
+      final state = SkinState(
+        unlockedBySpecies: const {
+          FlowerSpecies.sunflower: {sunflowerSunsetId},
+        },
+        selectedBySpecies: const {FlowerSpecies.sunflower: sunflowerSunsetId},
+      );
+      await _pumpModal(tester, skinState: state, balance: 0);
 
-        // Two text strings make this fully observable:
-        //   1. "Sunset Sunflower" is the now-owned skin's displayName.
-        //   2. "Selected" appears 6× — one per species default — EXCEPT
-        //      the sunflower row, which now shows "Selected" on the
-        //      sunset card AND "Tap to select" on the classic card
-        //      (owned → not selected). Total "Selected" pills: still 6
-        //      (5 species defaults + sunset).
-        expect(find.text('Sunset Sunflower'), findsOneWidget);
-        expect(find.text('Selected'), findsNWidgets(6));
-        // The classic-sunflower default is now owned-not-selected, so
-        // its trailing text reads "Tap to select".
-        expect(find.text('Tap to select'), findsOneWidget);
+      // Two text strings make this fully observable:
+      //   1. "Sunset Sunflower" is the now-owned skin's displayName.
+      //   2. "Selected" appears 6× — one per species default — EXCEPT
+      //      the sunflower row, which now shows "Selected" on the
+      //      sunset card AND "Tap to select" on the classic card
+      //      (owned → not selected). Total "Selected" pills: still 6
+      //      (5 species defaults + sunset).
+      expect(find.text('Sunset Sunflower'), findsOneWidget);
+      expect(find.text('Selected'), findsNWidgets(6));
+      // The classic-sunflower default is now owned-not-selected, so
+      // its trailing text reads "Tap to select".
+      expect(find.text('Tap to select'), findsOneWidget);
 
-        // Total LockedSkinChip count = non-default catalog size − 1
-        // (sunflower_sunset is no longer locked).
-        final nonDefaults = SkinCatalog.all()
-            .where((s) => !s.isDefault)
-            .length;
-        expect(find.byType(LockedSkinChip), findsNWidgets(nonDefaults - 1));
-      },
-    );
+      // Total LockedSkinChip count = non-default catalog size − 1
+      // (sunflower_sunset is no longer locked).
+      final nonDefaults = SkinCatalog.all().where((s) => !s.isDefault).length;
+      expect(find.byType(LockedSkinChip), findsNWidgets(nonDefaults - 1));
+    });
   });
 }

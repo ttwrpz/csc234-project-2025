@@ -73,7 +73,8 @@ class _NoopMoodRepo implements MoodRepository {
 
 InterventionDispatch _tier2Dispatch() => InterventionDispatch(
   tier: Tier.two,
-  body: 'Would you like to write about what has been on your mind?\n\n'
+  body:
+      'Would you like to write about what has been on your mind?\n\n'
       'MoodBloom is not a medical device. Not a substitute for professional '
       'care.',
   ctas: const ['open_journal', 'opt_out'],
@@ -260,30 +261,26 @@ void main() {
   });
 
   group('JournalingPromptScreen — text field semantics', () {
-    testWidgets(
-      'text field hint mentions journaling — not just "text field"',
-      (tester) async {
-        await tester.pumpWidget(
-          _makeApp(
-            controller: _RecordingController(),
-            moodRepo: _NoopMoodRepo(),
-          ),
-        );
-        await _pushScreen(tester);
+    testWidgets('text field hint mentions journaling — not just "text field"', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _makeApp(controller: _RecordingController(), moodRepo: _NoopMoodRepo()),
+      );
+      await _pushScreen(tester);
 
-        // The InputDecoration.hintText is the user-visible prompt
-        // "Write a few lines, only if it helps…". Verifying via
-        // find.text keeps the test resilient to a future
-        // Semantics-wrapper refactor.
-        expect(
-          find.text('Write a few lines, only if it helps…'),
-          findsOneWidget,
-          reason:
-              'TextField must surface the journaling-context hint so a '
-              'screen reader announces purpose before "edit text".',
-        );
-      },
-    );
+      // The InputDecoration.hintText is the user-visible prompt
+      // "Write a few lines, only if it helps…". Verifying via
+      // find.text keeps the test resilient to a future
+      // Semantics-wrapper refactor.
+      expect(
+        find.text('Write a few lines, only if it helps…'),
+        findsOneWidget,
+        reason:
+            'TextField must surface the journaling-context hint so a '
+            'screen reader announces purpose before "edit text".',
+      );
+    });
   });
 
   group('JournalingPromptScreen — button labels', () {
@@ -300,7 +297,9 @@ void main() {
 
         // The three CTAs must NOT collapse to identical labels. Each
         // node's label is distinct, and "Save" is a button.
-        final save = tester.getSemantics(find.widgetWithText(FilledButton, 'Save'));
+        final save = tester.getSemantics(
+          find.widgetWithText(FilledButton, 'Save'),
+        );
         expect(save.label, equals('Save'));
         expect(save.hasFlag(SemanticsFlag.isButton), isTrue);
 
@@ -327,9 +326,7 @@ void main() {
     ) async {
       final exceptions = <Object>[];
       FlutterError.onError = (details) => exceptions.add(details.exception);
-      addTearDown(
-        () => FlutterError.onError = FlutterError.dumpErrorToConsole,
-      );
+      addTearDown(() => FlutterError.onError = FlutterError.dumpErrorToConsole);
 
       // Apply the text scaler via a MediaQuery wrapper. The screen's
       // body is in a SingleChildScrollView so vertical overflow is
@@ -371,9 +368,9 @@ void main() {
             routerConfig: router,
             theme: buildLightTheme(),
             builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: const TextScaler.linear(2.0),
-              ),
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(2.0)),
               child: child!,
             ),
           ),

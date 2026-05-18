@@ -88,11 +88,7 @@ void main() {
       final hasher = PinHasherImpl();
       final salt = hasher.newSalt();
       expect(
-        () => hasher.derive(
-          pinDigits: '123456',
-          salt: salt,
-          iterations: 1000,
-        ),
+        () => hasher.derive(pinDigits: '123456', salt: salt, iterations: 1000),
         throwsArgumentError,
       );
     });
