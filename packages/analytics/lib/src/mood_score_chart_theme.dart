@@ -6,7 +6,7 @@ import 'package:flutter/painting.dart';
 ///
 /// `tierBandColors` index from `flourishing` (top) to `stormSeason`
 /// (bottom). The chart paints them as horizontal bands keyed off the
-/// EWMA `H_t` thresholds in spec §2.3:
+/// EWMA `H_t` thresholds:
 ///   * Flourishing  : H >=  +0.4
 ///   * Thriving     : +0.1 <= H <  +0.4
 ///   * Resting      : -0.1 <  H <  +0.1
