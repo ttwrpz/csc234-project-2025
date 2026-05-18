@@ -29,17 +29,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   static const double _desktopMin = 900;
 
   /// Onboarding deck — 5 slides across BOTH Web and Android. The
-  /// notification-permission slide ships on every platform now: Android
+  /// notification-permission slide ships on every platform: Android
   /// 13+ also requires a runtime POST_NOTIFICATIONS prompt, which
   /// `FirebaseMessaging.requestPermission()` triggers from
   /// `FcmDatasource` — same code path as Web's browser permission
-  /// prompt. Removing the platform fork keeps the carousel consistent
-  /// and avoids a "permission asked in Settings later" surprise.
+  /// prompt.
   ///
   /// The 3 art-driven slides keep their original copy; the disclaimer
-  /// slide (S5 feature 7.4 — pulled forward) sits before the "Watch
-  /// patterns emerge" + "Get started" CTA so that remains the user's
-  /// last touch.
+  /// slide sits before the "Watch patterns emerge" + "Get started" CTA
+  /// so that remains the user's last touch.
   late final List<_SlideKind> _slideKinds = const <_SlideKind>[
     _SlideKind.gardenScene,
     _SlideKind.logEntry,
@@ -53,9 +51,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// resize on web flipping the layout enum). The surrounding slide
   /// shell is composed every build to honour the active layout.
   late final List<Widget> _slideArts = _slideKinds
-      .map<Widget>(
-        (kind) => RepaintBoundary(child: _buildArt(kind)),
-      )
+      .map<Widget>((kind) => RepaintBoundary(child: _buildArt(kind)))
       .toList(growable: false);
 
   Future<void> _complete() async {
@@ -275,14 +271,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 /// transparently via `FcmDatasource`.
 enum _SlideKind { gardenScene, logEntry, patterns, disclaimer, notifications }
 
-/// Custom slide for the bipolar / medical disclaimer (S5 feature 7.4 —
-/// pulled forward). Mirrors `OnboardingSlide`'s typography (Fraunces 26
-/// title + Nunito 13 dim caption) so the carousel feels consistent;
-/// swaps the inline brand art for a [DisclaimerPanel].
+/// Custom slide for the bipolar / medical disclaimer. Mirrors
+/// `OnboardingSlide`'s typography (Fraunces 26 title + Nunito 13 dim
+/// caption) so the carousel feels consistent; swaps the inline brand
+/// art for a [DisclaimerPanel].
 ///
 /// The slide does NOT call `disclaimerRepository.ack()` automatically.
 /// The ack-tracking flag (`users/{uid}.insightsDisclaimerAcked`) flips
-/// only when the user taps "I understand" in the (S5) Insights ack
+/// only when the user taps "I understand" in the Insights ack
 /// dialog. Swiping past this slide is fine — onboarding completion is
 /// a separate concern.
 class _DisclaimerSlide extends StatelessWidget {
@@ -298,9 +294,7 @@ class _DisclaimerSlide extends StatelessWidget {
     final title = Text(
       'A note about MoodBloom',
       style: MbFonts.fraunces(
-        fontSize: isPhone
-            ? 26
-            : (layout == OnboardingLayout.desktop ? 30 : 28),
+        fontSize: isPhone ? 26 : (layout == OnboardingLayout.desktop ? 30 : 28),
         fontWeight: FontWeight.w600,
         color: mb.text,
       ),
@@ -401,14 +395,12 @@ class _NotificationsSlideState extends ConsumerState<_NotificationsSlide> {
   }
 
   Future<void> _detectExisting() async {
-    final outcome = await ref
-        .read(fcmDatasourceProvider)
-        .currentPermission();
+    final outcome = await ref.read(fcmDatasourceProvider).currentPermission();
     if (!mounted) return;
-    // v1.6 fix — only treat `granted` as a definitive initial state.
-    // On Android 13+ `getNotificationSettings()` reports `denied` for
-    // the not-yet-asked-too case, and on iOS the same happens after a
-    // first denial. Auto-setting `_denied = true` here would hide the
+    // Only treat `granted` as a definitive initial state. On Android
+    // 13+ `getNotificationSettings()` reports `denied` for the
+    // not-yet-asked case, and on iOS the same happens after a first
+    // denial. Auto-setting `_denied = true` here would hide the
     // "Allow notifications" button and strand the user with no way to
     // trigger the OS prompt. Leave `_denied = false` until the user
     // actually taps the button and the request comes back denied —
@@ -427,9 +419,9 @@ class _NotificationsSlideState extends ConsumerState<_NotificationsSlide> {
       _failureMessage = null;
     });
 
-    // v1.6 fix — call the OS permission request DIRECTLY instead of
-    // routing through `NotificationsController.setEnabled`. Onboarding
-    // runs BEFORE sign-in (the auth gate redirect only kicks in after
+    // Call the OS permission request DIRECTLY instead of routing
+    // through `NotificationsController.setEnabled`. Onboarding runs
+    // BEFORE sign-in (the auth gate redirect only kicks in after
     // `onboarding_complete` is flipped), so during this slide the
     // signed-in user is null. `setEnabled` short-circuits with no uid
     // and writes the local preference WITHOUT firing
@@ -480,9 +472,7 @@ class _NotificationsSlideState extends ConsumerState<_NotificationsSlide> {
       'Stay connected',
       textAlign: textAlign,
       style: MbFonts.fraunces(
-        fontSize: isPhone
-            ? 26
-            : (layout == OnboardingLayout.desktop ? 30 : 28),
+        fontSize: isPhone ? 26 : (layout == OnboardingLayout.desktop ? 30 : 28),
         fontWeight: FontWeight.w600,
         color: mb.text,
       ),
@@ -511,16 +501,12 @@ class _NotificationsSlideState extends ConsumerState<_NotificationsSlide> {
       child: Text(
         bodyCopy,
         textAlign: textAlign,
-        style: MbFonts.nunito(
-          fontSize: 15,
-          height: 1.55,
-          color: mb.textDim,
-        ),
+        style: MbFonts.nunito(fontSize: 15, height: 1.55, color: mb.textDim),
       ),
     );
 
-    // v1.6 — single button surface that stays visible until permission
-    // is actually granted. On the very first tap we get the OS dialog;
+    // Single button surface that stays visible until permission is
+    // actually granted. On the very first tap we get the OS dialog;
     // on subsequent denied taps the OS may suppress the prompt (Android
     // 13+ stops asking after two declines) — that's fine, the user can
     // still see the button and follow the body copy's "open device
@@ -617,8 +603,7 @@ class _NotificationsSlideState extends ConsumerState<_NotificationsSlide> {
 }
 
 /// Inline brand art for the "Stay connected" notifications slide.
-/// v1.6 redesign — replaces the prior bell-and-leaf composition with a
-/// friendly **envelope-and-heart card** scene: a soft envelope sits
+/// A friendly **envelope-and-heart card** scene: a soft envelope sits
 /// centre, a small white card with a coral heart peeks out from
 /// inside, two amber sparkles drift above, and a gentle "delivery"
 /// wave line passes beneath. Reads as "we'll reach you with care"
@@ -765,10 +750,7 @@ class _NotificationsArtPainter extends CustomPainter {
 }
 
 /// Inline brand art for the "A note about MoodBloom" disclaimer slide.
-/// v1.6 redesign — replaces the heart-and-medical-cross composition
-/// (which felt closer to "clinical care" than the slide's actual
-/// "this is a friendly note, not a medical device" intent) with an
-/// **open notebook page** featuring three placeholder text lines, a
+/// An **open notebook page** featuring three placeholder text lines, a
 /// small `i` info-mark in primary green, a coral bookmark ribbon
 /// hanging from the top, a leaf accent floating beside the page, and
 /// an amber pencil resting along the bottom. Reads as "have a quick
@@ -864,11 +846,7 @@ class _DisclaimerArtPainter extends CustomPainter {
     // anchored to the lower-left of the page so it reads as a
     // gentle "heads up" rather than a clinical icon.
     const markCenter = Offset(72, 102);
-    canvas.drawCircle(
-      markCenter,
-      9,
-      Paint()..color = _primary.withAlpha(0x33),
-    );
+    canvas.drawCircle(markCenter, 9, Paint()..color = _primary.withAlpha(0x33));
     canvas.drawCircle(
       markCenter,
       9,
@@ -878,11 +856,7 @@ class _DisclaimerArtPainter extends CustomPainter {
         ..strokeWidth = 1.6,
     );
     // Dot of the "i".
-    canvas.drawCircle(
-      const Offset(72, 98),
-      1.4,
-      Paint()..color = _primary,
-    );
+    canvas.drawCircle(const Offset(72, 98), 1.4, Paint()..color = _primary);
     // Stem of the "i".
     canvas.drawRRect(
       RRect.fromRectAndRadius(

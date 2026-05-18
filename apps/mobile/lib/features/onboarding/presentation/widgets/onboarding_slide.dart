@@ -32,9 +32,7 @@ class OnboardingSlide extends StatelessWidget {
     final mb = Theme.of(context).extension<MbColors>()!;
     final isPhone = layout == OnboardingLayout.phone;
     final titleStyle = MbFonts.fraunces(
-      fontSize: isPhone
-          ? 26
-          : (layout == OnboardingLayout.desktop ? 30 : 28),
+      fontSize: isPhone ? 26 : (layout == OnboardingLayout.desktop ? 30 : 28),
       fontWeight: FontWeight.w600,
       color: mb.text,
     );
