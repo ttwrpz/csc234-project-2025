@@ -1,7 +1,6 @@
 /// 5-tier ecosystem state mapped from `H_t` (Garden Health EWMA). Every
 /// tier renders plants alive — the Storm Season tier shows rain falling
 /// AROUND the garden with plants sheltered (never wilting, never dying).
-/// See ADR-0010 §4 for thresholds and visual language.
 ///
 /// Threshold cuts. Each boundary belongs to the more-extreme tier (the
 /// one further from zero) so `fromHealth(0.4)` is flourishing and

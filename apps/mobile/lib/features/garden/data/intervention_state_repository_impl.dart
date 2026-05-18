@@ -7,7 +7,7 @@ import 'intervention_state_storage.dart';
 
 /// Firestore-primary implementation of [InterventionStateRepository].
 ///
-/// Per ADR-0008, the cooldown / escalation anchors live in
+/// The cooldown / escalation anchors live in
 /// `users/{uid}/interventionState/current` (single doc, schemaV: 1).
 /// `InterventionStateStorage` (SharedPreferences) is the offline-read
 /// mirror.

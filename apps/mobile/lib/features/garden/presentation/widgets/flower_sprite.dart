@@ -35,11 +35,10 @@ class FlowerSprite extends StatelessWidget {
   final double size;
   final Color? tint;
 
-  /// v1.6 — petal geometry override from the user's selected
-  /// [FlowerSkin]. `classic` (default) preserves the species' original
-  /// shape pixel-for-pixel; alternates render via the shared radial
-  /// petal painter so skins read visually distinct, not just colour
-  /// swaps.
+  /// Petal geometry override from the user's selected [FlowerSkin].
+  /// `classic` (default) preserves the species' original shape
+  /// pixel-for-pixel; alternates render via the shared radial petal
+  /// painter so skins read visually distinct, not just colour swaps.
   final FlowerPetalShape petalShape;
 
   /// When `true` (the default) the sprite is hidden from the a11y tree
@@ -123,8 +122,8 @@ class _FlowerSpritePainter extends CustomPainter {
     final scale = size.shortestSide / _logicalSize;
     canvas.scale(scale, scale);
     canvas.translate(_logicalSize / 2, _logicalSize / 2);
-    // v1.6 — non-classic skins use the shared shaped-petal painter so
-    // the geometry difference is consistent across the catalog. Fern
+    // Non-classic skins use the shared shaped-petal painter so the
+    // geometry difference is consistent across the catalog. Fern
     // (a frond, not a bloom) never honours the override.
     if (petalShape != FlowerPetalShape.classic &&
         species != FlowerSpecies.fern) {

@@ -9,7 +9,7 @@ import '../services/atmosphere.dart' as atmosphere_service;
 import '../services/garden_health_ewma.dart';
 
 /// Pure-Dart use case that turns a flat list of `MoodEntry`s into the
-/// Sprint 4–5 ecosystem [GardenState]:
+/// ecosystem [GardenState]:
 ///   * `H_t` Garden Health folded over the current week's per-day means
 ///     (`gardenHealth`) → drives [PlantTier] (5 alive tiers).
 ///   * Today's mean mood-score → drives [Atmosphere] (4 weather states).
@@ -19,12 +19,12 @@ import '../services/garden_health_ewma.dart';
 /// anchors. `weekStart` is the local-midnight `DateTime` of the
 /// current week's first day (e.g. Monday); the EWMA fold runs over
 /// `[weekStart, now]` and resets to `H_0 = 0` every week (weekly
-/// harvest cycle — ADR-0010 §3).
+/// harvest cycle).
 ///
 /// Empty-day interpretation: days within the week with NO logged
-/// entries are NOT folded as zero. Spec §2.3 defines `S_day` only when
-/// the user logs on that day; folding zero would bias `H` toward 0
-/// over time, which is incorrect (a missing day means "no signal", not
+/// entries are NOT folded as zero. `S_day` is defined only when the
+/// user logs on that day; folding zero would bias `H` toward 0 over
+/// time, which is incorrect (a missing day means "no signal", not
 /// "neutral"). Only days with entries contribute to the EWMA.
 class ComputeGardenStateUseCase {
   const ComputeGardenStateUseCase();

@@ -48,8 +48,8 @@ class CheerUpBanner extends StatelessWidget {
     return Semantics(
       container: true,
       // Full locked CLAUDE.md sentence + reason caption. Screen readers
-      // hear the complete prompt; HB-003 §5.5a parity test asserts the
-      // label `startsWith` the locked sentence.
+      // hear the complete prompt; the parity test asserts the label
+      // `startsWith` the locked sentence.
       label:
           "It's been a heavy week. Want to try a two-minute breathing exercise? "
           "${reasonCaption(reason)}",
@@ -81,11 +81,10 @@ class CheerUpBanner extends StatelessWidget {
           children: [
             const Padding(
               padding: EdgeInsets.only(top: 2),
-              // A11y sweep (S5 8.4): the cherry-blossom is purely
-              // ornamental — the surrounding Semantics(label:) already
-              // covers the full locked sentence. Excluding stops screen
-              // readers from announcing "cherry blossom emoji" before
-              // the sentence.
+              // The cherry-blossom is purely ornamental — the
+              // surrounding Semantics(label:) already covers the full
+              // locked sentence. Excluding stops screen readers from
+              // announcing "cherry blossom emoji" before the sentence.
               child: ExcludeSemantics(
                 child: Text('🌸', style: TextStyle(fontSize: 22)),
               ),

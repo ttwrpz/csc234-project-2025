@@ -29,12 +29,11 @@ import 'widgets/per_flower_detail_modal.dart';
 import 'widgets/sky_header.dart';
 import 'widgets/take_a_breath_button.dart';
 
-/// Home screen — pivot feature #7. ADR-0010 redesign: the canvas now
-/// reads two ecosystem signals (slow weekly EWMA → plant tier; fast
-/// today-only mean → atmosphere overlay) instead of dispatching one
-/// sprite per entry. Below the canvas: the cheer-up banner (when the
-/// pattern detector trips), a `DailyScoreStrip` in an `MbCard`, the
-/// "Recent moods" preview list, and the hotline footer (only after
+/// Home screen — the canvas reads two ecosystem signals (slow weekly EWMA
+/// → plant tier; fast today-only mean → atmosphere overlay) instead of
+/// dispatching one sprite per entry. Below the canvas: the cheer-up banner
+/// (when the pattern detector trips), a `DailyScoreStrip` in an `MbCard`,
+/// the "Recent moods" preview list, and the hotline footer (only after
 /// the 10-day escalation threshold).
 class GardenScreen extends ConsumerStatefulWidget {
   const GardenScreen({super.key});
@@ -60,23 +59,20 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
     // and the onShown idempotency guard. We watch the bool field so the
     // banner re-renders when "Not now" is tapped.
     final cheerUp = ref.watch(cheerUpControllerProvider);
-    // TC-6 — read the user's per-species selected skins so the live
-    // home garden renders the chosen alternate-skin tints. Past
-    // archived gardens never receive this (the harvest archive surface
-    // passes `null`).
+    // Read the user's per-species selected skins so the live home garden
+    // renders the chosen alternate-skin tints. Past archived gardens never
+    // receive this (the harvest archive surface passes `null`).
     final skinState =
         ref.watch(skinStateStreamProvider).value ?? SkinState.empty();
     final speciesAccent = _speciesAccentFrom(skinState);
 
     final mb = Theme.of(context).extension<MbColors>()!;
 
-    // HB-005 Track 6.1: when the user has crossed a 7-day boundary on
-    // an unarchived week AND we have a precomputed summary to show,
-    // route them to the WeeklySummaryScreen via a post-frame callback
-    // so the route stack stays clean. We do not edit `app/router.dart`
-    // (architect-owned) — a `MaterialPageRoute` push is acceptable for
-    // v1.0 demo scope. The flag prevents double-pushing across
-    // identical rebuilds.
+    // When the user has crossed a 7-day boundary on an unarchived week AND
+    // we have a precomputed summary to show, route them to the
+    // WeeklySummaryScreen via a post-frame callback so the route stack
+    // stays clean. The flag prevents double-pushing across identical
+    // rebuilds.
     final pendingSummary = ref.watch(pendingWeeklySummaryProvider);
     if (pendingSummary != null && !_harvestRouteScheduled) {
       _harvestRouteScheduled = true;
@@ -147,15 +143,13 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
           bannerDismissed: cheerUp.bannerDismissed,
           onDismissBanner: () =>
               ref.read(cheerUpControllerProvider.notifier).onDismissed(),
-          // TC-7: tapping a flower opens the per-entry preview sheet.
-          // Routed via the SkyHeader → GardenBed callback chain so this
-          // wiring stays inside the home screen's presentation layer
-          // (no router changes — architect sign-off rule).
+          // Tapping a flower opens the per-entry preview sheet. Routed
+          // via the SkyHeader → GardenBed callback chain so this wiring
+          // stays inside the home screen's presentation layer.
           onFlowerTap: (entry) => PerFlowerDetailModal.show(context, entry),
-          // Garden top-bar affordance for the skin modal (HB-008 Day 1
-          // TC-8..10 entry point). Placed next to the token chip so the
-          // user reads "I have N tokens → tap to spend them" without
-          // hunting in Settings.
+          // Garden top-bar affordance for the skin modal. Placed next to
+          // the token chip so the user reads "I have N tokens → tap to
+          // spend them" without hunting in Settings.
           onCustomizeSkins: () => SkinModalSheet.show(context),
           speciesAccent: speciesAccent,
         ),
@@ -226,18 +220,18 @@ class _GardenView extends StatelessWidget {
   final bool bannerDismissed;
   final VoidCallback onDismissBanner;
 
-  /// TC-7 — opens the per-flower detail modal. Forwarded to the
-  /// SkyHeader → GardenBed callback chain. Stateless so the wiring is
-  /// trivial; the modal itself owns its dismiss + route side effects.
+  /// Opens the per-flower detail modal. Forwarded to the SkyHeader →
+  /// GardenBed callback chain. Stateless so the wiring is trivial; the
+  /// modal itself owns its dismiss + route side effects.
   final void Function(MoodEntry entry) onFlowerTap;
 
-  /// TC-8..10 — opens the skin customization modal. Wired to the top-
-  /// bar "Customize" icon next to the token chip.
+  /// Opens the skin customization modal. Wired to the top-bar
+  /// "Customize" icon next to the token chip.
   final VoidCallback onCustomizeSkins;
 
-  /// TC-6 — per-species accent override forwarded to the SkyHeader's
-  /// inner [GardenBed]. Empty map when the user has no alternate skin
-  /// selected (default rendering, byte-for-byte identical to pre-S5).
+  /// Per-species accent override forwarded to the SkyHeader's inner
+  /// [GardenBed]. Empty map when the user has no alternate skin
+  /// selected (default rendering).
   final Map<FlowerSpecies, Color> speciesAccent;
 
   /// Tablet breakpoint: the canvas + score strip shift into a 60% left
@@ -248,9 +242,6 @@ class _GardenView extends StatelessWidget {
   /// Desktop breakpoint: same two-column split as tablet, but clamped
   /// inside a 1100 dp `ConstrainedBox` so the form doesn't sprawl on
   /// 1440 / 1920 dp windows. Page padding bumps from 18 dp to 32 dp.
-  /// (Tightened from 1200 in v1.0 polish so the centered home page
-  /// reads as a focused content column instead of a wide split with
-  /// empty space on either side.)
   static const double _desktopBreakpoint = 1080;
 
   @override
@@ -438,18 +429,15 @@ class _GardenView extends StatelessWidget {
     );
 
     // Right column on desktop: this week's mood strip on top, then
-    // recent moods below. v1.0 polish (2026-05-10) — moved the strip
-    // out of the left column so the desktop layout reads as
-    // "garden art on the left, week-at-a-glance + recent entries on
-    // the right" instead of stacking three blocks under the SkyHeader.
+    // recent moods below. The layout reads as "garden art on the left,
+    // week-at-a-glance + recent entries on the right" instead of stacking
+    // three blocks under the SkyHeader.
     final right = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // v1.6 — Take-a-breath above the score strip on desktop. Sat
-        // at the foot of the right column previously, which on tall
-        // pages required the user to scroll past Recent Moods to find
-        // it. Top placement keeps the affordance visible at the
-        // initial viewport.
+        // Take-a-breath above the score strip on desktop, so the
+        // affordance stays visible in the initial viewport without
+        // scrolling past Recent Moods.
         const Padding(
           padding: EdgeInsets.only(top: 4),
           child: TakeABreathButton(expand: true),
@@ -495,25 +483,20 @@ class _GardenView extends StatelessWidget {
       ],
     );
 
-    // Top padding scales with breakpoint so the SkyHeader doesn't
-    // hug the top of the viewport on desktop. Bottom padding stays
-    // generous so the FAB doesn't overlap content. v1.0 polish
-    // (2026-05-10) — addressed "content too much at top in desktop"
-    // by giving the page a vertical-rhythm anchor instead of starting
-    // at y=8 dp.
+    // Top padding scales with breakpoint so the SkyHeader doesn't hug
+    // the top of the viewport on desktop. Bottom padding stays generous
+    // so the FAB doesn't overlap content.
     final topPad = isDesktop ? 48.0 : 16.0;
     return LayoutBuilder(
       builder: (context, viewport) {
         // Floor the content height to the viewport so the bed +
-        // recent moods sit centred when the bottom of the page
-        // would otherwise be empty whitespace. We MUST guard against
+        // recent moods sit centred when the bottom of the page would
+        // otherwise be empty whitespace. We MUST guard against
         // unbounded height (the SCV that wraps us provides infinite
         // maxHeight to its child during intrinsic measurement) —
         // setting `minHeight: infinity` on a BoxConstraints throws
         // and renders a RenderErrorBox, which then explodes on the
-        // next hit test. v1.0 polish (2026-05-10) — fixes
-        // "Cannot hit test a render box that has never been laid out"
-        // crash reported in the user-testing round.
+        // next hit test.
         final viewportH = viewport.hasBoundedHeight ? viewport.maxHeight : 0.0;
         final minH = viewport.hasBoundedHeight
             ? (viewportH - topPad - 140).clamp(0.0, viewportH)
@@ -547,14 +530,11 @@ class _GardenView extends StatelessWidget {
 /// AND a balance is available. Hidden state collapses to a zero-sized
 /// box so the SkyHeader's existing top-bar layout is undisturbed.
 ///
-/// HB-008 Day 1 — when a non-null [onCustomize] callback is supplied,
-/// pairs the chip with a labelled "Customize" pill button so the user
-/// can open the [SkinModalSheet] without diving into Settings. v1.5
-/// polish (Wave A) — the affordance was previously a 32 dp brush icon
-/// that users were missing entirely; replaced with a labelled outlined
-/// pill so the action is read at a glance. The pill is collapsed when
-/// the chip is hidden (so the visibility toggle still suppresses the
-/// entire token surface on the home page).
+/// When a non-null [onCustomize] callback is supplied, pairs the chip
+/// with a labelled "Customize" pill button so the user can open the
+/// [SkinModalSheet] without diving into Settings. The pill is collapsed
+/// when the chip is hidden (so the visibility toggle still suppresses
+/// the entire token surface on the home page).
 class _GardenTokenChip extends ConsumerWidget {
   const _GardenTokenChip({this.onCustomize});
 
@@ -584,11 +564,9 @@ class _GardenTokenChip extends ConsumerWidget {
 }
 
 /// Labelled outlined pill button — opens the skin customization modal.
-/// v1.5 polish (Wave A) replacement for the earlier 32 dp brush icon
-/// which users were missing. Mirrors the visual idiom of
-/// `_ViewPatternsButton` (subtle filled-tonal pill with brand-hue
-/// border) so the new affordance reads as a peer of the existing
-/// Patterns CTA, not a new surface.
+/// Mirrors the visual idiom of `_ViewPatternsButton` (subtle filled-tonal
+/// pill with brand-hue border) so the new affordance reads as a peer of
+/// the existing Patterns CTA, not a new surface.
 class _CustomizePill extends StatelessWidget {
   const _CustomizePill({required this.onTap});
 

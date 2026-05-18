@@ -1,7 +1,7 @@
 /// Exponentially-weighted moving average of per-day mood-score means
 /// that drives the slow "how is the week trending?" signal feeding
-/// [PlantTier]. See ADR-0010 §3 and spec §2.3 for the derivation
-/// (α=0.15 from the PHQ-9 2-week reflection window).
+/// [PlantTier]. α=0.15 is derived from the PHQ-9 2-week reflection
+/// window.
 ///
 /// Recurrence:
 ///   H_t = α × S_day + (1 − α) × H_{t-1}

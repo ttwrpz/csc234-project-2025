@@ -2,9 +2,9 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'intervention_state.freezed.dart';
 
-/// Result of [detectPattern]. Consumed by Sprint 5's cheer-up banner; the
-/// Sprint 4 garden screen does NOT show any UI for this state — the
-/// detector reports it via Riverpod for downstream consumers only.
+/// Result of [detectPattern]. Consumed by the cheer-up banner; the garden
+/// screen itself does NOT show any UI for this state — the detector reports
+/// it via Riverpod for downstream consumers only.
 ///
 /// `reason` is one of:
 ///  * `'5_of_7_negative'` — five distinct days in the last seven contained

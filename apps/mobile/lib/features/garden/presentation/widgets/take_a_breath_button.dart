@@ -2,12 +2,10 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Self-initiated entry point to the 2-minute breathing screen.
-/// v1.6: hoisted out of `GardenSummaryRow` into a standalone pill so the
-/// home page can place it where it fits the layout — between the
+/// Self-initiated entry point to the 2-minute breathing screen. Standalone
+/// pill so the home page can place it where it fits — between the
 /// SkyHeader and the DailyScoreStrip on phone, and at the foot of the
-/// right column on tablet / desktop where the previous summary-row slot
-/// was cramped on mobile and left a desktop dead zone below.
+/// right column on tablet / desktop.
 class TakeABreathButton extends StatelessWidget {
   const TakeABreathButton({super.key, this.expand = false});
 

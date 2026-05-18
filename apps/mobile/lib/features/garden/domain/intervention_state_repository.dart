@@ -9,10 +9,10 @@ import 'package:core/core.dart';
 ///    Drives the 10-day in-app hotline-footer escalation. Cleared by the
 ///    detector lifecycle when 48h pass without a re-trigger.
 ///
-/// Per ADR-0008 the implementation is Firestore-primary with a
-/// SharedPreferences mirror that backs the offline-read path. Reads
-/// prefer Firestore (synced cache); writes hit Firestore first then
-/// mirror locally. The Cloud Function sees the Firestore copy.
+/// The implementation is Firestore-primary with a SharedPreferences mirror
+/// that backs the offline-read path. Reads prefer Firestore (synced cache);
+/// writes hit Firestore first then mirror locally. The Cloud Function sees
+/// the Firestore copy.
 abstract class InterventionStateRepository {
   /// Reads the persisted anchors. Result is `Ok(InterventionAnchors())`
   /// (both fields null) when no anchor has ever been written. Never

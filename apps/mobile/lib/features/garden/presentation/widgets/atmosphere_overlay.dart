@@ -16,8 +16,6 @@ import '../../domain/entities/atmosphere.dart';
 /// Z-order (bottom → top): [child] → weather gradient → drops/rays.
 /// The overlay is `IgnorePointer` so it never steals taps from the
 /// plant layer.
-///
-/// See ADR-0010 §5 for the no-wilt copy/visual rule.
 class AtmosphereOverlay extends StatefulWidget {
   const AtmosphereOverlay({
     super.key,
@@ -123,11 +121,8 @@ class _AtmosphereLayer extends StatelessWidget {
 
   /// Atmosphere gradient palette. Sunny atmospheres stay deliberately
   /// soft (warm wash, no drama). Rainy atmospheres land HEAVIER —
-  /// `lightRain` at ~40% alpha + `storm` at ~60% — because the user
-  /// feedback in v1.0 polish was "negative mood does not show up on
-  /// the garden". Subtle blue-grey gradients went unnoticed against
-  /// the SkyHeader's bright sky background; the higher alpha + a
-  /// second darker stop in the middle make the shift unambiguous.
+  /// `lightRain` at ~40% alpha + `storm` at ~60% — so the shift is
+  /// unambiguous against the SkyHeader's bright sky background.
   static LinearGradient _gradientFor(Atmosphere a) => switch (a) {
     Atmosphere.calmSunny => const LinearGradient(
       begin: Alignment.topCenter,
@@ -176,13 +171,8 @@ class _AtmospherePainter extends CustomPainter {
     switch (atmosphere) {
       case Atmosphere.calmSunny:
       case Atmosphere.brightSunny:
-        // No further treatment. Earlier versions painted 5 faint amber
-        // rays across the canvas for `brightSunny`, but the rays
-        // emanated INTO the bed (yellow-orange streaks crossing the
-        // plants), which read as misplaced graphic noise rather than
-        // sunlight. The sky gradient + sun circle already convey
-        // brightness; the rays were removed in v1.0 polish (2026-05-10)
-        // per user feedback.
+        // No further treatment. The sky gradient + sun circle convey
+        // brightness without needing additional ray overlays.
         break;
       case Atmosphere.lightRain:
         _paintDrops(
@@ -216,8 +206,7 @@ class _AtmospherePainter extends CustomPainter {
     // Deterministic xs derived from a fixed seed so two consecutive
     // builds on the same atmosphere render at the same x positions.
     // Drop colour darkens with opacity so storm drops read as bolder
-    // streaks against the heavier gradient (v1.0 polish — user
-    // feedback on negative-mood visibility).
+    // streaks against the heavier gradient.
     final dropColor = Color.lerp(
       const Color(0xFF9EC3DB),
       const Color(0xFF3D5A75),

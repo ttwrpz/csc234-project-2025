@@ -6,7 +6,7 @@ import '../entities/atmosphere.dart';
 /// entries yet" neutral default — the user has not signalled anything,
 /// so we render a calm sky rather than rain).
 ///
-/// See ADR-0010 §5 and spec §2.2. Pure Dart — domain layer.
+/// Pure Dart — domain layer.
 Atmosphere computeAtmosphere(List<double> todayScores) {
   if (todayScores.isEmpty) return Atmosphere.calmSunny;
   var sum = 0.0;
