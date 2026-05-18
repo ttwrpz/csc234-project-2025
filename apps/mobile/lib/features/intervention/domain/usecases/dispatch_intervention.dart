@@ -27,7 +27,7 @@ import '../services/tiered_intervention_dispatcher.dart';
 /// hardest moment.
 ///
 /// Pure-Dart use case — no Flutter, no Firebase. Composition is wired by
-/// the Riverpod provider in `data/providers.dart` (Day-2 work).
+/// the Riverpod provider in `data/providers.dart`.
 class DispatchInterventionUseCase {
   const DispatchInterventionUseCase({
     required this.dispatcher,

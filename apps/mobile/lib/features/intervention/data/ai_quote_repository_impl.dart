@@ -9,15 +9,14 @@ import 'datasources/suggest_quote_functions_datasource.dart';
 
 /// Concrete [AIQuoteRepository] backed by the `suggestQuote` Cloud Function.
 ///
-/// Per HB-008: the repo's job is "ask Gemini, return the raw string". It
-/// does NOT run the [QuoteSafetyFilterImpl] — the dispatcher composes
-/// filter + repo so a future refactor can swap one without touching the
-/// other.
+/// The repo's job is "ask Gemini, return the raw string". It does NOT run
+/// the [QuoteSafetyFilterImpl] — the dispatcher composes filter + repo so a
+/// future refactor can swap one without touching the other.
 ///
-/// **Tier 3 fence (ADR-0012 §"Decision" point 2):** the method signature
-/// accepts [AiAllowedTier], which by construction excludes [Tier.three].
-/// A Tier 3 dispatch literally cannot reach this code path. The CF
-/// rejects `tier: 3` at the server boundary too — belt-and-suspenders.
+/// **Tier 3 fence:** the method signature accepts [AiAllowedTier], which by
+/// construction excludes [Tier.three]. A Tier 3 dispatch literally cannot
+/// reach this code path. The CF rejects `tier: 3` at the server boundary
+/// too — belt-and-suspenders.
 ///
 /// **PII fence:** [requestSuggestion] sends only `tier`, `weekId`,
 /// `dailyAvgS`, and `dominantEmotion`. Never `userId`, `email`, raw

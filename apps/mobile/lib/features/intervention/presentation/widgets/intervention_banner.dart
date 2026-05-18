@@ -10,8 +10,8 @@ import 'intervention_opt_out_button.dart';
 /// [interventionControllerProvider] has emitted [InterventionPending].
 ///
 /// Wrapped in a [Dismissible] so a horizontal swipe-out is treated as
-/// opt-out (per HB-007 §"Cooldown guard rules" — opting out advances the
-/// cooldown anchor so the system does not re-nag). Tap "Open" to navigate
+/// opt-out (opting out advances the cooldown anchor so the system does
+/// not re-nag). Tap "Open" to navigate
 /// to the corresponding tier screen via a typed named route; the
 /// dispatch is forwarded as `extra` so the screen can render the body
 /// verbatim instead of re-deriving it.

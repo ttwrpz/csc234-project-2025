@@ -43,8 +43,8 @@ class InterventionRepositoryImpl implements InterventionRepository {
     if (uid == null || uid.isEmpty) {
       // No signed-in user → there's no canonical path to write to. The
       // controller already surfaced the banner in-memory; this failure
-      // is the bookkeeping cost the dispatcher accepts (HB-007 §"order
-      // is intentional: render-then-persist").
+      // is the bookkeeping cost the dispatcher accepts (the render
+      // happens before the persist).
       _logger.warn('writeRecord skipped — no uid');
       return const Err(InterventionFailure.anchorReadFailed());
     }

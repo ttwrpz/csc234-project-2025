@@ -6,11 +6,10 @@ import 'package:cloud_functions/cloud_functions.dart';
 /// types and the dispatcher composes the filter on top. This layer owns
 /// transport (region pinning, exception → typed enum) only.
 ///
-/// **PII fence (HB-008 §"suggestQuote.ts Cloud Function spec"):** the
-/// outbound payload contains only `tier`, `weekId`, `dailyAvgS`, and
-/// `dominantEmotion`. Never `userId`, `email`, raw `moodText`, or any FCM
-/// token. The Dart-side unit test asserts this complement to the
-/// TypeScript-side PII canary.
+/// **PII fence:** the outbound payload contains only `tier`, `weekId`,
+/// `dailyAvgS`, and `dominantEmotion`. Never `userId`, `email`, raw
+/// `moodText`, or any FCM token. The Dart-side unit test asserts this
+/// complement to the TypeScript-side PII canary.
 class SuggestQuoteFunctionsDatasource {
   SuggestQuoteFunctionsDatasource(this._functions);
 

@@ -15,16 +15,15 @@ import 'quote_safety_filter.dart';
 /// a single per-tier dispatch decision. Pure-Dart — no I/O of its own, no
 /// Firebase, no Flutter.
 ///
-/// Tier-3 invariant (ADR-0012):
+/// Tier-3 invariant:
 ///   * The `if (tier == Tier.three)` branch returns before any AI repo call
 ///     is reachable. A reviewer should see this branch and understand that
 ///     Tier 3 cannot route through Gemini.
 ///   * Belt-and-suspenders: [AiAllowedTier.fromTier] throws on Tier 3. The
 ///     dispatcher never calls it for Tier 3, but a future refactor that
 ///     deletes the `if` branch would trip the StateError in tests.
-///   * TC-40 in `tiered_intervention_dispatcher_test.dart` asserts the AI
-///     repo's `requestSuggestion` is never called when the dispatched tier
-///     is Tier 3, using a recording fake.
+///   * A test asserts the AI repo's `requestSuggestion` is never called when
+///     the dispatched tier is Tier 3, using a recording fake.
 ///
 /// Tier 1/2 hybrid path:
 ///   * Call `aiQuoteRepository.requestSuggestion(allowed, ctx)`.
@@ -68,22 +67,20 @@ class TieredInterventionDispatcher {
       final now = _now();
       final Quote quote;
       if (tier == Tier.three) {
-        // ADR-0012 §"Decision" point 1 — Tier 3 is curated-only. Do NOT
-        // pass through the AI repo or the Safety Filter. This branch
-        // returns before any AI-adjacent type is referenced.
+        // Tier 3 is curated-only — do NOT pass through the AI repo or
+        // the Safety Filter. This branch returns before any AI-adjacent
+        // type is referenced.
         quote = _quoteLibrary.pickTier3(seed: now);
       } else {
         // Tier 1 / Tier 2. `AiAllowedTier.fromTier` is unreachable for
-        // Tier 3 thanks to the branch above — belt-and-suspenders per
-        // ADR-0012 §"Decision" point 2.
+        // Tier 3 thanks to the branch above — belt-and-suspenders.
         final allowed = AiAllowedTier.fromTier(tier);
         quote = await _runHybridPath(allowed, context, now);
       }
 
-      // TC-38 — every Tier 1/2/3 body carries the canonical footer.
+      // Every Tier 1/2/3 body carries the canonical footer.
       // `DisclaimerCopy.notificationFooter` is the only place that string
-      // lives (CLAUDE.md "Pre-approved intervention phrasing"); the
-      // dispatcher imports it, never duplicates it.
+      // lives; the dispatcher imports it, never duplicates it.
       final body = '${quote.text}\n\n${DisclaimerCopy.notificationFooter}';
 
       final dispatch = InterventionDispatch(
@@ -133,11 +130,11 @@ class TieredInterventionDispatcher {
         AiAllowedTier.two => _quoteLibrary.pickTier2(seed: seed),
       };
 
-  /// Semantic CTA keys, per HB-007 §"Dispatcher state machine":
+  /// Semantic CTA keys:
   ///   Tier 1 → breathing screen.
   ///   Tier 2 → journaling screen.
-  ///   Tier 3 → crisis screen (Hotline 1323 lives there — TC-33).
-  /// Every tier also carries the opt-out key (TC-34).
+  ///   Tier 3 → crisis screen (Hotline 1323 lives there).
+  /// Every tier also carries the opt-out key.
   List<String> _ctasForTier(Tier tier) => switch (tier) {
     Tier.one => const ['open_breathing', 'opt_out'],
     Tier.two => const ['open_journal', 'opt_out'],

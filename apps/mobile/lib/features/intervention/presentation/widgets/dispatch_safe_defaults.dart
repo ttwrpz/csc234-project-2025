@@ -5,15 +5,14 @@ import '../../../disclaimer/domain/disclaimer_copy.dart';
 /// debug visit). The dispatcher always populates `dispatch.body` with the
 /// curated quote + `DisclaimerCopy.notificationFooter`; these constants
 /// reconstruct the same shape so the screens always render the canonical
-/// CLAUDE.md "Pre-approved intervention phrasing" and the disclaimer
-/// footer.
+/// pre-approved phrasing and the disclaimer footer.
 ///
 /// **Tier 3 invariant:** the Tier 3 default is byte-for-byte identical to
 /// `QuoteLibraryImpl.tier3Pool[0]` so a screen opened without a real
 /// dispatch still surfaces a phrase that has been read aloud by the team
-/// (HB-008 §"Curated pool authoring") and contains the literal Hotline
-/// 1323 marker. The dispatcher composes the body as
-/// `"${quote.text}\n\n${notificationFooter}"`; we mirror that here.
+/// and contains the literal Hotline 1323 marker. The dispatcher composes
+/// the body as `"${quote.text}\n\n${notificationFooter}"`; we mirror that
+/// here.
 ///
 /// These strings are NEVER substituted into the wire-level audit doc —
 /// they exist only for the screen renderer's null-safety branch.

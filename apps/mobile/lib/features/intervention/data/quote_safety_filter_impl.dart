@@ -10,28 +10,28 @@ import 'quote_library_impl.dart';
 /// Concrete fail-closed [QuoteSafetyFilter]. The implementation lives in
 /// `data/` (not `domain/`) because it imports [QuoteLibraryImpl]'s approved
 /// word sets — the same vocabulary that informs the curated phrases informs
-/// what Gemini is allowed to echo (HB-008 §"QuoteSafetyFilter design").
+/// what Gemini is allowed to echo.
 ///
 /// Three gates, in order:
-///   1. **Length** — `text.length > 140` → `FilterReject` (HB-008 length cap).
+///   1. **Length** — `text.length > 140` → `FilterReject`.
 ///   2. **Forbidden-word blacklist** — case-insensitive whole-word match
 ///      across [_forbiddenWords]. Whole-word means "diagnose" rejects but
-///      "diagnosing" does not (HB-008 is explicit).
+///      "diagnosing" does not.
 ///   3. **Whitelist ratio** — ≥80% of tokenised words must appear in the
 ///      tier's approved-word set.
 ///
 /// Tokenisation is delegated to [QuoteLibraryImpl.tokenise] so the curated
 /// pool's own tokens are byte-identical to what the filter sees — the
-/// sanity-check test in `quote_library_impl_test.dart` depends on this.
+/// sanity-check test depends on this.
 ///
-/// ADR-0012 §"Decision" point 4 — the filter is exclusively on the Tier
-/// 1/2 hybrid path. Tier 3 never traverses this code.
+/// The filter is exclusively on the Tier 1/2 hybrid path. Tier 3 never
+/// traverses this code.
 class QuoteSafetyFilterImpl implements QuoteSafetyFilter {
   const QuoteSafetyFilterImpl();
 
-  /// Maximum body length, per HB-008. Matches the notification footprint
-  /// budget on Android (a longer body is truncated by the OS before the
-  /// disclaimer footer is appended downstream).
+  /// Maximum body length. Matches the notification footprint budget on
+  /// Android (a longer body is truncated by the OS before the disclaimer
+  /// footer is appended downstream).
   static const int maxLength = 140;
 
   /// Minimum fraction of tokens that must be in the tier's approved set.
@@ -39,7 +39,7 @@ class QuoteSafetyFilterImpl implements QuoteSafetyFilter {
 
   /// Case-insensitive forbidden-word blacklist. Whole-word match only —
   /// "diagnose" matches but "diagnosing" does not. Additions require team
-  /// review (HB-008 §"QuoteSafetyFilter design").
+  /// review.
   ///
   /// Entries with whitespace (e.g. "anxiety disorder", "fix yourself")
   /// match as a phrase — the gate falls back to a case-insensitive
