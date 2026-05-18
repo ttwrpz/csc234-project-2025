@@ -1,4 +1,4 @@
-// ARCHITECTURAL EXCEPTION — see ADR-0010 §"Compliance Check".
+// ARCHITECTURAL EXCEPTION.
 //
 // CLAUDE.md's "the one rule that cannot break" forbids
 // `package:flutter/*` imports anywhere under `domain/`. This file is the
@@ -6,11 +6,9 @@
 // Material enum-like value with no domain analog, and re-creating a
 // custom `MoodBloomThemeMode` only to map it back to `ThemeMode` at
 // every call site would be pure ceremony with no testability benefit
-// (the enum has no Flutter behaviour, just three named constants).
-//
-// HB-005 §Track 4.4/7.2 calls this exception out and routes it past the
-// architect. Any other import of `package:flutter/*` under `domain/`
-// remains forbidden — this file is a one-off.
+// (the enum has no Flutter behaviour, just three named constants). Any
+// other import of `package:flutter/*` under `domain/` remains forbidden
+// — this file is a one-off.
 import 'package:flutter/material.dart' show ThemeMode;
 
 import '../entities/theme_mode_preference.dart';
@@ -21,8 +19,7 @@ import '../entities/theme_mode_preference.dart';
 /// `followDeviceTime` flips between light and dark on a fixed local-time
 /// cutoff: light during `[dayStartHour, dayEndHour)` (default
 /// 07:00–19:00, Bangkok-latitude proxy), dark otherwise. No geolocation
-/// is involved — replacing the fixed cutoff with a sunrise/sunset table
-/// is a v1.x follow-up (see ADR-0010).
+/// is involved.
 ///
 /// Pure-Dart aside from the [ThemeMode] return type. No I/O, no
 /// platform calls — fully unit-testable by passing a fixed `now`.

@@ -63,11 +63,11 @@ const Duration _dayNightTickInterval = Duration(minutes: 15);
 /// flips at the next 07:00 / 19:00 boundary the user is awake to
 /// notice.
 ///
-/// The 15-minute tick is acceptable for v1.0; an
-/// `AppLifecycleState.resumed` re-evaluation is a known follow-up.
-/// In practice the resolved mode also recomputes on every rebuild
-/// triggered by [themeModeControllerProvider], so a user toggling the
-/// preference picks up the new theme immediately.
+/// The 15-minute tick is acceptable; an `AppLifecycleState.resumed`
+/// re-evaluation is a known follow-up. In practice the resolved mode
+/// also recomputes on every rebuild triggered by
+/// [themeModeControllerProvider], so a user toggling the preference
+/// picks up the new theme immediately.
 final currentThemeModeProvider = Provider<ThemeMode>((ref) {
   final preference = ref.watch(themeModeControllerProvider);
   const strategy = DayNightStrategy();

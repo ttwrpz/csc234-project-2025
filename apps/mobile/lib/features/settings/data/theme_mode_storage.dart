@@ -12,11 +12,11 @@ import '../domain/entities/theme_mode_preference.dart';
 /// Storage key: `settings.theme_mode`. Values:
 /// `system | light | dark | follow_device_time`.
 ///
-/// Backward compatible with the Sprint 3 storage format: existing users
+/// Backward compatible with the legacy storage format: existing users
 /// on disk have one of `'system' / 'light' / 'dark'` and decode to the
-/// matching new enum value. The new value `'follow_device_time'` is
-/// only ever written when the user actively picks "Follow device time"
-/// in Settings.
+/// matching enum value. The newer `'follow_device_time'` value is only
+/// written when the user actively picks "Follow device time" in
+/// Settings.
 class ThemeModeStorage {
   const ThemeModeStorage(this._prefs);
 

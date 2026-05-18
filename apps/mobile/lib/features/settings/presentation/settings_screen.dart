@@ -40,10 +40,9 @@ import '../domain/entities/theme_mode_preference.dart';
 import 'controllers/theme_mode_controller.dart';
 import 'widgets/delete_account_dialog.dart';
 
-/// Settings screen — restyled in Phase C and re-grouped in this round so
-/// related preferences live in clearly-zoned [MbCard] clusters: Profile,
-/// Preferences, Account (sign-out, with confirmation dialog), and a
-/// Debug zone (only in debug builds).
+/// Settings screen — related preferences live in clearly-zoned [MbCard]
+/// clusters: Profile, Preferences, Account (sign-out, with confirmation
+/// dialog), and a Debug zone (only in debug builds).
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -54,21 +53,19 @@ class SettingsScreen extends ConsumerWidget {
     final mb = Theme.of(context).extension<MbColors>()!;
     final theme = Theme.of(context);
 
-    // v1.6 polish — Settings tiles felt unresponsive because the
-    // default Material splash on `MbCard`'s `MaterialType.transparency`
-    // surface is washed out on the cream/navy theme, and the highlight
-    // colour during long-press was nearly invisible. Bumped both alpha
-    // values aggressively and swapped to `InkRipple.splashFactory` for
-    // the stronger ripple animation. The `_PressableListTile` wrapper
-    // (below) further forces an explicit opaque tile background that
-    // animates on press so even a long-hold has unambiguous feedback.
-    // Splash + highlight use the always-contrasting text colour rather
-    // than the brand primary — primary is a muted green that on cream
-    // surfaces blends into the card background and reads as no-feedback.
-    // Text colour over card is guaranteed contrast in both light + dark
-    // themes by design system invariant. Alphas are intentionally bold
-    // (50 % splash, 25 % highlight) so the press effect is unmistakable
-    // even on dim phone displays.
+    // Settings tiles need a strong press effect: the default Material
+    // splash on `MbCard`'s `MaterialType.transparency` surface is washed
+    // out on the cream/navy theme, and the highlight colour during
+    // long-press is nearly invisible. Bumped both alpha values
+    // aggressively and swapped to `InkRipple.splashFactory` for the
+    // stronger ripple animation. Splash + highlight use the
+    // always-contrasting text colour rather than the brand primary —
+    // primary is a muted green that on cream surfaces blends into the
+    // card background and reads as no-feedback. Text colour over card
+    // is guaranteed contrast in both light + dark themes by design
+    // system invariant. Alphas are intentionally bold (50 % splash,
+    // 25 % highlight) so the press effect is unmistakable even on dim
+    // phone displays.
     final pressTint = mb.text;
     return Scaffold(
       backgroundColor: mb.bg,
@@ -80,217 +77,215 @@ class SettingsScreen extends ConsumerWidget {
             splashFactory: InkRipple.splashFactory,
           ),
           child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            MoodBloomSpacing.pagePadding,
-            MoodBloomSpacing.pagePadding,
-            MoodBloomSpacing.pagePadding,
-            MoodBloomSpacing.lg,
-          ),
-          children: [
-            Text(
-              'Settings',
-              style: MbFonts.fraunces(
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                color: mb.text,
-              ),
+            padding: const EdgeInsets.fromLTRB(
+              MoodBloomSpacing.pagePadding,
+              MoodBloomSpacing.pagePadding,
+              MoodBloomSpacing.pagePadding,
+              MoodBloomSpacing.lg,
             ),
-            const SizedBox(height: 16),
-
-            // ── Profile zone ──
-            // Tap → opens the edit-name dialog. The name comes from
-            // `fb.User.displayName` (mapped by `AppUserMapper`) — null
-            // for fresh email/password sign-ups since
-            // `createUserWithEmailAndPassword` doesn't capture one, so
-            // this affordance is the only way to set it after the fact.
-            if (user != null)
-              MbCard(
-                onTap: () => _editDisplayName(
-                  context,
-                  ref,
-                  currentName: user.displayName,
+            children: [
+              Text(
+                'Settings',
+                style: MbFonts.fraunces(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  color: mb.text,
                 ),
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    _Avatar(
-                      label: _avatarInitial(user.displayName, user.email),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user.displayName ?? 'Add your name',
-                            style: MbFonts.nunito(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: user.displayName == null
-                                  ? mb.textDim
-                                  : mb.text,
-                              fontStyle: user.displayName == null
-                                  ? FontStyle.italic
-                                  : FontStyle.normal,
-                            ),
-                          ),
-                          if (user.email != null) ...[
-                            const SizedBox(height: 2),
+              ),
+              const SizedBox(height: 16),
+
+              // ── Profile zone ──
+              // Tap → opens the edit-name dialog. The name comes from
+              // `fb.User.displayName` (mapped by `AppUserMapper`) — null
+              // for fresh email/password sign-ups since
+              // `createUserWithEmailAndPassword` doesn't capture one, so
+              // this affordance is the only way to set it after the fact.
+              if (user != null)
+                MbCard(
+                  onTap: () => _editDisplayName(
+                    context,
+                    ref,
+                    currentName: user.displayName,
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      _Avatar(
+                        label: _avatarInitial(user.displayName, user.email),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              user.email!,
+                              user.displayName ?? 'Add your name',
                               style: MbFonts.nunito(
-                                fontSize: 12,
-                                color: mb.textDim,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: user.displayName == null
+                                    ? mb.textDim
+                                    : mb.text,
+                                fontStyle: user.displayName == null
+                                    ? FontStyle.italic
+                                    : FontStyle.normal,
                               ),
                             ),
+                            if (user.email != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                user.email!,
+                                style: MbFonts.nunito(
+                                  fontSize: 12,
+                                  color: mb.textDim,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                    Icon(Icons.edit_outlined, color: mb.textDim, size: 18),
-                  ],
+                      Icon(Icons.edit_outlined, color: mb.textDim, size: 18),
+                    ],
+                  ),
                 ),
-              ),
 
-            const SizedBox(height: 18),
-
-            // ── Preferences zone ──
-            const MbSectionLabel('PREFERENCES'),
-            const SizedBox(height: 6),
-            _PreferencesCluster(preference: themePreference),
-
-            const SizedBox(height: 18),
-
-            // ── Security zone ──
-            // v1.6 platform gating: biometric (local_auth) is Android-only;
-            // WebAuthn is web-only. Hide the irrelevant tile entirely
-            // instead of rendering its disabled preview — cleaner UX than
-            // "this isn't for your platform" copy.
-            if (!kIsWeb) ...[
-              const MbSectionLabel('SECURITY'),
-              const SizedBox(height: 6),
-              MbCard(
-                clipBehavior: Clip.hardEdge,
-                padding: EdgeInsets.zero,
-                child: const BiometricSettingsTile(),
-              ),
               const SizedBox(height: 18),
-            ],
 
-            // ── Privacy zone (ADR-0013) ──
-            // Hidden when signed out (defence in depth — the tile
-            // itself renders a disabled affordance, but skipping the
-            // section entirely keeps the visual hierarchy clean for
-            // the unauthenticated sign-out → sign-in transition).
-            // Also hidden when the Remote Config kill-switch is off,
-            // so a v1.5 rollback can yank the feature without leaving
-            // the Settings UI dangling.
-            if (user != null &&
-                ref.watch(privacyLockMasterEnabledProvider)) ...[
-              const MbSectionLabel('PRIVACY'),
+              // ── Preferences zone ──
+              const MbSectionLabel('PREFERENCES'),
+              const SizedBox(height: 6),
+              _PreferencesCluster(preference: themePreference),
+
+              const SizedBox(height: 18),
+
+              // ── Security zone ──
+              // Platform gating: biometric (local_auth) is Android-only;
+              // WebAuthn is web-only. Hide the irrelevant tile entirely
+              // instead of rendering its disabled preview — cleaner UX than
+              // "this isn't for your platform" copy.
+              if (!kIsWeb) ...[
+                const MbSectionLabel('SECURITY'),
+                const SizedBox(height: 6),
+                MbCard(
+                  clipBehavior: Clip.hardEdge,
+                  padding: EdgeInsets.zero,
+                  child: const BiometricSettingsTile(),
+                ),
+                const SizedBox(height: 18),
+              ],
+
+              // ── Privacy zone ──
+              // Hidden when signed out (defence in depth — the tile
+              // itself renders a disabled affordance, but skipping the
+              // section entirely keeps the visual hierarchy clean for
+              // the unauthenticated sign-out → sign-in transition).
+              // Also hidden when the Remote Config kill-switch is off,
+              // so a rollback can yank the feature without leaving the
+              // Settings UI dangling.
+              if (user != null &&
+                  ref.watch(privacyLockMasterEnabledProvider)) ...[
+                const MbSectionLabel('PRIVACY'),
+                const SizedBox(height: 6),
+                MbCard(
+                  clipBehavior: Clip.hardEdge,
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      const PrivacySettingsTile(),
+                      // WebAuthn is web-only — keep the tile on web, drop
+                      // it (and the divider) on native where biometric
+                      // already covers the same affordance.
+                      if (kIsWeb) ...const [
+                        Divider(height: 1),
+                        WebauthnSettingsTile(),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+              ],
+
+              // ── Sync zone ──
+              // Surfaces the offline-first sync state for the signed-in
+              // user. Shows "Last synced X ago" via a ValueListenable
+              // backed by MoodSyncManager and lets the user trigger a
+              // manual drain. Hidden on web (Drift sync is native-only)
+              // and when signed out (no uid to sync).
+              if (user != null && !kIsWeb) ...[
+                const MbSectionLabel('SYNC'),
+                const SizedBox(height: 6),
+                const _SyncCluster(),
+                const SizedBox(height: 18),
+              ],
+
+              // ── Account zone ──
+              const MbSectionLabel('ACCOUNT'),
               const SizedBox(height: 6),
               MbCard(
                 clipBehavior: Clip.hardEdge,
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: [
-                    const PrivacySettingsTile(),
-                    // WebAuthn is web-only — keep the tile on web, drop
-                    // it (and the divider) on native where biometric
-                    // already covers the same affordance.
-                    if (kIsWeb) ...const [
-                      Divider(height: 1),
-                      WebauthnSettingsTile(),
-                    ],
+                    ListTile(
+                      leading: Icon(Icons.logout, color: mb.destructiveText),
+                      title: Text(
+                        'Sign out',
+                        style: TextStyle(
+                          color: mb.destructiveText,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      onTap: () => _confirmSignOut(context, ref),
+                    ),
+                    const Divider(height: 1),
+                    // Destructive account deletion. Two-step confirmation
+                    // lives in [DeleteAccountDialog]; this tile is the
+                    // only entry point.
+                    ListTile(
+                      leading: Icon(
+                        Icons.delete_forever_outlined,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      title: Text(
+                        'Delete account',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                          fontWeight: FontWeight.w600,
+                          shadows: const <Shadow>[],
+                        ),
+                      ),
+                      subtitle: const Text(
+                        'Permanently remove your account and all data.',
+                      ),
+                      onTap: () => DeleteAccountDialog.show(context),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
-            ],
 
-            // ── Sync zone ──
-            // Surfaces the offline-first sync state for the signed-in
-            // user. Shows "Last synced X ago" via a ValueListenable
-            // backed by MoodSyncManager and lets the user trigger a
-            // manual drain. Hidden on web (Drift sync is native-only
-            // per ADR-0004) and when signed out (no uid to sync).
-            if (user != null && !kIsWeb) ...[
-              const MbSectionLabel('SYNC'),
+              // ── About zone ──
+              const SizedBox(height: 18),
+              const MbSectionLabel('ABOUT'),
               const SizedBox(height: 6),
-              const _SyncCluster(),
-              const SizedBox(height: 18),
-            ],
+              const _AboutCluster(),
 
-            // ── Account zone ──
-            const MbSectionLabel('ACCOUNT'),
-            const SizedBox(height: 6),
-            MbCard(
-              clipBehavior: Clip.hardEdge,
-              padding: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: Icon(Icons.logout, color: mb.destructiveText),
-                    title: Text(
-                      'Sign out',
-                      style: TextStyle(
-                        color: mb.destructiveText,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    onTap: () => _confirmSignOut(context, ref),
-                  ),
-                  const Divider(height: 1),
-                  // WBS 2.4 — destructive account deletion. Two-step
-                  // confirmation lives in [DeleteAccountDialog]; this
-                  // tile is the only entry point so we don't have a
-                  // second copy of the destructive flow rotting in the
-                  // Debug zone (which still has the data-only wipe).
-                  ListTile(
-                    leading: Icon(
-                      Icons.delete_forever_outlined,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    title: Text(
-                      'Delete account',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                        fontWeight: FontWeight.w600,
-                        shadows: const <Shadow>[],
-                      ),
-                    ),
-                    subtitle: const Text(
-                      'Permanently remove your account and all data.',
-                    ),
-                    onTap: () => DeleteAccountDialog.show(context),
-                  ),
-                ],
+              // ── Debug zone (debug builds only) ──
+              if (kDebugMode) ...[
+                const SizedBox(height: 18),
+                const MbSectionLabel('DEBUG'),
+                const SizedBox(height: 6),
+                const _DebugCluster(),
+              ],
+
+              const SizedBox(height: 24),
+              Center(
+                child: Text(
+                  'Made with care · School of Information Technology, KMUTT',
+                  style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
-
-            // ── About zone ──
-            const SizedBox(height: 18),
-            const MbSectionLabel('ABOUT'),
-            const SizedBox(height: 6),
-            const _AboutCluster(),
-
-            // ── Debug zone (debug builds only) ──
-            if (kDebugMode) ...[
-              const SizedBox(height: 18),
-              const MbSectionLabel('DEBUG'),
-              const SizedBox(height: 6),
-              const _DebugCluster(),
             ],
-
-            const SizedBox(height: 24),
-            Center(
-              child: Text(
-                'Made with care · School of Information Technology, KMUTT',
-                style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
           ),
         ),
       ),
@@ -486,10 +481,10 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // A11y sweep (S5 8.4): the initial letter is purely decorative — the
-    // adjacent column already announces the user's display name and email
-    // to screen readers, so reading "T" or "?" before the name would be
-    // noise. Exclude this subtree from semantics.
+    // The initial letter is purely decorative — the adjacent column
+    // already announces the user's display name and email to screen
+    // readers, so reading "T" or "?" before the name would be noise.
+    // Exclude this subtree from semantics.
     return ExcludeSemantics(
       child: Container(
         width: 48,
@@ -541,7 +536,7 @@ class _PreferencesCluster extends ConsumerWidget {
           ),
           // Order is intentional, not enum-declaration order: device
           // theme + device time first (auto-pickers), then the two
-          // explicit always-on choices. Matches HB-005 §Track 4.4/7.2.
+          // explicit always-on choices.
           //
           // RadioGroup is the post-Flutter-3.32 API for grouping
           // radios — child RadioListTiles read `groupValue`/`onChanged`
@@ -564,10 +559,10 @@ class _PreferencesCluster extends ConsumerWidget {
             ),
           ),
           const Divider(height: 1),
-          // Anti-pattern guardrail (HB-005 Track 6.2, ADR-0010 §7):
-          // visibility toggle, NEVER an opt-out of earning. Tokens
-          // still accumulate in the background when this is off — only
-          // the chip render on the garden home is suppressed.
+          // Anti-pattern guardrail: visibility toggle, NEVER an opt-out
+          // of earning. Tokens still accumulate in the background when
+          // this is off — only the chip render on the garden home is
+          // suppressed.
           SwitchListTile(
             secondary: const Icon(Icons.local_florist_outlined),
             title: const Text('Show token balance'),
@@ -580,7 +575,7 @@ class _PreferencesCluster extends ConsumerWidget {
                 .setVisible(visible: v),
           ),
           const Divider(height: 1),
-          // ── Notification reminders sub-zone (S5 Day 2, HB-007) ──
+          // ── Notification reminders sub-zone ──
           // Three per-tier opt-outs replace the legacy single
           // cheer-up toggle. The header uses the user-facing label
           // "Notification reminders" — internal tier numbers stay out
@@ -660,15 +655,14 @@ class _ThemeRadioTile extends StatelessWidget {
   };
 }
 
-/// About zone — application metadata for the demo. Version string is a
-/// hard-coded constant for now; once the app graduates from Sprint 2 we
-/// can read it from `package_info_plus` instead. Keeping it inline avoids
-/// the extra dependency on a single string.
+/// About zone — application metadata. Version string is a hard-coded
+/// constant for now; we can read it from `package_info_plus` later.
+/// Keeping it inline avoids the extra dependency on a single string.
 ///
-/// The Medical disclaimer expansion tile (S5 feature 7.4 — pulled
-/// forward) lives at the bottom of the cluster so the version line
-/// stays the cluster's primary affordance. The expansion only opens on
-/// explicit tap; the disclaimer text is never auto-shown here.
+/// The Medical disclaimer expansion tile lives at the bottom of the
+/// cluster so the version line stays the cluster's primary affordance.
+/// The expansion only opens on explicit tap; the disclaimer text is
+/// never auto-shown here.
 class _AboutCluster extends StatelessWidget {
   const _AboutCluster();
 
@@ -713,9 +707,8 @@ class _AboutCluster extends StatelessWidget {
 /// drain loop or the live Firestore listener completes a pass — no
 /// router refresh required.
 ///
-/// Hidden on web (Drift sync is native-only per ADR-0004) and when
-/// signed out; the caller in [SettingsScreen.build] is responsible for
-/// those guards.
+/// Hidden on web (Drift sync is native-only) and when signed out; the
+/// caller in [SettingsScreen.build] is responsible for those guards.
 class _SyncCluster extends ConsumerWidget {
   const _SyncCluster();
 
@@ -799,11 +792,10 @@ class _SyncCluster extends ConsumerWidget {
 /// (Crashlytics test crash) plus a "Force offline" toggle that lets QA
 /// simulate the no-Wi-Fi flow without touching the device's radios.
 ///
-/// v1.6: wrapped the cluster in an `ExpansionTile` (collapsed by
-/// default) so the 11 power-user tiles don't dominate the Settings
-/// scroll for everyone who lands here. Subtitles trimmed to one short
-/// line each — the long-form rationale lives in the source comments
-/// above each tile, not in the UI.
+/// Wrapped in an `ExpansionTile` (collapsed by default) so the 11
+/// power-user tiles don't dominate the Settings scroll. Subtitles are
+/// trimmed to one short line each — the long-form rationale lives in
+/// the source comments above each tile, not in the UI.
 class _DebugCluster extends ConsumerWidget {
   const _DebugCluster();
 
@@ -818,9 +810,7 @@ class _DebugCluster extends ConsumerWidget {
         // Strip the divider above/below the expansion children so
         // adjacent tiles flow visually into the cluster card (mirrors
         // the ChartReadingGuide pattern from insights).
-        data: Theme.of(
-          context,
-        ).copyWith(dividerColor: Colors.transparent),
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           leading: const Icon(Icons.build_outlined),
           title: const Text('Debug tools'),
@@ -845,10 +835,10 @@ class _DebugCluster extends ConsumerWidget {
               onTap: _crashNow,
             ),
             const Divider(height: 1),
-            // v1.5 polish (Wave A) — debug-only token grant. Bumps
-            // `tokenBalance += 10` via the same TokenRepository the live
-            // award path uses, but skips the daily-cap fields so QA can
-            // run repeatedly without the 10/day ceiling kicking in.
+            // Debug-only token grant. Bumps `tokenBalance += 10` via
+            // the same TokenRepository the live award path uses, but
+            // skips the daily-cap fields so QA can run repeatedly
+            // without the 10/day ceiling kicking in.
             ListTile(
               leading: const Icon(Icons.toll_outlined),
               title: const Text('Grant 10 tokens'),
@@ -862,9 +852,8 @@ class _DebugCluster extends ConsumerWidget {
             // entries.
             const _DebugTierCycleTile(),
             const Divider(height: 1),
-            // Force-harvest tile (HB-005 Track 6.1 demo affordance).
-            // Bypasses the 7-day boundary so QA can run the archive
-            // flow on demand.
+            // Force-harvest tile — bypasses the 7-day boundary so QA
+            // can run the archive flow on demand.
             ListTile(
               leading: const Icon(Icons.eco_outlined),
               title: const Text('Force harvest now'),
@@ -872,9 +861,9 @@ class _DebugCluster extends ConsumerWidget {
               onTap: () => _forceHarvest(context, ref),
             ),
             const Divider(height: 1),
-            // v1.5 final polish — debug-only Tier dispatch triggers. Bypass
-            // the cooldown gate AND per-tier opt-outs. ADR-0012 Tier 3
-            // determinism guarantee is preserved (curated copy only).
+            // Debug-only Tier dispatch triggers. Bypass the cooldown
+            // gate AND per-tier opt-outs. The Tier 3 determinism
+            // guarantee is preserved (curated copy only).
             ListTile(
               leading: const Icon(Icons.air_outlined),
               title: const Text('Trigger Tier 1 banner'),
@@ -927,9 +916,9 @@ class _DebugCluster extends ConsumerWidget {
               onTap: () => _resetOnboarding(context),
             ),
             const Divider(height: 1),
-            // Clears the Drift mood DB + SharedPreferences. v1.6 fix:
-            // shutdown + bootstrap the sync manager around the wipe so
-            // the in-memory `_attachedUid` / `_previousRemoteIds` / live
+            // Clears the Drift mood DB + SharedPreferences. Shuts down
+            // + re-bootstraps the sync manager around the wipe so the
+            // in-memory `_attachedUid` / `_previousRemoteIds` / live
             // listener don't drift out of sync with cleared local
             // state. Cloud data is untouched.
             ListTile(
@@ -1160,7 +1149,7 @@ class _DebugCluster extends ConsumerWidget {
     );
     if (confirmed != true) return;
 
-    // v1.6 fix — make the wipe safe to run without an app restart:
+    // Safe-to-run-without-restart sequence:
     //
     // 1) Tear the sync manager down BEFORE truncating tables. Its
     //    `_attachedUid` / `_previousRemoteIds` / live Firestore listener
@@ -1195,9 +1184,7 @@ class _DebugCluster extends ConsumerWidget {
     if (!context.mounted) return;
     messenger.showSnackBar(
       const SnackBar(
-        content: Text(
-          'Local cache cleared. Resyncing from the cloud now…',
-        ),
+        content: Text('Local cache cleared. Resyncing from the cloud now…'),
         duration: Duration(seconds: 4),
       ),
     );
@@ -1280,9 +1267,8 @@ class _DebugCluster extends ConsumerWidget {
 /// Cycles `debugPlantTierOverrideProvider` through `null ? stormSeason ?
 /// weathering ? resting ? thriving ? flourishing ? null`. The current
 /// override is shown in the subtitle so reviewers can read which tier
-/// the canvas is forced to without leaving Settings. v1.0 polish
-/// (2026-05-10) � addresses "Garden Health stuck at Resting" feedback
-/// by giving the user an immediate path to all 5 visual states.
+/// the canvas is forced to without leaving Settings. Gives an immediate
+/// path to all 5 visual states without manufacturing entries.
 class _DebugTierCycleTile extends ConsumerWidget {
   const _DebugTierCycleTile();
 

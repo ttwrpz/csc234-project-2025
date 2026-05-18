@@ -8,23 +8,21 @@ import '../../../auth/domain/auth_failure.dart';
 
 /// Two-step destructive confirmation dialog wired into Settings →
 /// Account → "Delete account". Step 1 confirms intent; step 2
-/// reauthenticates the user (per ADR-0009 reauth fence) and triggers
-/// the use case. Lives as a standalone widget so it can be unit-tested
-/// without the rest of the Settings screen.
+/// reauthenticates the user and triggers the use case. Lives as a
+/// standalone widget so it can be unit-tested without the rest of the
+/// Settings screen.
 ///
 /// On success: the use case's `signOut()` emits a `null` auth state,
 /// which the router's existing `currentUserStreamProvider` listener
-/// handles by redirecting to the sign-in route. No router edit needed
-/// in this PR.
+/// handles by redirecting to the sign-in route.
 ///
-/// Non-password providers (Google, Apple): the codebase only ships
+/// Non-password providers (Google, Apple): the codebase ships
 /// email/password sign-in plus Google. The dialog handles the
 /// password path natively; for Google-signed users we surface a "Use
 /// Google to confirm" affordance that calls the existing OAuth reauth
-/// path (`AuthCredentials.google`) through the repository. A
-/// platform-keystore-backed biometric reauth path lands in v1.6 — for
-/// now, biometric-only users without a known password fall through to
-/// the Google branch (their account always has at least one provider).
+/// path (`AuthCredentials.google`) through the repository.
+/// Biometric-only users without a known password fall through to the
+/// Google branch (their account always has at least one provider).
 class DeleteAccountDialog extends ConsumerStatefulWidget {
   const DeleteAccountDialog({super.key});
 
