@@ -70,7 +70,10 @@ class PinRepositoryImpl implements PinRepository {
   }) async {
     try {
       final salt = _hasher.newSalt();
-      final hash = _hasher.derive(
+      // `deriveAsync` runs PBKDF2 on a Flutter compute() worker isolate
+      // so the UI thread isn't pinned for ~1–3 s during setup. See
+      // PinHasherImpl.deriveAsync for the off-isolate plumbing.
+      final hash = await _hasher.deriveAsync(
         pinDigits: pin.digits,
         salt: salt,
         iterations: PinHasher.minIterations,
@@ -143,7 +146,11 @@ class PinRepositoryImpl implements PinRepository {
 
     final salt = base64.decode(stored.saltBase64);
     final expectedHash = base64.decode(stored.hashBase64);
-    final computed = _hasher.derive(
+    // Off-main-isolate PBKDF2 — without this, verify() pins the UI
+    // thread for the full 100 000-iteration loop (~1–3 s on mid-range
+    // Android). With `deriveAsync` the spinner stays smooth and the
+    // user can still hit back / cancel during verify.
+    final computed = await _hasher.deriveAsync(
       pinDigits: pin.digits,
       salt: salt,
       iterations: stored.iterations,

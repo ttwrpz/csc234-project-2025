@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/history_unlocked_this_session_provider.dart';
 import '../data/providers.dart';
 import 'widgets/brand_mark.dart';
 
@@ -20,7 +21,14 @@ import 'widgets/brand_mark.dart';
 /// biometric dialog." Letting the user drive the exit matches the
 /// biometric re-auth UX of banking + health apps.
 class BiometricGateScreen extends ConsumerStatefulWidget {
-  const BiometricGateScreen({super.key});
+  const BiometricGateScreen({super.key, this.returnTo});
+
+  /// Optional destination after successful verification. When the gate
+  /// fires because the user navigated to (say) `/history`, the router
+  /// redirect passes `returnTo=/history` so the user lands where they
+  /// were going instead of being dumped on `/home`. Defaults to
+  /// `/home` for the cold-boot path where there is no prior intent.
+  final String? returnTo;
 
   @override
   ConsumerState<BiometricGateScreen> createState() =>
@@ -63,7 +71,15 @@ class _BiometricGateScreenState extends ConsumerState<BiometricGateScreen> {
     result.fold(
       ok: (_) {
         ref.read(biometricUnlockedThisSessionProvider.notifier).state = true;
-        context.go('/home');
+        // One biometric verification covers BOTH gates for this
+        // session: cold-boot AND History privacy lock. Without this
+        // pre-stamp a user opted into both sees biometric twice — the
+        // hardware verification is the same. Users who want stronger
+        // gating on /history can opt OUT of biometric for the privacy
+        // lock; that path still forces a PIN entry on /history
+        // regardless of the cold-boot biometric outcome.
+        ref.read(historyUnlockedThisSessionProvider.notifier).unlock();
+        context.go(widget.returnTo ?? '/home');
       },
       err: (failure) {
         // Park on this screen so the user can retry or explicitly sign

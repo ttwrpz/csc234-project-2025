@@ -1,0 +1,36 @@
+{
+  "conditions": [],
+  "parameters": {
+    "ai_pattern_analysis_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Gates the Tier 1/2 Gemini quote-suggestion path. Tier 3 is always curated (ADR-0012). Flip to false if Gemini misbehaves — Tier 1/2 falls back to the curated pool.",
+      "valueType": "BOOLEAN"
+    },
+    "gemini_detection_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Gates the analyzeMoodText CF suggestion pill on Log Mood. Flip to false if Gemini is down or returns bad suggestions; manual mood entry still works.",
+      "valueType": "BOOLEAN"
+    },
+    "intervention_dispatch_enabled": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Master enable for the cheer-up push dispatcher. Default false: the Pattern Engine still writes patterns/{date}, but no push fires. Flip on once the dispatcher reads triggeredTier (ADR-0011 §4).",
+      "valueType": "BOOLEAN"
+    },
+    "history_privacy_lock_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Kill-switch for the History privacy gate (ADR-0013). Default true. Flip to false to disable globally; stored PIN hashes stay at rest, no data loss.",
+      "valueType": "BOOLEAN"
+    }
+  },
+  "version": {
+    "description": "MoodBloom feature flag baseline — keep in sync with apps/mobile/lib/app/feature_flags.dart and apps/mobile/lib/main.dart setDefaults()."
+  }
+}

@@ -139,7 +139,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           !ref.read(biometricUnlockedThisSessionProvider)) {
         final cap = ref.read(biometricCapabilityProvider).value;
         if (cap != null && cap.shouldGate) {
-          return '/biometric-gate';
+          // Thread the original destination through as `returnTo` so
+          // the user lands where they were navigating instead of
+          // being dumped on `/home` after biometric. The cold-boot
+          // path (loc == '/home') passes `/home` and is a no-op; the
+          // History-tap path passes `/history` and lands the user on
+          // /history. Prevents the "biometric then re-tap History to
+          // actually get there" double-tap UX.
+          final returnTo = Uri.encodeComponent(loc);
+          return '/biometric-gate?returnTo=$returnTo';
         }
       }
 
@@ -160,6 +168,41 @@ final routerProvider = Provider<GoRouter>((ref) {
           final unlock = ref.read(historyUnlockedThisSessionProvider);
           final unlocked = unlock.isUnlocked(now: DateTime.now().toUtc());
           if (!unlocked) {
+            // If biometric was already verified this session
+            // (cold-boot gate or any prior unlock), treat history as
+            // unlocked too. Same hardware verification — prompting
+            // again is friction. Without this, the user sees a
+            // "double lock" when the 5-minute idle window has cleared
+            // the history flag but the biometric flag (which only
+            // clears on sign-out) is still good.
+            final biometricUnlocked = ref.read(
+              biometricUnlockedThisSessionProvider,
+            );
+            if (biometricUnlocked) {
+              ref.read(historyUnlockedThisSessionProvider.notifier).unlock();
+              return null;
+            }
+            // If biometric is opted-in but hasn't fired yet (race:
+            // capability provider hadn't resolved on the earlier
+            // cold-boot redirect pass, so the cold-boot gate was
+            // skipped), route through /biometric-gate instead of
+            // /unlock-history. Three reasons:
+            //   1. Biometric users should never see two different
+            //      verification screens. The privacy lock fallback is
+            //      for PIN-only users.
+            //   2. /biometric-gate sets BOTH session flags on success,
+            //      so the user lands on /history without a second
+            //      gate firing afterwards.
+            //   3. Removes the back-button trap: pressing back from
+            //      /unlock-history called `context.go('/home')` →
+            //      the cold-boot biometric gate then re-fired on
+            //      /home (cap now loaded) → user bounced to
+            //      /biometric-gate. Going to /biometric-gate directly
+            //      removes the back-from-PIN-screen trap.
+            final cap = ref.read(biometricCapabilityProvider).value;
+            if (cap != null && cap.shouldGate) {
+              return '/biometric-gate?returnTo=${Uri.encodeComponent(loc)}';
+            }
             return '/unlock-history?returnTo=${Uri.encodeComponent(loc)}';
           }
         }
@@ -186,7 +229,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/biometric-gate',
-        pageBuilder: (c, s) => _noTransition(const BiometricGateScreen()),
+        pageBuilder: (c, s) {
+          final returnTo = s.uri.queryParameters['returnTo'];
+          return _noTransition(BiometricGateScreen(returnTo: returnTo));
+        },
       ),
       // History privacy gate (biometric + PIN fallback). Reachable via
       // the redirect above when the user has opted in. `returnTo` is
@@ -425,7 +471,15 @@ class _AppShellState extends ConsumerState<_AppShell> {
     // `branchScrollControllerProvider`) bound to its own page wrapper,
     // so the destination controller is already attached to the branch's
     // scroll view by the time the next frame builds.
+    //
+    // The `mounted` guard prevents the
+    //   "Using `ref` when a widget is about to or has been unmounted"
+    // assertion that fired when the user signed out (or any other path
+    // that disposes the AppShell) between this tap and the post-frame
+    // callback. Without it, the scheduler-scoped throw broke onto the
+    // console and surfaced the red overlay.
     void doJump() {
+      if (!mounted) return;
       final c = ref.read(branchScrollControllerProvider(i));
       if (c.hasClients) c.jumpTo(0);
     }

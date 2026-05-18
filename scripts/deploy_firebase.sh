@@ -37,11 +37,11 @@ cd "$REPO_ROOT"
 echo "Deploying to $PROJECT_ID ($ONLY)"
 
 # "all" matches what firebase.json actually declares — firestore +
-# storage rules and functions. Hosting is opt-in because the project
-# doesn't ship a hosting block today; pass `--only hosting` once one is
-# added.
+# storage rules, the Remote Config template, and functions. Hosting is
+# opt-in because the project doesn't ship a hosting block today; pass
+# `--only hosting` once one is added.
 if [[ "$ONLY" == "all" ]]; then
-  TARGETS=("firestore" "storage" "functions")
+  TARGETS=("firestore" "storage" "remoteconfig" "functions")
 else
   IFS=',' read -r -a TARGETS <<< "$ONLY"
 fi

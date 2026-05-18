@@ -41,6 +41,23 @@ abstract class PinHasher {
     required int iterations,
   });
 
+  /// Async variant of [derive] that production callers MUST prefer —
+  /// PBKDF2 at 100 000 iterations takes ~1–3 seconds on mid-range
+  /// Android and blocks the main isolate.
+  ///
+  /// The production [PinHasherImpl] override runs the work in a worker
+  /// isolate via `package:flutter/foundation.dart#compute`, which is
+  /// what keeps the PIN-verify UI responsive. Tests that need a fake
+  /// hasher can provide a trivial implementation that just returns
+  /// `Future.value(derive(...))` — there are no test fakes today, but
+  /// the abstract signature keeps the contract intuitive when one
+  /// arrives.
+  Future<List<int>> deriveAsync({
+    required String pinDigits,
+    required List<int> salt,
+    required int iterations,
+  });
+
   /// Generates a cryptographically-secure random salt of length
   /// [saltLengthBytes]. Exposed on the hasher so the implementation
   /// (which already imports `dart:math` / `crypto`) is the only place

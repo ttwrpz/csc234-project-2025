@@ -32,11 +32,12 @@ try {
     Write-Host "Deploying to $ProjectId ($Only)" -ForegroundColor Cyan
 
     # `all` mirrors what firebase.json actually declares — firestore +
-    # storage rules and functions. Hosting is opt-in because the
-    # project doesn't ship a hosting block today; passing
-    # `-Only hosting` lights it up once one is added.
+    # storage rules, the Remote Config template, and functions.
+    # Hosting is opt-in because the project doesn't ship a hosting
+    # block today; passing `-Only hosting` lights it up once one is
+    # added.
     $targets = if ($Only -eq 'all') {
-        @('firestore', 'storage', 'functions')
+        @('firestore', 'storage', 'remoteconfig', 'functions')
     } else {
         $Only.Split(',') | ForEach-Object { $_.Trim() }
     }
