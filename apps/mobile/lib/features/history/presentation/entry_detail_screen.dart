@@ -9,11 +9,10 @@ import '../../mood/domain/entities/mood_entry.dart';
 import '../../mood/presentation/widgets/mood_kind_adapter.dart';
 import 'widgets/entry_attachments.dart';
 
-/// Read-only entry detail. Sprint 2 ships only the scaffold — edit/delete
-/// land in S3 along with the 24h immutability enforcement (WBS 3.5).
-/// Restyled to the Sprint 2 Prototype with a back-icon header, optional
-/// soft-coral lock banner, the entry body inside an [MbCard] with an
-/// emoji square + intensity dots, and a disabled Edit/Delete row.
+/// Entry detail screen with a back-icon header, optional soft-coral lock
+/// banner, the entry body inside an [MbCard] with an emoji square +
+/// intensity dots, and an Edit/Delete row (gated by the 24h immutability
+/// rule).
 class EntryDetailScreen extends ConsumerWidget {
   const EntryDetailScreen({super.key, required this.id});
 

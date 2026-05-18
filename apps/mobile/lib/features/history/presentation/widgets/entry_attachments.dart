@@ -11,9 +11,9 @@ import 'image_viewer.dart';
 /// result inside a `FutureProvider.family` so consecutive paints don't
 /// re-fetch.
 ///
-/// Sprint 2 scope: still images only. Videos render as a generic film-
-/// strip placeholder with a "Video" overlay — playing them inline is a
-/// later sprint (`video_player` is not in pubspec yet).
+/// Still images only. Videos render as a generic film-strip placeholder
+/// with a "Video" overlay — playing them inline is not yet supported
+/// (`video_player` is not in pubspec).
 class EntryAttachments extends StatelessWidget {
   const EntryAttachments({super.key, required this.refs});
 
