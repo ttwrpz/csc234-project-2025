@@ -11,7 +11,7 @@ import '../../domain/entities/pin_verify_failure.dart';
 import '../widgets/pin_keypad.dart';
 
 /// `/unlock-history` screen — the History privacy gate's verification
-/// surface (ADR-0013 Decision C §4).
+/// surface.
 ///
 /// Flow:
 ///   1. On mount, if the device has a usable biometric AND the user
@@ -166,16 +166,12 @@ class _PinVerifyScreenState extends ConsumerState<PinVerifyScreen> {
                     '${lockedRemaining.inSeconds + 1}s.',
                     style: MbFonts.nunito(
                       fontSize: 13,
-                      // Wave C dark-mode contrast sweep — mirror the
-                      // brightness-aware pick used by PinKeypad's error
-                      // text. `coralText` is the historical light-theme
-                      // binding (6.04:1 PASS on cream `mb.bg`) but fails
-                      // dark AA at ~2.54:1; `colorScheme.error` resolves
-                      // to `MoodBloomColors.coral` and is the right
-                      // v1.6 — uses the theme-aware MbColors
-                      // destructive-text token so contrast works in
-                      // both light (deep coral on cream) and dark
-                      // (bright coral on navy).
+                      // Theme-aware destructive-text token —
+                      // `coralText` is the light-theme binding (6.04:1
+                      // PASS on cream `mb.bg`) but fails dark AA at
+                      // ~2.54:1, so prefer the MbColors extension when
+                      // present so contrast works in both light (deep
+                      // coral on cream) and dark (bright coral on navy).
                       color:
                           theme.extension<MbColors>()?.destructiveText ??
                           theme.colorScheme.error,

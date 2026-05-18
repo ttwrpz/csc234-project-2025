@@ -108,9 +108,9 @@ final sendPasswordResetEmailUseCaseProvider =
       return SendPasswordResetEmailUseCase(ref.watch(authRepositoryProvider));
     });
 
-/// WBS 2.4 — the destructive use case. Composes reauth → server cascade
-/// → local Auth delete → signOut in one orchestrated call. Consumed by
-/// the Settings screen's delete-account dialog.
+/// The destructive use case. Composes reauth → server cascade → local
+/// Auth delete → signOut in one orchestrated call. Consumed by the
+/// Settings screen's delete-account dialog.
 final deleteAccountUseCaseProvider = Provider<DeleteAccountUseCase>((ref) {
   return DeleteAccountUseCase(ref.watch(authRepositoryProvider));
 });
@@ -120,7 +120,7 @@ final watchAuthStateUseCaseProvider = Provider<WatchAuthStateUseCase>((ref) {
 });
 
 // ────────────────────────────────────────────────────────────────────────
-// Biometric (WBS 2.2)
+// Biometric
 
 final biometricDatasourceProvider = Provider<BiometricDatasource>((ref) {
   return BiometricDatasource();
@@ -180,7 +180,7 @@ final biometricCapabilityProvider = FutureProvider<BiometricCapability>((ref) {
 final biometricUnlockedThisSessionProvider = StateProvider<bool>((_) => false);
 
 // ────────────────────────────────────────────────────────────────────────
-// PIN fallback factor (ADR-0013)
+// PIN fallback factor
 
 final pinFirestoreDatasourceProvider = Provider<PinFirestoreDatasource>((ref) {
   return PinFirestoreDatasource(ref.watch(firestoreProvider));
@@ -217,7 +217,7 @@ final removePinUseCaseProvider = Provider<RemovePinUseCase>((ref) {
 ///
 /// `userId` is read from [currentUserStreamProvider]; when signed out,
 /// the future resolves to `false` (the PRIVACY card is hidden by
-/// upstream conditional anyway — ADR-0013 Open Follow-up #4).
+/// upstream conditional anyway).
 final pinIsSetProvider = FutureProvider<bool>((ref) async {
   final user = ref.watch(currentUserStreamProvider).value;
   if (user == null) return false;
@@ -227,7 +227,7 @@ final pinIsSetProvider = FutureProvider<bool>((ref) async {
 });
 
 /// SharedPreferences-backed user-opt-in flag for the History privacy
-/// gate (ADR-0013 Decision A — default OFF).
+/// gate. Default OFF.
 final privacyLockPreferenceDatasourceProvider =
     Provider<PrivacyLockPreferenceDatasource>((ref) {
       final prefs = ref.watch(sharedPreferencesProvider).requireValue;
@@ -262,7 +262,7 @@ final privacyLockEnabledProvider =
 /// Settings UI and short-circuited by the router redirect when `false`.
 /// Separate from [privacyLockEnabledProvider] (the user's per-account
 /// opt-in) so the rollback path can be tested independently of any
-/// stored preferences. ADR-0013 "Compliance Check" §"feature-flag".
+/// stored preferences.
 final privacyLockMasterEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select((f) => f.historyPrivacyLockEnabled),
@@ -270,19 +270,17 @@ final privacyLockMasterEnabledProvider = Provider<bool>((ref) {
 });
 
 // ────────────────────────────────────────────────────────────────────────
-// WebAuthn fallback factor (ADR-0014) — v1.5 ships DARK behind
-// `kEnableWebauthn` (build-time const in `feature_flags.dart`). When the
-// flag is `false` (the v1.5 default), every consumer of these providers
-// short-circuits to a hidden / no-op state — the JS-interop datasource
-// is never instantiated and the Firestore credential stream is never
-// subscribed. See ADR-0014 §"Cuts to make first if a day slips" #3.
+// WebAuthn fallback factor — ships DARK behind `kEnableWebauthn` (a
+// build-time const in `feature_flags.dart`). When the flag is `false`
+// (the default), every consumer of these providers short-circuits to a
+// hidden / no-op state — the JS-interop datasource is never
+// instantiated and the Firestore credential stream is never subscribed.
 
 /// True only when WebAuthn is reachable on the current platform AND the
-/// build-time flag enables the surface. v1.5 always returns `false`
-/// because `kEnableWebauthn` is `false` — the JS-interop binding is
-/// never instantiated. v1.5.1 (or v1.6) flips the const, at which point
-/// the second clause (`kIsWeb` — Android/iOS use `local_auth`) becomes
-/// the gating check.
+/// build-time flag enables the surface. Returns `false` while
+/// `kEnableWebauthn` is `false` — the JS-interop binding is never
+/// instantiated. Flipping the const enables the second clause
+/// (`kIsWeb` — Android/iOS use `local_auth`) as the gating check.
 final webauthnAvailableProvider = Provider<bool>((_) {
   if (!kEnableWebauthn) return false;
   return kIsWeb;
@@ -301,9 +299,9 @@ final webauthnCredentialFirestoreDatasourceProvider =
     );
 
 /// The JS-interop seam over `navigator.credentials.create()` / `.get()`.
-/// v1.5 hands out the unsupported stub — the production `package:web`
-/// binding lands in v1.5.1 when `kEnableWebauthn` flips. Widget tests
-/// override this provider directly with a `_FakeWebauthnBrowserDatasource`.
+/// Hands out the unsupported stub until `kEnableWebauthn` flips and the
+/// production `package:web` binding lands. Widget tests override this
+/// provider directly with a `_FakeWebauthnBrowserDatasource`.
 final webauthnBrowserDatasourceProvider = Provider<WebauthnBrowserDatasource>(
   (_) => const WebauthnBrowserDatasourceUnsupportedStub(),
 );

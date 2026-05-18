@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers.dart';
 import '../widgets/pin_keypad.dart';
 
-/// Screen G-2 — PIN setup (ADR-0013 Decision G).
+/// PIN setup screen.
 ///
 /// Two-pass entry: first pass collects the new PIN, second pass
 /// confirms. On mismatch the keypad clears and prompts again; on

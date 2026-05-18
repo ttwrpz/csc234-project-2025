@@ -1,17 +1,15 @@
 /// Value object for a user-entered PIN.
 ///
 /// PIN is the fallback authentication factor for the History privacy
-/// gate (ADR-0013 Decision E). 6 numeric digits — the modern minimum;
-/// 4 was rejected in the ADR's "Alternatives Considered" because 10^6
-/// vs 10^4 gives 100x the brute-force time at the same PBKDF2 iteration
-/// count.
+/// gate. 6 numeric digits — the modern minimum; 4 was rejected because
+/// 10^6 vs 10^4 gives 100x the brute-force time at the same PBKDF2
+/// iteration count.
 ///
 /// Construction is the only enforcement point — once a [Pin] exists,
 /// callers can rely on `digits.length == 6` and every char being `0-9`.
 /// Use [tryFrom] from any caller that takes raw user input.
 class Pin {
-  /// PIN length — 6 digits, per ADR-0013 Decision E + "Alternatives
-  /// Considered" rejection of 4 digits.
+  /// PIN length — 6 digits.
   static const int length = 6;
 
   /// Private — construct via [tryFrom] (or [Pin.unchecked] in tests).

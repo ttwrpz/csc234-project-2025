@@ -12,11 +12,10 @@ import '../entities/pin_verify_failure.dart';
 /// Domain consumers (use cases, controllers) speak only in terms of
 /// the abstract result types.
 ///
-/// **Threat model boundary:** verification happens **client-side** per
-/// ADR-0013 Decision E §4. The repository reads the stored hash,
-/// re-derives PBKDF2 with the user-entered PIN + stored salt, and
-/// compares the two with constant-time bytes. The PIN string never
-/// leaves the device.
+/// **Threat model boundary:** verification happens **client-side**.
+/// The repository reads the stored hash, re-derives PBKDF2 with the
+/// user-entered PIN + stored salt, and compares the two with
+/// constant-time bytes. The PIN string never leaves the device.
 abstract class PinRepository {
   /// Reads the current PIN hash record for [userId], or `null` when no
   /// PIN is set. Firestore rule denials due to the rate-limit gate
@@ -26,8 +25,7 @@ abstract class PinRepository {
   Future<PinHash?> read({required String userId});
 
   /// Idempotent — overwrites any existing hash. Used by both first-time
-  /// setup (Decision G-2) and Change PIN. The data layer is responsible
-  /// for:
+  /// setup and Change PIN. The data layer is responsible for:
   ///  - Generating a fresh 16-byte salt.
   ///  - Setting `iterations` and `algorithm` to the canonical values.
   ///  - Stamping `createdAt` to server-time.
@@ -40,8 +38,8 @@ abstract class PinRepository {
   /// Verifies [pin] against the stored hash for [userId]. On success
   /// resets `failedAttempts` to 0 and clears `lockedUntil`. On wrong
   /// input increments `failedAttempts` and, at the threshold, sets
-  /// `lockedUntil` per the ADR-0013 rate-limit ladder (5 → 60 s,
-  /// 10/hour → 30 min).
+  /// `lockedUntil` per the rate-limit ladder (5 → 60 s, 10/hour →
+  /// 30 min).
   ///
   /// Reads that hit the rule-level rate-limit (`lockedUntil > now`)
   /// surface as [PinVerifyFailure.locked]; the data layer translates

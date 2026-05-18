@@ -7,13 +7,13 @@ import '../../../../app/feature_flags.dart' show kEnableWebauthn;
 import '../../data/providers.dart'
     show webauthnAvailableProvider, webauthnCredentialProvider;
 
-/// Settings → Privacy tile for WebAuthn / security keys (ADR-0014).
+/// Settings → Privacy tile for WebAuthn / security keys.
 ///
 /// State matrix:
 /// * **Build-time flag off (`kEnableWebauthn == false`)** → renders the
 ///   tile in a disabled "preview" state with copy explaining the
-///   feature is staged for v1.5.1 once a production origin is
-///   provisioned. The tap is a no-op + snackbar.
+///   feature is staged for a future release once a production origin
+///   is provisioned. The tap is a no-op + snackbar.
 /// * **Flag on, not web** → renders disabled with "Web only — open
 ///   MoodBloom in Chrome / Edge / Safari to register a security key."
 /// * **Flag on, web, no credential** → "Set up a security key" — tap
@@ -22,9 +22,9 @@ import '../../data/providers.dart'
 ///   creation date + a "Remove security key" affordance.
 ///
 /// The tile is always visible so users can see the feature exists and
-/// understand its state. The ADR-0014 deferral footer (origin pending)
-/// is surfaced as the subtitle in the disabled state — the user is
-/// told why it's not active, not just that it isn't.
+/// understand its state. The deferral footer (origin pending) is
+/// surfaced as the subtitle in the disabled state — the user is told
+/// why it's not active, not just that it isn't.
 class WebauthnSettingsTile extends ConsumerWidget {
   const WebauthnSettingsTile({super.key});
 
@@ -131,9 +131,10 @@ class _NoCredentialTile extends StatelessWidget {
       ),
       trailing: const Icon(Icons.chevron_right),
       onTap: () {
-        // v1.5.1: invoke RegisterWebauthnUseCase here. For now (flag is
-        // on but the production origin may still be empty) surface a
-        // friendly message instead of triggering the JS-interop call.
+        // Invoke RegisterWebauthnUseCase here once the production
+        // origin is provisioned. For now (flag is on but the origin may
+        // still be empty) surface a friendly message instead of
+        // triggering the JS-interop call.
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(

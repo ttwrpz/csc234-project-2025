@@ -2,11 +2,11 @@ import 'package:cloud_functions/cloud_functions.dart';
 
 /// Thin wrapper over `FirebaseFunctions.httpsCallable('wipeUserData')`.
 ///
-/// WBS 2.4: the `wipeUserData` admin-SDK callable owns the server-side
-/// cascade (every subcollection under `users/{uid}/` plus the user
-/// profile field reset). Per ADR-0009 §5.2 the function deliberately
-/// does NOT delete the Firebase Auth user — that's done client-side
-/// after this call returns, inside the same recent-login window.
+/// The `wipeUserData` admin-SDK callable owns the server-side cascade
+/// (every subcollection under `users/{uid}/` plus the user profile
+/// field reset). The function deliberately does NOT delete the
+/// Firebase Auth user — that's done client-side after this call
+/// returns, inside the same recent-login window.
 ///
 /// Owns transport (region pinning via the injected functions handle,
 /// CF exception → typed enum) only. Domain mapping happens upstream in

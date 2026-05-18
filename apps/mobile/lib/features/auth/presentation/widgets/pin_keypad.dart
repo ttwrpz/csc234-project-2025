@@ -124,10 +124,10 @@ class _PinKeypadState extends State<PinKeypad> {
               widget.errorText!,
               style: MbFonts.nunito(
                 fontSize: 13,
-                // Wave C dark-mode contrast sweep — `coralText` is the
-                // design-system "destructive text on cream" token, and
-                // by its own docstring is not dark-safe (~2.54:1 over
-                // v1.6 — theme-aware MbColors destructive-text token.
+                // Theme-aware destructive-text token — `coralText` is
+                // the design-system "destructive text on cream" token
+                // and is not dark-safe, so prefer the MbColors
+                // extension when present.
                 color:
                     theme.extension<MbColors>()?.destructiveText ??
                     theme.colorScheme.error,

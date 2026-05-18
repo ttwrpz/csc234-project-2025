@@ -4,9 +4,10 @@ part 'auth_credentials.freezed.dart';
 
 /// Sealed credentials passed from controllers to use cases.
 ///
-/// `emailPassword` overrides [toString] to redact the password literal — the
-/// password must never appear in any log line, crash report, or error trace.
-/// Invariant 4 from HB-001 is asserted by `auth_credentials_test.dart`.
+/// `emailPassword` overrides [toString] to redact the password
+/// literal — the password must never appear in any log line, crash
+/// report, or error trace. The redaction is asserted by
+/// `auth_credentials_test.dart`.
 @freezed
 sealed class AuthCredentials with _$AuthCredentials {
   const AuthCredentials._();

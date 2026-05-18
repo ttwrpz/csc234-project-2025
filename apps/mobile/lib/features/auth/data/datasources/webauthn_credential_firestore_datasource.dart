@@ -3,12 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/webauthn_credential.dart';
 
 /// Watches the registered WebAuthn credential at
-/// `users/{uid}/webauthn/{credentialId}` (ADR-0014 Decision C).
+/// `users/{uid}/webauthn/{credentialId}`.
 ///
-/// v1.5 ships single-credential per account, so the stream emits at
-/// most one entry — the first doc in the collection, or `null` when
-/// the collection is empty. The Privacy UI status tile and the PIN
-/// verify screen both consume this stream.
+/// Single-credential per account, so the stream emits at most one
+/// entry — the first doc in the collection, or `null` when the
+/// collection is empty. The Privacy UI status tile and the PIN verify
+/// screen both consume this stream.
 ///
 /// **Field projection note:** the full credential doc carries
 /// `publicKeyBase64`, `counter`, `aaguid`, and `transports` — all

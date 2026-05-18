@@ -278,10 +278,10 @@ class FirebaseAuthDatasource {
   }
 
   /// Deletes the locally-signed-in Firebase Auth user record. Called by
-  /// [AuthRepositoryImpl.deleteCurrentUser] AFTER the server cascade has
-  /// run (per ADR-0009 §5.2 — the CF deletes data, the client deletes the
-  /// Auth user). No-ops when the user is already null (idempotent —
-  /// matches the use case's "Ok if already gone" contract).
+  /// [AuthRepositoryImpl.deleteCurrentUser] AFTER the server cascade
+  /// has run (the CF deletes data, the client deletes the Auth user).
+  /// No-ops when the user is already null (idempotent — matches the
+  /// use case's "Ok if already gone" contract).
   ///
   /// Maps `requires-recent-login` to [AuthFailure.requiresRecentLogin] so
   /// the caller can distinguish the recoverable case from a hard

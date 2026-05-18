@@ -4,18 +4,18 @@
 /// `package:crypto`; domain consumers (use cases, repository) speak only
 /// in terms of [DerivedKey].
 ///
-/// Per ADR-0013 Decision E §3: 100 000 iterations, 16-byte salt,
-/// 32-byte output. The hasher does NOT generate the salt — that is the
-/// repository's responsibility so the same hasher can be re-used with
-/// the stored salt during verification.
+/// Parameters: 100 000 iterations, 16-byte salt, 32-byte output. The
+/// hasher does NOT generate the salt — that is the repository's
+/// responsibility so the same hasher can be re-used with the stored
+/// salt during verification.
 abstract class PinHasher {
   /// Algorithm tag stored in the [PinHash.algorithm] field. Used at
   /// verify time to confirm the stored doc was hashed with the same
   /// algorithm as the current code path.
   String get algorithm;
 
-  /// Per-ADR minimum. The implementation MUST refuse to derive with
-  /// fewer iterations than this.
+  /// Minimum iteration count. The implementation MUST refuse to derive
+  /// with fewer iterations than this.
   static const int minIterations = 100000;
 
   /// Salt length in bytes. 16 bytes (128 bits) — the OWASP minimum.
@@ -47,10 +47,10 @@ abstract class PinHasher {
   /// that touches PRNG primitives.
   List<int> newSalt();
 
-  /// Constant-time byte comparison. ADR-0013 critical reminder #1:
-  /// **never** use `==` on base64 strings or list equality on the
-  /// derived key — both leak timing information that an attacker
-  /// running an offline brute-force can exploit.
+  /// Constant-time byte comparison. **Never** use `==` on base64
+  /// strings or list equality on the derived key — both leak timing
+  /// information that an attacker running an offline brute-force can
+  /// exploit.
   ///
   /// Returns `true` iff the inputs have the same length and the same
   /// bytes in every position.

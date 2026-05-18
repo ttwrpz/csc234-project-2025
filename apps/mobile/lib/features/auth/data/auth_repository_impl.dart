@@ -118,8 +118,8 @@ class AuthRepositoryImpl implements AuthRepository {
         case GoogleCredentials(:final idToken):
           await _datasource.reauthenticateWithGoogleIdToken(idToken);
         case BiometricCredentials():
-          // Biometric reauth path is platform-keystore-backed and lands in
-          // a follow-up (no v1.5 caller asks for it). Surface a marker
+          // Biometric reauth path is platform-keystore-backed and lands
+          // in a follow-up — no caller wires it today. Surface a marker
           // failure so any caller wiring biometric reauth before that
           // path ships fails loudly rather than silently bypassing the
           // reauth fence.
@@ -148,11 +148,11 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Result<void, AuthFailure>> deleteAccount() async {
-    // Server-side cascade via the admin-SDK callable per ADR-0009. The CF
-    // wipes every subcollection under `users/{uid}/` plus any user-owned
-    // Storage media, then resets the profile-doc fields. It deliberately
-    // does NOT delete the Firebase Auth record — that's left to
-    // `deleteCurrentUser` so the use case can sequence reauth →
+    // Server-side cascade via the admin-SDK callable. The CF wipes
+    // every subcollection under `users/{uid}/` plus any user-owned
+    // Storage media, then resets the profile-doc fields. It
+    // deliberately does NOT delete the Firebase Auth record — that's
+    // left to `deleteCurrentUser` so the use case can sequence reauth →
     // cascade → local-Auth-delete → signOut with a single recent-login
     // window.
     try {
@@ -183,8 +183,8 @@ class AuthRepositoryImpl implements AuthRepository {
     } on AuthDatasourceException catch (e) {
       // `requiresRecentLogin` is a normal post-cascade outcome when the
       // CF + Storage cleanup pushes the call out past the ~5-minute
-      // window; the caller knows to proceed to signOut anyway per
-      // ADR-0009 §"Good" point 5. Other failures are still surfaced.
+      // window; the caller knows to proceed to signOut anyway. Other
+      // failures are still surfaced.
       _logger.warn('deleteCurrentUser failed: ${e.failure.runtimeType}');
       return Err(e.failure);
     }

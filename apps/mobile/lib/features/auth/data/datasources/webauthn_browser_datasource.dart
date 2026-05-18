@@ -89,10 +89,10 @@ class WebauthnUnsupportedException implements Exception {
 /// override so the integration test path never instantiates the real
 /// `package:web` binding.
 ///
-/// **v1.5-dark note:** when `kEnableWebauthn` is `false`, this
+/// **Dark-feature note:** when `kEnableWebauthn` is `false`, this
 /// datasource is never instantiated — the `webauthnAvailableProvider`
 /// short-circuits at the provider level. The class exists in the repo
-/// so v1.5.1 can light it up with one flag flip.
+/// so a future flag flip can light it up.
 abstract class WebauthnBrowserDatasource {
   /// Invoke `navigator.credentials.create({publicKey: ...})` with the
   /// server-issued [optionsJson] (the `PublicKeyCredentialCreationOptionsJSON`
@@ -120,17 +120,16 @@ abstract class WebauthnBrowserDatasource {
   );
 }
 
-/// v1.5-dark placeholder — every method throws
+/// Dark-feature placeholder — every method throws
 /// [WebauthnUnsupportedException]. The real `package:web` binding is
-/// deferred to v1.5.1 (or whenever `kEnableWebauthn` flips to `true`)
-/// to keep the v1.5 build dependency-light. Today, the providers'
-/// `kEnableWebauthn` short-circuit ensures this class is never reached
-/// from the live UI.
+/// deferred until `kEnableWebauthn` flips to `true` to keep the build
+/// dependency-light. Today, the providers' `kEnableWebauthn`
+/// short-circuit ensures this class is never reached from the live UI.
 ///
 /// Implementing the full `dart:js_interop` binding now would still pull
-/// `package:web` into the build graph; v1.5.1 will add it as a direct
-/// `pubspec.yaml` dep and replace this stub. The interface above is the
-/// load-bearing seam for the tests + the v1.5.1 swap.
+/// `package:web` into the build graph; a future change will add it as
+/// a direct `pubspec.yaml` dep and replace this stub. The interface
+/// above is the load-bearing seam for the tests + that swap.
 class WebauthnBrowserDatasourceUnsupportedStub
     implements WebauthnBrowserDatasource {
   const WebauthnBrowserDatasourceUnsupportedStub();

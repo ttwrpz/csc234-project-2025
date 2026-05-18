@@ -15,10 +15,10 @@ import '../domain/services/pin_hasher.dart';
 /// is HMAC-SHA256(password, U_{k-1}). For a 32-byte output and SHA-256
 /// (32-byte block) the loop is l=1 — single T_1 of 32 bytes.
 ///
-/// Choice rationale (ADR-0013 Open Follow-up #1): `pointycastle` is
-/// NOT in `flutter pub deps`, only `crypto` (transitive via `uuid`,
-/// promoted to a direct dep in pubspec). Hand-rolled is < 20 lines and
-/// keeps the dependency surface area minimal.
+/// Choice rationale: `pointycastle` is NOT in `flutter pub deps`, only
+/// `crypto` (transitive via `uuid`, promoted to a direct dep in
+/// pubspec). Hand-rolled is < 20 lines and keeps the dependency
+/// surface area minimal.
 class PinHasherImpl implements PinHasher {
   PinHasherImpl({Random? random}) : _random = random ?? Random.secure();
 

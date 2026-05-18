@@ -9,7 +9,7 @@ import 'datasources/webauthn_browser_datasource.dart';
 import 'datasources/webauthn_credential_firestore_datasource.dart';
 import 'datasources/webauthn_functions_datasource.dart';
 
-/// Repository implementation for the WebAuthn fallback factor (ADR-0014).
+/// Repository implementation for the WebAuthn fallback factor.
 ///
 /// Orchestrates the four-step ceremony for both register and verify:
 ///   1. Call the "start" Cloud Function to get a fresh challenge +
