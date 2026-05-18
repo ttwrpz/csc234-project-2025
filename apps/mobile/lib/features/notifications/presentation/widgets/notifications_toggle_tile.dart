@@ -8,7 +8,7 @@ import '../controllers/notifications_controller.dart';
 /// the settings screen's PREFERENCES zone (above SECURITY).
 ///
 /// Behaviour:
-/// - Reflects the controller's current state (defaults `true` per O13).
+/// - Reflects the controller's current state.
 /// - On enable: defers to the controller, which requests OS permission
 ///   first. If denied, the toggle stays off and a compassionate
 ///   imperative SnackBar surfaces — never "You must…".

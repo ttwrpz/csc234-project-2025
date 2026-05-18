@@ -5,7 +5,7 @@ import '../domain/notifications_settings.dart';
 /// Wire-format mirror of `users/{uid}/settings/notifications`. Lives in
 /// `data/` only — the domain layer never touches Firestore types.
 ///
-/// Doc shape (HB-003 §"Settings doc shape", extended HB-007 S5 Day 2):
+/// Doc shape:
 /// ```json
 /// {
 ///   "cheerUpEnabled": true,
@@ -19,11 +19,11 @@ import '../domain/notifications_settings.dart';
 /// }
 /// ```
 ///
-/// Migration (S5 Day 2): docs created before this sprint only carry
-/// `cheerUpEnabled` + `tokens` + `updatedAt`. The datasource detects
-/// "legacy shape" via [needsTierMigration] and mirrors the legacy
-/// value to all three new tier flags in a single merge-write so the
-/// dispatcher's read path always sees the four-flag schema.
+/// Migration: docs created before the per-tier opt-outs landed only
+/// carry `cheerUpEnabled` + `tokens` + `updatedAt`. The datasource
+/// detects "legacy shape" via [needsTierMigration] and mirrors the
+/// legacy value to all three new tier flags in a single merge-write so
+/// the dispatcher's read path always sees the four-flag schema.
 class NotificationsSettingsDto {
   const NotificationsSettingsDto({
     required this.cheerUpEnabled,
@@ -124,11 +124,10 @@ class NotificationsSettingsDto {
   /// flags) so callers that just want to refresh a token still write a
   /// schema-complete doc.
   ///
-  /// Empty token strings are dropped at this boundary (defense-in-depth
-  /// vs. the per-token shape gap noted in HB-003 OQ-A and the security
-  /// audit R-003): rules cap list size at 25 but cannot validate
-  /// elements, so the write side must reject malformed tokens before
-  /// they round-trip and surface as ghost records on read.
+  /// Empty token strings are dropped at this boundary (defense-in-depth):
+  /// rules cap list size at 25 but cannot validate elements, so the
+  /// write side must reject malformed tokens before they round-trip and
+  /// surface as ghost records on read.
   static Map<String, Object?> toFirestoreMerge({
     required NotificationsSettings settings,
   }) {

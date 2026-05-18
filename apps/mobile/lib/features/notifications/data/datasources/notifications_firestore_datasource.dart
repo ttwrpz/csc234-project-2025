@@ -8,13 +8,13 @@ import '../notifications_dto.dart';
 /// Centralises the transaction-based dedup-then-write semantics so the
 /// repository stays free of Firestore types.
 ///
-/// S5 Day 2 (HB-007 follow-up): also owns the one-time legacy-to-tiered
-/// settings migration. Docs created before the per-tier opt-outs landed
-/// only carry `cheerUpEnabled` + `tokens` + `updatedAt`. The first time
-/// such a doc is read (via [watch] or the transaction inside [mutate]),
-/// we mirror the legacy `cheerUpEnabled` value to the three new tier
-/// flags and persist them back with `set(merge: true)`. Subsequent
-/// reads see all four flags and skip the migration.
+/// Also owns the one-time legacy-to-tiered settings migration. Docs
+/// created before the per-tier opt-outs landed only carry
+/// `cheerUpEnabled` + `tokens` + `updatedAt`. The first time such a doc
+/// is read (via [watch] or the transaction inside [mutate]), we mirror
+/// the legacy `cheerUpEnabled` value to the three new tier flags and
+/// persist them back with `set(merge: true)`. Subsequent reads see all
+/// four flags and skip the migration.
 class NotificationsFirestoreDatasource {
   NotificationsFirestoreDatasource(
     this._firestore, {
@@ -69,8 +69,8 @@ class NotificationsFirestoreDatasource {
   /// to the current document state (or [NotificationsSettings.initial] if
   /// the doc doesn't exist yet).
   ///
-  /// If the existing doc is in the pre-S5 legacy shape, [mutate] sees
-  /// the migrated entity (tier flags mirrored from `cheerUpEnabled`) and
+  /// If the existing doc is in the legacy shape, [mutate] sees the
+  /// migrated entity (tier flags mirrored from `cheerUpEnabled`) and
   /// the merge-write writes the full four-flag schema. This keeps the
   /// migration in lock-step with any caller-initiated mutation — a user
   /// who toggles cheer-up off as their first post-update action gets

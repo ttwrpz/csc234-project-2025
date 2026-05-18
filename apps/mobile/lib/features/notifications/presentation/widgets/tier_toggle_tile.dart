@@ -13,7 +13,7 @@ enum InterventionTier { one, two, three }
 
 /// SwitchListTile for a single intervention tier. Replaces the legacy
 /// single-channel `NotificationsToggleTile` in the Settings preferences
-/// zone (S5 Day 2, HB-007 follow-up).
+/// zone.
 ///
 /// Behaviour:
 /// - Renders the controller's current per-tier flag.

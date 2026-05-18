@@ -33,8 +33,8 @@ class FcmDatasource {
   /// `granted` immediately because permission is granted at install
   /// time. On Web this triggers the browser permission prompt — but
   /// only when `web/firebase-messaging-sw.js` is registered with a
-  /// real Firebase config (the placeholder config silently denied the
-  /// prompt; v1.5 polish fix).
+  /// real Firebase config (a placeholder config silently denies the
+  /// prompt).
   ///
   /// **Android 13+ note:** `firebase_messaging.requestPermission()`
   /// does NOT show the runtime POST_NOTIFICATIONS dialog — the plugin
