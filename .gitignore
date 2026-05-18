@@ -52,8 +52,15 @@ app.*.map.json
 /android/app/release
 
 # Claude Code — track project artifacts (agents, briefs, hooks, prompts, CLAUDE.md);
-# only ignore user-local permission overrides.
+# only ignore user-local permission overrides + runtime state.
 .claude/settings.local.json
+# Runtime lock used by the scheduler / parallel-agent coordinator.
+.claude/scheduled_tasks.lock
+# Per-developer skill packages installed locally via the `/skills` flow.
+# These are workstation-specific — the canonical source is the skill
+# author's package, not a snapshot in this repo.
+.claude/skills/
+skills-lock.json
 
 # Cursor AI
 .cursor/
@@ -120,3 +127,5 @@ functions/.runtimeconfig.json
 # which materialises temporary trees here. They're harness state, not
 # repo content.
 /.claude/worktrees/
+# Sibling local-agent state directory (Claude Code orchestration sandbox).
+/.agents/
