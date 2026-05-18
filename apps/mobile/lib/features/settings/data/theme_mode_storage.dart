@@ -25,9 +25,9 @@ class ThemeModeStorage {
   final SharedPreferences _prefs;
 
   /// Reads the persisted preference. Defaults to
-  /// [ThemeModePreference.light] on first launch — the warm cream
-  /// surface is the brand-canonical first-touch and tests in dark mode
-  /// always opt in explicitly. Malformed values fall back the same way.
+  /// [ThemeModePreference.system] on first launch and on malformed
+  /// values — the device's own light/dark setting is the most
+  /// respectful first-touch.
   ThemeModePreference read() {
     switch (_prefs.getString(_key)) {
       case 'light':
@@ -40,7 +40,7 @@ class ThemeModeStorage {
         return ThemeModePreference.system;
       case null:
       default:
-        return ThemeModePreference.light;
+        return ThemeModePreference.system;
     }
   }
 

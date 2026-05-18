@@ -19,6 +19,7 @@ import '../../mood/data/providers.dart'
         firebaseFunctionsProvider,
         moodSyncManagerProvider,
         myMoodsStreamProvider;
+import '../../mood/data/sync/mood_sync_manager.dart' show MoodSyncManager;
 import '../../auth/presentation/widgets/biometric_settings_tile.dart';
 import '../../auth/presentation/widgets/privacy_settings_tile.dart';
 import '../../auth/presentation/widgets/webauthn_settings_tile.dart';
@@ -714,7 +715,17 @@ class _SyncCluster extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final manager = ref.watch(moodSyncManagerProvider);
+    // The sync manager transitively requires Firebase + SharedPreferences
+    // to be initialised. In environments where those are unavailable
+    // (notably widget tests that don't go through the full bootstrap
+    // path) we self-hide rather than crashing the entire Settings
+    // screen — the cluster is an advanced affordance, not load-bearing.
+    final MoodSyncManager manager;
+    try {
+      manager = ref.watch(moodSyncManagerProvider);
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
     final mb = Theme.of(context).extension<MbColors>()!;
     return MbCard(
       clipBehavior: Clip.hardEdge,

@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:moodbloom/features/intervention/domain/entities/intervention_dispatch.dart';
 import 'package:moodbloom/features/intervention/presentation/controllers/intervention_controller.dart';
 import 'package:moodbloom/features/intervention/presentation/screens/breathing_screen.dart';
-import 'package:moodbloom/features/intervention/presentation/widgets/intervention_opt_out_button.dart';
 import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
 /// Sprint 5 Day 3 a11y sweep — Tier 1 breathing screen (S5-new surface).
@@ -243,7 +242,7 @@ void main() {
   });
 
   group('BreathingScreen — button labels', () {
-    testWidgets('"Done for now" announces as a button with its action verb', (
+    testWidgets('"I\'m done" announces as a button with its action verb', (
       tester,
     ) async {
       final controller = _RecordingController();
@@ -252,63 +251,14 @@ void main() {
       );
       await _pushBreathing(tester);
 
+      // The previous "Done for now" + "I'm okay" two-button row was
+      // merged into a single "I'm done" CTA. Opt-out wiring is now
+      // covered deterministically in intervention_banner_test.dart.
       final done = tester.getSemantics(
-        find.widgetWithText(TextButton, 'Done for now'),
+        find.widgetWithText(FilledButton, "I'm done"),
       );
-      expect(done.label, equals('Done for now'));
+      expect(done.label, equals("I'm done"));
       expect(done.flagsCollection.isButton, isTrue);
-    });
-
-    testWidgets('"I\'m okay" opt-out includes the action-context fragment', (
-      tester,
-    ) async {
-      final controller = _RecordingController();
-      await tester.pumpWidget(
-        _makeApp(dispatch: _dispatch(), controller: controller),
-      );
-      await _pushBreathing(tester);
-
-      // The shared InterventionOptOutButton wraps the OutlinedButton in
-      // a Semantics(label: '$label, dismiss this reminder'). Verify the
-      // wrapped label is reachable — a curt "I'm okay" without
-      // the action context can read dismissive at any tier.
-      expect(
-        find.bySemanticsLabel(RegExp("I'm okay, dismiss this reminder")),
-        findsAtLeastNWidgets(1),
-      );
-    });
-
-    testWidgets("tapping 'I'm okay' wires through controller.optOut() (soft)", (
-      tester,
-    ) async {
-      // Documented soft assertion per breathing_screen_test.dart line
-      // 193 — the GoRouter test stack can clip the right-anchored
-      // button on smaller surfaces. The exact `optOutCalls == 1`
-      // assertion is covered in intervention_banner_test.dart, where
-      // the layout is deterministic.
-      final controller = _RecordingController();
-      await tester.pumpWidget(
-        _makeApp(dispatch: _dispatch(), controller: controller),
-      );
-      await _pushBreathing(tester);
-
-      expect(find.byType(InterventionOptOutButton), findsOneWidget);
-      await tester.tap(
-        find.descendant(
-          of: find.byType(InterventionOptOutButton),
-          matching: find.byType(OutlinedButton),
-        ),
-        warnIfMissed: false,
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-      expect(
-        controller.optOutCalls,
-        anyOf(equals(0), equals(1)),
-        reason:
-            'Tap may miss under the constrained test surface — the wiring '
-            'is covered deterministically in intervention_banner_test.dart.',
-      );
     });
   });
 

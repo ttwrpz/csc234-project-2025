@@ -6,7 +6,6 @@ import 'package:moodbloom/features/intervention/domain/entities/intervention_dis
 import 'package:moodbloom/features/intervention/presentation/controllers/intervention_controller.dart';
 import 'package:moodbloom/features/intervention/presentation/screens/breathing_screen.dart';
 import 'package:moodbloom/features/intervention/presentation/widgets/dispatch_safe_defaults.dart';
-import 'package:moodbloom/features/intervention/presentation/widgets/intervention_opt_out_button.dart';
 import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
 class _RecordingController extends InterventionController {
@@ -135,7 +134,7 @@ void main() {
       expect(find.text('1:59'), findsOneWidget);
     });
 
-    testWidgets('"Done for now" calls controller.complete() then pops', (
+    testWidgets('"I\'m done" calls controller.complete() then pops', (
       tester,
     ) async {
       final controller = _RecordingController();
@@ -146,7 +145,11 @@ void main() {
         ),
       );
       await _pushScreen(tester);
-      await tester.tap(find.text('Done for now'));
+      // The previous "Done for now" + "I'm okay" two-button row was
+      // merged into a single "I'm done" CTA that routes through
+      // `controller.complete()`. Opt-out semantics are still exercised
+      // by intervention_banner_test.dart.
+      await tester.tap(find.text("I'm done"));
       // Avoid pumpAndSettle because the breathing animation repeats
       // forever — settle never returns.
       await tester.pump();
@@ -155,50 +158,6 @@ void main() {
       // The host route is on top again — the screen content is gone.
       expect(find.text('host-screen'), findsOneWidget);
     });
-
-    testWidgets(
-      '"I\'m okay" button is mounted and wired to controller.optOut()',
-      (tester) async {
-        final controller = _RecordingController();
-        await tester.pumpWidget(
-          _makeApp(
-            dispatch: _dispatch(Tier.one, 'Tier 1 body'),
-            controller: controller,
-          ),
-        );
-        await _pushScreen(tester);
-        // Visual presence — the button is mounted with the canonical
-        // "I'm okay" label.
-        expect(find.byType(InterventionOptOutButton), findsOneWidget);
-        expect(find.text("I'm okay"), findsOneWidget);
-        // Direct hit-test on the underlying OutlinedButton — Dart's
-        // GoRouter test stack centers the routed screen which can push
-        // a Row(spaceBetween)'s right child off the hit-test bounds in
-        // a constrained test surface. `warnIfMissed: false` keeps the
-        // intent clear: we are exercising the wiring, not the layout.
-        await tester.tap(
-          find.descendant(
-            of: find.byType(InterventionOptOutButton),
-            matching: find.byType(OutlinedButton),
-          ),
-          warnIfMissed: false,
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
-        // The optOut → pop chain is asserted end-to-end in
-        // intervention_banner_test.dart; here we accept either the
-        // optOut firing OR the layout having clipped the tap, so the
-        // test stays green across local viewport / Material-3 layout
-        // changes that affect the row's spacing.
-        expect(
-          controller.optOutCalls,
-          anyOf(equals(0), equals(1)),
-          reason:
-              'Tap may miss under the constrained test surface; '
-              'banner test asserts the optOut wiring directly.',
-        );
-      },
-    );
 
     testWidgets(
       'breathing rhythm guide carries the canonical semantics label',

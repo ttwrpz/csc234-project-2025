@@ -135,9 +135,9 @@ void main() {
           aiRepo: aiRepo,
         );
 
-        // Card shell carries the "Insights" header; the row text + sample
-        // size are the per-row signals.
-        expect(find.text('Insights'), findsOneWidget);
+        // Card shell carries the "AI Insight" header; the row text +
+        // sample size are the per-row signals.
+        expect(find.text('AI Insight'), findsOneWidget);
         expect(
           find.text(
             'Your Monday mood averages 1.8 lower than the rest of the week.',
