@@ -5,8 +5,7 @@ import '../../domain/disclaimer_failure.dart';
 import '../../domain/repositories/disclaimer_repository.dart';
 import '../datasources/disclaimer_firestore_datasource.dart';
 
-/// Firestore-backed implementation of [DisclaimerRepository] (S5
-/// feature 7.4, pulled forward into S4).
+/// Firestore-backed implementation of [DisclaimerRepository].
 ///
 /// Failure mapping mirrors `PatternRepositoryImpl` and
 /// `HarvestRepositoryImpl`:
@@ -34,8 +33,8 @@ class DisclaimerRepositoryImpl implements DisclaimerRepository {
   @override
   Future<Result<void, DisclaimerFailure>> ack({required String userId}) async {
     if (userId.isEmpty) {
-      // Defense-in-depth — caller is the (S5) ack dialog which gates on
-      // a signed-in user, but a stale ref shouldn't round-trip a
+      // Defense-in-depth — caller is the ack dialog which gates on a
+      // signed-in user, but a stale ref shouldn't round-trip a
       // malformed write. Network is the closest "transient, retry"
       // semantic.
       return const Err(DisclaimerFailure.network());

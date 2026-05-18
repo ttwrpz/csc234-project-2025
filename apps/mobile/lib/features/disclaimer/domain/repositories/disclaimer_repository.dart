@@ -3,10 +3,9 @@ import 'package:core/core.dart';
 import '../disclaimer_failure.dart';
 
 /// Contract for any backing store that persists the user's bipolar /
-/// medical disclaimer ack flag (S5 feature 7.4, pulled forward into
-/// S4).
+/// medical disclaimer ack flag.
 ///
-/// The Day-4 concrete implementation reads/writes the
+/// The concrete implementation reads/writes the
 /// `users/{userId}.insightsDisclaimerAcked` boolean field via
 /// `set(merge: true)`. The firestore.rule for that field is one-way
 /// (false → true is allowed, true → false is denied), so [ack] is

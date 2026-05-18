@@ -6,14 +6,12 @@ import '../../data/providers.dart';
 import '../../domain/disclaimer_copy.dart';
 
 /// Modal dialog presenting [DisclaimerCopy.full] with a single
-/// "I understand" `FilledButton` (S5 feature 7.4 — pulled forward).
+/// "I understand" `FilledButton`.
 ///
 /// Tapping the button writes `users/{uid}.insightsDisclaimerAcked = true`
-/// via [DisclaimerRepository.ack] and pops the dialog. The (S5) Insights
-/// screen will call [show] once on first visit, gated on the
-/// [disclaimerAckStreamProvider] stream emitting `false`. v1.0 has no
-/// production callsite — only the widget test exercises this surface so
-/// the wiring is verified before S5 lands.
+/// via [DisclaimerRepository.ack] and pops the dialog. The Insights
+/// screen calls [show] once on first visit, gated on the
+/// [disclaimerAckStreamProvider] stream emitting `false`.
 class DisclaimerAckDialog extends ConsumerWidget {
   const DisclaimerAckDialog({super.key, required this.userId});
 
@@ -35,12 +33,12 @@ class DisclaimerAckDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final mb = Theme.of(context).extension<MbColors>()!;
     return AlertDialog(
-      // A11y sweep (S5 8.4): the disclaimer body is ~250 chars; at 200%
-      // type on a small phone the AlertDialog clips by default. Setting
-      // `scrollable: true` wraps the content + actions in a
-      // SingleChildScrollView so the dialog stays readable on every
-      // dynamic-type setting. The dialog remains barrier-non-dismissible
-      // — only the "I understand" button can pop it.
+      // The disclaimer body is ~250 chars; at 200% type on a small phone
+      // the AlertDialog clips by default. Setting `scrollable: true`
+      // wraps the content + actions in a SingleChildScrollView so the
+      // dialog stays readable on every dynamic-type setting. The dialog
+      // remains barrier-non-dismissible — only the "I understand"
+      // button can pop it.
       scrollable: true,
       icon: Icon(
         Icons.medical_information_outlined,
