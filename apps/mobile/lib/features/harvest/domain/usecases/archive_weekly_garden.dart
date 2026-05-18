@@ -6,16 +6,16 @@ import '../harvest_failure.dart';
 import '../repositories/harvest_repository.dart';
 import 'compute_weekly_summary.dart';
 
-/// Archives the week containing [weekStart] (HB-005 Track 6.1).
+/// Archives the week containing [weekStart].
 ///
 /// Pure-Dart use case; the I/O contract is delegated to [HarvestRepository].
 /// The use case does NOT mutate the flat `users/{uid}/moods/` collection —
 /// the harvest is purely additive (a new doc at
 /// `users/{uid}/weeklyGardens/{weekId}`), so the Pattern Engine's
 /// 14-day Mann-Kendall and 30-day Z-score / CUSUM windows are unaffected
-/// across week boundaries (TC-30).
+/// across week boundaries.
 ///
-/// Internal flow per HB-005:
+/// Internal flow:
 ///  1. Reject empty weeks with [HarvestFailure.noEntries] — there's
 ///     nothing to summarise yet.
 ///  2. Compute `weekId = '${year}-W${isoWeekNumber.padLeft(2, '0')}'`
@@ -72,8 +72,8 @@ class ArchiveWeeklyGardenUseCase {
   /// Public for testability — the repository impl uses the same id format
   /// when round-tripping through `getByWeekId`.
   ///
-  /// `'YYYY-Www'` per HB-005 (zero-padded week ordinal). Visible for
-  /// tests so the doc-id contract is asserted alongside the use case.
+  /// `'YYYY-Www'` (zero-padded week ordinal). Visible for tests so the
+  /// doc-id contract is asserted alongside the use case.
   static String formatWeekId(DateTime weekStart) {
     final week = isoWeekNumber(weekStart).toString().padLeft(2, '0');
     return '${isoWeekYear(weekStart)}-W$week';

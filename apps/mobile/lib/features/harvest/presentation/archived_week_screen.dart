@@ -6,7 +6,7 @@ import '../../garden/presentation/widgets/garden_bed.dart';
 import '../../history/presentation/widgets/mood_entry_tile.dart';
 import '../domain/entities/weekly_garden.dart';
 
-/// Detail screen for a single archived [WeeklyGarden] (HB-005 TC-13).
+/// Detail screen for a single archived [WeeklyGarden].
 ///
 /// Renders the week's hero plant tier + summary stats at the top, then
 /// every entry from the archive in a list. Tapping a tile routes to
@@ -89,11 +89,11 @@ class _SummaryHeader extends StatelessWidget {
     final mb = Theme.of(context).extension<MbColors>()!;
     return MbCard(
       padding: const EdgeInsets.all(MoodBloomSpacing.lg),
-      // v1.6 — let the bed fill the available card width on tablet /
-      // desktop so the flowers spread instead of clustering in a
-      // hard-coded 280 dp slot. Aspect ratio held at 2:1 so the bed
-      // scales proportionally; very wide cards (≥ 720) get an extra
-      // height bump for breathing room.
+      // Let the bed fill the available card width on tablet / desktop
+      // so the flowers spread instead of clustering in a hard-coded
+      // 280 dp slot. Aspect ratio held at 2:1 so the bed scales
+      // proportionally; very wide cards (≥ 720) get an extra height
+      // bump for breathing room.
       child: LayoutBuilder(
         builder: (context, constraints) {
           final w = constraints.maxWidth.clamp(280.0, 720.0);

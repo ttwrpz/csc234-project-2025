@@ -9,7 +9,7 @@ import '../domain/usecases/compute_weekly_summary.dart';
 import 'datasources/weekly_gardens_firestore_datasource.dart';
 import 'repositories/harvest_repository_impl.dart';
 
-/// Riverpod wiring for the Weekly Harvest cycle (HB-005 Track 6.1).
+/// Riverpod wiring for the Weekly Harvest cycle.
 ///
 /// The use case providers live here (data layer) because the domain
 /// layer must not import `package:flutter_riverpod` per CLAUDE.md's

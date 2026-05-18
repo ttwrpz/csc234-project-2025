@@ -6,12 +6,11 @@ import '../../domain/harvest_failure.dart';
 import '../../domain/repositories/harvest_repository.dart';
 import '../datasources/weekly_gardens_firestore_datasource.dart';
 
-/// Firestore-backed implementation of [HarvestRepository] (HB-005
-/// Track 6.1).
+/// Firestore-backed implementation of [HarvestRepository].
 ///
 /// Failure mapping mirrors `PatternRepositoryImpl`:
 ///   * `'already-exists'` → [HarvestFailure.alreadyArchived] — the doc
-///     already exists for this weekId. Surfaces TC-11's
+///     already exists for this weekId. Surfaces the
 ///     write-once-on-archive guarantee at the controller layer.
 ///   * `'permission-denied'` → [HarvestFailure.permissionDenied].
 ///   * `'unavailable'` / `'deadline-exceeded'` / `'cancelled'` →

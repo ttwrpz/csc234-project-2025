@@ -12,7 +12,7 @@ import '../../domain/harvest_failure.dart';
 /// week has crossed its 7-day boundary AND no archive doc yet exists
 /// for that week.
 ///
-/// Computation (HB-005 Track 6.1):
+/// Computation:
 ///  1. Find the earliest entry across the full mood history. Its
 ///     `localMidnight` floored to the previous Monday is the user's
 ///     `earliestActiveWeekStart`.
@@ -182,11 +182,11 @@ class WeeklySummaryController extends Notifier<HarvestArchiveStatus> {
       weekStart: activeWeekStart,
       now: DateTime.now(),
       weekEntries: weekEntries,
-      // v1.0: per-day health history is reconstructed by the Garden
-      // state computation each render, but the archive only needs the
-      // ending tier — we pass an empty list and the use case falls back
-      // to `PlantTier.resting`. Architect-flagged for v1.x: pipe the
-      // EWMA history in once the GardenState entity surfaces it.
+      // Per-day health history is reconstructed by the Garden state
+      // computation each render, but the archive only needs the ending
+      // tier — we pass an empty list and the use case falls back to
+      // `PlantTier.resting`. Future work: pipe the EWMA history in
+      // once the GardenState entity surfaces it.
       dailyHealthHistory: const [],
     );
 

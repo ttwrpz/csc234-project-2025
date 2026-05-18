@@ -12,9 +12,9 @@ import '../../mood/presentation/widgets/mood_kind_adapter.dart';
 import '../domain/entities/weekly_garden.dart';
 import 'controllers/weekly_summary_controller.dart';
 
-/// Pre-harvest summary shown ONCE before each archival commits
-/// (HB-005 Track 6.1). The user reviews their week's stats and taps
-/// **Continue to new week** to commit the archive and start fresh.
+/// Pre-harvest summary shown ONCE before each archival commits. The
+/// user reviews their week's stats and taps **Continue to new week** to
+/// commit the archive and start fresh.
 ///
 /// Locked banner copy (CLAUDE.md §"Pre-approved phrasing"):
 /// "Your garden this week has been harvested and saved to your history.
@@ -60,16 +60,16 @@ class WeeklySummaryScreen extends ConsumerWidget {
     // even though the archive landed cleanly. Listening once at the
     // build level routes every success path (manual tap, debug force,
     // double-tap idempotency) through the same `pop`.
-    ref.listen<HarvestArchiveStatus>(
-      weeklySummaryControllerProvider,
-      (prev, next) {
-        if (next is HarvestArchiveSuccess) {
-          if (Navigator.of(context).canPop()) {
-            Navigator.of(context).pop();
-          }
+    ref.listen<HarvestArchiveStatus>(weeklySummaryControllerProvider, (
+      prev,
+      next,
+    ) {
+      if (next is HarvestArchiveSuccess) {
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
         }
-      },
-    );
+      }
+    });
 
     return Scaffold(
       backgroundColor: mb.bg,
@@ -309,9 +309,8 @@ class _DominantEmotionsSection extends StatelessWidget {
 }
 
 /// Mood chip with the per-emotion flower-species sprite leading the
-/// label. Replaces the prior `MbMoodChip` so the Sprint 4 polish
-/// flower mapping (sunflower / forget-me-not / daisy / poppy / fern /
-/// lavender) is visible on the weekly summary screen.
+/// label. Uses the flower-species mapping (sunflower / forget-me-not /
+/// daisy / poppy / fern / lavender) on the weekly summary screen.
 class _DominantEmotionChip extends StatelessWidget {
   const _DominantEmotionChip({required this.mood, required this.count});
 
