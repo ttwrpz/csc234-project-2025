@@ -1,6 +1,5 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/auth/data/providers.dart';
@@ -100,7 +99,7 @@ void main() {
           find.widgetWithText(TextButton, 'Cancel'),
         );
         expect(cancel.label, equals('Cancel'));
-        expect(cancel.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(cancel.flagsCollection.isButton, isTrue);
 
         // Continue button — destructive intent advances to step 2.
         // FilledButton role is the visual weight; the label IS the verb.
@@ -108,7 +107,7 @@ void main() {
           find.widgetWithText(FilledButton, 'Continue'),
         );
         expect(cont.label, equals('Continue'));
-        expect(cont.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(cont.flagsCollection.isButton, isTrue);
       },
     );
   });
@@ -157,7 +156,7 @@ void main() {
           find.widgetWithText(FilledButton, 'Delete forever'),
         );
         expect(delete.label, equals('Delete forever'));
-        expect(delete.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(delete.flagsCollection.isButton, isTrue);
 
         // Cancel keeps the escape hatch reachable.
         expect(find.widgetWithText(TextButton, 'Cancel'), findsOneWidget);

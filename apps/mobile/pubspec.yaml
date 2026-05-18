@@ -1,7 +1,7 @@
 name: moodbloom
 description: "MoodBloom — a compassionate cross-platform mood tracker."
 publish_to: 'none'
-version: 0.2.1+2
+version: 1.0.0+3
 
 environment:
   sdk: ^3.10.7
