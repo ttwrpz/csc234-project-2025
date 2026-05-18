@@ -14,17 +14,15 @@ const Duration _kDefaultDebounceWindow = Duration(milliseconds: 600);
 
 /// Minimum trimmed character count before the AI analyse fires. Below
 /// this threshold the controller treats the text as empty (no
-/// suggestion shown, no Cloud Function call). User feedback v1.0
-/// polish (2026-05-10): the prior threshold was 1 char, which fired
-/// Gemini on 2-3 char drafts ("ok", "sad") and felt over-eager. 12
-/// chars is roughly "I feel sad" — long enough to imply intent.
+/// suggestion shown, no Cloud Function call). 12 chars is roughly
+/// "I feel sad" — long enough to imply intent without firing Gemini on
+/// 2-3 char drafts like "ok" / "sad".
 const int _kDefaultMinChars = 12;
 
 /// Debounce window for the AI suggestion call. Tests override this with a
 /// short interval (e.g. 30ms) so the timer fires inside the test budget.
-/// Riverpod 3: `Notifier` constructors take no args, so dependency
-/// injection happens through provider overrides instead of `new
-/// AiSuggestionController(ref, debounceWindow: …)`.
+/// Riverpod `Notifier` constructors take no args, so dependency injection
+/// happens through provider overrides instead of constructor parameters.
 final aiSuggestionDebounceWindowProvider = Provider<Duration>(
   (ref) => _kDefaultDebounceWindow,
 );
@@ -89,8 +87,8 @@ class AiSuggestionController extends Notifier<AsyncValue<AiSuggestion?>> {
     state = const AsyncValue.loading();
     final usecase = ref.read(analyzeMoodTextUseCaseProvider);
     final result = await usecase(text: text);
-    // Riverpod 3: `Notifier.state =` is a no-op once the provider is
-    // disposed; no `mounted` guard needed.
+    // `Notifier.state =` is a no-op once the provider is disposed; no
+    // `mounted` guard needed.
     state = switch (result) {
       Ok(:final value) => AsyncValue.data(value),
       Err<AiSuggestion, AiAnalysisFailure>(:final failure) => AsyncValue.error(

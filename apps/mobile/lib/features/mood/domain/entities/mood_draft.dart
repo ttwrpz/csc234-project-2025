@@ -5,13 +5,13 @@ import 'mood_type.dart';
 
 part 'mood_draft.freezed.dart';
 
-/// In-progress mood entry held by `LogMoodController` (lands in 3.2).
+/// In-progress mood entry held by `LogMoodController`.
 ///
 /// Lives only in memory — never serialized — so it has no JSON support.
 ///
 /// `pickedMedia` is the local-device list of attachments the user has chosen
 /// but not yet uploaded. They become `mediaRefs` (`gs://...` URIs) only after
-/// a successful save flow uploads each item — see WBS 3.3.
+/// a successful save flow uploads each item.
 @freezed
 abstract class MoodDraft with _$MoodDraft {
   const factory MoodDraft({
@@ -26,8 +26,8 @@ abstract class MoodDraft with _$MoodDraft {
 
   factory MoodDraft.empty() => const MoodDraft();
 
-  /// True when the draft satisfies all pivot-feature invariants and the user
-  /// has picked a mood. Controllers gate the Save button on this getter.
+  /// True when the draft satisfies all invariants and the user has picked a
+  /// mood. Controllers gate the Save button on this getter.
   bool get isReadyToSave =>
       mood != null && intensity >= 1 && intensity <= 5 && text.length <= 500;
 }

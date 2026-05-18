@@ -6,13 +6,9 @@ import '../../../garden/presentation/widgets/flower_sprite.dart';
 import '../../domain/entities/mood_type.dart';
 import 'mood_kind_adapter.dart';
 
-/// One tile inside the mood-picker grid. Card surface with an emoji + label
-/// matching the prototype (`screens.jsx` LogScreen). Selected state tints the
-/// background with the mood's own color at 20% and outlines it at 1.5 px.
-///
-/// Public API (`type`, `selected`, `onTap`) is preserved so that the existing
-/// widget tests in `mood_type_grid_test.dart` and `log_mood_screen_test.dart`
-/// keep matching by `MoodTypeTile && w.selected && w.type == ...`.
+/// One tile inside the mood-picker grid. Card surface with a sprite + label.
+/// Selected state tints the background with the mood's own color at 20% and
+/// outlines it at 1.5 px.
 class MoodTypeTile extends StatelessWidget {
   const MoodTypeTile({
     super.key,

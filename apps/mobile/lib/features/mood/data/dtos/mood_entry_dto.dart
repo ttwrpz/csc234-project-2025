@@ -40,7 +40,7 @@ abstract class MoodEntryDto with _$MoodEntryDto {
   }
 
   /// Payload for `add()`. Server timestamps are used so the rules' check
-  /// `createdAt == request.time` (S3) passes.
+  /// `createdAt == request.time` passes.
   Map<String, Object?> toFirestoreOnCreate() => {
     'userId': userId,
     'mood': mood,

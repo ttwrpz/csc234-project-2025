@@ -4,8 +4,8 @@ import 'package:core/core.dart';
 ///
 /// Sealed so consumers that switch on the variants get exhaustive-switch help
 /// from the analyzer. Extends [Failure] directly (NOT `MoodFailure`) because
-/// AI failures are conceptually distinct from mood-entity failures and S4's
-/// `analyzePatterns` will reuse this taxonomy.
+/// AI failures are conceptually distinct from mood-entity failures and
+/// downstream AI-analysis callers reuse this taxonomy.
 ///
 /// Imports only `package:core/core.dart` — domain-purity rule per CLAUDE.md.
 sealed class AiAnalysisFailure extends Failure {

@@ -16,7 +16,7 @@ import '../local/mood_database.dart';
 import '../local/sync_queue_dao.dart';
 import '../mappers/mood_entry_mapper.dart';
 
-// Backoff and lifecycle constants per ADR-0004 §"Sync state machine".
+// Backoff and lifecycle constants for the sync state machine.
 const Duration _kPollInterval = Duration(seconds: 60);
 const Duration _kSeedTimeout = Duration(seconds: 10);
 const Duration _kBaseBackoff = Duration(seconds: 5);
@@ -32,11 +32,10 @@ const int _kDrainBatchSize = 32;
 
 /// Drift mutation queue drainer + Firestore listener owner.
 ///
-/// PR-2 wires the manager but does **not** route reads through Drift — that's
-/// PR-3 (`MoodRepositoryImpl` cutover). The manager runs on the main isolate;
-/// `package:synchronized`'s [Lock] serialises drain attempts within this
-/// isolate. Sprint 4's WorkManager hand-off must replace this with a SQLite
-/// advisory lock so background isolates can claim queue rows safely.
+/// The manager runs on the main isolate; `package:synchronized`'s [Lock]
+/// serialises drain attempts within this isolate. A future WorkManager
+/// hand-off would need to replace this with a SQLite advisory lock so
+/// background isolates can claim queue rows safely.
 class MoodSyncManager {
   MoodSyncManager({
     required MoodDao moodDao,
@@ -66,7 +65,7 @@ class MoodSyncManager {
     });
 
     // Belt-and-braces: even with no events, drain every minute while the app
-    // is in the foreground (Sprint 3 single-isolate constraint).
+    // is in the foreground (single-isolate constraint).
     _pollTimer = Timer.periodic(_kPollInterval, (_) => kick());
   }
 
@@ -75,7 +74,7 @@ class MoodSyncManager {
   final MoodDao _moodDao;
   final SyncQueueDao _syncQueueDao;
   final MoodFirestoreDatasource _remote;
-  // Mapper retained for future PR-3 wiring (entity reconstruction during
+  // Mapper retained for future wiring (entity reconstruction during
   // bootstrap diagnostics) and to keep the constructor signature stable.
   // ignore: unused_field
   final MoodEntryMapper _mapper;
@@ -89,12 +88,12 @@ class MoodSyncManager {
   late final StreamSubscription<bool> _connectivitySub;
   late final Timer _pollTimer;
 
-  /// Latest connectivity reading. Defaults to `false` (R-7 fix from
-  /// 2026-04-29 audit): assuming online at boot would let the first drain
-  /// fire before the connectivity stream confirms, wasting an `attempt_count`
-  /// when the device actually starts offline. The `connectivity_plus`
-  /// listener emits the real state within milliseconds — no observable UX
-  /// regression — and offline-boot now correctly waits for connectivity.
+  /// Latest connectivity reading. Defaults to `false`: assuming online at boot
+  /// would let the first drain fire before the connectivity stream confirms,
+  /// wasting an `attempt_count` when the device actually starts offline. The
+  /// `connectivity_plus` listener emits the real state within milliseconds —
+  /// no observable UX regression — and offline-boot now correctly waits for
+  /// connectivity.
   bool _isOnline = false;
 
   String? _attachedUid;
@@ -110,8 +109,9 @@ class MoodSyncManager {
   /// directly. Persisted across app restarts via
   /// `_kLastSuccessfulSyncPrefKey` so the timestamp survives the Drift
   /// wipe path used by the debug "Clear local cache" tile.
-  final ValueNotifier<DateTime?> _lastSuccessfulSync =
-      ValueNotifier<DateTime?>(null);
+  final ValueNotifier<DateTime?> _lastSuccessfulSync = ValueNotifier<DateTime?>(
+    null,
+  );
 
   /// Public read-only handle for the Settings UI.
   ValueListenable<DateTime?> get lastSuccessfulSync => _lastSuccessfulSync;
@@ -233,9 +233,9 @@ class MoodSyncManager {
   Future<void> _drainImpl() async {
     if (_shutdown) return;
     if (!_isOnline) return;
-    // R-1 fix (2026-04-29 audit): without an attached uid we cannot enforce
-    // the cross-user filter, so skip drain entirely. The connectivity / kick
-    // / poll triggers will retry once bootstrap binds a uid.
+    // Without an attached uid we cannot enforce the cross-user filter, so
+    // skip drain entirely. The connectivity / kick / poll triggers will
+    // retry once bootstrap binds a uid.
     final attachedUid = _attachedUid;
     if (attachedUid == null) return;
 
@@ -302,7 +302,10 @@ class MoodSyncManager {
   Future<void> _stampLastSuccessfulSync() async {
     final now = _clock();
     _lastSuccessfulSync.value = now;
-    await _prefs.setInt(_kLastSuccessfulSyncPrefKey, now.millisecondsSinceEpoch);
+    await _prefs.setInt(
+      _kLastSuccessfulSyncPrefKey,
+      now.millisecondsSinceEpoch,
+    );
   }
 
   /// Returns `true` if the row was successfully sent upstream (so the
@@ -490,14 +493,10 @@ class MoodSyncManager {
     );
   }
 
-  /// JSON-decode a queue payload. Schema is owned by PR-3's repo, but PR-2
-  /// must already understand it so the drain works.
-  ///
-  /// R-1 (2026-04-29 audit): light-weight extraction of just the `userId`
-  /// from a queue row's payload, used to enforce the cross-user drain filter
-  /// without fully reconstructing the DTO. Returns `null` if the payload is
-  /// malformed or lacks a `userId` field — the caller treats null as
-  /// "unsafe to replay" and skips the row.
+  /// Light-weight extraction of just the `userId` from a queue row's payload,
+  /// used to enforce the cross-user drain filter without fully reconstructing
+  /// the DTO. Returns `null` if the payload is malformed or lacks a `userId`
+  /// field — the caller treats null as "unsafe to replay" and skips the row.
   String? _payloadUserId(SyncQueueRow row) {
     try {
       final raw = jsonDecode(row.payload);

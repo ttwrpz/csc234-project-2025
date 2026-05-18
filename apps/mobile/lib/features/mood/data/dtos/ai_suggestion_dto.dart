@@ -27,10 +27,9 @@ abstract class AiSuggestionDto with _$AiSuggestionDto {
     required int latencyMs,
     required String modelVersion,
 
-    /// Inferred 1..5 intensity. Optional on the wire so we stay
-    /// compatible with the Cloud Function before the v1.0-polish
-    /// (2026-05-10) redeploy that adds it. Defaults to 3 (neutral)
-    /// when the server omits it.
+    /// Inferred 1..5 intensity. Optional on the wire for backward
+    /// compatibility with older Cloud Function deploys that omit it;
+    /// defaults to 3 (neutral) when missing.
     @Default(3) int intensity,
   }) = _AiSuggestionDto;
 

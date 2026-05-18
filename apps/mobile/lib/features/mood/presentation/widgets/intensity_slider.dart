@@ -6,14 +6,14 @@ import 'package:flutter/services.dart';
 import '../../domain/entities/mood_type.dart';
 import 'mood_kind_adapter.dart';
 
-/// 1..5 discrete slider, restyled per the Sprint 2 Prototype:
+/// 1..5 discrete slider:
 ///  - filled track gradient `mood.color@33 → mood.color`
 ///  - knob 22 dp white circle with 2 px primary border + soft drop shadow
 ///  - 48 dp tap-target host
 ///
 /// On Android (non-Web) physical devices, fires
 /// [HapticFeedback.selectionClick] when the rounded value transitions to a
-/// new integer. Web has no haptic; iOS is out of scope this sprint.
+/// new integer. Web has no haptic; iOS is out of scope.
 class IntensitySlider extends StatelessWidget {
   const IntensitySlider({
     super.key,

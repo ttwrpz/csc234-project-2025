@@ -5,12 +5,9 @@ import '../../domain/entities/mood_type.dart';
 import 'mood_type_tile.dart';
 
 /// Responsive mood-type picker. Always 3 across; tiles fill the row.
-/// The previous 132dp cap left the LogMood Add page looking sparse on
-/// desktop wide layouts (user feedback v1.0 polish: "emotion button in
-/// Choose feeling in the desktop must width 100%"). We now derive the
-/// tile width from the available column width and only clamp at
-/// extremes (72dp lower bound for cramped narrow phones, 240dp upper
-/// bound so a 1440dp window doesn't get cartoon-sized tiles).
+/// The tile width is derived from the available column width and only
+/// clamps at extremes (72dp lower bound for cramped narrow phones, 240dp
+/// upper bound so a 1440dp window doesn't get cartoon-sized tiles).
 ///
 /// Stateless; the parent controller owns the selection.
 class MoodTypeGrid extends StatelessWidget {

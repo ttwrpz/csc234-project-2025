@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// can be on Wi-Fi and VPN simultaneously). We collapse the list to a single
 /// `bool`: `true` when at least one transport is non-`none`.
 ///
-/// Consumed by [MoodSyncManager]'s constructor and exposed to the future PR-3
+/// Consumed by [MoodSyncManager]'s constructor and exposed to the
 /// "pending uploads" UI badge.
 final connectivityProvider = StreamProvider<bool>((ref) {
   // Debug override: when the Settings "Force offline" toggle is on, we
@@ -40,8 +40,8 @@ final debugForceOfflineProvider =
 
 /// Plain `Stream<bool>` exposed to plain-Dart consumers (e.g.
 /// [MoodSyncManager]) that want a raw stream rather than an `AsyncValue`.
-/// Riverpod 3 retired `StreamProvider.stream`; the replacement is to
-/// expose the underlying broadcast stream via a sibling provider.
+/// Riverpod retired `StreamProvider.stream`; the replacement is to expose
+/// the underlying broadcast stream via a sibling provider.
 final connectivityStreamProvider = Provider<Stream<bool>>((ref) {
   return _onlineStream();
 });

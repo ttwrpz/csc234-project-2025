@@ -47,8 +47,7 @@ abstract class AiSuggestionAlternative with _$AiSuggestionAlternative {
   }) = _AiSuggestionAlternative;
 }
 
-/// Safety flags raised by the model. S3 ships only `selfHarm` — when set the
-/// AI suggestion pill is hidden entirely (S4 will swap in a compassionate
-/// banner). Keep the enum open for future flag additions without a schema
-/// version bump.
+/// Safety flags raised by the model. Currently only `selfHarm` — when set the
+/// AI suggestion pill is hidden entirely. Keep the enum open for future flag
+/// additions without a schema version bump.
 enum AiSafetyFlag { selfHarm }

@@ -27,11 +27,11 @@ const List<String> _allowedPrefixes = ['image/', 'video/'];
 /// Concrete [MoodMediaRepository] backed by `image_picker` for selection and
 /// `firebase_storage` for upload.
 ///
-/// ## Known limitation — orphan media (S4 cleanup)
+/// ## Known limitation — orphan media
 /// If [upload] succeeds but the caller's subsequent Firestore write fails,
 /// the uploaded blob remains at `users/{uid}/media/{moodId}/...` with no
-/// pointing entry. A janitor cron in Sprint 4 sweeps these orphans; until
-/// then, the storage cost is bounded by the 25 MB-per-file cap.
+/// pointing entry. A janitor cron sweeps these orphans; until then, the
+/// storage cost is bounded by the 25 MB-per-file cap.
 class MoodMediaRepositoryImpl implements MoodMediaRepository {
   MoodMediaRepositoryImpl({
     required ImagePickerDatasource picker,

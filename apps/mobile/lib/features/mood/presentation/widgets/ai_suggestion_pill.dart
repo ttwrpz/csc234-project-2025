@@ -15,13 +15,10 @@ import 'mood_kind_adapter.dart';
 ///   - data(suggest)  → mood chip + intensity + confidence badge + Accept /
 ///                       Dismiss pill buttons
 ///   - data(suggest)  → SizedBox.shrink WHEN safetyFlag == selfHarm
-///                       (S3 hides; S4 swaps in compassionate banner)
 ///   - error          → "Couldn't analyze — pick manually." copy
 ///
 /// Surface is a tinted [MbCard] with `mb.aiBg` background and `mb.aiBd`
 /// border, leading 28×28 r8 sparkle avatar (linear primary→amber gradient).
-/// Public API (`AISuggestionPill()`) is preserved so the screen call site
-/// keeps working unchanged.
 class AISuggestionPill extends ConsumerWidget {
   const AISuggestionPill({super.key});
 
@@ -34,9 +31,7 @@ class AISuggestionPill extends ConsumerWidget {
       data: (suggestion) {
         if (suggestion == null) return const SizedBox.shrink();
         if (suggestion.safetyFlag == AiSafetyFlag.selfHarm) {
-          // S3: hide the pill entirely. S4 will replace this branch with the
-          // compassionate banner (no protocol change required — the seam is
-          // already in the wire format).
+          // Hide the pill entirely on self-harm flags.
           return const SizedBox.shrink();
         }
         return _AiCard(
@@ -207,9 +202,8 @@ class _SuggestionBody extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               MbMoodChip(mood: mbKind, size: MbChipSize.sm, label: moodLabel),
-              // The intensity is omitted in S3 — the AiSuggestion entity does
-              // not carry an intensity field. We surface the confidence band
-              // instead, which is what the prototype labels "intensity".
+              // The AiSuggestion entity does not carry an intensity field; we
+              // surface the confidence band instead.
               MbConfidenceBadge(level: _bandFor(suggestion.confidence)),
             ],
           ),
