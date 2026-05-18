@@ -1,7 +1,6 @@
 import 'package:core/core.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -244,7 +243,7 @@ void main() {
       // flag into a SemanticsNode whose label is the chip text.
       final sadNode = tester.getSemantics(find.text('Sad'));
       expect(
-        sadNode.hasFlag(SemanticsFlag.isSelected),
+        sadNode.flagsCollection.isSelected,
         isTrue,
         reason:
             'Default-selected "Sad" chip must announce selected: true. '
@@ -253,7 +252,7 @@ void main() {
 
       final joyNode = tester.getSemantics(find.text('Joyful'));
       expect(
-        joyNode.hasFlag(SemanticsFlag.isSelected),
+        joyNode.flagsCollection.isSelected,
         isFalse,
         reason: 'Non-default chip must NOT carry the selected flag.',
       );
@@ -301,13 +300,13 @@ void main() {
           find.widgetWithText(FilledButton, 'Save'),
         );
         expect(save.label, equals('Save'));
-        expect(save.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(save.flagsCollection.isButton, isTrue);
 
         final maybe = tester.getSemantics(
           find.widgetWithText(TextButton, 'Maybe later'),
         );
         expect(maybe.label, equals('Maybe later'));
-        expect(maybe.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(maybe.flagsCollection.isButton, isTrue);
 
         // The opt-out wraps an OutlinedButton in a Semantics with the
         // dismiss-context fragment.

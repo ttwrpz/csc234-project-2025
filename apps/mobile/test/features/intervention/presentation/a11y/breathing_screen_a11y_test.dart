@@ -1,6 +1,5 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -257,7 +256,7 @@ void main() {
         find.widgetWithText(TextButton, 'Done for now'),
       );
       expect(done.label, equals('Done for now'));
-      expect(done.hasFlag(SemanticsFlag.isButton), isTrue);
+      expect(done.flagsCollection.isButton, isTrue);
     });
 
     testWidgets('"I\'m okay" opt-out includes the action-context fragment', (

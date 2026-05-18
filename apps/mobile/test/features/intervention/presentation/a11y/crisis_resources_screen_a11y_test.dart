@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -287,13 +286,13 @@ void main() {
           find.widgetWithText(TextButton, 'Stay'),
         );
         expect(stay.label, equals('Stay'));
-        expect(stay.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(stay.flagsCollection.isButton, isTrue);
 
         final close = tester.getSemantics(
           find.widgetWithText(FilledButton, 'Close'),
         );
         expect(close.label, equals('Close'));
-        expect(close.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(close.flagsCollection.isButton, isTrue);
       },
     );
   });

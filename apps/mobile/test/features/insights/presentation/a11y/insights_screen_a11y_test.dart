@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:core/core.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/auth/data/providers.dart';
@@ -163,7 +162,7 @@ void main() {
           find.widgetWithText(FilledButton, DisclaimerCopy.ackButton),
         );
         expect(ack.label, equals(DisclaimerCopy.ackButton));
-        expect(ack.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(ack.flagsCollection.isButton, isTrue);
       },
     );
 

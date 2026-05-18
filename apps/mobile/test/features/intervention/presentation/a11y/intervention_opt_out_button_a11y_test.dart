@@ -1,6 +1,5 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/intervention/presentation/controllers/intervention_controller.dart';
@@ -112,7 +111,7 @@ void main() {
       // the button flag. Verify via the visible button text — the
       // resolved semantics on the OutlinedButton carries isButton: true.
       final btn = tester.getSemantics(find.byType(OutlinedButton));
-      expect(btn.hasFlag(SemanticsFlag.isButton), isTrue);
+      expect(btn.flagsCollection.isButton, isTrue);
     });
   });
 

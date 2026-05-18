@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 // Prints the resolved-theme contrast ratios used by the
 // docs/test-reports/sprint-5-a11y-report.md table. Skipped by default
 // (`skip: false` to regenerate). Keeps the WCAG-math + colour

@@ -1,6 +1,5 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -207,7 +206,7 @@ void main() {
         find.widgetWithText(FilledButton, 'Open'),
       );
       expect(openSemantics.label, equals('Open'));
-      expect(openSemantics.hasFlag(SemanticsFlag.isButton), isTrue);
+      expect(openSemantics.flagsCollection.isButton, isTrue);
     });
   });
 

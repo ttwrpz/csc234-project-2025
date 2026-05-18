@@ -3,7 +3,7 @@ import 'package:moodbloom/features/auth/domain/entities/pin_hash.dart';
 
 void main() {
   group('PinHash', () {
-    PinHash _hash({
+    PinHash makeHash({
       String algorithm = 'pbkdf2-sha256',
       int iterations = 100000,
       String saltBase64 = 'AAAA',
@@ -36,28 +36,28 @@ void main() {
     });
 
     test('Freezed equality — same values are ==', () {
-      final a = _hash();
-      final b = _hash();
+      final a = makeHash();
+      final b = makeHash();
       expect(a, equals(b));
       expect(a.hashCode, equals(b.hashCode));
     });
 
     test('Freezed inequality — differing iterations is !=', () {
-      final a = _hash(iterations: 100000);
-      final b = _hash(iterations: 200000);
+      final a = makeHash(iterations: 100000);
+      final b = makeHash(iterations: 200000);
       expect(a, isNot(equals(b)));
     });
 
     test('roundtrips through JSON', () {
       final lock = DateTime.utc(2026, 5, 14, 12, 30);
-      final hash = _hash(failedAttempts: 3, lockedUntil: lock);
+      final hash = makeHash(failedAttempts: 3, lockedUntil: lock);
       final json = hash.toJson();
       final restored = PinHash.fromJson(json);
       expect(restored, equals(hash));
     });
 
     test('copyWith updates only the named field', () {
-      final original = _hash();
+      final original = makeHash();
       final updated = original.copyWith(failedAttempts: 5);
       expect(updated.failedAttempts, 5);
       expect(updated.iterations, original.iterations);
