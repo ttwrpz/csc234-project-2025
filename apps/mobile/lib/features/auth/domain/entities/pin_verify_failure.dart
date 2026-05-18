@@ -18,9 +18,8 @@ sealed class PinVerifyFailure extends Failure {
   /// The user entered an invalid PIN. The data layer has already
   /// incremented `failedAttempts` and (if applicable) set
   /// `lockedUntil` on the rate-limit doc.
-  const factory PinVerifyFailure.wrong({
-    required int remainingAttempts,
-  }) = _Wrong;
+  const factory PinVerifyFailure.wrong({required int remainingAttempts}) =
+      _Wrong;
 
   /// The hash doc reads `lockedUntil > now`. The keypad is disabled
   /// until [until]; the UI shows a countdown.
@@ -68,7 +67,9 @@ class _InvalidFormat extends PinVerifyFailure {
 
 class _Storage extends PinVerifyFailure {
   const _Storage()
-    : super(message: 'Could not verify right now. Please check your connection.');
+    : super(
+        message: 'Could not verify right now. Please check your connection.',
+      );
 }
 
 class _Unknown extends PinVerifyFailure {

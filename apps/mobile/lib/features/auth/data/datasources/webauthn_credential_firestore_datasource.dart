@@ -28,10 +28,7 @@ class WebauthnCredentialFirestoreDatasource {
   /// Returns null when no credential exists or after the user removes
   /// the one they had registered.
   Stream<WebauthnCredential?> watch({required String userId}) {
-    return _credentialsRef(userId)
-        .limit(1)
-        .snapshots()
-        .map((snap) {
+    return _credentialsRef(userId).limit(1).snapshots().map((snap) {
       if (snap.docs.isEmpty) return null;
       return _fromFirestoreDoc(snap.docs.first);
     });

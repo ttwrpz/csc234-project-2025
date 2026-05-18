@@ -25,10 +25,12 @@ class FakeAuthRepository implements AuthRepository {
   Result<void, AuthFailure>? reauthenticateResult;
   Result<void, AuthFailure>? deleteAccountResult;
   Result<void, AuthFailure>? deleteCurrentUserResult;
+  Result<void, AuthFailure>? sendPasswordResetEmailResult;
   AppUser? currentUserOverride;
   final List<({String email, String password})> signInCalls = [];
   final List<({String email, String password})> registerCalls = [];
   final List<AuthCredentials> reauthenticateCalls = [];
+  final List<String> sendPasswordResetEmailCalls = [];
   int googleCalls = 0;
   int signOutCalls = 0;
   int deleteAccountCalls = 0;
@@ -74,6 +76,12 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<Result<void, AuthFailure>> sendPasswordResetEmail(String email) async {
+    sendPasswordResetEmailCalls.add(email);
+    return sendPasswordResetEmailResult ?? const Ok(null);
+  }
+
+  @override
   Future<Result<void, AuthFailure>> reauthenticate(
     AuthCredentials creds,
   ) async {
@@ -91,5 +99,14 @@ class FakeAuthRepository implements AuthRepository {
   Future<Result<void, AuthFailure>> deleteCurrentUser() async {
     deleteCurrentUserCalls += 1;
     return deleteCurrentUserResult ?? const Ok(null);
+  }
+
+  Result<void, AuthFailure>? updateDisplayNameResult;
+  final List<String> updateDisplayNameCalls = [];
+
+  @override
+  Future<Result<void, AuthFailure>> updateDisplayName(String name) async {
+    updateDisplayNameCalls.add(name);
+    return updateDisplayNameResult ?? const Ok(null);
   }
 }

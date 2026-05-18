@@ -129,7 +129,7 @@ class _TriggerRow extends StatelessWidget {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: _tierColor(tier),
+                  color: _tierColor(tier, mb),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -160,10 +160,10 @@ class _TriggerRow extends StatelessWidget {
     );
   }
 
-  static Color _tierColor(Tier? tier) => switch (tier) {
+  static Color _tierColor(Tier? tier, MbColors mb) => switch (tier) {
     Tier.one => MoodBloomColors.amber,
     Tier.two => MoodBloomColors.coral,
-    Tier.three => MoodBloomColors.coralText,
+    Tier.three => mb.destructiveText,
     null => MoodBloomColors.onSurfaceMuted,
   };
 

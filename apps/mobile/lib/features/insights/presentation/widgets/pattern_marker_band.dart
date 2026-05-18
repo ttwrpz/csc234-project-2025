@@ -98,7 +98,8 @@ class _Marker extends StatelessWidget {
         ),
       );
     }
-    final color = _colorFor(tier);
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final color = _colorFor(tier, mb);
     final tierLabel = _labelFor(tier);
     final dateLabel = _shortDate(insight.date);
     final dot = AnimatedScale(
@@ -130,10 +131,10 @@ class _Marker extends StatelessWidget {
     );
   }
 
-  static Color _colorFor(Tier tier) => switch (tier) {
+  static Color _colorFor(Tier tier, MbColors mb) => switch (tier) {
     Tier.one => MoodBloomColors.amber,
     Tier.two => MoodBloomColors.coral,
-    Tier.three => MoodBloomColors.coralText,
+    Tier.three => mb.destructiveText,
   };
 
   static String _labelFor(Tier tier) => switch (tier) {

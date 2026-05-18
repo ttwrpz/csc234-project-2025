@@ -45,8 +45,7 @@ class _Mismatch extends PinSetupFailure {
 }
 
 class _InvalidFormat extends PinSetupFailure {
-  const _InvalidFormat()
-    : super(message: 'PIN must be 6 digits.');
+  const _InvalidFormat() : super(message: 'PIN must be 6 digits.');
 }
 
 class _Storage extends PinSetupFailure {
@@ -55,8 +54,7 @@ class _Storage extends PinSetupFailure {
 }
 
 class _NotSignedIn extends PinSetupFailure {
-  const _NotSignedIn()
-    : super(message: 'Sign in first to set up a PIN.');
+  const _NotSignedIn() : super(message: 'Sign in first to set up a PIN.');
 }
 
 class _Unknown extends PinSetupFailure {

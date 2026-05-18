@@ -65,7 +65,9 @@ class _VerificationFailed extends WebauthnRegisterFailure {
 
 class _Network extends WebauthnRegisterFailure {
   const _Network()
-    : super(message: 'Couldn’t reach the server. Please check your connection.');
+    : super(
+        message: 'Couldn’t reach the server. Please check your connection.',
+      );
 }
 
 class _Unknown extends WebauthnRegisterFailure {

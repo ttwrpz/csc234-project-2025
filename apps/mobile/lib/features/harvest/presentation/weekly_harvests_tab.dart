@@ -126,12 +126,20 @@ class _WeeklyHarvestTile extends StatelessWidget {
   final WeeklyGarden week;
   final VoidCallback onTap;
 
-  /// Below this row width the inline GardenBed thumbnail shrinks so the
-  /// entry text isn't squeezed. The 110×90 thumbnail used to dominate
-  /// phone-class rows (~360 dp wide) — user feedback v1.0 polish
-  /// (2026-05-10): "harvest entries the flowers side is too large in
-  /// the mobile viewport".
+  /// Below this row width the inline garden thumbnail uses the smaller
+  /// slot so the entry text isn't squeezed. v1.6 polish: the previous
+  /// fix shrank `GardenBed.size` directly (72×60 phone, 110×90 desktop),
+  /// but the painter draws plants at ABSOLUTE pixel heights (sunflower
+  /// stem = 100 dp) — passing it a 60-dp tall canvas just clipped the
+  /// plants. We now render at the painter's natural reference size and
+  /// scale the WHOLE bed down via FittedBox so plants stay proportional
+  /// inside the slot.
   static const double _phoneRow = 420;
+
+  /// Reference canvas the GardenBed painter was tuned for. Plant heights
+  /// (stems, flower heads) are absolute relative to this size; scaling
+  /// the rendered bed via FittedBox keeps them in proportion.
+  static const Size _naturalBedSize = Size(320, 140);
 
   @override
   Widget build(BuildContext context) {
@@ -142,16 +150,34 @@ class _WeeklyHarvestTile extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isPhone = constraints.maxWidth < _phoneRow;
-          final thumbSize = isPhone ? const Size(72, 60) : const Size(110, 90);
+          final slotSize = isPhone ? const Size(96, 64) : const Size(140, 88);
           final gap = isPhone ? MoodBloomSpacing.md : MoodBloomSpacing.lg;
           return Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              GardenBed(
-                entries: week.entries,
-                tier: week.summary.endingPlantTier,
-                size: thumbSize,
-                showOverflowBadge: true,
+              SizedBox(
+                width: slotSize.width,
+                height: slotSize.height,
+                child: ClipRect(
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: SizedBox(
+                      width: _naturalBedSize.width,
+                      height: _naturalBedSize.height,
+                      child: GardenBed(
+                        entries: week.entries,
+                        tier: week.summary.endingPlantTier,
+                        size: _naturalBedSize,
+                        showOverflowBadge: true,
+                        // Static thumbnail — animating 10+ beds on the
+                        // history list would burn frames for no payoff
+                        // (the sway/butterfly motion is invisible at
+                        // this scale).
+                        animate: false,
+                      ),
+                    ),
+                  ),
+                ),
               ),
               SizedBox(width: gap),
               Expanded(

@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:design_system/design_system.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,20 +8,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:core/core.dart';
 import 'package:drift/drift.dart' show TableInfo;
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../app/providers.dart';
 import '../../auth/data/providers.dart';
-import '../../mood/data/providers.dart' show firebaseFunctionsProvider;
+import '../../mood/data/providers.dart'
+    show
+        firebaseFunctionsProvider,
+        moodSyncManagerProvider,
+        myMoodsStreamProvider;
 import '../../auth/presentation/widgets/biometric_settings_tile.dart';
 import '../../auth/presentation/widgets/privacy_settings_tile.dart';
 import '../../auth/presentation/widgets/webauthn_settings_tile.dart';
 import '../../disclaimer/presentation/widgets/disclaimer_panel.dart';
 import '../../garden/data/providers.dart' show debugPlantTierOverrideProvider;
 import '../../garden/domain/entities/plant_tier.dart';
+import '../../harvest/data/providers.dart' show weeklyGardenHistoryProvider;
+import '../../harvest/domain/usecases/archive_weekly_garden.dart'
+    show ArchiveWeeklyGardenUseCase;
 import '../../harvest/presentation/controllers/weekly_summary_controller.dart';
 import '../../intervention/presentation/controllers/intervention_controller.dart';
 import '../../mood/data/sync/connectivity_provider.dart';
+import '../../notifications/data/datasources/local_notification_datasource.dart';
 import '../../notifications/presentation/widgets/tier_toggle_tile.dart';
 import '../../pattern_engine/domain/entities/tier.dart' as engine;
 import '../../tokens/data/providers.dart' show tokenRepositoryProvider;
@@ -40,11 +52,34 @@ class SettingsScreen extends ConsumerWidget {
     final user = ref.watch(currentUserStreamProvider).value;
     final themePreference = ref.watch(themeModeControllerProvider);
     final mb = Theme.of(context).extension<MbColors>()!;
+    final theme = Theme.of(context);
 
+    // v1.6 polish — Settings tiles felt unresponsive because the
+    // default Material splash on `MbCard`'s `MaterialType.transparency`
+    // surface is washed out on the cream/navy theme, and the highlight
+    // colour during long-press was nearly invisible. Bumped both alpha
+    // values aggressively and swapped to `InkRipple.splashFactory` for
+    // the stronger ripple animation. The `_PressableListTile` wrapper
+    // (below) further forces an explicit opaque tile background that
+    // animates on press so even a long-hold has unambiguous feedback.
+    // Splash + highlight use the always-contrasting text colour rather
+    // than the brand primary — primary is a muted green that on cream
+    // surfaces blends into the card background and reads as no-feedback.
+    // Text colour over card is guaranteed contrast in both light + dark
+    // themes by design system invariant. Alphas are intentionally bold
+    // (50 % splash, 25 % highlight) so the press effect is unmistakable
+    // even on dim phone displays.
+    final pressTint = mb.text;
     return Scaffold(
       backgroundColor: mb.bg,
       body: SafeArea(
-        child: ListView(
+        child: Theme(
+          data: theme.copyWith(
+            splashColor: pressTint.withValues(alpha: 0.50),
+            highlightColor: pressTint.withValues(alpha: 0.25),
+            splashFactory: InkRipple.splashFactory,
+          ),
+          child: ListView(
           padding: const EdgeInsets.fromLTRB(
             MoodBloomSpacing.pagePadding,
             MoodBloomSpacing.pagePadding,
@@ -63,8 +98,18 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 16),
 
             // ── Profile zone ──
+            // Tap → opens the edit-name dialog. The name comes from
+            // `fb.User.displayName` (mapped by `AppUserMapper`) — null
+            // for fresh email/password sign-ups since
+            // `createUserWithEmailAndPassword` doesn't capture one, so
+            // this affordance is the only way to set it after the fact.
             if (user != null)
               MbCard(
+                onTap: () => _editDisplayName(
+                  context,
+                  ref,
+                  currentName: user.displayName,
+                ),
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
@@ -77,11 +122,16 @@ class SettingsScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            user.displayName ?? 'Signed in',
+                            user.displayName ?? 'Add your name',
                             style: MbFonts.nunito(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: mb.text,
+                              color: user.displayName == null
+                                  ? mb.textDim
+                                  : mb.text,
+                              fontStyle: user.displayName == null
+                                  ? FontStyle.italic
+                                  : FontStyle.normal,
                             ),
                           ),
                           if (user.email != null) ...[
@@ -97,6 +147,7 @@ class SettingsScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
+                    Icon(Icons.edit_outlined, color: mb.textDim, size: 18),
                   ],
                 ),
               ),
@@ -111,15 +162,20 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 18),
 
             // ── Security zone ──
-            const MbSectionLabel('SECURITY'),
-            const SizedBox(height: 6),
-            MbCard(
-              clipBehavior: Clip.hardEdge,
-              padding: EdgeInsets.zero,
-              child: const BiometricSettingsTile(),
-            ),
-
-            const SizedBox(height: 18),
+            // v1.6 platform gating: biometric (local_auth) is Android-only;
+            // WebAuthn is web-only. Hide the irrelevant tile entirely
+            // instead of rendering its disabled preview — cleaner UX than
+            // "this isn't for your platform" copy.
+            if (!kIsWeb) ...[
+              const MbSectionLabel('SECURITY'),
+              const SizedBox(height: 6),
+              MbCard(
+                clipBehavior: Clip.hardEdge,
+                padding: EdgeInsets.zero,
+                child: const BiometricSettingsTile(),
+              ),
+              const SizedBox(height: 18),
+            ],
 
             // ── Privacy zone (ADR-0013) ──
             // Hidden when signed out (defence in depth — the tile
@@ -130,29 +186,40 @@ class SettingsScreen extends ConsumerWidget {
             // so a v1.5 rollback can yank the feature without leaving
             // the Settings UI dangling.
             if (user != null &&
-                ref.watch(privacyLockMasterEnabledProvider))
-              ...const [
-                MbSectionLabel('PRIVACY'),
-                SizedBox(height: 6),
-                MbCard(
-                  clipBehavior: Clip.hardEdge,
-                  padding: EdgeInsets.zero,
-                  child: Column(
-                    children: [
-                      PrivacySettingsTile(),
+                ref.watch(privacyLockMasterEnabledProvider)) ...[
+              const MbSectionLabel('PRIVACY'),
+              const SizedBox(height: 6),
+              MbCard(
+                clipBehavior: Clip.hardEdge,
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    const PrivacySettingsTile(),
+                    // WebAuthn is web-only — keep the tile on web, drop
+                    // it (and the divider) on native where biometric
+                    // already covers the same affordance.
+                    if (kIsWeb) ...const [
                       Divider(height: 1),
-                      // v1.5 final — WebAuthn / security-key tile per
-                      // ADR-0014. Always visible so users see the
-                      // feature exists; tile renders a "v1.5.1
-                      // preview" state when kEnableWebauthn is false
-                      // (the v1.5 default) and a real registration
-                      // affordance when the flag flips on.
                       WebauthnSettingsTile(),
                     ],
-                  ),
+                  ],
                 ),
-                SizedBox(height: 18),
-              ],
+              ),
+              const SizedBox(height: 18),
+            ],
+
+            // ── Sync zone ──
+            // Surfaces the offline-first sync state for the signed-in
+            // user. Shows "Last synced X ago" via a ValueListenable
+            // backed by MoodSyncManager and lets the user trigger a
+            // manual drain. Hidden on web (Drift sync is native-only
+            // per ADR-0004) and when signed out (no uid to sync).
+            if (user != null && !kIsWeb) ...[
+              const MbSectionLabel('SYNC'),
+              const SizedBox(height: 6),
+              const _SyncCluster(),
+              const SizedBox(height: 18),
+            ],
 
             // ── Account zone ──
             const MbSectionLabel('ACCOUNT'),
@@ -163,16 +230,12 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(
-                      Icons.logout,
-                      color: MoodBloomColors.coralText,
-                    ),
-                    title: const Text(
+                    leading: Icon(Icons.logout, color: mb.destructiveText),
+                    title: Text(
                       'Sign out',
                       style: TextStyle(
-                        color: MoodBloomColors.coralText,
+                        color: mb.destructiveText,
                         fontWeight: FontWeight.w600,
-                        shadows: <Shadow>[],
                       ),
                     ),
                     onTap: () => _confirmSignOut(context, ref),
@@ -228,35 +291,112 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
+    );
+  }
+
+  Future<void> _editDisplayName(
+    BuildContext context,
+    WidgetRef ref, {
+    required String? currentName,
+  }) async {
+    // Dialog body is a proper StatefulWidget (see `_EditDisplayNameDialog`
+    // below) so the `TextEditingController` lifecycle is owned by the
+    // dialog's State — `initState` creates it, `dispose` releases it.
+    // The previous flow created the controller in this caller and
+    // disposed it after `showDialog` returned, which raced with the
+    // child `TextField`'s State.dispose tearing down its FocusNode and
+    // surfaced as
+    //   "framework.dart:6268 _dependents.isEmpty is not true"
+    // — the framework asserts that an Element's InheritedWidget
+    // dependents are cleared before deactivation, and the controller
+    // being disposed under the TextField caused the State teardown
+    // order to invert.
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) =>
+          _EditDisplayNameDialog(initialName: currentName),
+    );
+
+    // Cancel / back / barrier-dismiss → pop returned null.
+    if (newName == null) return;
+
+    // Save with empty text — treat as cancel rather than blanking the
+    // profile. Firebase Auth's `updateDisplayName` accepts empty
+    // strings on some platforms and asserts on others ("isEmpty is
+    // not true" in the Dart SDK plumbing), so guarding here keeps the
+    // path predictable across iOS / Android / Web.
+    final trimmed = newName.trim();
+    if (trimmed.isEmpty) return;
+
+    // No-op — same value the field already held. Compares trimmed on
+    // both sides so trailing whitespace in the stored value doesn't
+    // cause a phantom update round-trip.
+    if (trimmed == (currentName ?? '').trim()) return;
+
+    final result = await ref
+        .read(authRepositoryProvider)
+        .updateDisplayName(trimmed);
+    // context.mounted gate covers the async gap on the network call.
+    // ScaffoldMessenger is read here (not pre-captured before the
+    // dialog) so we don't register an outer-context dependency on the
+    // ScaffoldMessenger InheritedWidget while a child dialog is alive.
+    if (!context.mounted) return;
+    result.fold(
+      ok: (_) {
+        // Force the auth-state stream to re-emit so the Settings header
+        // picks up the new value. `currentUser` was reload()'d inside
+        // the datasource, but `authStateChanges()` doesn't emit on
+        // profile-only updates — refresh the provider explicitly.
+        ref.invalidate(currentUserStreamProvider);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Hello, $trimmed.')));
+      },
+      err: (failure) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failure.message)));
+      },
     );
   }
 
   Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Sign out?'),
-        content: const Text(
-          'Your moods stay safe on this device and in the cloud. You can '
-          'always sign back in.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+      builder: (dialogContext) {
+        // Use the theme-aware error pair so the destructive button
+        // matches the Sign out tile's `mb.destructiveText` aesthetic in
+        // both themes (dark coral on cream in light mode, bright coral
+        // on navy in dark mode) and white text always reads against the
+        // saturated background. Hardcoding `MoodBloomColors.coral` +
+        // `Colors.white` previously diverged from the destructive
+        // token in the sign-out tile.
+        final scheme = Theme.of(dialogContext).colorScheme;
+        return AlertDialog(
+          title: const Text('Sign out?'),
+          content: const Text(
+            'Your moods stay safe on this device and in the cloud. You can '
+            'always sign back in.',
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: MoodBloomColors.coral,
-              foregroundColor: Colors.white,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
             ),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Sign out'),
-          ),
-        ],
-      ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: scheme.error,
+                foregroundColor: scheme.onError,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Sign out'),
+            ),
+          ],
+        );
+      },
     );
     if (confirmed != true) return;
     await ref.read(signOutUseCaseProvider)();
@@ -267,6 +407,76 @@ class SettingsScreen extends ConsumerWidget {
         ? displayName!.trim()
         : email?.trim() ?? '?';
     return source.substring(0, 1).toUpperCase();
+  }
+}
+
+/// Dialog body for the "Edit display name" flow. Owns its own
+/// `TextEditingController` lifecycle so the controller is disposed
+/// during the State's dispose (after `TextField` has detached) rather
+/// than racing with `TextField`'s State.dispose if the caller manages
+/// it from the outside.
+class _EditDisplayNameDialog extends StatefulWidget {
+  const _EditDisplayNameDialog({required this.initialName});
+
+  final String? initialName;
+
+  @override
+  State<_EditDisplayNameDialog> createState() => _EditDisplayNameDialogState();
+}
+
+class _EditDisplayNameDialogState extends State<_EditDisplayNameDialog> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName ?? '');
+    _focusNode = FocusNode();
+    // Defer the focus request until AFTER the Material dialog's enter
+    // transition completes (~250 ms by default). Posting only via
+    // `addPostFrameCallback` requests focus on the next frame — which
+    // is still mid-transition — so the IME starts opening over a
+    // scaling dialog and reads as lag. The explicit 260 ms delay lets
+    // the dialog fully settle before the keyboard slides in, giving a
+    // clean stepwise feel.
+    Future<void>.delayed(const Duration(milliseconds: 260), () {
+      if (mounted) _focusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() => Navigator.of(context).pop(_controller.text.trim());
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Your name'),
+      content: TextField(
+        controller: _controller,
+        focusNode: _focusNode,
+        textCapitalization: TextCapitalization.words,
+        maxLength: 60,
+        decoration: const InputDecoration(
+          labelText: 'Display name',
+          hintText: 'How would you like to be called?',
+        ),
+        onSubmitted: (_) => _submit(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('Save')),
+      ],
+    );
   }
 }
 
@@ -497,181 +707,261 @@ class _AboutCluster extends StatelessWidget {
   }
 }
 
+/// Sync state surface. Renders "Last synced X" + a "Sync now" button
+/// for the offline-first Drift queue. Subscribes to the manager's
+/// `ValueListenable<DateTime?>` so the timestamp updates live when the
+/// drain loop or the live Firestore listener completes a pass — no
+/// router refresh required.
+///
+/// Hidden on web (Drift sync is native-only per ADR-0004) and when
+/// signed out; the caller in [SettingsScreen.build] is responsible for
+/// those guards.
+class _SyncCluster extends ConsumerWidget {
+  const _SyncCluster();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final manager = ref.watch(moodSyncManagerProvider);
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return MbCard(
+      clipBehavior: Clip.hardEdge,
+      padding: EdgeInsets.zero,
+      child: ValueListenableBuilder<DateTime?>(
+        valueListenable: manager.lastSuccessfulSync,
+        builder: (context, lastSync, _) {
+          return Column(
+            children: [
+              ListTile(
+                leading: Icon(Icons.cloud_done_outlined, color: mb.text),
+                title: const Text('Last sync'),
+                subtitle: Text(_describeLastSync(lastSync)),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: Icon(Icons.sync, color: mb.text),
+                title: const Text('Sync now'),
+                subtitle: const Text(
+                  'Push pending entries and pull the latest from the cloud.',
+                ),
+                onTap: () => _kickSync(context, ref),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _kickSync(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    ref.read(moodSyncManagerProvider).kick();
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Syncing in the background…'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// "Just now" / "4 minutes ago" / "2 hours ago" / "May 18, 11:42" —
+  /// a compact relative-time renderer that doesn't need the `intl`
+  /// package (deliberately kept dependency-free at this depth).
+  static String _describeLastSync(DateTime? lastSync) {
+    if (lastSync == null) return 'Not yet synced on this device.';
+    final delta = DateTime.now().difference(lastSync);
+    if (delta.inSeconds < 30) return 'Just now.';
+    if (delta.inMinutes < 1) return '${delta.inSeconds} seconds ago.';
+    if (delta.inMinutes < 60) {
+      final m = delta.inMinutes;
+      return '$m ${m == 1 ? 'minute' : 'minutes'} ago.';
+    }
+    if (delta.inHours < 24) {
+      final h = delta.inHours;
+      return '$h ${h == 1 ? 'hour' : 'hours'} ago.';
+    }
+    if (delta.inDays < 7) {
+      final d = delta.inDays;
+      return '$d ${d == 1 ? 'day' : 'days'} ago.';
+    }
+    // Older than a week — drop to an absolute, locale-independent
+    // "Month D, HH:MM" string.
+    String pad2(int n) => n < 10 ? '0$n' : '$n';
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${months[lastSync.month - 1]} ${lastSync.day}, '
+        '${pad2(lastSync.hour)}:${pad2(lastSync.minute)}';
+  }
+}
+
 /// Debug zone, only rendered in debug builds. Bundles existing tools
 /// (Crashlytics test crash) plus a "Force offline" toggle that lets QA
 /// simulate the no-Wi-Fi flow without touching the device's radios.
+///
+/// v1.6: wrapped the cluster in an `ExpansionTile` (collapsed by
+/// default) so the 11 power-user tiles don't dominate the Settings
+/// scroll for everyone who lands here. Subtitles trimmed to one short
+/// line each — the long-form rationale lives in the source comments
+/// above each tile, not in the UI.
 class _DebugCluster extends ConsumerWidget {
   const _DebugCluster();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final forced = ref.watch(debugForceOfflineProvider);
+    final mb = Theme.of(context).extension<MbColors>()!;
     return MbCard(
       clipBehavior: Clip.hardEdge,
       padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          SwitchListTile(
-            secondary: const Icon(Icons.wifi_off_outlined),
-            title: const Text('Force offline'),
-            subtitle: const Text(
-              'Simulates a dropped network for the rest of this session.',
+      child: Theme(
+        // Strip the divider above/below the expansion children so
+        // adjacent tiles flow visually into the cluster card (mirrors
+        // the ChartReadingGuide pattern from insights).
+        data: Theme.of(
+          context,
+        ).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: const Icon(Icons.build_outlined),
+          title: const Text('Debug tools'),
+          subtitle: const Text('Power-user only — tap to expand'),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          childrenPadding: EdgeInsets.zero,
+          children: [
+            const Divider(height: 1),
+            SwitchListTile(
+              secondary: const Icon(Icons.wifi_off_outlined),
+              title: const Text('Force offline'),
+              subtitle: const Text('Simulate a dropped network.'),
+              value: forced,
+              onChanged: (v) =>
+                  ref.read(debugForceOfflineProvider.notifier).set(v),
             ),
-            value: forced,
-            onChanged: (v) =>
-                ref.read(debugForceOfflineProvider.notifier).set(v),
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.bug_report_outlined),
-            title: const Text('Crash now'),
-            subtitle: const Text(
-              'Throws a non-fatal error to verify Crashlytics wiring.',
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.bug_report_outlined),
+              title: const Text('Crash now'),
+              subtitle: const Text('Force-crash to verify Crashlytics.'),
+              onTap: _crashNow,
             ),
-            onTap: () {
-              throw Exception(
-                'Crashlytics test crash from Settings — debug only',
-              );
-            },
-          ),
-          const Divider(height: 1),
-          // v1.5 polish (Wave A) — debug-only token grant. Bumps
-          // `tokenBalance += 10` via the same TokenRepository the live
-          // award path uses, but skips the daily-cap fields so QA can
-          // run repeatedly without the 10/day ceiling kicking in. Wrapped
-          // here under `if (kDebugMode)` (via the enclosing _DebugCluster)
-          // so release builds never render the tile.
-          ListTile(
-            leading: const Icon(Icons.toll_outlined),
-            title: const Text('Grant 10 tokens (debug)'),
-            subtitle: const Text(
-              'Adds 10 to your token balance without logging a mood. '
-              'Debug only.',
+            const Divider(height: 1),
+            // v1.5 polish (Wave A) — debug-only token grant. Bumps
+            // `tokenBalance += 10` via the same TokenRepository the live
+            // award path uses, but skips the daily-cap fields so QA can
+            // run repeatedly without the 10/day ceiling kicking in.
+            ListTile(
+              leading: const Icon(Icons.toll_outlined),
+              title: const Text('Grant 10 tokens'),
+              subtitle: const Text('Skip the daily cap.'),
+              onTap: () => _grantDebugTokens(context, ref),
             ),
-            onTap: () => _grantDebugTokens(context, ref),
-          ),
-          const Divider(height: 1),
-          // Cycle the plant tier through the 5 ecosystem states
-          // (Storm Season → Weathering → Resting → Thriving → Flourishing
-          // → off). The override is held by `debugPlantTierOverrideProvider`
-          // and short-circuits the EWMA-derived tier at the
-          // `gardenStateStreamProvider` level — no entries needed,
-          // visual states stay reproducible for QA + reviewers.
-          const _DebugTierCycleTile(),
-          const Divider(height: 1),
-          // Force-harvest tile (HB-005 Track 6.1 demo affordance).
-          // Bypasses the 7-day boundary check so QA + demo can run the
-          // archive flow without waiting for a Monday rollover. Calls
-          // the same `acknowledge()` path as the production
-          // WeeklySummaryScreen Continue button — the only difference
-          // is the entry point (a debug ListTile vs the
-          // pendingWeeklySummaryProvider-driven push).
-          ListTile(
-            leading: const Icon(Icons.eco_outlined),
-            title: const Text('Force harvest now'),
-            subtitle: const Text(
-              'Archive the current active week immediately, regardless of '
-              'the 7-day boundary. Debug only.',
+            const Divider(height: 1),
+            // Cycle the plant tier through the 5 ecosystem states.
+            // Override held by `debugPlantTierOverrideProvider` —
+            // short-circuits the EWMA-derived tier without manufacturing
+            // entries.
+            const _DebugTierCycleTile(),
+            const Divider(height: 1),
+            // Force-harvest tile (HB-005 Track 6.1 demo affordance).
+            // Bypasses the 7-day boundary so QA can run the archive
+            // flow on demand.
+            ListTile(
+              leading: const Icon(Icons.eco_outlined),
+              title: const Text('Force harvest now'),
+              subtitle: const Text('Archive this week immediately.'),
+              onTap: () => _forceHarvest(context, ref),
             ),
-            onTap: () => _forceHarvest(context, ref),
-          ),
-          const Divider(height: 1),
-          // v1.5 final polish — debug-only Tier dispatch triggers. Bypass the
-          // cooldown gate AND per-tier opt-outs so QA can demo each banner →
-          // screen flow on demand. ADR-0012's Tier 3 determinism guarantee
-          // is preserved: the dispatcher's type-level fence still routes
-          // Tier 3 to the curated pool only.
-          ListTile(
-            leading: const Icon(Icons.air_outlined),
-            title: const Text('Trigger Tier 1 banner (debug)'),
-            subtitle: const Text(
-              'Fires a Tier 1 dispatch → "gentle nudge" banner appears, '
-              'opens the 2-minute breathing screen.',
+            const Divider(height: 1),
+            // v1.5 final polish — debug-only Tier dispatch triggers. Bypass
+            // the cooldown gate AND per-tier opt-outs. ADR-0012 Tier 3
+            // determinism guarantee is preserved (curated copy only).
+            ListTile(
+              leading: const Icon(Icons.air_outlined),
+              title: const Text('Trigger Tier 1 banner'),
+              subtitle: const Text('Breathing exercise.'),
+              onTap: () => ref
+                  .read(interventionControllerProvider.notifier)
+                  .debugDispatch(engine.Tier.one),
             ),
-            onTap: () => ref
-                .read(interventionControllerProvider.notifier)
-                .debugDispatch(engine.Tier.one),
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.edit_note_outlined),
-            title: const Text('Trigger Tier 2 banner (debug)'),
-            subtitle: const Text(
-              'Fires a Tier 2 dispatch → "journaling invitation" banner '
-              'appears, opens the journaling prompt screen.',
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.edit_note_outlined),
+              title: const Text('Trigger Tier 2 banner'),
+              subtitle: const Text('Journaling prompt.'),
+              onTap: () => ref
+                  .read(interventionControllerProvider.notifier)
+                  .debugDispatch(engine.Tier.two),
             ),
-            onTap: () => ref
-                .read(interventionControllerProvider.notifier)
-                .debugDispatch(engine.Tier.two),
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(
-              Icons.volunteer_activism_outlined,
-              color: MoodBloomColors.coralText,
-            ),
-            title: const Text('Trigger Tier 3 banner (debug)'),
-            subtitle: const Text(
-              'Fires a Tier 3 dispatch → "care" banner appears, opens the '
-              'crisis-resources screen with Hotline 1323. Curated copy only — '
-              'Tier 3 never calls Gemini (ADR-0012).',
-            ),
-            onTap: () => ref
-                .read(interventionControllerProvider.notifier)
-                .debugDispatch(engine.Tier.three),
-          ),
-          const Divider(height: 1),
-          // Clear local cache + offline DB. User asked for this in
-          // v1.0 polish to investigate "no flower on negative render"
-          // bug — to rule out stale Drift / SharedPreferences state.
-          // Wipes all rows from the Drift mood DB (mood_entries +
-          // sync_queue) and clears every key in SharedPreferences.
-          // Does NOT sign the user out (Firebase Auth state is owned
-          // by FirebaseAuth, separate from local cache); does NOT
-          // touch Firestore. After clearing, recommends an app restart
-          // because Riverpod providers + Drift open handles cache the
-          // wiped state in memory.
-          ListTile(
-            leading: const Icon(Icons.delete_sweep_outlined),
-            title: const Text('Clear local cache'),
-            subtitle: const Text(
-              'Wipes Drift mood DB + SharedPreferences. Cloud data is '
-              'untouched. Restart the app afterwards.',
-            ),
-            onTap: () => _clearLocalCache(context, ref),
-          ),
-          const Divider(height: 1),
-          // Wipe all CLOUD data for the signed-in user via the
-          // `wipeUserData` Cloud Function (admin SDK). Most subcollection
-          // rules deny client deletes (cheerUpEvents append-only,
-          // patterns delete-denied, weeklyGardens write-once, etc), so
-          // a full reset has to go through admin SDK. Auth account
-          // (displayName / email / photoUrl / createdAt) survives —
-          // the user stays signed in and can re-onboard with a fresh
-          // mood history. Local Drift + SharedPrefs are also wiped so
-          // the next launch syncs from the (now-empty) cloud rather
-          // than re-uploading the offline mirror.
-          ListTile(
-            leading: const Icon(
-              Icons.delete_forever_outlined,
-              color: MoodBloomColors.coralText,
-            ),
-            title: const Text(
-              'Wipe all account data',
-              style: TextStyle(
-                color: MoodBloomColors.coralText,
-                fontWeight: FontWeight.w600,
-                shadows: <Shadow>[],
+            const Divider(height: 1),
+            ListTile(
+              leading: Icon(
+                Icons.volunteer_activism_outlined,
+                color: mb.destructiveText,
               ),
+              title: const Text('Trigger Tier 3 banner'),
+              subtitle: const Text('Crisis resources.'),
+              onTap: () => ref
+                  .read(interventionControllerProvider.notifier)
+                  .debugDispatch(engine.Tier.three),
             ),
-            subtitle: const Text(
-              'Wipes EVERY mood / harvest / pattern / event under '
-              'users/{uid}/ on Firestore plus the local cache. Account '
-              'profile + sign-in survive. Debug only.',
+            const Divider(height: 1),
+            // Fires a one-shot OS notification through the cheer-up
+            // channel so QA + reviewers can verify the system-tray
+            // chrome. Web is a no-op (the datasource returns false).
+            ListTile(
+              leading: const Icon(Icons.notifications_active_outlined),
+              title: const Text('Fire OS notification'),
+              subtitle: const Text('Android only.'),
+              onTap: () => _fireDebugNotification(context, ref),
             ),
-            onTap: () => _wipeAccountData(context, ref),
-          ),
-        ],
+            const Divider(height: 1),
+            // Replays the onboarding flow. Clears the
+            // `onboarding_complete` SharedPreferences flag and
+            // navigates to /onboarding; the router redirect
+            // (router.dart §"Onboarding gate") then keeps the user on
+            // that route until they walk through it again.
+            ListTile(
+              leading: const Icon(Icons.restart_alt_outlined),
+              title: const Text('Replay onboarding'),
+              subtitle: const Text('Show the welcome slides again.'),
+              onTap: () => _resetOnboarding(context),
+            ),
+            const Divider(height: 1),
+            // Clears the Drift mood DB + SharedPreferences. v1.6 fix:
+            // shutdown + bootstrap the sync manager around the wipe so
+            // the in-memory `_attachedUid` / `_previousRemoteIds` / live
+            // listener don't drift out of sync with cleared local
+            // state. Cloud data is untouched.
+            ListTile(
+              leading: const Icon(Icons.delete_sweep_outlined),
+              title: const Text('Clear local cache'),
+              subtitle: const Text('Wipes local DB; cloud is untouched.'),
+              onTap: () => _clearLocalCache(context, ref),
+            ),
+            const Divider(height: 1),
+            // Wipes all CLOUD data via the `wipeUserData` Cloud Function
+            // (admin SDK). Auth account survives. Local Drift +
+            // SharedPrefs are also wiped so the next launch syncs from
+            // an empty cloud rather than re-uploading the offline mirror.
+            ListTile(
+              leading: Icon(
+                Icons.delete_forever_outlined,
+                color: mb.destructiveText,
+              ),
+              title: Text(
+                'Wipe all account data',
+                style: TextStyle(
+                  color: mb.destructiveText,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: const Text(
+                'Cloud + local. Auth survives. Irreversible.',
+              ),
+              onTap: () => _wipeAccountData(context, ref),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -683,6 +973,71 @@ class _DebugCluster extends ConsumerWidget {
   /// call this repeatedly without hitting the 10/day ceiling. The
   /// signed-out branch surfaces a no-op snackbar because there's no
   /// `users/{uid}/` doc to write to.
+  /// Force-terminates the app so Crashlytics can verify its wiring on
+  /// next launch. The previous implementation threw an `Exception`
+  /// synchronously inside `ListTile.onTap`, which Flutter's framework
+  /// error boundary caught and logged to the console — the app kept
+  /// running, and the user saw nothing. On native we call
+  /// `FirebaseCrashlytics.instance.crash()` which dispatches into the
+  /// platform SDK and force-terminates the process (the canonical way
+  /// to test Crashlytics). On web `firebase_crashlytics` has no impl,
+  /// so we throw an unhandled error from a `Future` so it escapes the
+  /// `onTap` synchronous error boundary and lands in the browser's
+  /// uncaught-error handler.
+  void _crashNow() {
+    if (kIsWeb) {
+      Future<void>(() {
+        throw StateError('Debug crash from Settings — web');
+      });
+      return;
+    }
+    FirebaseCrashlytics.instance.crash();
+  }
+
+  /// Clears the `onboarding_complete` flag so the next router redirect
+  /// pass kicks the user back to `/onboarding`. The redirect logic at
+  /// `app/router.dart` §"Onboarding gate" reads SharedPreferences
+  /// synchronously, so a `context.go('/onboarding')` after the flag is
+  /// cleared lands cleanly without needing a router refresh.
+  Future<void> _resetOnboarding(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_complete', false);
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Replaying onboarding…'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    router.go('/onboarding');
+  }
+
+  /// Fires a one-shot local notification through the cheer-up channel.
+  /// Lets QA + reviewers eyeball the real system-tray chrome without
+  /// waiting for an FCM-driven dispatch. Web is a no-op (the datasource
+  /// returns `false`); the user gets a snackbar explaining why.
+  Future<void> _fireDebugNotification(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final fired = await ref
+        .read(localNotificationDatasourceProvider)
+        .fireDebugNotification();
+    if (!context.mounted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          fired
+              ? 'Notification fired — check your system tray.'
+              : 'Real local notifications fire only on Android. '
+                    '(Web uses the browser permission flow.)',
+        ),
+      ),
+    );
+  }
+
   Future<void> _grantDebugTokens(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
     final user = ref.read(currentUserStreamProvider).value;
@@ -701,9 +1056,7 @@ class _DebugCluster extends ConsumerWidget {
       ),
       err: (failure) => messenger.showSnackBar(
         SnackBar(
-          content: Text(
-            "Couldn't grant tokens (${failure.runtimeType}).",
-          ),
+          content: Text("Couldn't grant tokens (${failure.runtimeType})."),
         ),
       ),
     );
@@ -713,15 +1066,26 @@ class _DebugCluster extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     final controller = ref.read(weeklySummaryControllerProvider.notifier);
 
-    // v1.0 polish (2026-05-10): clear the most recent weeklyGarden
-    // archive first so the force-harvest button is replay-able.
-    // Without this, the second tap fails with "alreadyArchived"
-    // because production rules treat the archive as write-once.
-    // The `wipeWeeklyGarden` callable bypasses the delete: false
-    // rule via Admin SDK and is debug-only.
+    // v1.6 scope fix: compute the *active* week's id and pass it to
+    // `wipeWeeklyGarden` explicitly. Previous behaviour (no argument)
+    // defaulted to "delete the most recently archived week" — which
+    // erased a previous week's archive instead of clearing the slot
+    // the upcoming `acknowledge()` is about to write to.
+    final entries = ref.read(myMoodsStreamProvider).value ?? const [];
+    final history = ref.read(weeklyGardenHistoryProvider).value ?? const [];
+    final activeWeekStart = activeWeekStartFor(
+      entries: entries,
+      history: history,
+    );
+    final targetWeekId = activeWeekStart == null
+        ? null
+        : ArchiveWeeklyGardenUseCase.formatWeekId(activeWeekStart);
+
     final functions = ref.read(firebaseFunctionsProvider);
     try {
-      await functions.httpsCallable('wipeWeeklyGarden').call();
+      final payload = <String, dynamic>{};
+      if (targetWeekId != null) payload['weekId'] = targetWeekId;
+      await functions.httpsCallable('wipeWeeklyGarden').call(payload);
     } on FirebaseFunctionsException catch (e) {
       // `not-found` means the CF isn't deployed yet — surface a
       // friendly note so the demo path can still continue (the
@@ -775,8 +1139,8 @@ class _DebugCluster extends ConsumerWidget {
         title: const Text('Clear local cache?'),
         content: const Text(
           'Wipes the offline mood database AND SharedPreferences on this '
-          'device. Cloud data (Firestore) is untouched and will re-sync. '
-          'This is a debug affordance — restart the app afterwards.',
+          'device. Cloud data (Firestore) is untouched and will re-sync '
+          'automatically — no restart needed.',
         ),
         actions: [
           TextButton(
@@ -785,8 +1149,8 @@ class _DebugCluster extends ConsumerWidget {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: MoodBloomColors.coral,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
             ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Wipe'),
@@ -796,29 +1160,45 @@ class _DebugCluster extends ConsumerWidget {
     );
     if (confirmed != true) return;
 
-    // 1. Truncate every Drift table on the mood DB. We iterate
-    //    `db.allTables` rather than naming `MoodEntries` /
-    //    `SyncQueue` directly so that future schema additions don't
-    //    silently leave rows on disk.
+    // v1.6 fix — make the wipe safe to run without an app restart:
+    //
+    // 1) Tear the sync manager down BEFORE truncating tables. Its
+    //    `_attachedUid` / `_previousRemoteIds` / live Firestore listener
+    //    + retry timers would otherwise keep firing against the
+    //    in-memory state of the about-to-be-wiped DB and produce stuck
+    //    queue rows.
+    // 2) Truncate every Drift table.
+    // 3) Clear SharedPreferences.
+    // 4) Re-bootstrap the manager with the signed-in uid so the live
+    //    listener re-attaches, the seeded flag is re-fetched, and the
+    //    UI repopulates from Firestore — no manual restart needed.
+    final uid = ref.read(currentUserStreamProvider).value?.uid;
+    final manager = ref.read(moodSyncManagerProvider);
+    await manager.shutdown();
+
     final db = ref.read(databaseProvider);
     for (final table in db.allTables) {
       // ignore: cascade_invocations
       await db.delete(table as TableInfo).go();
     }
 
-    // 2. Clear SharedPreferences. Resolved synchronously via the
-    //    pre-warmed singleton; if it's not warm yet the
-    //    `instance.clear()` call still works.
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+
+    if (uid != null) {
+      // Fire-and-forget — re-bootstrapping awaits a network round-trip
+      // against Firestore. The user doesn't need to block on it; the
+      // listener will refill Drift on the next snapshot tick.
+      unawaited(manager.bootstrap(uid));
+    }
 
     if (!context.mounted) return;
     messenger.showSnackBar(
       const SnackBar(
         content: Text(
-          'Local cache cleared. Restart the app to see a fresh state.',
+          'Local cache cleared. Resyncing from the cloud now…',
         ),
-        duration: Duration(seconds: 6),
+        duration: Duration(seconds: 4),
       ),
     );
   }
@@ -843,8 +1223,8 @@ class _DebugCluster extends ConsumerWidget {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: MoodBloomColors.coral,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
             ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Wipe everything'),

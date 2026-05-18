@@ -172,14 +172,13 @@ class _PinVerifyScreenState extends ConsumerState<PinVerifyScreen> {
                       // binding (6.04:1 PASS on cream `mb.bg`) but fails
                       // dark AA at ~2.54:1; `colorScheme.error` resolves
                       // to `MoodBloomColors.coral` and is the right
-                      // dark-mode swap (8.25:1 PASS). The design-system
-                      // has no theme-aware destructive-text token yet
-                      // (v1.6 chore); picking at the binding site keeps
-                      // Wave C compliant with "do not modify token
-                      // values".
-                      color: theme.brightness == Brightness.dark
-                          ? theme.colorScheme.error
-                          : MoodBloomColors.coralText,
+                      // v1.6 — uses the theme-aware MbColors
+                      // destructive-text token so contrast works in
+                      // both light (deep coral on cream) and dark
+                      // (bright coral on navy).
+                      color:
+                          theme.extension<MbColors>()?.destructiveText ??
+                          theme.colorScheme.error,
                       fontWeight: FontWeight.w600,
                     ),
                     textAlign: TextAlign.center,

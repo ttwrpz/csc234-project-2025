@@ -19,6 +19,7 @@ class MbInputField extends StatelessWidget {
     this.errorText,
     this.textInputAction,
     this.inputFormatters,
+    this.textCapitalization = TextCapitalization.none,
     this.enabled = true,
   });
 
@@ -31,6 +32,7 @@ class MbInputField extends StatelessWidget {
   final String? errorText;
   final TextInputAction? textInputAction;
   final List<TextInputFormatter>? inputFormatters;
+  final TextCapitalization textCapitalization;
   final bool enabled;
 
   @override
@@ -73,6 +75,7 @@ class MbInputField extends StatelessWidget {
                 autofillHints: autofillHints,
                 textInputAction: textInputAction,
                 inputFormatters: inputFormatters,
+                textCapitalization: textCapitalization,
                 enabled: enabled,
                 style: MbFonts.nunito(
                   fontSize: 15,

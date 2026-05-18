@@ -59,7 +59,7 @@ final class SignInControllerProvider
   }
 }
 
-String _$signInControllerHash() => r'e75ef93896d23ba3a2bfeef541418717a7bb183f';
+String _$signInControllerHash() => r'4f86d6635cdf924bbc51bd3e1275964299aa2a27';
 
 /// Controller for [SignInScreen]. Holds form state, drives the use cases,
 /// and surfaces a friendly error message on failure.

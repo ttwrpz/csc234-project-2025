@@ -17,8 +17,9 @@ class WebauthnFunctionsDatasource {
   final FirebaseFunctions _functions;
 
   Future<Map<String, Object?>> registerStart() async {
-    final result =
-        await _functions.httpsCallable('webauthnRegisterStart').call({'v': 1});
+    final result = await _functions.httpsCallable('webauthnRegisterStart').call(
+      {'v': 1},
+    );
     return Map<String, Object?>.from(result.data as Map);
   }
 
@@ -26,11 +27,9 @@ class WebauthnFunctionsDatasource {
     required String challengeId,
     required Map<String, Object?> response,
   }) async {
-    final result = await _functions.httpsCallable('webauthnRegisterFinish').call({
-      'v': 1,
-      'challengeId': challengeId,
-      'response': response,
-    });
+    final result = await _functions
+        .httpsCallable('webauthnRegisterFinish')
+        .call({'v': 1, 'challengeId': challengeId, 'response': response});
     return Map<String, Object?>.from(result.data as Map);
   }
 
@@ -47,11 +46,7 @@ class WebauthnFunctionsDatasource {
   }) async {
     final result = await _functions
         .httpsCallable('webauthnAssertionFinish')
-        .call({
-          'v': 1,
-          'challengeId': challengeId,
-          'response': response,
-        });
+        .call({'v': 1, 'challengeId': challengeId, 'response': response});
     return Map<String, Object?>.from(result.data as Map);
   }
 }

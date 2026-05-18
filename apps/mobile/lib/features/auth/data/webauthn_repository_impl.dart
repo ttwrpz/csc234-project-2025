@@ -83,7 +83,9 @@ class WebauthnRepositoryImpl implements WebauthnRepository {
     } on WebauthnUnsupportedException {
       return const Err(WebauthnRegisterFailure.notProvisioned());
     } catch (e) {
-      _logger.warn('webauthn browser createCredential failed: ${e.runtimeType}');
+      _logger.warn(
+        'webauthn browser createCredential failed: ${e.runtimeType}',
+      );
       return Err(WebauthnRegisterFailure.unknown(e.runtimeType));
     }
 

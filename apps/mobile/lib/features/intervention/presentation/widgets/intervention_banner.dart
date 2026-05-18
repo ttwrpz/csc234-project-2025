@@ -47,44 +47,60 @@ class InterventionBanner extends ConsumerWidget {
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        child: Dismissible(
-          key: ValueKey('intervention-banner-${dispatch.dispatchId}'),
-          direction: DismissDirection.horizontal,
-          onDismissed: (_) async {
-            await ref.read(interventionControllerProvider.notifier).optOut();
-          },
-          child: Material(
-            color: cardColor,
-            elevation: 6,
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    preview,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: fgColor),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+        // Cap the banner width on tablet/desktop so it doesn't stretch the
+        // full viewport. 640 dp matches the analytics card width and keeps
+        // the banner visually balanced on wide layouts.
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Dismissible(
+              key: ValueKey('intervention-banner-${dispatch.dispatchId}'),
+              direction: DismissDirection.horizontal,
+              onDismissed: (_) async {
+                await ref
+                    .read(interventionControllerProvider.notifier)
+                    .optOut();
+              },
+              child: Material(
+                color: cardColor,
+                elevation: 6,
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      InterventionOptOutButton(),
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        onPressed: () => context.goNamed(
-                          _routeNameFor(dispatch.tier),
-                          extra: dispatch,
+                      Text(
+                        preview,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: fgColor,
                         ),
-                        child: const Text('Open'),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          InterventionOptOutButton(),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            // pushNamed (not goNamed) so the intervention
+                            // route sits on top of the shell rather than
+                            // replacing it; otherwise the redirect chain
+                            // re-evaluates and can bounce us back to /home.
+                            onPressed: () => context.pushNamed(
+                              _routeNameFor(dispatch.tier),
+                              extra: dispatch,
+                            ),
+                            child: const Text('Open'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

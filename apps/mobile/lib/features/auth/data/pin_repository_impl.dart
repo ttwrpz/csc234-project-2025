@@ -182,7 +182,10 @@ class PinRepositoryImpl implements PinRepository {
     if (newLockUntil != null) {
       return Err(PinVerifyFailure.locked(until: newLockUntil));
     }
-    final remaining = (_softLockThreshold - nextAttempts).clamp(0, _softLockThreshold);
+    final remaining = (_softLockThreshold - nextAttempts).clamp(
+      0,
+      _softLockThreshold,
+    );
     return Err(PinVerifyFailure.wrong(remainingAttempts: remaining));
   }
 

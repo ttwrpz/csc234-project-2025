@@ -55,6 +55,9 @@ class _FakeFcm implements FcmDatasource {
   }
 
   @override
+  Future<FcmPermissionOutcome?> currentPermission() async => permissionOutcome;
+
+  @override
   Future<String?> getToken() async => token;
 
   @override

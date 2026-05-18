@@ -143,10 +143,9 @@ class InsightsLayout extends StatelessWidget {
     );
   }
 
-  /// Three columns. Weights 2:5:2 so the chart card gets the middle
-  /// 5/9 of the available width — well above 540 dp at the
-  /// `_desktopBodyMax = 1280` cap (1280 * 5/9 ≈ 711 dp; minus column
-  /// gaps and page padding still > 540 dp).
+  /// Desktop: window chips span full width directly under the header
+  /// (mirroring the Patterns/Analytics screen), then the chart, then
+  /// the three remaining rail cards in a 3-column row below.
   Widget _buildDesktop() {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
@@ -160,37 +159,18 @@ class InsightsLayout extends StatelessWidget {
         children: [
           header,
           const SizedBox(height: MoodBloomSpacing.md),
+          windowChips,
+          const SizedBox(height: MoodBloomSpacing.md),
+          chart,
+          const SizedBox(height: MoodBloomSpacing.md),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left rail — guide + window chips.
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    readingGuide,
-                    const SizedBox(height: MoodBloomSpacing.md),
-                    windowChips,
-                  ],
-                ),
-              ),
+              Expanded(child: readingGuide),
               const SizedBox(width: MoodBloomSpacing.md),
-              // Centre — chart card.
-              Expanded(flex: 5, child: chart),
+              Expanded(child: tierLegend),
               const SizedBox(width: MoodBloomSpacing.md),
-              // Right rail — legend + recent triggers.
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    tierLegend,
-                    const SizedBox(height: MoodBloomSpacing.md),
-                    recentTriggers,
-                  ],
-                ),
-              ),
+              Expanded(child: recentTriggers),
             ],
           ),
         ],

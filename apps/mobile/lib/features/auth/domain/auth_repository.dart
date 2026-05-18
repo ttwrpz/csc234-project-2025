@@ -41,6 +41,13 @@ abstract class AuthRepository {
   /// Signs out of any currently authenticated session.
   Future<Result<void, AuthFailure>> signOut();
 
+  /// Sends a Firebase password-reset email to [email]. Implementations
+  /// map `FirebaseAuthException` codes to sealed [AuthFailure] variants.
+  /// Newer Firebase Auth versions silently succeed on unknown emails for
+  /// privacy, so callers treat a successful return as "request accepted"
+  /// rather than "an email was definitely delivered."
+  Future<Result<void, AuthFailure>> sendPasswordResetEmail(String email);
+
   /// Reauthenticates the currently signed-in user against [creds]. Required
   /// by Firebase Auth before `currentUser.delete()` will accept the
   /// operation — see HB-004 + ADR-0009 for the recent-login window
@@ -64,6 +71,17 @@ abstract class AuthRepository {
   /// Reauth must precede this call — the use case orchestrates that
   /// sequencing via [DeleteAccountUseCase].
   Future<Result<void, AuthFailure>> deleteAccount();
+
+  /// Updates the locally-signed-in user's display name in Firebase Auth.
+  /// The change is propagated to `fb.User.displayName` and the next
+  /// `watchAuthState` emission carries the new value. Returns
+  /// `AuthFailure.userNotFound()` when no one is signed in.
+  ///
+  /// Email/password sign-up does NOT capture a display name (Firebase
+  /// only stores email + password on createUserWithEmailAndPassword), so
+  /// new accounts land with a null displayName until the user sets one
+  /// here.
+  Future<Result<void, AuthFailure>> updateDisplayName(String name);
 
   /// Deletes the locally-signed-in Firebase Auth user via
   /// `currentUser.delete()`. Called by [DeleteAccountUseCase] AFTER the

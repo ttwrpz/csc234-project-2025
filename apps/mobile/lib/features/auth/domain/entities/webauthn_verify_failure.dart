@@ -77,7 +77,9 @@ class _RateLimited extends WebauthnVerifyFailure {
 
 class _Network extends WebauthnVerifyFailure {
   const _Network()
-    : super(message: 'Couldn’t reach the server. Please check your connection.');
+    : super(
+        message: 'Couldn’t reach the server. Please check your connection.',
+      );
 }
 
 class _Unknown extends WebauthnVerifyFailure {

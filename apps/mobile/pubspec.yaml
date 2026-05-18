@@ -31,7 +31,16 @@ dependencies:
   uuid: ^4.5.1
   path: ^1.9.0
   drift: ^2.20.0
-  sqlite3_flutter_libs: ^0.6.0
+  # Migration to `sqlite3 ^3.x` (which self-bundles via Dart hooks and
+  # removes the need for `sqlite3_flutter_libs`) is blocked by the
+  # current Flutter SDK: `drift_dev >=2.32.0` pulls `analyzer ^10.0.0`,
+  # which requires `meta ^1.18.0`, but the SDK's `flutter_test` pins
+  # `meta 1.17.0`. Until the team upgrades Flutter to a release that
+  # unpins meta, stay on `sqlite3_flutter_libs ^0.5.0` (the last line
+  # that still ships native libs — 0.6.0+eol is a deprecation tombstone
+  # that ships no code and was the root cause of `libsqlite3.so not
+  # found` on Android).
+  sqlite3_flutter_libs: ^0.5.0
   path_provider: ^2.1.4
   synchronized: ^3.3.0
   local_auth: ^3.0.0
@@ -48,6 +57,12 @@ dependencies:
     path: ../../packages/analytics
   connectivity_plus: ^7.1.1
   url_launcher: ^6.3.1
+  # Runtime permission prompts for camera + media access on Android
+  # 6+. image_picker itself does not request these — the camera
+  # intent fails silently without `CAMERA` (Android 6+) and the
+  # pre-Photo-Picker gallery flow needs `READ_EXTERNAL_STORAGE` /
+  # `READ_MEDIA_IMAGES` (Android 13+).
+  permission_handler: ^12.0.0
 
 dev_dependencies:
   flutter_test:
@@ -61,6 +76,22 @@ dev_dependencies:
   json_serializable: ^6.9.0
   drift_dev: ^2.20.0
   golden_toolkit: ^0.15.0
+  flutter_launcher_icons: ^0.13.1
+  image: ^4.0.0
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon/
+
+flutter_launcher_icons:
+  android: true
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    background_color: "#FFE4D1"
+    theme_color: "#2E7D5B"
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#FFE4D1"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  min_sdk_android: 21

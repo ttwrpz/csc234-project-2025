@@ -1,0 +1,257 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{titling}
+\usepackage{fancyhdr}
+\usepackage{caption}
+\usepackage[backend=biber,style=apa]{biblatex}
+
+\addbibresource{references.bib}
+
+\definecolor{moodgreen}{HTML}{2E7D5B}
+\hypersetup{colorlinks=true, linkcolor=moodgreen, urlcolor=moodgreen, citecolor=moodgreen}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{MoodBloom --- Group 2}
+\lhead{\leftmark}
+\rfoot{\thepage}
+
+\title{Enterprise Audit \& Orchestration Report --- MoodBloom v1.5}
+\author{
+  Kraiwich Jaiton \and
+  Teerin Kittichaicharoen \and
+  Theerawat Patthawee (Project Lead) \and
+  Jedsarit Fanpimiy \and
+  Napat Chang-ekwong \\[1ex]
+  \small Group 2 \\
+  \small KMUTT Enterprise Term Assignment, Semester 2/2568
+}
+\date{May 30, 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\section*{Executive Summary}
+\addcontentsline{toc}{section}{Executive Summary}
+
+MoodBloom shipped 12 features across 5 sprints under a 4-agent multi-agent
+workflow on Claude Code. 1018 automated tests pass at \texttt{v1.5};
+domain-layer line coverage 94.6\%; no HIGH or CRITICAL security findings
+unresolved; Tier 3 determinism (the safety-critical invariant) enforced at
+5+1 independent layers. The Sprint 5 final Security Posture Report says
+\textbf{GO with three conditions}. The team-internal lesson worth surfacing
+is \emph{memory-system compounding}: by Sprint 5 the project's auto-memory
+was operationalised salvage discipline that recovered six dispatch failures
+across the sprint without slipping the tag.
+
+\tableofcontents
+\newpage
+
+\section{Project Overview}
+
+Cross-platform Flutter mood-tracker for Android + Web. Timeline:
+April 21 -- May 19, 2026; nine weeks, five working-week sprints; 274
+total git commits across 14 release branches and 4 tagged releases
+(\texttt{v0.2-walking-skeleton}, \texttt{v0.3-beta}, \texttt{v1.0},
+\texttt{v1.5} local).
+
+\section{Multi-Agent Team Charter}
+
+Four named subagents under Claude Code:
+
+\begin{longtable}{lll}
+\toprule
+\textbf{Agent} & \textbf{Authority} & \textbf{Output type} \\
+\midrule
+architect & System design, ADR/HB authorship & Decision records + handoff briefs \\
+flutter-engineer & Dart/Flutter + CF TypeScript & Feature branches with code + tests \\
+qa-engineer & Widget/golden/integration tests, sweeps & Test files + sweep reports \\
+security-reviewer & Read-only audit of rules/CFs/auth/secrets/deps/PII & Risk register only \\
+\bottomrule
+\end{longtable}
+
+\textbf{No self-review:} the agent that wrote the code cannot approve its
+own work. Two Sprint-3 security audits caught CRITICAL findings (cross-user
+queue drain, lost UUIDs) that would have shipped silently otherwise.
+
+\textbf{Plan Mode enforces separation:} every sprint kickoff entered Plan
+Mode and produced a written plan file at \texttt{$\sim$/.claude/plans/}.
+Architect or orchestrator approves via \texttt{ExitPlanMode} before any
+code is written.
+
+\section{Workflow Description}
+
+\textbf{Pipeline:} sprint kickoff (Plan Mode) $\to$ architect drafts ADR +
+handoff brief $\to$ flutter-engineer implements + in-PR unit tests $\to$
+qa-engineer adds widget/golden/integration tests + a11y + perf sweep
+$\to$ security-reviewer audits if rules/CFs/auth/secrets touched $\to$
+merge to main / tag.
+
+\textbf{Four CI/hook gates} fire on every commit: \texttt{dart format
+--set-exit-if-changed}; \texttt{flutter analyze}; secret scan
+(regex blacklist); domain-purity grep over
+\texttt{apps/mobile/lib/features/*/domain/}. The preWrite hook in
+\texttt{.claude/hooks/settings.json} blocks any \texttt{Write} tool call
+into \texttt{*/domain/*} that contains a forbidden import string. Zero
+violations across the codebase across all 5 sprints.
+
+\section{Sprint Execution Audit (S2--S5)}
+
+\begin{longtable}{lllll}
+\toprule
+\textbf{Sprint} & \textbf{PRs} & \textbf{Tests added} & \textbf{Domain cov.} & \textbf{Salvages} \\
+\midrule
+S2 (\texttt{v0.2-walking-skeleton}) & 8 stacked & 77 total & $\geq 80\%$/feature & 2 (collision, rate-limit) \\
+S3 (\texttt{v0.3-beta}) & 13 & 294 total & 94.6\% overall & $\sim 30\%$ of clock to rate-limit recovery \\
+S4 (\texttt{v1.0}) & 12 + polish & 664 + 24 goldens & 94.6\% (garden 96.4\%) & 1 region-rejection (asia-southeast3) \\
+S5 (\texttt{v1.5}) & 14 + skin merge & 1018 total + 73 CF & 94.6\% (no change in trim) & 6 dispatch salvages, all recovered \\
+\bottomrule
+\end{longtable}
+
+Human-team interventions in S3 caught two CRITICAL findings before merge
+(cross-user queue drain, lost UUIDs). In S4 a user-testing pass after
+v1.0 produced $\sim$30 high-signal issues all closed same-day. In S5 the
+user-testing pass surfaced 4 real gaps the agents missed (skin widget
+tests, WebAuthn settings tile, debug-trigger one-shot, flower hitbox
+too small + offset) --- all shipped same-week.
+
+\section{Risk Register + Security Posture}
+
+\begin{longtable}{lllll}
+\toprule
+\textbf{Severity} & \textbf{Production} & \textbf{Transitive deps} & \textbf{Open} & \textbf{Notes} \\
+\midrule
+CRITICAL & 0 & 0 & 0 & --- \\
+HIGH & 0 & 3 (R-M04) & 0 & Non-exploitable in deployed paths; filed as v1.6 chore \\
+MEDIUM & 0 unresolved & 0 & 0 & All Day-2 interim findings PASS in \texttt{c1ca5021} \\
+LOW & 3 & 0 & 0 & R-L05 dead field; R-L06 housekeeping; R-L01 App Check posture \\
+\bottomrule
+\end{longtable}
+
+\textbf{Tier 3 fence at 5+1 layers} (the architectural invariant
+anchoring the entire safety posture): (1) type system; (2) dispatcher
+hard branch; (3) unit test; (4) controller test; (5) integration test;
+(6) server schema.
+
+\textbf{Firestore rules:} field-level \texttt{diff().affectedKeys()}
+validation on every collection; per-user isolation; immutability fences
+on \texttt{createdAt}, \texttt{weeklyGardens} (write-once),
+\texttt{tokenBalance} (monotonic-up), \texttt{insightsDisclaimerAcked}
+(one-way \texttt{false}$\to$\texttt{true}). No HIGH/CRITICAL findings.
+
+\textbf{Cloud Functions:} all four production CFs (\texttt{analyzeMoodText},
+\texttt{sendCheerUpPush}, \texttt{suggestQuote}, \texttt{wipeUserData})
+in \texttt{asia-southeast1} with rate limits, no PII in logs, no PII in
+Gemini payloads (verified by PII canary tests). WebAuthn CF
+\texttt{webauthnRegisterStart} ships dark with a provisioning guard.
+
+\section{Evidence Package Index}
+
+\begin{itemize}[leftmargin=*]
+\item Repo URL (set by team before submission); branch \texttt{feat/s5-v1.5-final} @ \texttt{977b86d3} tagged locally as \texttt{v1.5}.
+\item 14 ADRs: \texttt{docs/adr/0001..0014}.
+\item 9 handoff briefs: \texttt{docs/handoffs/HB-001..HB-009}.
+\item 4 retros: \texttt{docs/retros/sprint-2-retro.md}, \texttt{sprint-3-retro.md}, \texttt{v1.0-polish-retro.md}, plus this set's \texttt{reports/sprint-4-demo.md} + \texttt{sprint-5-demo.md}.
+\item 2 architecture diagrams: \texttt{docs/architecture/conceptual.md} + \texttt{implementation.md} (PNG export pending).
+\item 5 security audits: 2 foundation+auth (Apr 28), v1.0 redesign (May 12), Sprint 5 final posture (May 18).
+\item 5 test reports: S3 + v1.0 polish + S5 a11y + S5 dark-mode contrast + S5 perf static.
+\item 1 cross-platform runbook: \texttt{docs/test-reports/sprint-5-cross-platform-runbook.md} (execution pending).
+\item 1018 test files at \texttt{v1.5} (Flutter) + 73 (CF Jest).
+\item Golden tests intentionally deleted in v1.5 trim (commit \texttt{a23480b8}); rationale documented.
+\end{itemize}
+
+\section{Compliance Matrix (Enterprise R1--R5)}
+
+\subsection{R1 --- Authentication \& Security}
+Firebase Auth (email/Google); biometric reauth via \texttt{local\_auth}
+with Keystore-backed credentials (ADR-0008 + ADR-0013); PIN fallback
+(PBKDF2-SHA-256, $10^5$ iterations) per ADR-0013; WebAuthn foundation
+ships dark per ADR-0014; Firestore rules with field-level diff
+validation; CF PII filter verified by PII canary tests; secret scan
+clean.
+
+\subsection{R2 --- Clean Architecture}
+Three-layer rule per feature; domain layer has zero
+\texttt{package:flutter} / \texttt{package:firebase\_*} /
+\texttt{package:cloud\_firestore} imports; enforced three ways (CI
+grep, preWrite hook, code review); Freezed entities; Riverpod 2.x with
+\texttt{@riverpod} codegen; repository abstractions.
+
+\subsection{R3 --- Multi-Agent Workflow}
+Four named subagents; Plan Mode at every sprint kickoff (5 plan files);
+9 handoff briefs; 14 ADRs; no-self-review rule; memory system records
+workflow lessons across sessions.
+
+\subsection{R4 --- Observability}
+Crashlytics wired in \texttt{main.dart}; structured logger at
+\texttt{packages/core/lib/src/logger.dart} (PII-free by convention);
+Remote Config flags (\texttt{ai\_pattern\_analysis\_enabled} +
+\texttt{history\_privacy\_lock\_enabled}); sprint metrics tracked in
+retros.
+
+\subsection{R5 --- Quality Gates}
+\textbf{Correctness:} 1018 \texttt{flutter test} + 73 \texttt{npm test}
+all pass; domain coverage $\geq 80\%$/feature, 94.6\% overall.
+\textbf{Security:} \texttt{flutter pub deps} clean; \texttt{pnpm audit}
+3 transitive HIGH filed v1.6; secret scan clean; Firestore rules pass
+emulator tests. \textbf{Accessibility:} Semantics labels everywhere;
+WCAG 2.2 AA verified on both themes (32 measurements); 200\% type
+checked on every dialog. \textbf{Performance:} static review confirms
+no unbounded \texttt{ListView}; chart caps at 30 points; device-side
+cold-start measurement pending the cross-platform runbook.
+
+\section{Lessons Learned}
+
+\textbf{Plan Mode + handoff briefs front-load design.} ADR-0010,
+ADR-0011, ADR-0012, HB-007 were the load-bearing examples;
+implementation agents had no architectural questions mid-sprint.
+
+\textbf{Multi-layer fences for safety-critical invariants.} The Tier 3
+fence at 5+1 layers is more paranoid than typical industry practice; the
+cost was modest, the protection is structural.
+
+\textbf{Parallel agents need worktree isolation by default.} Six
+salvages in S5 alone; memory now documents 6 failure modes with
+recovery procedures.
+
+\textbf{User testing surfaced more than security audits did.} Four
+highest-leverage S5 fixes came from a single user opening the app.
+
+\textbf{Golden tests too brittle for a small team on Windows-vs-CI.}
+Deleted in v1.5 trim; widget-tree assertions + manual demo coverage
+replaced them.
+
+\textbf{Memory compounds.} First salvage cost 30 minutes; sixth cost
+five. Codifying recovery procedures in long-lived memory is the
+highest-ROI workflow investment a team using AI-assisted enterprise
+dev can make.
+
+\section*{Sign-off}
+\addcontentsline{toc}{section}{Sign-off}
+
+\textbf{Audit head:} \texttt{977b86d3} (local tag \texttt{v1.5} on
+\texttt{feat/s5-v1.5-final}).
+\textbf{Date:} May 30, 2026.
+\textbf{Recommendation:} \textbf{GO} for the \texttt{v1.5} tag push
+pending three conditions: (1) file D-M01 as a v1.6 ticket; (2)
+skin-system branch merge state confirmed (done in \texttt{ed2cd755});
+(3) cross-platform runbook done-criteria checklist passes on Android
+emulator + Chrome web before the push.
+
+\printbibliography
+
+\end{document}

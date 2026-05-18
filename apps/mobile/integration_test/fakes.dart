@@ -106,6 +106,20 @@ class IntegrationAuthRepository implements AuthRepository {
   @override
   Future<Result<void, AuthFailure>> deleteCurrentUser() async => const Ok(null);
 
+  @override
+  Future<Result<void, AuthFailure>> sendPasswordResetEmail(
+    String email,
+  ) async => const Ok(null);
+
+  @override
+  Future<Result<void, AuthFailure>> updateDisplayName(String name) async {
+    final user = _user;
+    if (user != null) {
+      setUser(user.copyWith(displayName: name));
+    }
+    return const Ok(null);
+  }
+
   Future<void> dispose() async => _controller.close();
 }
 

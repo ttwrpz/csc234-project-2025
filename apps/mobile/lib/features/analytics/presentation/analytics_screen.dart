@@ -54,19 +54,18 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             const SizedBox(height: MoodBloomSpacing.md),
             _ChartCard(state: state, window: _window),
             const SizedBox(height: MoodBloomSpacing.md),
-            // HB-009 Decision D — the CTA card to Insights sits directly
-            // under the chart so the deeper read is the most prominent
-            // affordance on the Patterns tab. Visual weight is primary-
-            // tinted; copy mirrors the Insights screen subtitle.
-            const _InsightsEntryCard(),
-            const SizedBox(height: MoodBloomSpacing.md),
-            // Defence in depth: hide the slot when the flag is off so
-            // the card consumes zero layout space — the widget also
-            // self-hides via `SizedBox.shrink()`.
+            // v1.6 ordering: AI-assisted PatternInsightCard sits FIRST,
+            // immediately under the chart. The hero card uses a gradient
+            // wrapper + sparkle badge so it reads as a personalised
+            // observation, distinct from the static "open detailed
+            // insights" link below. The Insights-detail card below is
+            // demoted to a subdued outline-only CTA.
             if (ref.watch(featureFlagsProvider).aiPatternAnalysisEnabled) ...[
               const PatternInsightCard(),
               const SizedBox(height: MoodBloomSpacing.md),
             ],
+            const _InsightsEntryCard(),
+            const SizedBox(height: MoodBloomSpacing.md),
             _QuickStatsRow(entries: entries, window: _window),
           ],
         ),
@@ -361,8 +360,9 @@ class _InsightsEntryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
+    // v1.6 demoted style: subdued outline-only card so the AI Insight
+    // hero above keeps the visual weight. Reads as a "more details"
+    // link, not a competing primary affordance.
     return Semantics(
       button: true,
       label:
@@ -370,54 +370,34 @@ class _InsightsEntryCard extends StatelessWidget {
           'rolling rhythm, and the gentle nudges your garden has '
           'noticed lately.',
       child: MbCard(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          // Primary-tinted background per HB-009 Decision D §2 —
-          // 8% alpha is dim enough to keep the cream card surface
-          // legible in light mode and the navy card surface legible
-          // in dark mode.
-          color: primary.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusCardLg),
-          border: Border.all(color: primary.withValues(alpha: 0.18)),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         onTap: () => context.goNamed('insights'),
         child: Row(
           children: [
-            // 56 dp leading circle (vs 40 dp before) so the icon reads
-            // as the primary action, not as a chevron-row decoration.
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: primary.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(Icons.insights_outlined, color: primary, size: 28),
-            ),
-            const SizedBox(width: 14),
+            Icon(Icons.insights_outlined, color: mb.textDim, size: 22),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Open detailed insights',
+                    'View detailed insights',
                     style: MbFonts.nunito(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                       color: mb.text,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
-                    'See your mood-score timeline, rolling rhythm, and '
-                    'the gentle nudges your garden has noticed lately.',
-                    style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
+                    'Mood-score timeline, rolling rhythm, and tier markers.',
+                    style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            Icon(Icons.chevron_right, color: primary),
+            Icon(Icons.chevron_right, color: mb.textDim, size: 20),
           ],
         ),
       ),

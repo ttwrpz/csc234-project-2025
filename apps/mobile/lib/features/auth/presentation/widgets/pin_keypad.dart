@@ -127,17 +127,10 @@ class _PinKeypadState extends State<PinKeypad> {
                 // Wave C dark-mode contrast sweep — `coralText` is the
                 // design-system "destructive text on cream" token, and
                 // by its own docstring is not dark-safe (~2.54:1 over
-                // dark `mb.bg`). The design system has no brightness-
-                // aware destructive-text token yet (v1.6 chore), so the
-                // widget picks the right hue at runtime: `coralText` on
-                // light (6.04:1 PASS — the historical binding), `coral`
-                // on dark (8.25:1 PASS via the theme's pinned error
-                // tone). The decision lives here rather than in a token
-                // because Wave C's constraint is "do not modify token
-                // values"; choosing-at-binding-site honours that.
-                color: theme.brightness == Brightness.dark
-                    ? theme.colorScheme.error
-                    : MoodBloomColors.coralText,
+                // v1.6 — theme-aware MbColors destructive-text token.
+                color:
+                    theme.extension<MbColors>()?.destructiveText ??
+                    theme.colorScheme.error,
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
@@ -204,11 +197,7 @@ class _Keys extends StatelessWidget {
         _row([7, 8, 9]),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const _Spacer(),
-            _digitKey(0),
-            _backspaceKey(),
-          ],
+          children: [const _Spacer(), _digitKey(0), _backspaceKey()],
         ),
       ],
     );
@@ -243,8 +232,7 @@ class _Spacer extends StatelessWidget {
   const _Spacer();
 
   @override
-  Widget build(BuildContext context) =>
-      const SizedBox(width: 72, height: 72);
+  Widget build(BuildContext context) => const SizedBox(width: 72, height: 72);
 }
 
 class _KeypadButton extends StatelessWidget {

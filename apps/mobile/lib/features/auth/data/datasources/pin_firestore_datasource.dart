@@ -14,8 +14,11 @@ class PinFirestoreDatasource {
   final FirebaseFirestore _firestore;
 
   /// Reference to the PIN hash doc for [userId].
-  DocumentReference<Map<String, dynamic>> _ref(String userId) =>
-      _firestore.collection('users').doc(userId).collection('security').doc('pin');
+  DocumentReference<Map<String, dynamic>> _ref(String userId) => _firestore
+      .collection('users')
+      .doc(userId)
+      .collection('security')
+      .doc('pin');
 
   /// Reads the PIN doc. Returns the raw field map, or `null` when the
   /// doc doesn't exist. Throws on permission-denied — the repository
@@ -57,9 +60,6 @@ class PinFirestoreDatasource {
   /// Clears `failedAttempts` and `lockedUntil` after a successful
   /// verification.
   Future<void> clearFailures({required String userId}) {
-    return _ref(userId).update({
-      'failedAttempts': 0,
-      'lockedUntil': null,
-    });
+    return _ref(userId).update({'failedAttempts': 0, 'lockedUntil': null});
   }
 }

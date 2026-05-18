@@ -11,6 +11,7 @@ import '../features/auth/data/history_unlocked_this_session_provider.dart';
 import '../features/auth/data/providers.dart';
 import '../features/auth/domain/entities/app_user.dart';
 import '../features/auth/presentation/biometric_gate_screen.dart';
+import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/pin_verify_screen.dart';
 import '../features/auth/presentation/screens/privacy_setup_flow_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
@@ -32,12 +33,44 @@ import '../features/settings/presentation/controllers/theme_mode_controller.dart
 import 'widgets/mb_bottom_nav.dart';
 import 'widgets/mb_side_nav.dart';
 
+// v1.6: route swaps render instantly to reduce perceived lag.
+NoTransitionPage<void> _noTransition(Widget child) =>
+    NoTransitionPage<void>(child: child);
+
 const _onboardingCompleteKey = 'onboarding_complete';
 
 final onboardingCompleteProvider = FutureProvider<bool>((ref) async {
   final prefs = await SharedPreferences.getInstance();
   return prefs.getBool(_onboardingCompleteKey) ?? false;
 });
+
+/// Per-branch scroll controller, keyed by `StatefulShellBranch` index
+/// (0 = Home, 1 = History, 2 = Log, 3 = Patterns, 4 = Settings).
+///
+/// Each branch's top-level screen wraps itself in a
+/// `PrimaryScrollController` reading the matching controller from this
+/// provider, so the screen's scroll view (`primary: true` by default)
+/// attaches to a controller that's bound to THAT branch — never shared
+/// with sibling branches.
+///
+/// v1.6 rewrite: an earlier attempt put a single `PrimaryScrollController`
+/// around the whole `navigationShell` and swapped its `controller`
+/// argument by index. That broke because `StatefulShellRoute.indexedStack`
+/// keeps every branch's widget alive, so all five scroll views re-attached
+/// to whichever controller was currently in scope and clobbered each
+/// other's positions. Hoisting the controllers per-branch fixes both the
+/// "doesn't scroll to top on re-tap" and "loses scroll position on tab
+/// switch" symptoms.
+final branchScrollControllerProvider = Provider.family<ScrollController, int>(
+  (ref, _) {
+    final c = ScrollController();
+    ref.onDispose(c.dispose);
+    return c;
+  },
+);
+
+Widget _branchScope(ScrollController controller, Widget child) =>
+    PrimaryScrollController(controller: controller, child: child);
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<AppUser?>(null);
@@ -88,7 +121,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final prefs = await SharedPreferences.getInstance();
       final onboardingDone = prefs.getBool(_onboardingCompleteKey) ?? false;
       final loc = state.matchedLocation;
-      final isAuthRoute = loc == '/sign-in' || loc == '/sign-up';
+      final isAuthRoute =
+          loc == '/sign-in' || loc == '/sign-up' || loc == '/forgot-password';
 
       // 1. Onboarding gate (preserved from 6.1).
       if (!onboardingDone && loc != '/onboarding') return '/onboarding';
@@ -144,19 +178,24 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/onboarding',
-        builder: (context, state) => const OnboardingScreen(),
+        pageBuilder: (c, s) => _noTransition(const OnboardingScreen()),
       ),
       GoRoute(
         path: '/sign-in',
-        builder: (context, state) => const SignInScreen(),
+        pageBuilder: (c, s) => _noTransition(const SignInScreen()),
       ),
       GoRoute(
         path: '/sign-up',
-        builder: (context, state) => const SignUpScreen(),
+        pageBuilder: (c, s) => _noTransition(const SignUpScreen()),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        name: 'forgot-password',
+        pageBuilder: (c, s) => _noTransition(const ForgotPasswordScreen()),
       ),
       GoRoute(
         path: '/biometric-gate',
-        builder: (context, state) => const BiometricGateScreen(),
+        pageBuilder: (c, s) => _noTransition(const BiometricGateScreen()),
       ),
       // ADR-0013 — History privacy gate (biometric + PIN fallback).
       // Reachable via the redirect clause #4 above when the user has
@@ -164,9 +203,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // `/history/<id>` deep link survives the round-trip.
       GoRoute(
         path: '/unlock-history',
-        builder: (context, state) {
-          final returnTo = state.uri.queryParameters['returnTo'];
-          return PinVerifyScreen(returnTo: returnTo);
+        pageBuilder: (c, s) {
+          final returnTo = s.uri.queryParameters['returnTo'];
+          return _noTransition(PinVerifyScreen(returnTo: returnTo));
         },
       ),
       // ADR-0013 Decision G — first-time setup flow for the History
@@ -175,44 +214,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // `true` on success and `false` on cancellation.
       GoRoute(
         path: '/privacy/setup',
-        builder: (context, state) => const PrivacySetupFlowScreen(),
-      ),
-      // Intervention surfaces — full-screen routes opened from the
-      // [InterventionBanner] (or the FCM notification tap-action when
-      // background dispatch lands). Each route accepts the
-      // [InterventionDispatch] via `state.extra` so the screen renders
-      // the dispatcher-composed body verbatim; deep-link visits with no
-      // extra fall back to the [DispatchSafeDefaults] constants.
-      // Authorized by the engineer brief; HB-007 §"Files to extend".
-      GoRoute(
-        path: '/intervention/breathing',
-        name: 'intervention.breathing',
-        builder: (context, state) {
-          final dispatch = state.extra is InterventionDispatch
-              ? state.extra as InterventionDispatch
-              : null;
-          return BreathingScreen(dispatch: dispatch);
-        },
-      ),
-      GoRoute(
-        path: '/intervention/journal',
-        name: 'intervention.journal',
-        builder: (context, state) {
-          final dispatch = state.extra is InterventionDispatch
-              ? state.extra as InterventionDispatch
-              : null;
-          return JournalingPromptScreen(dispatch: dispatch);
-        },
-      ),
-      GoRoute(
-        path: '/intervention/crisis',
-        name: 'intervention.crisis',
-        builder: (context, state) {
-          final dispatch = state.extra is InterventionDispatch
-              ? state.extra as InterventionDispatch
-              : null;
-          return CrisisResourcesScreen(dispatch: dispatch);
-        },
+        pageBuilder: (c, s) => _noTransition(const PrivacySetupFlowScreen()),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -225,9 +227,62 @@ final routerProvider = Provider<GoRouter>((ref) {
         // chronologically (past on the left, predictive on the right).
         branches: [
           // 0 — Home (formerly Garden)
+          //
+          // v1.6: intervention surfaces nest under /home so the shell
+          // (bottom nav on phone, sidebar on desktop) stays visible
+          // while the user breathes / journals / reads crisis resources.
+          // Named routes preserved so the InterventionBanner's
+          // pushNamed('intervention.breathing', extra: dispatch) keeps
+          // working — only the URL surface changes.
           StatefulShellBranch(
             routes: [
-              GoRoute(path: '/home', builder: (c, s) => const GardenScreen()),
+              GoRoute(
+                path: '/home',
+                pageBuilder: (c, s) => _noTransition(
+                  _branchScope(
+                    ref.read(branchScrollControllerProvider(0)),
+                    const GardenScreen(),
+                  ),
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'intervention/breathing',
+                    name: 'intervention.breathing',
+                    pageBuilder: (c, s) {
+                      final dispatch = s.extra is InterventionDispatch
+                          ? s.extra as InterventionDispatch
+                          : null;
+                      return _noTransition(
+                        BreathingScreen(dispatch: dispatch),
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'intervention/journal',
+                    name: 'intervention.journal',
+                    pageBuilder: (c, s) {
+                      final dispatch = s.extra is InterventionDispatch
+                          ? s.extra as InterventionDispatch
+                          : null;
+                      return _noTransition(
+                        JournalingPromptScreen(dispatch: dispatch),
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'intervention/crisis',
+                    name: 'intervention.crisis',
+                    pageBuilder: (c, s) {
+                      final dispatch = s.extra is InterventionDispatch
+                          ? s.extra as InterventionDispatch
+                          : null;
+                      return _noTransition(
+                        CrisisResourcesScreen(dispatch: dispatch),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ],
           ),
           // 1 — History
@@ -235,12 +290,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/history',
-                builder: (c, s) => const HistoryScreen(),
+                pageBuilder: (c, s) => _noTransition(
+                  _branchScope(
+                    ref.read(branchScrollControllerProvider(1)),
+                    const HistoryScreen(),
+                  ),
+                ),
                 routes: [
                   GoRoute(
                     path: ':id',
-                    builder: (c, s) =>
-                        EntryDetailScreen(id: s.pathParameters['id'] ?? ''),
+                    pageBuilder: (c, s) => _noTransition(
+                      EntryDetailScreen(id: s.pathParameters['id'] ?? ''),
+                    ),
                   ),
                 ],
               ),
@@ -263,11 +324,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/log-mood',
-                builder: (c, s) {
+                pageBuilder: (c, s) {
                   final editId = s.uri.queryParameters['edit'];
-                  return LogMoodScreen(
-                    key: ValueKey('log-mood:${editId ?? "new"}'),
-                    editEntryId: editId,
+                  return _noTransition(
+                    _branchScope(
+                      ref.read(branchScrollControllerProvider(2)),
+                      LogMoodScreen(
+                        key: ValueKey('log-mood:${editId ?? "new"}'),
+                        editEntryId: editId,
+                      ),
+                    ),
                   );
                 },
               ),
@@ -286,12 +352,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/analytics',
-                builder: (c, s) => const AnalyticsScreen(),
+                pageBuilder: (c, s) => _noTransition(
+                  _branchScope(
+                    ref.read(branchScrollControllerProvider(3)),
+                    const AnalyticsScreen(),
+                  ),
+                ),
                 routes: [
                   GoRoute(
                     path: 'insights',
                     name: 'insights',
-                    builder: (c, s) => const InsightsScreen(),
+                    pageBuilder: (c, s) =>
+                        _noTransition(const InsightsScreen()),
                   ),
                 ],
               ),
@@ -302,7 +374,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/settings',
-                builder: (c, s) => const SettingsScreen(),
+                pageBuilder: (c, s) => _noTransition(
+                  _branchScope(
+                    ref.read(branchScrollControllerProvider(4)),
+                    const SettingsScreen(),
+                  ),
+                ),
               ),
             ],
           ),
@@ -312,7 +389,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class _AppShell extends ConsumerWidget {
+class _AppShell extends ConsumerStatefulWidget {
   const _AppShell({required this.navigationShell});
   final StatefulNavigationShell navigationShell;
 
@@ -348,20 +425,37 @@ class _AppShell extends ConsumerWidget {
     MbBottomNavItem(icon: Icons.settings_outlined, label: 'Settings'),
   ];
 
-  /// Tapping any nav item always resets that branch to its initial route —
-  /// so the user never lands mid-stack on a tab they didn't expect to be
-  /// in. Combined with `StatefulShellRoute.indexedStack` keeping the
-  /// branch's State alive, this means scroll position resets to top on
-  /// every tap (the route rebuilds), which is what the "nav always lands
-  /// on top of the page" feedback boils down to. v1.5 polish fix.
+  @override
+  ConsumerState<_AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<_AppShell> {
+  StatefulNavigationShell get navigationShell => widget.navigationShell;
+
   void _goBranch(int i) {
+    final isSameBranch = navigationShell.currentIndex == i;
     navigationShell.goBranch(i, initialLocation: true);
+    // Re-tap or cross-branch tap both reset scroll position to top.
+    // Each branch owns its own ScrollController (via
+    // `branchScrollControllerProvider`) bound to its own page wrapper,
+    // so the destination controller is already attached to the branch's
+    // scroll view by the time the next frame builds.
+    void doJump() {
+      final c = ref.read(branchScrollControllerProvider(i));
+      if (c.hasClients) c.jumpTo(0);
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      doJump();
+      // Cross-branch taps need a second post-frame: when the previously
+      // inactive branch's IndexedStack child becomes visible, its scroll
+      // view may take one extra frame to attach to the controller.
+      if (!isSameBranch) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => doJump());
+      }
+    });
   }
 
-  /// Index to highlight in the nav. Normally just `currentIndex`, but
-  /// when the user is on `/log-mood?edit=<id>` we return -1 so neither
-  /// the bottom-nav Add button nor the desktop sidebar shows an active
-  /// state — editing an entry is a transient sub-flow, not a tab.
   int _activeNavIndex(BuildContext context) {
     final loc = GoRouterState.of(context).uri;
     final isEditingMood =
@@ -370,21 +464,15 @@ class _AppShell extends ConsumerWidget {
     return navigationShell.currentIndex;
   }
 
-  /// Body builder. The previous build wrapped the navigation shell in a
-  /// 220 ms `TweenAnimationBuilder` fade, but that introduced a visible
-  /// stutter on every tab swap (Flutter rebuilds the whole shell once the
-  /// branch index changes, then animates opacity over the new tree — on
-  /// debug builds especially the first frame lands a few hundred ms
-  /// late). Removing the wrapper makes tab swaps feel instantaneous.
   Widget _body() => navigationShell;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final w = constraints.maxWidth;
-        if (w >= _desktopMin) return _buildDesktop(context, ref, w);
-        if (w >= _tabletMin) return _buildTablet(context);
+        if (w >= _AppShell._desktopMin) return _buildDesktop(context, ref, w);
+        if (w >= _AppShell._tabletMin) return _buildTablet(context);
         return _buildPhone(context);
       },
     );
@@ -415,7 +503,7 @@ class _AppShell extends ConsumerWidget {
           MbSideNav(
             currentIndex: _activeNavIndex(context),
             onTap: _goBranch,
-            items: _items,
+            items: _AppShell._items,
             actions: [
               MbSideNavAction(
                 icon: _iconForThemePref(themePref),
@@ -439,7 +527,9 @@ class _AppShell extends ConsumerWidget {
           Expanded(
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: _desktopBodyMax),
+                constraints: const BoxConstraints(
+                  maxWidth: _AppShell._desktopBodyMax,
+                ),
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: hPadding),
                   child: _body(),
@@ -514,8 +604,8 @@ class _AppShell extends ConsumerWidget {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFA63B2E),
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
             ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Sign out'),
@@ -531,7 +621,7 @@ class _AppShell extends ConsumerWidget {
   /// comfortable reading width. Avoids the "single 22 sp paragraph spread
   /// across 1024 dp" problem on iPad-class displays.
   Widget _buildTablet(BuildContext context) =>
-      _buildPhoneOrTablet(context, contentMaxWidth: _tabletBodyMax);
+      _buildPhoneOrTablet(context, contentMaxWidth: _AppShell._tabletBodyMax);
 
   /// Phone: edge-to-edge content under the bottom nav.
   Widget _buildPhone(BuildContext context) =>
@@ -572,7 +662,7 @@ class _AppShell extends ConsumerWidget {
             child: MbBottomNav(
               currentIndex: _activeNavIndex(context),
               onTap: _goBranch,
-              items: _items,
+              items: _AppShell._items,
             ),
           ),
         ],

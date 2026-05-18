@@ -20,8 +20,7 @@ import '../domain/services/pin_hasher.dart';
 /// promoted to a direct dep in pubspec). Hand-rolled is < 20 lines and
 /// keeps the dependency surface area minimal.
 class PinHasherImpl implements PinHasher {
-  PinHasherImpl({Random? random})
-    : _random = random ?? Random.secure();
+  PinHasherImpl({Random? random}) : _random = random ?? Random.secure();
 
   /// Cryptographically-secure RNG. Tests can inject a deterministic
   /// `Random(seed)` to get reproducible salts; production must use
@@ -65,7 +64,8 @@ class PinHasherImpl implements PinHasher {
 
     // U_1 = HMAC(password, salt || INT(1))
     var u = Uint8List.fromList(hmac.convert(saltWithCounter).bytes);
-    final t = Uint8List(PinHasher.derivedKeyLengthBytes)..setRange(0, u.length, u);
+    final t = Uint8List(PinHasher.derivedKeyLengthBytes)
+      ..setRange(0, u.length, u);
 
     // T_1 = U_1 XOR U_2 XOR ... XOR U_iterations.
     for (var i = 1; i < iterations; i++) {

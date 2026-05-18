@@ -1,0 +1,45 @@
+flowchart TD
+    subgraph Pres["apps/mobile/lib/features/mood/presentation/"]
+        Screen[log_mood_screen.dart]
+        Ctrl["controllers/log_mood_controller.dart<br/>@riverpod LogMoodController"]
+        Slider[widgets/intensity_slider.dart]
+    end
+
+    subgraph Domain["apps/mobile/lib/features/mood/domain/ - zero Flutter/Firebase imports"]
+        Entity["entities/mood_entry.dart<br/>@freezed MoodEntry"]
+        UC["usecases/save_mood_entry.dart<br/>SaveMoodEntryUseCase"]
+        Repo["mood_repository.dart<br/>abstract MoodRepository"]
+    end
+
+    subgraph Data["apps/mobile/lib/features/mood/data/"]
+        Impl["mood_repository_impl.dart<br/>implements MoodRepository"]
+        DS[datasources/mood_firestore_datasource.dart]
+        DTO["dtos/mood_entry_dto.dart<br/>fromJson/toJson"]
+        Map["mappers/mood_entry_mapper.dart"]
+    end
+
+    Firestore["Cloud Firestore<br/>users / uid / moods / moodId"]
+    Core["packages/core/<br/>Result T Failure, Logger"]
+
+    Screen --> Ctrl
+    Slider --> Ctrl
+    Ctrl -->|ref.read saveMoodEntryUseCaseProvider| UC
+    UC -->|repo.save entry| Repo
+    Impl -.->|implements| Repo
+    Impl --> DS
+    DS --> Firestore
+    Impl --> Map
+    Map --> DTO
+    Map --> Entity
+    UC --> Entity
+    Ctrl --> Core
+    Impl --> Core
+
+    classDef domain fill:#fef3c7,stroke:#b45309,stroke-width:2px
+    classDef pres fill:#dbeafe,stroke:#1d4ed8
+    classDef data fill:#dcfce7,stroke:#15803d
+    classDef ext fill:#f3f4f6,stroke:#6b7280,stroke-dasharray: 4 4
+    class Domain domain
+    class Pres pres
+    class Data data
+    class Firestore,Core ext

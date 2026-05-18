@@ -16,7 +16,6 @@ class VerifyWebauthnUseCase {
 
   final WebauthnRepository _repository;
 
-  Future<Result<void, WebauthnVerifyFailure>> call({
-    required String userId,
-  }) => _repository.verify(uid: userId);
+  Future<Result<void, WebauthnVerifyFailure>> call({required String userId}) =>
+      _repository.verify(uid: userId);
 }

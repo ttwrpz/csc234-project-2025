@@ -54,6 +54,23 @@ class WeeklySummaryScreen extends ConsumerWidget {
     final mb = theme.extension<MbColors>()!;
     final status = ref.watch(weeklySummaryControllerProvider);
 
+    // Pop the screen as soon as the archive write resolves. The
+    // controller doesn't navigate itself — it only flips state — so the
+    // Continue button used to leave the user stuck on a "Running…" CTA
+    // even though the archive landed cleanly. Listening once at the
+    // build level routes every success path (manual tap, debug force,
+    // double-tap idempotency) through the same `pop`.
+    ref.listen<HarvestArchiveStatus>(
+      weeklySummaryControllerProvider,
+      (prev, next) {
+        if (next is HarvestArchiveSuccess) {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+    );
+
     return Scaffold(
       backgroundColor: mb.bg,
       appBar: AppBar(

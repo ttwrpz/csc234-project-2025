@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/intervention/presentation/controllers/intervention_controller.dart';
 import '../features/intervention/presentation/widgets/intervention_banner.dart';
 
 /// App-level wrapper that overlays the [InterventionBanner] above the
@@ -21,22 +23,30 @@ import '../features/intervention/presentation/widgets/intervention_banner.dart';
 /// dispatcher only fires after sign-in, but the host being above the
 /// router means the surface is always present in the tree, ready to
 /// render the moment the controller transitions to pending.
-class InterventionBannerHost extends StatelessWidget {
+class InterventionBannerHost extends ConsumerWidget {
   const InterventionBannerHost({required this.child, super.key});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Only include the Positioned banner when there's a pending
+    // intervention. Rendering a 0-height Positioned (the idle state's
+    // SizedBox.shrink) caused "Cannot hit test a render box with no
+    // size" assertions that swallowed taps app-wide.
+    final state = ref.watch(interventionControllerProvider);
+    final hasPending = state is InterventionPending;
     return Stack(
+      fit: StackFit.expand,
       children: [
-        Positioned.fill(child: child),
-        const Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: InterventionBanner(),
-        ),
+        child,
+        if (hasPending)
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: InterventionBanner(),
+          ),
       ],
     );
   }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
@@ -22,6 +23,20 @@ Future<void> main() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+
+      // Explicit Firestore settings — make the offline cache durable
+      // across hot restarts and force a generous cache budget so
+      // reads keep working when the gRPC channel is briefly wedged
+      // (Samsung Android can leave the channel in a "Unable to resolve
+      // host" state after hot restart even though DNS is healthy).
+      // Setting `settings` MUST happen before the first Firestore
+      // call — runs here right after Firebase.initializeApp.
+      if (!kIsWeb) {
+        FirebaseFirestore.instance.settings = const Settings(
+          persistenceEnabled: true,
+          cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+        );
+      }
 
       // Crashlytics — capture both Flutter framework errors and async errors
       // from the platform dispatcher. Disabled in debug so dev crashes never
@@ -84,13 +99,29 @@ Future<void> main() async {
       // Web because flutter_local_notifications has no Web impl; the
       // browser FCM service worker handles its own notification UX.
       if (!kIsWeb) {
+        final plugin = FlutterLocalNotificationsPlugin();
+        // v1.6 fix — the plugin MUST be `.initialize`d before any other
+        // call (`requestNotificationsPermission`, `show`, channel ops)
+        // on Android. Without initialize, the Android binding is never
+        // wired up and `requestNotificationsPermission()` silently
+        // returns `null` instead of triggering the OS POST_NOTIFICATIONS
+        // dialog — which manifests as "the onboarding notification
+        // toggle never prompts." Icon reference matches AndroidManifest's
+        // `android:icon` so the OS uses the right asset on the system
+        // tray when the cheer-up channel fires.
+        await plugin.initialize(
+          const InitializationSettings(
+            android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          ),
+        );
+
         const androidChannel = AndroidNotificationChannel(
           'cheer_up',
           'Cheer-up check-ins',
           description: 'Gentle reminders during heavier stretches.',
           importance: Importance.defaultImportance,
         );
-        await FlutterLocalNotificationsPlugin()
+        await plugin
             .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin
             >()
@@ -100,15 +131,29 @@ Future<void> main() async {
       // google_sign_in 7.x requires `initialize()` to be called exactly
       // once before any other method, with its Future awaited. Skipped
       // on Web because we use Firebase's `signInWithPopup` directly
-      // (see firebase_auth_datasource.dart §kIsWeb branch); the v7
-      // `google_sign_in_web` flow needs an OAuth client id that we
-      // don't currently configure for web. `clientId` and
-      // `serverClientId` are intentionally null — the Android plugin
-      // reads from `google-services.json` and iOS reads from
-      // `GoogleService-Info.plist`, both already in place from
-      // `flutterfire configure`.
+      // (see firebase_auth_datasource.dart §kIsWeb branch).
+      //
+      // `serverClientId` MUST be the Web OAuth client_id from
+      // google-services.json (the entry under `oauth_client` with
+      // `client_type: 3`). On Android the v7 plugin drives Credential
+      // Manager, which needs an audience to issue the idToken for; with
+      // a null serverClientId, Credential Manager picks a random
+      // matching client — and when no SHA-1-bound Android OAuth client
+      // exists in the Firebase project, it silently returns
+      // `GoogleSignInExceptionCode.canceled` AFTER the user picks an
+      // account, which surfaces as "Google sign-in was cancelled" even
+      // though the user didn't cancel. Passing the Web client_id
+      // explicitly tells Credential Manager to issue the idToken with
+      // Firebase's audience, and `signInWithCredential` accepts it.
+      //
+      // Keep this string in sync with google-services.json. If you
+      // re-run `flutterfire configure` and the project_number changes,
+      // update the client_id below too.
       if (!kIsWeb) {
-        await GoogleSignIn.instance.initialize();
+        await GoogleSignIn.instance.initialize(
+          serverClientId:
+              '433750563013-v71cgbqggb100qvjkiu2sqn8a83veoj1.apps.googleusercontent.com',
+        );
       }
 
       // Eager-resolve SharedPreferences before runApp so the theme-mode

@@ -1,0 +1,35 @@
+flowchart TB
+    subgraph Tiers["5 Plant Tiers (all alive in every state)"]
+        direction LR
+        T1["Storm Season<br/>H ≤ −0.4<br/>sheltered, lanterns bright"]
+        T2["Weathering<br/>−0.4 &lt; H ≤ −0.1<br/>resilient, rooted"]
+        T3["Resting<br/>−0.1 &lt; H &lt; 0.1<br/>quiet, dormant buds"]
+        T4["Thriving<br/>0.1 ≤ H &lt; 0.4<br/>full leaves, mid-bloom"]
+        T5["Flourishing<br/>H ≥ 0.4<br/>full bloom, butterflies"]
+    end
+
+    subgraph Atmospheres["4 Daily Atmospheres (avg_S_today)"]
+        direction LR
+        A1["storm<br/>avg_S ≤ −0.6<br/>rain falls AROUND garden"]
+        A2["light-rain<br/>−0.6 &lt; avg_S ≤ −0.3<br/>soft drizzle"]
+        A3["calm<br/>−0.3 &lt; avg_S &lt; 0.3<br/>cloud-dappled sun"]
+        A4["sunny<br/>avg_S ≥ 0.3<br/>bright clear sky"]
+    end
+
+    Formula["H_t = 0.15·S_today + 0.85·H_&#123;t−1&#125;<br/>H_0 = 0, weekly reset<br/>S_t = v × i/5 ∈ [−1, +1]"]
+
+    Formula --> Tiers
+    Formula --> Atmospheres
+
+    Note["Plants NEVER die.<br/>Banned vocab: delete, clear, reset,<br/>wilted, wilting, dead, dying, destroyed.<br/>Use: harvest, complete, new chapter,<br/>fresh week, sheltered, resting."]
+
+    Tiers -.- Note
+
+    classDef tier fill:#dcfce7,stroke:#15803d
+    classDef atmos fill:#dbeafe,stroke:#1d4ed8
+    classDef formula fill:#fef3c7,stroke:#b45309,stroke-width:2px
+    classDef note fill:#fee2e2,stroke:#b91c1c
+    class T1,T2,T3,T4,T5 tier
+    class A1,A2,A3,A4 atmos
+    class Formula formula
+    class Note note

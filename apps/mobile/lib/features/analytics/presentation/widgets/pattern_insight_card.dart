@@ -72,7 +72,10 @@ final _patternInsightsProvider =
       return repo.analyzePatterns(history: entries);
     });
 
-/// Header bar shared by every state of the card.
+/// Hero header bar — larger sparkle badge, brand-gradient backdrop, and
+/// a Fraunces "AI Insight" title that distinguishes this personalised
+/// card from the static "View detailed insights" link below it on the
+/// Patterns screen.
 class _InsightsHeader extends StatelessWidget {
   const _InsightsHeader();
 
@@ -82,32 +85,65 @@ class _InsightsHeader extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 26,
-          height: 26,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [Color(0xFF6FA587), Color(0xFFE8A23B)],
             ),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(11),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33E8A23B),
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
           ),
           alignment: Alignment.center,
-          child: const Icon(Icons.auto_awesome, size: 14, color: Colors.white),
+          child: const Icon(Icons.auto_awesome, size: 20, color: Colors.white),
         ),
-        const SizedBox(width: 8),
-        Text(
-          'Insights',
-          style: MbFonts.nunito(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: mb.text,
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'AI Insight',
+                style: MbFonts.fraunces(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: mb.text,
+                ),
+              ),
+              Text(
+                'Patterns your garden has noticed lately',
+                style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
+              ),
+            ],
           ),
         ),
-        const Spacer(),
-        Text(
-          'AI-assisted',
-          style: MbFonts.nunito(fontSize: 10, color: mb.textDim),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8A23B).withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: const Color(0xFFE8A23B).withValues(alpha: 0.5),
+            ),
+          ),
+          child: Text(
+            'AI',
+            style: MbFonts.nunito(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF8A5A1F),
+              letterSpacing: 0.5,
+            ),
+          ),
         ),
       ],
     );
@@ -225,11 +261,37 @@ class _CardShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MbCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [const _InsightsHeader(), child],
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Soft brand-gradient backdrop (mint → amber wash, low alpha) so
+    // the AI Insight card reads as a premium / personalised surface
+    // distinct from the plain MbCard "View detailed insights" link
+    // below it. Alpha drops in dark mode to keep contrast against
+    // navy without washing the text into mud.
+    final gradient = isDark
+        ? const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0x336FA587), Color(0x33E8A23B)],
+          )
+        : const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0x1F6FA587), Color(0x1FE8A23B)],
+          );
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusCardLg),
+        border: Border.all(
+          color: const Color(0xFFE8A23B).withValues(alpha: 0.30),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [const _InsightsHeader(), child],
+        ),
       ),
     );
   }
