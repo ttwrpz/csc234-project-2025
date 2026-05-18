@@ -1,9 +1,8 @@
-// onCall handler implementing the validation pipeline from
-// ADR-0003 §"Validation order". Short-circuits on each failure with a wire
-// envelope. Throws `HttpsError('unauthenticated')` for the unauth case so
-// that the Firebase SDK on the client maps it to `FirebaseFunctionsException`
-// before the envelope path runs (we cannot trust an unauth caller's
-// `requestId`).
+// onCall handler implementing the validation pipeline. Short-circuits
+// on each failure with a wire envelope. Throws `HttpsError('unauthenticated')`
+// for the unauth case so the Firebase SDK on the client maps it to
+// `FirebaseFunctionsException` before the envelope path runs (we cannot
+// trust an unauth caller's `requestId`).
 
 import { logger } from 'firebase-functions';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
@@ -104,7 +103,7 @@ export async function handleAnalyzeMoodText(
   }
 
   // 3. Length cap. (The Zod schema also enforces 1..500 after trim, so this
-  // branch is double-defensive — kept explicit per ADR-0003.)
+  // branch is double-defensive — kept explicit.)
   const text = parsed.text;
   if (text.length < 1 || text.length > 500) {
     logger.info({
@@ -304,13 +303,13 @@ export async function handleAnalyzeMoodText(
  * The exported v2 callable. Region matches Firestore (lowest latency for KMUTT
  * users).
  *
- * App Check enforcement is **temporarily disabled** for the Sprint 2 demo.
- * The Flutter web client does not yet initialise `firebase_app_check`, so
- * with `enforceAppCheck: true` browser preflight requests were failing and
- * surfacing as opaque CORS errors in the console. Re-enable this flag once
- * `FirebaseAppCheck.instance.activate(...)` ships on the client and a
- * reCAPTCHA v3 site key is registered in Firebase Console → App Check.
- * Tracked separately from the visual overhaul.
+ * App Check enforcement is **temporarily disabled**. The Flutter web
+ * client does not yet initialise `firebase_app_check`, so with
+ * `enforceAppCheck: true` browser preflight requests were failing and
+ * surfacing as opaque CORS errors in the console. Re-enable this flag
+ * once `FirebaseAppCheck.instance.activate(...)` ships on the client
+ * and a reCAPTCHA v3 site key is registered in Firebase Console → App
+ * Check.
  */
 export const analyzeMoodText = onCall(
   {

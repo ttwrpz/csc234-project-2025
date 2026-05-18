@@ -1,15 +1,14 @@
 // webauthnRegisterStart — Cloud Function callable for the registration
-// ceremony's first leg (ADR-0014 Decision B).
+// ceremony's first leg.
 //
 // Flow:
 //   1. Auth check (HttpsError unauthenticated if no uid).
 //   2. PIN guard — read users/{uid}/security/pin; if absent, reject with
-//      { ok: false, code: 'pin_required' }. ADR-0014 Decision E: WebAuthn
-//      cannot be enabled without a PIN (the PIN is the recovery factor).
+//      { ok: false, code: 'pin_required' }. WebAuthn cannot be enabled
+//      without a PIN (the PIN is the recovery factor).
 //   3. Provisioning guard — if WEBAUTHN_PRODUCTION_ORIGIN is empty AND no
 //      RPID is set, reject with { ok: false, code: 'webauthn_not_provisioned' }.
-//      This is the v1.5-dark server-side safety net (ADR-0014 §"Cuts to
-//      make first if a day slips" #3).
+//      Server-side safety net for the client kill-switch.
 //   4. Rate-limit consume via rateLimits.webauthn/{uid}.
 //   5. Generate creation options via @simplewebauthn/server.
 //   6. Persist the challenge at users/{uid}/security/webauthnChallenges/
@@ -21,8 +20,8 @@
 // payload (the user-handle in particular is the uid bytes — already in
 // the allowlisted `uid` field, but no need to log it twice).
 //
-// CF posture (ADR-0014 Decision B): region asia-southeast1, 256MiB, 30s
-// timeout, enforceAppCheck: false (matches the existing CF suite).
+// CF posture: region asia-southeast1, 256MiB, 30s timeout,
+// enforceAppCheck: false (matches the existing CF suite).
 
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
@@ -76,7 +75,7 @@ export async function handleWebauthnRegisterStart(
     return { ok: false, code: 'pin_required' };
   }
 
-  // Provisioning guard — the v1.5-dark server-side fence.
+  // Provisioning guard — server-side fence.
   if (!isProvisioned()) {
     logger.info({
       event: 'webauthnRegisterStart',
@@ -126,9 +125,9 @@ export async function handleWebauthnRegisterStart(
     return { ok: false, code: 'webauthn_not_provisioned' };
   }
 
-  // Build creation options. `attestationType: 'none'` per ADR-0014
-  // Open Follow-up #6 — v1.5 does not verify attestation; v1.6 may
-  // revisit if the project moves to enterprise authentication.
+  // Build creation options. `attestationType: 'none'` — attestation is
+  // not verified here; revisit if the project moves to enterprise
+  // authentication.
   const options = await generateRegistrationOptions({
     rpName: 'MoodBloom',
     rpID: rpId,

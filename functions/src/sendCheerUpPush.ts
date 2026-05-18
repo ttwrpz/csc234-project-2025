@@ -1,5 +1,5 @@
-// Firestore-trigger Cloud Function for the cheer-up push notification
-// (HB-003 §5.5b). Fires on document-create at
+// Firestore-trigger Cloud Function for the cheer-up push notification.
+// Fires on document-create at
 // `users/{uid}/cheerUpEvents/{evtId}`. The event-doc id is
 // `${dayUtc}-${reason}` so the client's idempotent same-day write
 // collapses two re-evaluations on a single create — meaning this CF
@@ -19,8 +19,8 @@
 //
 // Architectural notes:
 //  - The payload is fixed at module scope so even a future "personalised
-//    body" feature can't accidentally route through this function. PII
-//    fence per ADR-0003 / HB-003 §"Out-of-scope guardrails".
+//    body" feature can't accidentally route through this function (PII
+//    fence).
 //  - On a successful send we also clean up the Firestore-side state by
 //    pruning dead tokens; this is a self-contained follow-up update,
 //    NOT a separate trigger.
@@ -28,15 +28,15 @@
 //    (rules block deletes); the CF is the only "consumer" but the doc
 //    persists for traceability.
 
-// HTTPS-callable cheer-up push. v1.0 polish (2026-05-10) converted
-// from a Firestore document-create trigger to `onCall` because the
-// project's Firestore database is in `asia-southeast3` (Bangkok),
-// which neither Cloud Functions v1 nor v2 currently support as a
-// Firestore-trigger location — the v2 Eventarc allowlist excludes
-// southeast3, and the v1 trigger validator rejects it too. `onCall`
-// is region-independent and matches the pattern already in use by
-// `analyzeMoodText`, `analyzePatterns`, `wipeUserData`, and
-// `wipeWeeklyGarden` (all `asia-southeast1`).
+// HTTPS-callable cheer-up push. Implemented as `onCall` (not a
+// Firestore document-create trigger) because the project's Firestore
+// database is in `asia-southeast3` (Bangkok), which neither Cloud
+// Functions v1 nor v2 currently support as a Firestore-trigger
+// location — the v2 Eventarc allowlist excludes southeast3, and the v1
+// trigger validator rejects it too. `onCall` is region-independent and
+// matches the pattern already in use by `analyzeMoodText`,
+// `analyzePatterns`, `wipeUserData`, and `wipeWeeklyGarden` (all
+// `asia-southeast1`).
 //
 // Idempotency moves from "Firestore event id is server-allocated"
 // to "client passes a deterministic requestId derived from the
@@ -57,8 +57,7 @@ import { consumeToken } from './rateLimit.js';
 
 // Locked payload — no PII, no clinical language, no hotline copy.
 // CLAUDE.md copy rules: "noticing" instead of "improve/boost/overcome",
-// no "you should". Hotline 1323 is in-app footer only (HB-003
-// "Out-of-scope guardrails").
+// no "you should". Hotline 1323 is in-app footer only.
 const TITLE = 'A gentle check-in';
 const BODY = "Noticing you've had a rough stretch. We're here.";
 const CHANNEL_ID = 'cheer_up';
@@ -227,8 +226,8 @@ export const sendCheerUpPush = onCall<
     }
 
     // 3. Send multicast. Locked payload — `notification` only, no
-    // `data` payload (deep-link routing is v1.6+, would need its own
-    // ADR + permission audit).
+    // `data` payload (deep-link routing would need its own permission
+    // audit).
     const messaging = getMessaging();
     const response = await messaging.sendEachForMulticast({
       tokens,

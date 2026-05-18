@@ -2,8 +2,8 @@
 //
 // Window: 60s sliding-on-rollover (NOT a true sliding window — once the window
 // starts, the next 10 calls all count against it; we only roll over when the
-// next request lands >=60s after `windowStartMs`). See ADR-0003 §"Rate limit"
-// for rationale (atomic, cheap, transparent to users).
+// next request lands >=60s after `windowStartMs`). Rationale: atomic, cheap,
+// transparent to users.
 //
 // The token is consumed BEFORE the Gemini call so a Gemini outage cannot DoS
 // the project's Gemini quota.
