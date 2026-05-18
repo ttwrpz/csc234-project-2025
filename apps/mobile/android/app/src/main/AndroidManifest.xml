@@ -7,9 +7,24 @@
     <!-- FCM (S5 5.5b): Android 13+ requires runtime POST_NOTIFICATIONS
          consent before notifications are delivered. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- v1.6 — mood entry attachments via image_picker.
+         CAMERA: required to launch the system camera intent (camera
+         apps refuse the intent without this declaration even though
+         no runtime permission is requested by image_picker itself).
+         READ_MEDIA_IMAGES + READ_MEDIA_VIDEO: Android 13+ replaced the
+         broad READ_EXTERNAL_STORAGE with per-mime-type permissions.
+         READ_EXTERNAL_STORAGE: still required on Android ≤12 for the
+         pre-Photo-Picker gallery flow; maxSdkVersion=32 lets newer
+         devices opt into the OS Photo Picker (which needs no perm). -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"/>
 
     <application
-        android:label="CSC234 User Centric Mobile App"
+        android:label="MoodBloom"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

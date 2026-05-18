@@ -27,6 +27,7 @@ import 'widgets/garden_summary_row.dart';
 import 'widgets/hotline_footer.dart';
 import 'widgets/per_flower_detail_modal.dart';
 import 'widgets/sky_header.dart';
+import 'widgets/take_a_breath_button.dart';
 
 /// Home screen — pivot feature #7. ADR-0010 redesign: the canvas now
 /// reads two ecosystem signals (slow weekly EWMA → plant tier; fast
@@ -68,7 +69,6 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
     final speciesAccent = _speciesAccentFrom(skinState);
 
     final mb = Theme.of(context).extension<MbColors>()!;
-    final theme = Theme.of(context);
 
     // HB-005 Track 6.1: when the user has crossed a 7-day boundary on
     // an unarchived week AND we have a precomputed summary to show,
@@ -127,13 +127,6 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
 
     return Scaffold(
       backgroundColor: mb.bg,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.go('/log-mood'),
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('Log mood'),
-      ),
       body: state.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) => Center(
@@ -336,6 +329,10 @@ class _GardenView extends StatelessWidget {
             onFlowerTap: onFlowerTap,
             speciesAccent: speciesAccent.isEmpty ? null : speciesAccent,
           ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(18, 16, 18, 0),
+            child: TakeABreathButton(expand: true),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
             child: GardenSummaryRow(
@@ -448,19 +445,26 @@ class _GardenView extends StatelessWidget {
     final right = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: MbCard(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: MoodBloomSpacing.sm,
-                vertical: MoodBloomSpacing.sm,
-              ),
-              child: DailyScoreStrip(
-                last7Days: state.last7Days,
-                onDayTap: (day) => DayEntriesSheet.show(context, day),
-                compact: false,
-              ),
+        // v1.6 — Take-a-breath above the score strip on desktop. Sat
+        // at the foot of the right column previously, which on tall
+        // pages required the user to scroll past Recent Moods to find
+        // it. Top placement keeps the affordance visible at the
+        // initial viewport.
+        const Padding(
+          padding: EdgeInsets.only(top: 4),
+          child: TakeABreathButton(expand: true),
+        ),
+        const SizedBox(height: 12),
+        MbCard(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: MoodBloomSpacing.sm,
+              vertical: MoodBloomSpacing.sm,
+            ),
+            child: DailyScoreStrip(
+              last7Days: state.last7Days,
+              onDayTap: (day) => DayEntriesSheet.show(context, day),
+              compact: false,
             ),
           ),
         ),

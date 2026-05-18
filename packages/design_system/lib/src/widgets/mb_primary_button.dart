@@ -34,7 +34,9 @@ class MbPrimaryButton extends StatelessWidget {
         // Material accessibility minimum tap target is 48 dp; set both
         // minimumSize.height and tapTargetSize so a 14 sp label inside a
         // tight container doesn't shrink the hit area below the threshold.
-        minimumSize: const Size.fromHeight(MoodBloomSpacing.tapTargetMin),
+        // Size(0, h) — Size.fromHeight forces minWidth = infinity, which
+        // asserts when the button sits in a Row's non-flex slot.
+        minimumSize: const Size(0, MoodBloomSpacing.tapTargetMin),
         tapTargetSize: MaterialTapTargetSize.padded,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         shape: RoundedRectangleBorder(

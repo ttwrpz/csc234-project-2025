@@ -47,7 +47,9 @@ class ChangePinUseCase {
     final first = Pin.tryFrom(newPinFirstEntry);
     final confirm = Pin.tryFrom(newPinConfirmEntry);
     if (first == null || confirm == null) {
-      return const ChangePinResult.setupFailure(PinSetupFailure.invalidFormat());
+      return const ChangePinResult.setupFailure(
+        PinSetupFailure.invalidFormat(),
+      );
     }
     if (first.digits != confirm.digits) {
       return const ChangePinResult.setupFailure(PinSetupFailure.mismatch());

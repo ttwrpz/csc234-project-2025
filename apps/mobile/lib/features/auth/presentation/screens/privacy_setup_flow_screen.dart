@@ -85,9 +85,9 @@ class _PrivacySetupFlowScreenState
   Widget build(BuildContext context) {
     return switch (_step) {
       _Step.biometric => _BiometricStep(
-          onContinue: _runBiometricCheck,
-          onCancel: _cancel,
-        ),
+        onContinue: _runBiometricCheck,
+        onCancel: _cancel,
+      ),
       _Step.pin => _PinStep(onSuccess: _onPinSetupSuccess, onCancel: _cancel),
       _Step.done => _DoneStep(onDone: () => context.pop(true)),
     };

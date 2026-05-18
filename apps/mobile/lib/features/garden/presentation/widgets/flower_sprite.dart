@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
+import '../../../tokens/domain/entities/flower_skin.dart' show FlowerPetalShape;
 import '../../domain/entities/flower_species.dart';
 
 /// A small (default 24×24) iconic sprite for one of the six
@@ -27,11 +28,19 @@ class FlowerSprite extends StatelessWidget {
     this.size = 24,
     this.tint,
     this.excludeSemantics = true,
+    this.petalShape = FlowerPetalShape.classic,
   });
 
   final FlowerSpecies species;
   final double size;
   final Color? tint;
+
+  /// v1.6 — petal geometry override from the user's selected
+  /// [FlowerSkin]. `classic` (default) preserves the species' original
+  /// shape pixel-for-pixel; alternates render via the shared radial
+  /// petal painter so skins read visually distinct, not just colour
+  /// swaps.
+  final FlowerPetalShape petalShape;
 
   /// When `true` (the default) the sprite is hidden from the a11y tree
   /// — the parent widget (e.g. `MoodEntryTile`) typically already
@@ -48,7 +57,11 @@ class FlowerSprite extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = Theme.of(context).extension<MbMoodPalette>()!;
     final color = tint ?? palette.colorOf(_speciesMoodKind(species));
-    final painter = _FlowerSpritePainter(species: species, color: color);
+    final painter = _FlowerSpritePainter(
+      species: species,
+      color: color,
+      petalShape: petalShape,
+    );
     final paint = SizedBox(
       width: size,
       height: size,
@@ -92,10 +105,15 @@ MbMoodKind _speciesMoodKind(FlowerSpecies species) => switch (species) {
 /// uniformly by [paintingScale]. Mirrors the `withSvgFrame` extension
 /// in `flora_sprite.dart`.
 class _FlowerSpritePainter extends CustomPainter {
-  _FlowerSpritePainter({required this.species, required this.color});
+  _FlowerSpritePainter({
+    required this.species,
+    required this.color,
+    this.petalShape = FlowerPetalShape.classic,
+  });
 
   final FlowerSpecies species;
   final Color color;
+  final FlowerPetalShape petalShape;
 
   static const double _logicalSize = 100;
 
@@ -105,6 +123,15 @@ class _FlowerSpritePainter extends CustomPainter {
     final scale = size.shortestSide / _logicalSize;
     canvas.scale(scale, scale);
     canvas.translate(_logicalSize / 2, _logicalSize / 2);
+    // v1.6 — non-classic skins use the shared shaped-petal painter so
+    // the geometry difference is consistent across the catalog. Fern
+    // (a frond, not a bloom) never honours the override.
+    if (petalShape != FlowerPetalShape.classic &&
+        species != FlowerSpecies.fern) {
+      _paintShapedPetals(canvas);
+      canvas.restore();
+      return;
+    }
     switch (species) {
       case FlowerSpecies.sunflower:
         _paintSunflower(canvas);
@@ -120,6 +147,60 @@ class _FlowerSpritePainter extends CustomPainter {
         _paintLavender(canvas);
     }
     canvas.restore();
+  }
+
+  /// Shared radial petal painter used by all non-classic skins. Each
+  /// shape uses 6 petals around a centre disk so the silhouette reads
+  /// distinct without needing per-species tuning. The centre dot keeps
+  /// the species' mood-tint signature so skins still feel "owned" by
+  /// the species they unlock for.
+  void _paintShapedPetals(Canvas c) {
+    final petalPaint = Paint()..color = color;
+    const petalCount = 6;
+    for (var i = 0; i < petalCount; i += 1) {
+      final theta = (i / petalCount) * 2 * math.pi;
+      c.save();
+      c.rotate(theta);
+      _drawPetal(c, petalPaint, petalShape);
+      c.restore();
+    }
+    // Centre disk in a deeper neutral so the petal hue carries the
+    // skin's identity instead of the centre overwhelming it.
+    c.drawCircle(Offset.zero, 10, Paint()..color = const Color(0xFF6B4A1F));
+  }
+
+  void _drawPetal(Canvas c, Paint paint, FlowerPetalShape shape) {
+    switch (shape) {
+      case FlowerPetalShape.classic:
+        c.drawOval(
+          Rect.fromCenter(center: const Offset(26, 0), width: 18, height: 28),
+          paint,
+        );
+      case FlowerPetalShape.rounded:
+        c.drawCircle(const Offset(28, 0), 14, paint);
+      case FlowerPetalShape.pointed:
+        final p = Path()
+          ..moveTo(10, 0)
+          ..quadraticBezierTo(20, 14, 42, 0)
+          ..quadraticBezierTo(20, -14, 10, 0)
+          ..close();
+        c.drawPath(p, paint);
+      case FlowerPetalShape.star:
+        final p = Path()
+          ..moveTo(12, 0)
+          ..lineTo(28, 10)
+          ..lineTo(46, 0)
+          ..lineTo(28, -10)
+          ..close();
+        c.drawPath(p, paint);
+      case FlowerPetalShape.heart:
+        final p = Path()
+          ..moveTo(14, 0)
+          ..cubicTo(14, -16, 38, -16, 30, 0)
+          ..cubicTo(38, 16, 14, 16, 14, 0)
+          ..close();
+        c.drawPath(p, paint);
+    }
   }
 
   /// Round disk + 12 narrow radiating petals — the warm yellow/amber
@@ -288,5 +369,7 @@ class _FlowerSpritePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _FlowerSpritePainter oldDelegate) =>
-      oldDelegate.species != species || oldDelegate.color != color;
+      oldDelegate.species != species ||
+      oldDelegate.color != color ||
+      oldDelegate.petalShape != petalShape;
 }

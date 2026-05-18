@@ -318,7 +318,7 @@ class MoodRepositoryImpl implements MoodRepository {
     } catch (e) {
       _logger.warn(
         'local write failed',
-        data: 'op=$operation type=${e.runtimeType}',
+        data: 'op=$operation type=${e.runtimeType} msg=${e.toString()}',
       );
       return Err(MoodFailure.unknown(e));
     }

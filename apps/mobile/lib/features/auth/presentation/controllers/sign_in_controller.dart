@@ -25,11 +25,14 @@ class SignInController extends _$SignInController {
 
   Future<void> submit() async {
     if (state.isSubmitting) return;
-    state = state.copyWith(isSubmitting: true, errorMessage: null);
+    state = state.copyWith(
+      submittingWith: SignInSubmitMethod.password,
+      errorMessage: null,
+    );
     final usecase = ref.read(signInWithEmailUseCaseProvider);
     final result = await usecase(email: state.email, password: state.password);
     state = state.copyWith(
-      isSubmitting: false,
+      submittingWith: SignInSubmitMethod.none,
       errorMessage: result.fold(
         ok: (_) => null,
         err: (failure) => failure.message,
@@ -39,11 +42,14 @@ class SignInController extends _$SignInController {
 
   Future<void> submitGoogle() async {
     if (state.isSubmitting) return;
-    state = state.copyWith(isSubmitting: true, errorMessage: null);
+    state = state.copyWith(
+      submittingWith: SignInSubmitMethod.google,
+      errorMessage: null,
+    );
     final usecase = ref.read(signInWithGoogleUseCaseProvider);
     final result = await usecase();
     state = state.copyWith(
-      isSubmitting: false,
+      submittingWith: SignInSubmitMethod.none,
       errorMessage: result.fold(
         ok: (_) => null,
         err: (failure) => failure.message,

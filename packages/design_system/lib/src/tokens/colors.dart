@@ -13,14 +13,16 @@ abstract final class MoodBloomColors {
   static const Color coral = Color(0xFFF4A78C);
 
   /// Deeper coral suitable for destructive TEXT on a cream surface.
-  /// `coral` (0xFFF4A78C, luminance ~0.50) gives a ~2.2:1 contrast
-  /// ratio against `surfaceCream` and fails WCAG AA. This deeper tone
-  /// (luminance ~0.13) lands at ~7:1 — passes AAA — while staying in
-  /// the warm coral hue family. Use [coralText] for ListTile titles,
-  /// `Sign out` / `Wipe…` labels, snackbar copy, etc. Filled buttons
-  /// can keep `coral` as their background since the foreground there
-  /// is white (ratio is fine on white).
-  static const Color coralText = Color(0xFFA63B2E);
+  /// Used by Sign out / Delete account / Wipe… labels and snackbar
+  /// copy. Filled buttons can keep `coral` as their background since
+  /// the foreground there is white (ratio is fine on white).
+  ///
+  /// v1.6 — darkened from 0xFFA63B2E to 0xFF7A1E13 (~9.5:1 on the
+  /// cream surface) after user feedback that the previous tone still
+  /// read as low-contrast in light mode. Hue stays in the warm coral
+  /// family; saturation drops modestly so the colour reads as
+  /// "deliberate weight" rather than "alarm red".
+  static const Color coralText = Color(0xFF7A1E13);
 
   // Neutrals (light mode)
   /// Warm cream scaffold. Updated to the prototype value `#FBFAF6`.
@@ -63,6 +65,7 @@ class MbColors extends ThemeExtension<MbColors> {
     required this.line,
     required this.text,
     required this.textDim,
+    required this.destructiveText,
     required this.skyTop,
     required this.skyMid,
     required this.skyBot,
@@ -84,6 +87,8 @@ class MbColors extends ThemeExtension<MbColors> {
     line: Color(0xFFECE7DC),
     text: Color(0xFF1F2937),
     textDim: Color(0xFF6B7280),
+    // Deep coral on cream — ~9.5:1 contrast, AAA.
+    destructiveText: Color(0xFF7A1E13),
     skyTop: Color(0xFFFFE4D1),
     skyMid: Color(0xFFF5E9DA),
     skyBot: Color(0xFFE8F3ED),
@@ -105,6 +110,10 @@ class MbColors extends ThemeExtension<MbColors> {
     line: Color(0xFF2E3B4B),
     text: Color(0xFFF0F3F7),
     textDim: Color(0xFFA6B2C2),
+    // Bright coral on navy — ~6:1 contrast, AA. The deep coralText
+    // (#7A1E13) collapses to ~1.7:1 here; this brighter tone keeps the
+    // destructive-affordance hue family while staying readable.
+    destructiveText: Color(0xFFF4A78C),
     skyTop: Color(0xFF2B3A52),
     skyMid: Color(0xFF25334A),
     skyBot: Color(0xFF1F3A2E),
@@ -124,6 +133,7 @@ class MbColors extends ThemeExtension<MbColors> {
   final Color line;
   final Color text;
   final Color textDim;
+  final Color destructiveText;
   final Color skyTop;
   final Color skyMid;
   final Color skyBot;
@@ -144,6 +154,7 @@ class MbColors extends ThemeExtension<MbColors> {
     Color? line,
     Color? text,
     Color? textDim,
+    Color? destructiveText,
     Color? skyTop,
     Color? skyMid,
     Color? skyBot,
@@ -163,6 +174,7 @@ class MbColors extends ThemeExtension<MbColors> {
       line: line ?? this.line,
       text: text ?? this.text,
       textDim: textDim ?? this.textDim,
+      destructiveText: destructiveText ?? this.destructiveText,
       skyTop: skyTop ?? this.skyTop,
       skyMid: skyMid ?? this.skyMid,
       skyBot: skyBot ?? this.skyBot,
@@ -187,6 +199,8 @@ class MbColors extends ThemeExtension<MbColors> {
       line: Color.lerp(line, other.line, t)!,
       text: Color.lerp(text, other.text, t)!,
       textDim: Color.lerp(textDim, other.textDim, t)!,
+      destructiveText:
+          Color.lerp(destructiveText, other.destructiveText, t)!,
       skyTop: Color.lerp(skyTop, other.skyTop, t)!,
       skyMid: Color.lerp(skyMid, other.skyMid, t)!,
       skyBot: Color.lerp(skyBot, other.skyBot, t)!,

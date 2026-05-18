@@ -1,6 +1,7 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../domain/entities/daily_insight.dart';
 import '../controllers/insights_controller.dart';
@@ -35,13 +36,36 @@ class InsightsScreen extends ConsumerWidget {
     final mb = Theme.of(context).extension<MbColors>()!;
     return Scaffold(
       backgroundColor: mb.bg,
-      // The gate WIDGET handles the dialog scheduling; the
-      // `insightsGateProvider` switch below handles the chart
-      // visibility. Wrapping the body in the gate keeps the dialog
-      // logic out of the build() flow.
-      body: const InsightsDisclaimerGate(
-        child: SafeArea(child: _InsightsBody()),
-      ),
+      // Body-level back button matches the Entry Detail pattern. The
+      // gate widget wraps the body so the back affordance stays
+      // visible even when the disclaimer ack modal is presenting.
+      body: const InsightsDisclaimerGate(child: SafeArea(child: _InsightsBody())),
+    );
+  }
+}
+
+/// Back-button row + screen title, body-level. Used by [_InsightsBody]
+/// inside whatever scroll surface it composes for the active layout.
+class _InsightsBackRow extends StatelessWidget {
+  const _InsightsBackRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        MbIconButton(
+          icon: const Icon(Icons.arrow_back),
+          semanticLabel: 'Back to Patterns',
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              // ignore: discarded_futures
+              GoRouter.of(context).go('/analytics');
+            }
+          },
+        ),
+      ],
     );
   }
 }
@@ -106,6 +130,8 @@ class _Header extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const _InsightsBackRow(),
+        const SizedBox(height: 8),
         Text(
           'Insights',
           style: MbFonts.fraunces(
@@ -268,7 +294,9 @@ class _ChartCard extends StatelessWidget {
 class _ChartKeyRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final mb = theme.extension<MbColors>()!;
     return Wrap(
       spacing: 16,
       runSpacing: 6,
@@ -277,7 +305,7 @@ class _ChartKeyRow extends StatelessWidget {
         _LegendDot(color: MoodBloomColors.amber, label: 'Rolling rhythm'),
         _LegendDot(color: MoodBloomColors.amber, label: 'Tier 1 gentle'),
         _LegendDot(color: MoodBloomColors.coral, label: 'Tier 2 invitation'),
-        _LegendDot(color: MoodBloomColors.coralText, label: 'Tier 3 care'),
+        _LegendDot(color: mb.destructiveText, label: 'Tier 3 care'),
       ],
     );
   }

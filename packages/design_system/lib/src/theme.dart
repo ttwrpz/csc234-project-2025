@@ -17,7 +17,9 @@ ThemeData buildLightTheme() {
     onSurfaceVariant: mb.textDim,
     outline: mb.line,
     primary: MoodBloomColors.seed,
-    error: MoodBloomColors.coral,
+    // Light mode: deep `coralText` (#7A1E13) gives serious destructive
+    // weight on the cream surface (~9.5:1 contrast).
+    error: MoodBloomColors.coralText,
   );
   return _buildTheme(colorScheme: colorScheme, mb: mb);
 }
@@ -34,9 +36,28 @@ ThemeData buildDarkTheme() {
     onSurfaceVariant: mb.textDim,
     outline: mb.line,
     primary: MoodBloomColors.seed,
+    // Dark mode: the deep `coralText` disappears against the navy
+    // background (~1.7:1 contrast). Use the brighter `coral` (#F4A78C)
+    // instead — passes ≥4.5:1 against the dark surface while staying
+    // in the same warm coral hue family.
     error: MoodBloomColors.coral,
   );
   return _buildTheme(colorScheme: colorScheme, mb: mb);
+}
+
+// Belt-and-suspenders no-op page transitions for any Navigator pushes outside
+// GoRouter (e.g. MaterialPageRoute pushes in the harvest flow).
+class _NoTransitionsBuilder extends PageTransitionsBuilder {
+  const _NoTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) => child;
 }
 
 ThemeData _buildTheme({
@@ -51,6 +72,16 @@ ThemeData _buildTheme({
     fontFamily: MoodBloomTypography.fontFamily,
     textTheme: textTheme,
     extensions: <ThemeExtension<dynamic>>[mb, MbMoodPalette.shared],
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: _NoTransitionsBuilder(),
+        TargetPlatform.iOS: _NoTransitionsBuilder(),
+        TargetPlatform.linux: _NoTransitionsBuilder(),
+        TargetPlatform.macOS: _NoTransitionsBuilder(),
+        TargetPlatform.windows: _NoTransitionsBuilder(),
+        TargetPlatform.fuchsia: _NoTransitionsBuilder(),
+      },
+    ),
     appBarTheme: AppBarTheme(
       backgroundColor: mb.bg,
       elevation: 0,

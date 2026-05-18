@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:design_system/design_system.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -140,16 +141,37 @@ class _CrisisResourcesScreenState extends ConsumerState<CrisisResourcesScreen> {
         if (shouldPop && context.mounted) context.pop();
       },
       child: Scaffold(
-        appBar: AppBar(
-          // No leading icon — leaving the screen is intentional, gated
-          // by either the opt-out or the back-gesture confirmation.
-          automaticallyImplyLeading: false,
-          title: const Text("We're here"),
-        ),
+        // Body-level back button (MbIconButton) routes through
+        // `_confirmExit` so the safety gate stays — same visual
+        // pattern as Entry Detail but with the confirmation dialog
+        // preserved.
         body: SafeArea(
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              Row(
+                children: [
+                  MbIconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    semanticLabel: 'Close',
+                    onPressed: () async {
+                      final shouldPop = await _confirmExit();
+                      if (shouldPop && context.mounted) context.pop();
+                    },
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    "We're here",
+                    style: MbFonts.fraunces(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: theme.extension<MbColors>()?.text ??
+                          theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               Text(_bodyText, style: theme.textTheme.bodyLarge),
               const SizedBox(height: 24),
               _HotlineTile(

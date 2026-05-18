@@ -29,7 +29,13 @@ class MbGhostButton extends StatelessWidget {
         backgroundColor: mb.card,
         foregroundColor: mb.text,
         side: BorderSide(color: mb.line),
-        minimumSize: const Size.fromHeight(MoodBloomSpacing.tapTargetMin),
+        // Size.fromHeight builds Size(double.infinity, h) — that makes
+        // the button's minWidth = infinity, which throws when the
+        // parent (e.g. a Row's non-flex slot) passes unbounded width.
+        // Size(0, h) keeps the height floor without forcing an infinite
+        // width; the optional `fullWidth: true` wrapper handles full-
+        // width sizing explicitly via SizedBox(width: double.infinity).
+        minimumSize: const Size(0, MoodBloomSpacing.tapTargetMin),
         tapTargetSize: MaterialTapTargetSize.padded,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         shape: RoundedRectangleBorder(

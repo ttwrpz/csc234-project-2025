@@ -22,6 +22,9 @@ class SignUpController extends _$SignUpController {
     errorMessage: null,
   );
 
+  void setDisplayName(String displayName) =>
+      state = state.copyWith(displayName: displayName, errorMessage: null);
+
   Future<void> submit() async {
     if (state.isSubmitting) return;
     if (state.password != state.confirmPassword) {
@@ -31,6 +34,15 @@ class SignUpController extends _$SignUpController {
     state = state.copyWith(isSubmitting: true, errorMessage: null);
     final usecase = ref.read(registerWithEmailUseCaseProvider);
     final result = await usecase(email: state.email, password: state.password);
+    final trimmedName = state.displayName.trim();
+    if (result is Ok && trimmedName.isNotEmpty) {
+      // Email/password `createUserWithEmailAndPassword` has no field
+      // for a display name, so push it through immediately after the
+      // account exists. Best-effort — if the patch fails the account
+      // still lives, the user can set the name in Settings later.
+      // ignore: discarded_futures
+      ref.read(authRepositoryProvider).updateDisplayName(trimmedName);
+    }
     state = state.copyWith(
       isSubmitting: false,
       errorMessage: result.fold(

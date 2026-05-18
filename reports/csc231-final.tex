@@ -1,0 +1,312 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{titling}
+\usepackage{fancyhdr}
+\usepackage{caption}
+\usepackage[backend=biber,style=apa]{biblatex}
+
+\addbibresource{references.bib}
+
+\definecolor{moodgreen}{HTML}{2E7D5B}
+\hypersetup{colorlinks=true, linkcolor=moodgreen, urlcolor=moodgreen, citecolor=moodgreen}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{MoodBloom --- Group 2}
+\lhead{\leftmark}
+\rfoot{\thepage}
+
+\title{CSC231 Final Project Report --- MoodBloom}
+\author{
+  Kraiwich Jaiton (full-stack) \and
+  Teerin Kittichaicharoen (UI/UX + QA) \and
+  Theerawat Patthawee (Project Lead) \and
+  Jedsarit Fanpimiy (Flutter + DevOps) \and
+  Napat Chang-ekwong (UI/UX Lead) \\[1ex]
+  \small Group 2 \\
+  \small CSC231 Agile Software Engineering \\
+  \small KMUTT, Semester 2/2568
+}
+\date{May 26, 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\noindent\textbf{Reviewer note.} Chapter~4 (Project Planning) is partially
+reconstructed from sprint-kickoff prompts and commit history; the canonical
+\texttt{docs/pm/} directory with the formal WBS/Backlog/PDM/GANTT was not
+authored within the academic timeline. The WBS IDs referenced throughout
+commits are real and consistent across all 37 leaves; the PERT estimates and
+critical-path activity letters are reconstructed and flagged.
+
+\tableofcontents
+\newpage
+
+\section*{Executive Summary}
+\addcontentsline{toc}{section}{Executive Summary}
+
+\textbf{Problem.} Thailand has a documented shortage of clinical
+mental-health practitioners; mobile interventions can extend reach with
+small-to-moderate effect sizes ($g \approx 0.38$)
+\autocite{firth2017meta}. A self-administered mood-tracker must
+reconcile sustained-engagement gamification with strict clinical safety
+guardrails.
+
+\textbf{Solution.} MoodBloom is a cross-platform Flutter mood-tracker for
+Android and Web. Users log moods with intensity 1--5, optionally accept
+AI-suggested labels from Gemini via a Cloud Function proxy, visualise
+their week as a living garden whose plants never die, and receive tiered
+intervention notifications when the pure-Dart Pattern Engine detects
+emerging distress patterns.
+
+\textbf{Delivered.} Twelve pivot features across five sprints. 1018
+automated tests pass at \texttt{v1.5}. Domain-layer line coverage 94.6\%
+overall with every feature $\geq 80\%$ (Enterprise R1 gate). 14
+architecture decision records, 9 handoff briefs, 4 sprint retrospectives,
+1 Security Posture Report (GO with three conditions).
+
+\textbf{Methodology.} Agile/Scrum with five sprints, multi-agent
+orchestration via Claude Code with four named subagents (architect,
+flutter-engineer, qa-engineer, security-reviewer), Plan Mode discipline
+at every sprint kickoff, no-self-review rule.
+
+\textbf{Outcome.} Release-candidate \texttt{v1.5} tagged locally on
+\texttt{feat/s5-v1.5-final}. Final Security Posture Report: GO with
+three conditions (D-M01 transitive HIGH \texttt{pnpm} advisories filed
+as v1.6 chore; skin-system branch merged in \texttt{ed2cd755};
+cross-platform runbook done-criteria checklist to be confirmed on
+Android emulator + Chrome web before pushing the tag).
+
+\section{Introduction}
+
+Thai young adults experience emerging mental-health needs at a rate that
+outpaces clinical capacity. Smartphone-based interventions show
+small-to-moderate efficacy per Firth et al.\ 2017's meta-analysis of
+randomised controlled trials \autocite{firth2017meta}. Mood tracking is a
+well-evidenced subset \autocite{kauer2012jmir,bakker2018moodprism}.
+
+\textbf{Scope.} Cross-platform Flutter for Android (min-SDK 21) and Web
+(PWA). Firebase backend (Auth, Firestore, Storage, Functions, FCM,
+Remote Config, Crashlytics). Single language model: Gemini 2.5-flash via
+a Cloud Function proxy --- never called directly from the client.
+
+\textbf{Objectives.} (1) Ship a release-candidate by May 19, 2026; (2)
+domain-layer line coverage $\geq 80\%$; (3) WCAG 2.2 AA contrast on both
+themes; (4) cold-start $<2\,$s on mid-range Android; (5) zero
+HIGH/CRITICAL security advisories at release.
+
+\section{Software Engineering Approach}
+
+\textbf{Agile/Scrum.} Five sprints across nine weeks
+(April 21 -- May 19, 2026):
+
+\begin{longtable}{lll}
+\toprule
+\textbf{Sprint} & \textbf{Tag} & \textbf{Theme} \\
+\midrule
+S1 (Apr 21) & --- & Agile artifacts (WBS, Backlog, PDM, GANTT) \\
+S2 (Apr 22--28) & \texttt{v0.2-walking-skeleton} & Foundation, auth, Clean Architecture \\
+S3 (Apr 29--30) & \texttt{v0.3-beta} & Gemini, Drift, security rules, biometric, analytics \\
+S4 (May 6--12) & \texttt{v1.0} & Ecosystem redesign + Pattern Engine + Harvest + Tokens \\
+S5 (May 13--19) & \texttt{v1.5} & Tiered Intervention, Quote Library, Disclaimer, Insights, Skins, Privacy \\
+\bottomrule
+\end{longtable}
+
+\textbf{Multi-agent orchestration via Claude Code.} Four named
+subagents: \emph{architect} (plans; read-only); \emph{flutter-engineer}
+(implements); \emph{qa-engineer} (widget/golden/integration/a11y/perf
+tests); \emph{security-reviewer} (read-only audits, risk register
+output).
+
+\textbf{Plan Mode discipline.} Every sprint kickoff entered Claude Code's
+Plan Mode before any code was touched. Forces design questions into the
+open before commit.
+
+\textbf{No-self-review rule.} The implementer of any feature cannot
+approve their own work. Recursively applies --- when the orchestrator
+drafts an ADR, a separate agent verifies it.
+
+\section{Requirements Engineering}
+
+The 12 pivot features traced to NFRs mapped to ISO/IEC 25010 across the
+8 quality characteristics: functional suitability, performance
+efficiency, compatibility, usability, reliability, security,
+maintainability, portability.
+
+Traceability matrix (feature $\to$ test case): Mood Score $\to$ TC-2,
+TC-16, TC-22; EWMA $\to$ TC-21..TC-24; Atmosphere $\to$ TC-16..TC-20;
+Pattern Engine $\to$ TC-25..TC-30; Tiered Intervention $\to$
+TC-31..TC-35; Quote Library + Safety Filter $\to$ TC-40, TC-41;
+Disclaimer $\to$ TC-36..TC-39; Token economy $\to$ TC-1..TC-5; Skin
+system $\to$ TC-6..TC-10; Harvest $\to$ TC-11..TC-15.
+
+\section{Project Planning}
+
+\noindent\textbf{Reconstructed from sprint-kickoff prompts and commit
+history.} The team produced an agile-planning bundle in Sprint~1: a Work
+Breakdown Structure with 37 leaves grouped into 8 buckets; a Backlog of
+37 items estimated via Wideband Delphi PERT (75.5 person-days vs.\ 80
+PD team capacity = 94\% utilisation); a PERT/Precedence Diagram Method
+(PDM) with 30 activities; a GANTT chart with the critical path.
+
+WBS leaf groups: 1.x Foundation; 2.x Auth; 3.x Mood + AI; 4.x Garden +
+Atmosphere; 5.x Pattern + Intervention; 6.x Harvest + Tokens + Skins;
+7.x Notifications + Disclaimer; 8.x QA; 9.x Reports.
+
+Critical path: $A \to B \to C \to G \to I \to L \to R \to W \to X \to Y
+\to AC \to AD \to AE$, ending day 19.5 of 20.
+
+\section{Software Architecture}
+
+Three-layer rule per feature folder: \texttt{presentation/},
+\texttt{domain/}, \texttt{data/}. Domain folder has \textbf{zero
+imports} of \texttt{package:flutter/*},
+\texttt{package:firebase\_*/*}, or
+\texttt{package:cloud\_firestore/*}. Enforced three ways: CI grep,
+preWrite hook, code review.
+
+\textbf{Nine pure-Dart Domain Engines} power MoodBloom's therapeutic
+logic: \texttt{MoodScore}, \texttt{GardenHealthEWMA},
+\texttt{Atmosphere}, \texttt{PatternEngine},
+\texttt{TieredInterventionDispatcher}, \texttt{CooldownGuard},
+\texttt{QuoteLibrary + QuoteSafetyFilter}, \texttt{DisclaimerService},
+\texttt{HarvestScheduler}.
+
+\textbf{The Tier 3 Determinism Fence (ADR-0012).} Tier 3 must NEVER
+invoke Gemini. Defended at five Dart layers + one server layer:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Type system} --- \texttt{enum AiAllowedTier \{ one, two \}}; \texttt{Tier.three} cannot satisfy the parameter type.
+\item \textbf{Dispatcher hard branch} --- \texttt{Tier.three} arm calls \texttt{QuoteLibrary.pickTier3} directly and returns.
+\item \textbf{Unit test} --- \texttt{recordingFake.calls.isEmpty} unconditionally.
+\item \textbf{Controller test} --- re-asserts at controller layer.
+\item \textbf{Integration test} --- full app with production controller/dispatcher/library/filter; only AI repo mocked; asserts empty calls.
+\item \textbf{Server schema} --- \texttt{suggestQuote.ts} rejects \texttt{tier: 3} with \texttt{HttpsError('invalid-argument')}.
+\end{enumerate}
+
+\section{Quality Assurance}
+
+Test strategy: unit (domain layer, pure-Dart VM, $\geq 80\%$ coverage),
+widget, golden (deleted in the v1.5 trim due to Windows-vs-CI drift),
+integration (18 tests including TC-40 end-to-end), a11y, perf.
+
+Tip-of-branch at \texttt{977b86d3}: \texttt{flutter test} 1018/1018;
+\texttt{npm test} (functions/) 73/73; all 41 spec acceptance test cases
+pass; TC-41 Safety Filter 100\% rejection across 55 adversarial inputs;
+domain-layer line coverage $\geq 80\%$ per feature, 94.6\% overall.
+
+Cross-platform: pending the runbook execution
+(\texttt{docs/test-reports/sprint-5-cross-platform-runbook.md}).
+
+\section{Risk Management}
+
+\begin{longtable}{p{4cm}lp{4cm}p{4cm}}
+\toprule
+\textbf{Risk} & \textbf{Sev.} & \textbf{Mitigation} & \textbf{Status} \\
+\midrule
+R-H01 Account-deletion misses Storage media & HIGH & \texttt{wipeUserData.ts} now drains \texttt{users/\{uid\}/media/} & Fixed in \texttt{c1ca5021} \\
+R-M04 Transitive pnpm-audit HIGH advisories & MED & Track via \texttt{pnpm audit} in CI; non-exploitable in our paths & Deferred v1.6 \\
+Tier 3 reaches Gemini & CRIT & ADR-0012 5+1 layer fence & Defended \\
+Anthropic rate-limit failure & MED & Salvage playbook codified in memory & Operationalised \\
+Bangkok Firestore region rejection & MED & Convert to \texttt{onCall} & Fixed in v1.0 polish \\
+User forgets PIN, no biometric & LOW & v1.6 plans email-reset path & Deferred v1.6 \\
+\bottomrule
+\end{longtable}
+
+\section{Sprint Retrospectives}
+
+\textbf{S2} (\texttt{v0.2-walking-skeleton}) --- 77 tests, domain
+purity hook clean across the sprint, two rate-limit interruptions,
+parallel-agent collision that drove the worktree isolation rule.
+
+\textbf{S3} (\texttt{v0.3-beta}) --- 294 tests in two intensive days;
+security audits caught two CRITICAL findings before merge (cross-user
+queue drain, lost UUIDs); the three-PR Drift chain reviewable in
+isolation; rate-limits cost $\sim 30\%$ of sprint clock.
+
+\textbf{S4} (\texttt{v1.0}) --- 664 tests + 24 goldens; ecosystem-model
+pivot (ADR-0010) replaces ``wilting plants'' with ``plants never die'';
+user-testing pass produced $\sim 30$ high-signal issues all closed in
+v1.0-polish.
+
+\textbf{S5} (\texttt{v1.5}) --- 1018 tests + 73 CF tests; Tier 3 fence
+at 5+1 layers; six dispatch salvages, playbook now codified; user
+testing surfaced four real gaps the agents missed.
+
+\section{Conclusion \& Lessons Learned}
+
+\textbf{What worked.} Plan Mode front-loads design (ADR-0010, ADR-0011,
+ADR-0012, HB-007 were the load-bearing examples); domain-purity
+enforcement at three layers (preWrite hook + CI grep + code review)
+caught zero violations across the codebase; no-self-review caught two
+CRITICAL bugs before merge in S3; multi-layer fences for safety-critical
+invariants (Tier 3) are worth the 1--2 hours of architect time.
+
+\textbf{What didn't.} Parallel agents share state in ways that aren't
+obvious (six salvages in S5); golden tests are too brittle for a small
+team on Windows-vs-CI (deleted in v1.5 trim); user testing surfaced
+more than security audits did.
+
+\textbf{For future student teams using AI-assisted enterprise
+workflows:} write the ADR before the code; default file-mutating
+dispatches to \texttt{isolation:"worktree"}; verify the agent committed
+before believing its ``done'' report; budget 30\% of the sprint clock
+for orchestrator-side salvage; treat the user-testing pass as a P0
+deliverable; codify recovery procedures the first time they happen, not
+the third.
+
+\printbibliography
+
+\appendix
+
+\section{ADRs (14 entries)}
+ADR-0001 Repo structure and Clean Architecture; ADR-0003 Gemini Cloud
+Function contract; ADR-0004 Drift offline-first schema; ADR-0005
+Conflict resolution last-write-wins; ADR-0006 Compassionate reframing
+pivot; ADR-0007 Pattern analysis fallback; ADR-0008 Intervention
+cooldown persistence; ADR-0009 Account deletion topology; ADR-0010
+Ecosystem model plants never die; ADR-0011 Client-side Pattern Engine;
+ADR-0012 Tier 3 determinism + Gemini-mock test (5-layer fence); ADR-0013
+Biometric gating for mood-history access (PIN fallback); ADR-0014
+WebAuthn fallback for history privacy gate (v1.5-dark with build-time
+flag).
+
+\section{Plan Mode transcripts (excerpts)}
+
+\textit{Sprint 5 kickoff (excerpt).} ``The Tier 3 absolute rule --- Tier 3
+messages NEVER call Gemini. EVER. Implementation rule: the
+\texttt{TieredInterventionDispatcher} has a hard branch on \texttt{tier
+== InterventionTier.tier3}. The tier-3 branch goes to
+\texttt{QuoteLibrary.curatedTier3Pool} directly --- no
+\texttt{AIQuoteRepository}, no Cloud Function call, no Gemini.''
+
+\textit{v1.5 final-reports plan mode (excerpt).} ``Two design choices that
+benefit from confirmation BEFORE I author 60+ KB of prose. Q1 Personas:
+reconstruct in full vs.\ behaviour-only with TODO blanks. Q2 v1.5 tag:
+tag locally now vs.\ cite branch head. Orchestrator answered: Q1
+reconstruct in full with draft flag; Q2 tag locally.''
+
+\section{Test case manifest (41 TCs)}
+
+TC-1..TC-5 Tokens (5/5); TC-6..TC-10 Skins (5/5); TC-11..TC-15 Harvest
+(5/5); TC-16..TC-20 Atmosphere (5/5); TC-21..TC-24 EWMA (4/4);
+TC-25..TC-30 Pattern Detection (6/6, TC-27 approved deviation);
+TC-31..TC-35 Intervention Notifications (5/5); TC-36..TC-39 Bipolar
+Disclaimer (4/4); TC-40 Tier 3 determinism PASS at 5+1 layers; TC-41
+Quote Safety Filter rejection 55/55 (100\%).
+
+\end{document}

@@ -1,6 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../domain/notifications_settings.dart';
 
@@ -34,7 +35,31 @@ class FcmDatasource {
   /// only when `web/firebase-messaging-sw.js` is registered with a
   /// real Firebase config (the placeholder config silently denied the
   /// prompt; v1.5 polish fix).
+  ///
+  /// **Android 13+ note:** `firebase_messaging.requestPermission()`
+  /// does NOT show the runtime POST_NOTIFICATIONS dialog — the plugin
+  /// only reads `NotificationManagerCompat.areNotificationsEnabled()`
+  /// and returns `notDetermined`/`denied` without prompting. To
+  /// actually surface the OS dialog we route through
+  /// `flutter_local_notifications`'s Android-specific
+  /// `requestNotificationsPermission()`, then fall back to
+  /// `firebase_messaging` to register the FCM token routing. The
+  /// matching AndroidManifest entry (`POST_NOTIFICATIONS`) is already
+  /// declared in `apps/mobile/android/app/src/main/AndroidManifest.xml`.
   Future<FcmPermissionOutcome> requestPermission() async {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      final androidImpl = FlutterLocalNotificationsPlugin()
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      // `null` = Android < 13 (no runtime permission concept — already
+      // granted at install). `true` = user just allowed. `false` =
+      // user just denied. Fall through to firebase_messaging in the
+      // first two cases so FCM's internal state stays consistent with
+      // the OS state.
+      final granted = await androidImpl?.requestNotificationsPermission();
+      if (granted == false) return FcmPermissionOutcome.denied;
+    }
     final settings = await _messaging.requestPermission(
       alert: true,
       badge: true,
@@ -47,6 +72,25 @@ class FcmDatasource {
       case AuthorizationStatus.denied:
       case AuthorizationStatus.notDetermined:
         return FcmPermissionOutcome.denied;
+    }
+  }
+
+  /// Reads the device's current permission state WITHOUT prompting.
+  /// Used by the onboarding notifications slide so the UI can show
+  /// "already granted" or "already denied" up front instead of
+  /// firing the prompt on first paint. Returns `null` for the
+  /// notDetermined case (so callers can render a neutral "Allow"
+  /// CTA that opens the prompt on tap).
+  Future<FcmPermissionOutcome?> currentPermission() async {
+    final settings = await _messaging.getNotificationSettings();
+    switch (settings.authorizationStatus) {
+      case AuthorizationStatus.authorized:
+      case AuthorizationStatus.provisional:
+        return FcmPermissionOutcome.granted;
+      case AuthorizationStatus.denied:
+        return FcmPermissionOutcome.denied;
+      case AuthorizationStatus.notDetermined:
+        return null;
     }
   }
 

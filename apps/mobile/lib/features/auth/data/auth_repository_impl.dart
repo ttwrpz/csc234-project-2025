@@ -83,6 +83,17 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Result<void, AuthFailure>> sendPasswordResetEmail(String email) async {
+    try {
+      await _datasource.sendPasswordResetEmail(email);
+      return const Ok(null);
+    } on AuthDatasourceException catch (e) {
+      _logger.warn('sendPasswordResetEmail failed: ${e.failure.runtimeType}');
+      return Err(e.failure);
+    }
+  }
+
+  @override
   Future<Result<void, AuthFailure>> signOut() async {
     try {
       await _datasource.signOut();
@@ -120,6 +131,17 @@ class AuthRepositoryImpl implements AuthRepository {
       return const Ok(null);
     } on AuthDatasourceException catch (e) {
       _logger.warn('reauthenticate failed: ${e.failure.runtimeType}');
+      return Err(e.failure);
+    }
+  }
+
+  @override
+  Future<Result<void, AuthFailure>> updateDisplayName(String name) async {
+    try {
+      await _datasource.updateDisplayName(name);
+      return const Ok(null);
+    } on AuthDatasourceException catch (e) {
+      _logger.warn('updateDisplayName failed: ${e.failure.runtimeType}');
       return Err(e.failure);
     }
   }

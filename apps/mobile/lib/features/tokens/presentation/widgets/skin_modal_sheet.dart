@@ -657,25 +657,29 @@ class _SelectedPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
+    // v1.6 — M3's primaryContainer↔onPrimaryContainer pair guarantees
+    // ≥4.5:1 in both light and dark, so the pill stays legible without
+    // per-theme tuning. Previous primary-on-primary-with-alpha was
+    // marginal in dark mode where primary lightens.
+    final bg = theme.colorScheme.primaryContainer;
+    final fg = theme.colorScheme.onPrimaryContainer;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: primary.withValues(alpha: 0.12),
+        color: bg,
         borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
-        border: Border.all(color: primary.withValues(alpha: 0.40)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.check, size: 12, color: primary),
+          Icon(Icons.check, size: 12, color: fg),
           const SizedBox(width: 4),
           Text(
             'Selected',
             style: MbFonts.nunito(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: primary,
+              color: fg,
             ),
           ),
         ],

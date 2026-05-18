@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:core/core.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:synchronized/synchronized.dart';
 
@@ -102,6 +103,21 @@ class MoodSyncManager {
 
   bool _shutdown = false;
 
+  /// Wall-clock timestamp of the most recent drain pass that completed
+  /// without leaving any due rows behind. Exposed as a
+  /// `ValueListenable<DateTime?>` so the Settings screen can render
+  /// "Last synced 4 minutes ago" without subscribing to the sync queue
+  /// directly. Persisted across app restarts via
+  /// `_kLastSuccessfulSyncPrefKey` so the timestamp survives the Drift
+  /// wipe path used by the debug "Clear local cache" tile.
+  final ValueNotifier<DateTime?> _lastSuccessfulSync =
+      ValueNotifier<DateTime?>(null);
+
+  /// Public read-only handle for the Settings UI.
+  ValueListenable<DateTime?> get lastSuccessfulSync => _lastSuccessfulSync;
+
+  static const String _kLastSuccessfulSyncPrefKey = 'mood.sync.lastSuccess';
+
   // ---------------------------------------------------------------------------
   // Public surface
   // ---------------------------------------------------------------------------
@@ -110,8 +126,26 @@ class MoodSyncManager {
   /// (re-)attach to a user's data. Detaches any existing listener for a
   /// different uid first.
   Future<void> bootstrap(String uid) async {
-    if (_shutdown) return;
+    if (_shutdown) {
+      // Re-arm the lifecycle so `bootstrap` after a `shutdown` (the debug
+      // clear-cache flow does exactly that) works without a process
+      // restart. The original timers + connectivity were torn down by
+      // `shutdown`, but their owning streams / providers are still alive
+      // upstream — bootstrap just needs permission to attach again.
+      _shutdown = false;
+    }
     if (_attachedUid == uid && _listenerSub != null) return;
+
+    // Restore persisted last-successful-sync timestamp on cold boot so the
+    // Settings UI doesn't briefly read "Never synced" before the first
+    // drain completes. Read-once; subsequent updates write through the
+    // helper below.
+    if (_lastSuccessfulSync.value == null) {
+      final ms = _prefs.getInt(_kLastSuccessfulSyncPrefKey);
+      if (ms != null) {
+        _lastSuccessfulSync.value = DateTime.fromMillisecondsSinceEpoch(ms);
+      }
+    }
 
     if (_listenerSub != null) {
       await _listenerSub!.cancel();
@@ -216,9 +250,21 @@ class MoodSyncManager {
         now: now,
         limit: _kDrainBatchSize,
       );
-      if (batch.isEmpty) return;
+      if (batch.isEmpty) {
+        // Empty queue, attached uid present, online — that IS a successful
+        // sync: we just confirmed nothing is pending upload. Stamp the
+        // timestamp so the Settings "Last synced" line refreshes after a
+        // manual `kick()` (Sync now button) even when there were no
+        // pending writes to push. Without this stamp the UI would only
+        // update when the Firestore listener pushed a snapshot down or
+        // when there was an actual queue row to drain — meaning Sync
+        // now appeared inert on an already-clean device.
+        await _stampLastSuccessfulSync();
+        return;
+      }
 
       var madeProgress = false;
+      var anySuccess = false;
       for (final row in batch) {
         if (_shutdown) return;
         if (skipped.contains(row.id)) continue;
@@ -237,9 +283,12 @@ class MoodSyncManager {
           skipped.add(row.id);
           continue;
         }
-        await _processRow(row);
+        final ok = await _processRow(row);
+        if (ok) anySuccess = true;
         madeProgress = true;
       }
+
+      if (anySuccess) await _stampLastSuccessfulSync();
 
       // Every row in the batch was either skipped or already in our skipped
       // set — no further progress is possible this drain pass.
@@ -247,7 +296,19 @@ class MoodSyncManager {
     }
   }
 
-  Future<void> _processRow(SyncQueueRow row) async {
+  /// Update the `lastSuccessfulSync` listenable AND persist it so the
+  /// timestamp survives the Drift wipe path triggered by the debug
+  /// "Clear local cache" flow.
+  Future<void> _stampLastSuccessfulSync() async {
+    final now = _clock();
+    _lastSuccessfulSync.value = now;
+    await _prefs.setInt(_kLastSuccessfulSyncPrefKey, now.millisecondsSinceEpoch);
+  }
+
+  /// Returns `true` if the row was successfully sent upstream (so the
+  /// drain loop can stamp `lastSuccessfulSync`), `false` if it failed and
+  /// got requeued / parked.
+  Future<bool> _processRow(SyncQueueRow row) async {
     // Cross-user filter is at the drain-level (see _drainImpl). By the time
     // we land here, the row's payload.userId == _attachedUid is guaranteed.
     final entryId = row.entryId;
@@ -279,11 +340,15 @@ class MoodSyncManager {
             code: 'unknown-operation',
             message: 'Unsupported operation: ${row.operation}',
           );
+          return false;
       }
+      return true;
     } on FirebaseException catch (e) {
       await _handleRowFailure(row, code: e.code, message: e.message ?? '');
+      return false;
     } catch (e) {
       await _handleRowFailure(row, code: 'unknown', message: e.toString());
+      return false;
     }
   }
 
@@ -392,6 +457,12 @@ class MoodSyncManager {
       }
     }
     _previousRemoteIds = currentIds;
+
+    // Reaching a clean snapshot from Firestore IS a successful sync —
+    // local Drift now mirrors the cloud. Stamp the timestamp so the
+    // Settings UI shows "synced just now" after the listener fires even
+    // when there were no pending writes.
+    await _stampLastSuccessfulSync();
   }
 
   // ---------------------------------------------------------------------------

@@ -26,116 +26,93 @@ class GardenSummaryRow extends StatelessWidget {
   /// other surfaces (tests, harvest history) can omit it.
   final Widget? tokenChip;
 
+  /// Below this card width the row's four children (tier pill +
+  /// tagline, token chip, customize pill, Patterns button) crowd each
+  /// other and the tagline gets crushed to two-or-three words per line.
+  /// At narrow widths we stack them in two rows so each element has
+  /// room to breathe.
+  static const double _narrow = 400;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mb = theme.extension<MbColors>()!;
     return MbCard(
       padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < _narrow;
+          final tierColumn = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Tier pill — colored at-a-glance badge identifying the
+              // ecosystem state. v1.5 polish: previously the only tier
+              // signal was the tagline below, which buried the state
+              // name in a longer sentence. The pill surfaces the name
+              // + a colored dot up front so the five states read
+              // distinctly across the row.
+              _TierPill(tier: state.plantTier, isEmpty: state.isEmpty),
+              const SizedBox(height: 6),
+              Text(
+                SkyHeader.tierTagline(state),
+                style: MbFonts.nunito(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: mb.text,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          );
+          final patternsButton = _ViewPatternsButton(
+            onTap: () => context.go('/analytics'),
+          );
+
+          if (isNarrow) {
+            // Phone: stack vertically. Top row = tier + tagline full
+            // width. Bottom row = token chip on the left, Patterns CTA
+            // on the right. The customize affordance lives inside the
+            // token chip composite, so this layout keeps all four
+            // elements visible without squashing the tagline.
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Tier pill — colored at-a-glance badge identifying the
-                // ecosystem state. v1.5 polish: previously the only
-                // tier signal was the tagline below, which buried the
-                // state name in a longer sentence. The pill surfaces
-                // the name + a colored dot up front so the five
-                // states read distinctly across the row.
-                _TierPill(tier: state.plantTier, isEmpty: state.isEmpty),
-                const SizedBox(height: 6),
-                Text(
-                  SkyHeader.tierTagline(state),
-                  style: MbFonts.nunito(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: mb.text,
-                    height: 1.3,
-                  ),
+                tierColumn,
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (tokenChip != null)
+                      Flexible(child: tokenChip!)
+                    else
+                      const SizedBox.shrink(),
+                    const SizedBox(width: 8),
+                    patternsButton,
+                  ],
                 ),
               ],
-            ),
-          ),
-          if (tokenChip != null) ...[const SizedBox(width: 12), tokenChip!],
-          const SizedBox(width: 12),
-          // Two pill CTAs stacked vertically so the row stays compact on
-          // narrow widths. "Take a breath" routes to the same 2-minute
-          // breathing screen the Tier 1 dispatcher opens — the user can
-          // initiate it any time, not only when the Pattern Engine fires.
-          // Passing a null `extra` makes BreathingScreen fall back to
-          // DispatchSafeDefaults.tier1 copy + footer (router supports
-          // this exact path already).
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
+            );
+          }
+
+          // Wider widths keep the prior horizontal layout.
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _BreathButton(
-                onTap: () =>
-                    context.goNamed('intervention.breathing'),
-              ),
-              const SizedBox(height: 6),
-              _ViewPatternsButton(onTap: () => context.go('/analytics')),
+              Expanded(child: tierColumn),
+              if (tokenChip != null) ...[const SizedBox(width: 12), tokenChip!],
+              const SizedBox(width: 12),
+              // v1.6: the "Take a breath" pill is rendered by the home
+              // page itself (between SkyHeader+DailyScoreStrip on phone,
+              // foot of the right column on desktop) so this row only
+              // carries the tier badge, tagline, token chip, and
+              // Patterns CTA.
+              patternsButton,
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Self-initiated entry point to the 2-minute breathing screen.
-/// v1.5 polish — a peer CTA to "Patterns" so the user can take a breath
-/// any time, not only when Tier 1 has fired. Routes via `goNamed
-/// ('intervention.breathing')` with no extra; BreathingScreen handles
-/// the null-dispatch case by surfacing `DispatchSafeDefaults.tier1` copy
-/// (the canonical Tier 1 invitation + disclaimer footer). Compassionate
-/// imperative wording per CLAUDE.md — "Take a breath" not "Calm down".
-class _BreathButton extends StatelessWidget {
-  const _BreathButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final fg = isDark ? const Color(0xFFFFE7BD) : const Color(0xFF8A5A1F);
-    final bg = isDark
-        ? const Color(0xFFFFE7BD).withValues(alpha: 0.18)
-        : const Color(0xFFFFE7BD).withValues(alpha: 0.55);
-    final border = isDark
-        ? const Color(0xFFFFE7BD).withValues(alpha: 0.45)
-        : const Color(0xFF8A5A1F).withValues(alpha: 0.25);
-
-    return Semantics(
-      button: true,
-      label: 'Take a 2-minute breath',
-      child: TextButton.icon(
-        onPressed: onTap,
-        style: TextButton.styleFrom(
-          foregroundColor: fg,
-          backgroundColor: bg,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          minimumSize: const Size(0, 36),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
-            side: BorderSide(color: border),
-          ),
-        ),
-        icon: Icon(Icons.air_outlined, size: 16, color: fg),
-        label: Text(
-          'Take a breath',
-          style: MbFonts.nunito(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: fg,
-          ),
-        ),
+          );
+        },
       ),
     );
   }

@@ -1,0 +1,128 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{titling}
+\usepackage{fancyhdr}
+\usepackage{caption}
+\usepackage[backend=biber,style=apa]{biblatex}
+
+\addbibresource{references.bib}
+
+\definecolor{moodgreen}{HTML}{2E7D5B}
+\hypersetup{colorlinks=true, linkcolor=moodgreen, urlcolor=moodgreen, citecolor=moodgreen}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{MoodBloom --- Group 2}
+\lhead{\leftmark}
+\rfoot{\thepage}
+
+\title{Sprint 4 Demo \& Retrospective --- MoodBloom v1.0}
+\author{
+  Kraiwich Jaiton \and
+  Teerin Kittichaicharoen \and
+  Theerawat Patthawee \and
+  Jedsarit Fanpimiy \and
+  Napat Chang-ekwong \\[1ex]
+  \small Group 2 \\
+  \small CSC231 Agile SE / CSC234 User-Centric Mobile App Development \\
+  \small KMUTT, Semester 2/2568
+}
+\date{May 12, 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\section{What we shipped (v1.0)}
+
+Sprint 4 implemented the ecosystem redesign that resolved the professor's
+post-Sprint-3 feedback (the user-driven pivot from ``wilting plants for
+negative moods'' to ``plants never die, every mood is weather''). Twelve
+in-scope work breakdown items landed:
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{3.6 Mood Score} --- pure-Dart $S_t = v \cdot i/5$, range $[-1, +1]$.
+\item \textbf{4.2 Garden Health EWMA} --- $H_t = 0.15 S_t + 0.85 H_{t-1}$, weekly reset to $H_0 = 0$.
+\item \textbf{4.3 Daily Atmosphere} --- sunny / calm / light-rain / storm driven by $\overline{S}_{\text{today}}$; resets midnight.
+\item \textbf{4.4 Day/Night theme} --- follow-device-theme + follow-device-time strategies.
+\item \textbf{5.3 Pattern Engine} --- five pure-Dart algorithms: Mann--Kendall, sliding 5-of-7, three-consecutive, z-score, CUSUM. Triggers fire internally; surface is Sprint 5.
+\item \textbf{6.1 Weekly Harvest} --- seven-day archive cycle; copy ``harvest / complete / new chapter'' (never ``delete / reset / lost'').
+\item \textbf{6.2 Token economy} --- mood-agnostic earning, 5--10 tokens/day cap, no streak punishment, cosmetic-only spending.
+\item \textbf{7.2 Dark mode} polish; \textbf{8.2} widget + 24 golden tests under 4\% pixel-tolerance.
+\end{itemize}
+
+ADR-0010 (``Ecosystem model --- plants never die'') and ADR-0011 (``Client-side
+Pattern Engine'') accompany the redesign \autocite{neff2003selfcompassion,linehan1993dbt,hayes1999act,white1990narrative,smit2022ewma}.
+
+\section{Demo flow on May 12}
+
+The demo walked through (1) logging a Joy entry at intensity 4 to observe
+the Mood Score arithmetic; (2) logging a Sad entry to verify the
+bounded-daily-shift property $|\Delta H| \leq 0.15$; (3) the Patterns chart
+re-rendering; (4) cycling all five plant tiers via Settings $\to$ Debug; (5)
+verifying WCAG 2.2 AA contrast in dark mode; (6) force-harvesting the
+active week to verify the archive copy.
+
+\section{Test results}
+
+At tip-of-branch \texttt{c26d9716}:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{flutter test}: \textbf{664 / 664 passed.} Domain coverage 94.6\% overall.
+\item \texttt{flutter test --tags=golden}: \textbf{24 / 24 passed.} All deltas within 4\% tolerance.
+\item \texttt{flutter analyze}: clean; \texttt{dart format}: clean.
+\item Domain-purity grep clean except one ADR-whitelisted exception (\texttt{day\_night\_strategy.dart}).
+\end{itemize}
+
+Per-spec acceptance: TC-1..TC-5 (Token System), TC-11..TC-15 (Weekly
+Harvest), TC-16..TC-20 (Atmosphere), TC-21..TC-24 (Garden Health EWMA),
+TC-25..TC-30 (Pattern Detection) all pass. TC-27's Mann--Kendall
+quantization deviation (closest reachable Z = $-2.190$ vs. spec target
+$-2.21 \pm 0.005$) was approved by architect on 2026-05-12 with tolerance
+softened to $\pm 0.05$.
+
+\section{What went well}
+
+Architect-front-loaded ADRs prevented mid-sprint design ambiguity. The
+formula-precise spec (every threshold and tolerance written down)
+eliminated bikeshedding. Golden-test discipline scaled to 24 deterministic
+tests across five plant tiers and four atmospheres.
+
+\section{What was hard}
+
+The Mann--Kendall quantization deviation surfaced only after the test ran
+with synthetic data --- the spec author had not realised that integer-valued
+$S$ quantizes $Z$. The Bangkok Firestore region rejection (\texttt{asia-southeast3} not supported as a v1 or v2 Firestore trigger) cost two hours on Day 6 of polish; resolved by converting \texttt{sendCheerUpPush} to \texttt{onCall}. Two parallel agents collided on a shared working tree on Day 2; recovery cost 30 minutes and triggered the now-standard \texttt{isolation:"worktree"} dispatch discipline.
+
+\section{What the human team caught that the agents missed}
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Ghost flowers after wipe} --- the old \texttt{PlantTierGroup} painted three buds unconditionally; the user-test surfaced it. Replaced with \texttt{GardenBed}.
+\item \textbf{Rain only fills half the canvas} --- atmosphere overlay was composited to the bed slot instead of the SkyHeader's \texttt{Positioned.fill}.
+\item \textbf{Stray sun-ray lines} --- prototype debris committed by accident; the sky gradient already carries the brightness signal.
+\item \textbf{AI text analyze fired on 2--3 char drafts} --- no input-debounce in the controller; user testing surfaced wasted Gemini calls. Added \texttt{aiSuggestionMinCharsProvider} (default 12).
+\end{itemize}
+
+\section{Going into Sprint 5}
+
+The pivot is shipped; the safety net is not yet wired. Sprint 5 surfaces
+the Pattern Engine triggers as Tiered Intervention notifications,
+builds the Quote Library with Safety Filter and curated Tier 3 pool, and
+ships the Bipolar/medical disclaimer service \autocite{nahum2018jitai,cheng2019gamification}.
+
+\printbibliography
+
+\end{document}

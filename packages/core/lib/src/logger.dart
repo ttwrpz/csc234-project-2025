@@ -10,12 +10,23 @@ class Logger {
 
   final String name;
 
-  void debug(String msg, {Object? data}) =>
-      dev.log(msg, name: name, level: 500);
+  void debug(String msg, {Object? data}) => dev.log(
+    data == null ? msg : '$msg | $data',
+    name: name,
+    level: 500,
+  );
 
-  void info(String msg, {Object? data}) => dev.log(msg, name: name, level: 800);
+  void info(String msg, {Object? data}) => dev.log(
+    data == null ? msg : '$msg | $data',
+    name: name,
+    level: 800,
+  );
 
-  void warn(String msg, {Object? data}) => dev.log(msg, name: name, level: 900);
+  void warn(String msg, {Object? data}) => dev.log(
+    data == null ? msg : '$msg | $data',
+    name: name,
+    level: 900,
+  );
 
   void error(String msg, {Object? error, StackTrace? stackTrace}) => dev.log(
     msg,

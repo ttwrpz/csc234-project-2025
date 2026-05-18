@@ -13,6 +13,9 @@ _FlowerSkin _$FlowerSkinFromJson(Map<String, dynamic> json) => _FlowerSkin(
   cost: (json['cost'] as num).toInt(),
   isDefault: json['isDefault'] as bool,
   paletteSeed: (json['paletteSeed'] as num).toInt(),
+  petalShape:
+      $enumDecodeNullable(_$FlowerPetalShapeEnumMap, json['petalShape']) ??
+      FlowerPetalShape.classic,
 );
 
 Map<String, dynamic> _$FlowerSkinToJson(_FlowerSkin instance) =>
@@ -23,6 +26,7 @@ Map<String, dynamic> _$FlowerSkinToJson(_FlowerSkin instance) =>
       'cost': instance.cost,
       'isDefault': instance.isDefault,
       'paletteSeed': instance.paletteSeed,
+      'petalShape': _$FlowerPetalShapeEnumMap[instance.petalShape]!,
     };
 
 const _$FlowerSpeciesEnumMap = {
@@ -32,4 +36,12 @@ const _$FlowerSpeciesEnumMap = {
   FlowerSpecies.poppy: 'poppy',
   FlowerSpecies.fern: 'fern',
   FlowerSpecies.lavender: 'lavender',
+};
+
+const _$FlowerPetalShapeEnumMap = {
+  FlowerPetalShape.classic: 'classic',
+  FlowerPetalShape.rounded: 'rounded',
+  FlowerPetalShape.pointed: 'pointed',
+  FlowerPetalShape.star: 'star',
+  FlowerPetalShape.heart: 'heart',
 };

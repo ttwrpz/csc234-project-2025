@@ -187,9 +187,20 @@ class _RegisteredTile extends StatelessWidget {
     );
   }
 
-  static String _monthShort(int m) =>
-      const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1];
+  static String _monthShort(int m) => const [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ][m - 1];
 }
 
 class _LoadingTile extends StatelessWidget {

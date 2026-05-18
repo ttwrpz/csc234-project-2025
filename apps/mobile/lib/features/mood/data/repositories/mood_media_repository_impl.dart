@@ -71,6 +71,17 @@ class MoodMediaRepositoryImpl implements MoodMediaRepository {
         if (media != null) out.add(media);
       }
       return Ok(out);
+    } on MediaPermissionDeniedException catch (e) {
+      _logger.warn(
+        'media pick denied',
+        data: 'source=${e.source} permanent=${e.permanent}',
+      );
+      return Err(
+        MoodFailure.mediaPermissionDenied(
+          source: e.source,
+          permanent: e.permanent,
+        ),
+      );
     } catch (e) {
       _logger.warn('media pick failed', data: e.runtimeType.toString());
       return Err(MoodFailure.unknown(e));

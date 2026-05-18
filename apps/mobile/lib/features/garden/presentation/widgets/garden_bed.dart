@@ -39,7 +39,7 @@ class GardenBed extends StatefulWidget {
     this.showOverflowBadge = false,
     this.onFlowerTap,
     this.speciesAccent,
-    @visibleForTesting this.animate = true,
+    this.animate = true,
   });
 
   /// This week's mood entries (any order). Internally the bed sorts
@@ -55,8 +55,11 @@ class GardenBed extends StatefulWidget {
   /// renders without clipping.
   final Size size;
 
-  /// `@visibleForTesting`: callers in production never set this. Tests
-  /// pass `false` so frame-deterministic goldens reproduce.
+  /// When `false`, the bed renders a single static frame — no animation
+  /// controller, no per-frame repaints. Used by:
+  /// - Tests (frame-deterministic goldens).
+  /// - History thumbnails (many on screen at once; the per-flower sway
+  ///   doesn't read at thumbnail scale and would burn frames for nothing).
   final bool animate;
 
   /// Per-flower tap router — TC-7 (S5 — flower skin system Day 1).

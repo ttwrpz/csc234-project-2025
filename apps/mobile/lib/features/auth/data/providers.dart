@@ -22,6 +22,7 @@ import '../domain/usecases/register_with_email.dart';
 import '../domain/usecases/remove_pin.dart';
 import '../domain/usecases/set_biometric_opt_in.dart';
 import '../domain/usecases/setup_pin.dart';
+import '../domain/usecases/send_password_reset_email.dart';
 import '../domain/usecases/sign_in_with_email.dart';
 import '../domain/usecases/sign_in_with_google.dart';
 import '../domain/usecases/sign_out.dart';
@@ -101,6 +102,11 @@ final signInWithGoogleUseCaseProvider = Provider<SignInWithGoogleUseCase>((
 final signOutUseCaseProvider = Provider<SignOutUseCase>((ref) {
   return SignOutUseCase(ref.watch(authRepositoryProvider));
 });
+
+final sendPasswordResetEmailUseCaseProvider =
+    Provider<SendPasswordResetEmailUseCase>((ref) {
+      return SendPasswordResetEmailUseCase(ref.watch(authRepositoryProvider));
+    });
 
 /// WBS 2.4 — the destructive use case. Composes reauth → server cascade
 /// → local Auth delete → signOut in one orchestrated call. Consumed by
@@ -234,9 +240,7 @@ final privacyLockPreferenceDatasourceProvider =
 class PrivacyLockEnabledNotifier extends Notifier<bool> {
   @override
   bool build() {
-    return ref
-        .watch(privacyLockPreferenceDatasourceProvider)
-        .isEnabled();
+    return ref.watch(privacyLockPreferenceDatasourceProvider).isEnabled();
   }
 
   /// Persists the new state to SharedPreferences and refreshes the
@@ -244,9 +248,7 @@ class PrivacyLockEnabledNotifier extends Notifier<bool> {
   /// this once the setup flow has actually completed — the toggle is
   /// not the source of truth for "is there a PIN to verify against."
   Future<void> set(bool enabled) async {
-    await ref
-        .read(privacyLockPreferenceDatasourceProvider)
-        .setEnabled(enabled);
+    await ref.read(privacyLockPreferenceDatasourceProvider).setEnabled(enabled);
     state = enabled;
   }
 }
@@ -288,9 +290,8 @@ final webauthnAvailableProvider = Provider<bool>((_) {
 
 final webauthnFunctionsDatasourceProvider =
     Provider<WebauthnFunctionsDatasource>(
-      (ref) => WebauthnFunctionsDatasource(
-        ref.watch(authFirebaseFunctionsProvider),
-      ),
+      (ref) =>
+          WebauthnFunctionsDatasource(ref.watch(authFirebaseFunctionsProvider)),
     );
 
 final webauthnCredentialFirestoreDatasourceProvider =
@@ -335,7 +336,5 @@ final webauthnCredentialProvider = StreamProvider<WebauthnCredential?>((ref) {
   if (user == null) {
     return Stream<WebauthnCredential?>.value(null);
   }
-  return ref
-      .watch(webauthnRepositoryProvider)
-      .watchCredential(uid: user.uid);
+  return ref.watch(webauthnRepositoryProvider).watchCredential(uid: user.uid);
 });

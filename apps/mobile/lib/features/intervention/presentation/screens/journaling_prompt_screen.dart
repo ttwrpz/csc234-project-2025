@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -122,8 +123,9 @@ class _JournalingPromptScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final mb = theme.extension<MbColors>();
     return Scaffold(
-      appBar: AppBar(title: const Text('A few quiet words')),
+      backgroundColor: mb?.bg,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Padding(
@@ -131,6 +133,25 @@ class _JournalingPromptScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Row(
+                children: [
+                  MbIconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: _onMaybeLater,
+                    semanticLabel: 'Close',
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'A few quiet words',
+                    style: MbFonts.fraunces(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: mb?.text ?? theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(

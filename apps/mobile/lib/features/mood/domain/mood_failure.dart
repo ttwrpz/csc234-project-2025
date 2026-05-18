@@ -19,6 +19,10 @@ sealed class MoodFailure extends Failure {
       _MediaUnsupportedType;
   const factory MoodFailure.mediaUploadFailed(String reason) =
       _MediaUploadFailed;
+  const factory MoodFailure.mediaPermissionDenied({
+    required String source,
+    required bool permanent,
+  }) = _MediaPermissionDenied;
 }
 
 class _InvalidIntensity extends MoodFailure {
@@ -82,4 +86,20 @@ class _MediaUploadFailed extends MoodFailure {
   const _MediaUploadFailed(this.reason)
     : super(message: 'Could not upload attachment.');
   final String reason;
+}
+
+class _MediaPermissionDenied extends MoodFailure {
+  const _MediaPermissionDenied({required this.source, required this.permanent})
+    : super(
+        message: permanent
+            ? 'Permission is off for this app. Open Settings to allow it.'
+            : 'Permission is required to attach from your $source.',
+      );
+
+  /// 'camera' or 'gallery' — the surface that needed the denied permission.
+  final String source;
+
+  /// True when the OS will not re-prompt (user picked "Don't ask again" on
+  /// Android, or "Don't allow" on iOS). UI surfaces an "Open Settings" CTA.
+  final bool permanent;
 }

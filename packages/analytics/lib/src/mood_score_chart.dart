@@ -169,10 +169,119 @@ class MoodScoreLineChart extends StatelessWidget {
               ),
             ),
           ),
-          lineTouchData: const LineTouchData(handleBuiltInTouches: true),
+          lineTouchData: LineTouchData(
+            handleBuiltInTouches: true,
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipColor: (_) =>
+                  Theme.of(context).colorScheme.surface,
+              tooltipBorder: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                width: 1,
+              ),
+              tooltipRoundedRadius: 12,
+              tooltipPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              tooltipMargin: 14,
+              fitInsideHorizontally: true,
+              fitInsideVertically: true,
+              maxContentWidth: 260,
+              getTooltipItems: (touched) {
+                final scheme = Theme.of(context).colorScheme;
+                final fg = scheme.onSurface;
+                final fgDim = scheme.onSurfaceVariant;
+                // Score line is barIndex 0, health line (when present)
+                // is barIndex 1. Sort so score always appears first.
+                final sorted = [...touched]
+                  ..sort((a, b) => a.barIndex.compareTo(b.barIndex));
+                final result = <LineTooltipItem>[];
+                for (var i = 0; i < sorted.length; i += 1) {
+                  final t = sorted[i];
+                  final isHealth = t.barIndex == 1;
+                  final scoreColor = isHealth
+                      ? theme.healthLineColor
+                      : theme.scoreLineColor;
+                  final dayIdx = t.x.round();
+                  final date = (dayIdx >= 0 && dayIdx < points.length)
+                      ? points[dayIdx].day
+                      : null;
+                  final headerText = (i == 0 && date != null)
+                      ? '${_friendlyDate(date)}\n'
+                      : '';
+                  final label = isHealth ? 'Rolling rhythm' : 'Mood score';
+                  // Map the [-1,+1] score to a friendly tier word so
+                  // the number isn't the only signal. Spec §2.3.
+                  final tier = _scoreTierLabel(t.y);
+                  result.add(
+                    LineTooltipItem(
+                      headerText,
+                      TextStyle(
+                        color: fgDim,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        height: 1.5,
+                        letterSpacing: 0.2,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: '●  ',
+                          style: TextStyle(
+                            color: scoreColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            height: 1.5,
+                          ),
+                        ),
+                        TextSpan(
+                          text: '$label ',
+                          style: TextStyle(
+                            color: fg,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            height: 1.5,
+                          ),
+                        ),
+                        TextSpan(
+                          text: '· $tier (${t.y.toStringAsFixed(2)})',
+                          style: TextStyle(
+                            color: fgDim,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return result;
+              },
+            ),
+          ),
         ),
       ),
     );
+  }
+
+  static String _friendlyDate(DateTime day) {
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${weekdays[day.weekday - 1]} · ${months[day.month - 1]} ${day.day}';
+  }
+
+  /// Spec §2.3 thresholds — mood score `S` mapped to the user-facing
+  /// tier vocabulary so the tooltip reads "Thriving (0.32)" instead of
+  /// a bare number.
+  static String _scoreTierLabel(double s) {
+    if (s >= 0.4) return 'Flourishing';
+    if (s >= 0.1) return 'Thriving';
+    if (s > -0.1) return 'Resting';
+    if (s > -0.4) return 'Weathering';
+    return 'Storm Season';
   }
 
   /// 5 plant-tier bands keyed off `H_t` thresholds (spec §2.3). Each is

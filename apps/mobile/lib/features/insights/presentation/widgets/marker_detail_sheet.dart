@@ -113,7 +113,7 @@ class MarkerDetailSheet extends ConsumerWidget {
                 width: 10,
                 height: 10,
                 decoration: BoxDecoration(
-                  color: _tierColor(tier),
+                  color: _tierColor(tier, mb),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -169,10 +169,10 @@ class MarkerDetailSheet extends ConsumerWidget {
     return '${months[local.month - 1]} ${local.day}, ${local.year}';
   }
 
-  static Color _tierColor(Tier tier) => switch (tier) {
+  static Color _tierColor(Tier tier, MbColors mb) => switch (tier) {
     Tier.one => MoodBloomColors.amber,
     Tier.two => MoodBloomColors.coral,
-    Tier.three => MoodBloomColors.coralText,
+    Tier.three => mb.destructiveText,
   };
 
   /// Public-facing words for the three tiers — match the dispatcher's

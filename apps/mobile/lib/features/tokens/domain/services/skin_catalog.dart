@@ -41,6 +41,12 @@ class SkinCatalog {
   /// Top-tier alternate skin cost.
   static const int _tierGold = 150;
 
+  /// v1.6 — premium tier for geometry-changing skins (heart, star
+  /// petals). Higher cost reflects the larger visual difference
+  /// vs a plain palette swap.
+  static const int _tierPlatinum = 200;
+  static const int _tierMythic = 250;
+
   /// Every skin in the app, grouped by species. Stable order — the
   /// default always comes first.
   static List<FlowerSkin> all() => const [
@@ -69,6 +75,15 @@ class SkinCatalog {
       isDefault: false,
       paletteSeed: 27,
     ),
+    FlowerSkin(
+      skinId: 'sunflower_starburst',
+      species: FlowerSpecies.sunflower,
+      displayName: 'Starburst Sunflower',
+      cost: _tierGold,
+      isDefault: false,
+      paletteSeed: 33,
+      petalShape: FlowerPetalShape.star,
+    ),
 
     // Forget-me-not (Sad)
     FlowerSkin(
@@ -86,6 +101,15 @@ class SkinCatalog {
       cost: _tierBronze,
       isDefault: false,
       paletteSeed: 14,
+    ),
+    FlowerSkin(
+      skinId: 'forgetmenot_pointed_sky',
+      species: FlowerSpecies.forgetMeNot,
+      displayName: 'Pointed Sky Forget-me-not',
+      cost: _tierGold,
+      isDefault: false,
+      paletteSeed: 19,
+      petalShape: FlowerPetalShape.pointed,
     ),
 
     // Daisy (Okay)
@@ -105,6 +129,15 @@ class SkinCatalog {
       isDefault: false,
       paletteSeed: 18,
     ),
+    FlowerSkin(
+      skinId: 'daisy_heartleaf',
+      species: FlowerSpecies.daisy,
+      displayName: 'Heartleaf Daisy',
+      cost: _tierPlatinum,
+      isDefault: false,
+      paletteSeed: 25,
+      petalShape: FlowerPetalShape.heart,
+    ),
 
     // Poppy (Angry)
     FlowerSkin(
@@ -122,6 +155,15 @@ class SkinCatalog {
       cost: _tierSilver,
       isDefault: false,
       paletteSeed: 22,
+    ),
+    FlowerSkin(
+      skinId: 'poppy_rounded_ember',
+      species: FlowerSpecies.poppy,
+      displayName: 'Rounded Ember Poppy',
+      cost: _tierPlatinum,
+      isDefault: false,
+      paletteSeed: 29,
+      petalShape: FlowerPetalShape.rounded,
     ),
 
     // Fern (Anxious)
@@ -166,6 +208,15 @@ class SkinCatalog {
       cost: _tierGold,
       isDefault: false,
       paletteSeed: 44,
+    ),
+    FlowerSkin(
+      skinId: 'lavender_star_twilight',
+      species: FlowerSpecies.lavender,
+      displayName: 'Star Twilight Lavender',
+      cost: _tierMythic,
+      isDefault: false,
+      paletteSeed: 51,
+      petalShape: FlowerPetalShape.star,
     ),
   ];
 

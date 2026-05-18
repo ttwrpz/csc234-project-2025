@@ -9,8 +9,17 @@ import 'widgets/brand_mark.dart';
 
 /// Cold-boot biometric gate. Triggers the OS prompt on mount; on success
 /// flips [biometricUnlockedThisSessionProvider] to true and navigates to
-/// `/home`; on cancellation or failure signs the user out and returns them
-/// to `/sign-in` with a compassionate snackbar.
+/// `/home`.
+///
+/// v1.6 fix — on cancellation or failure the screen **stays here** with
+/// an inline error message, a primary "Try again" button (re-runs the
+/// prompt), and a secondary "Sign out instead" link (explicit exit).
+/// The previous implementation force-ejected the user to `/sign-in` after
+/// any failure — including the trivial "user tapped cancel on the OS
+/// dialog" case — which surfaced as "the app suddenly signs me out
+/// several seconds after I close the biometric dialog." Letting the
+/// user drive the exit matches the biometric re-auth UX of banking +
+/// health apps.
 class BiometricGateScreen extends ConsumerStatefulWidget {
   const BiometricGateScreen({super.key});
 
@@ -20,7 +29,15 @@ class BiometricGateScreen extends ConsumerStatefulWidget {
 }
 
 class _BiometricGateScreenState extends ConsumerState<BiometricGateScreen> {
-  bool _started = false;
+  /// Inline error surfaced under the body copy when a prompt cycle
+  /// finishes with a failure. Null on first paint and after the user
+  /// successfully verifies. Cleared by the next `_runPrompt` attempt.
+  String? _errorMessage;
+
+  /// True while the OS dialog is on screen. Disables both action
+  /// buttons so a double-tap doesn't queue a second prompt under the
+  /// first one (which on Android stacks and on iOS errors).
+  bool _busy = false;
 
   @override
   void initState() {
@@ -31,8 +48,13 @@ class _BiometricGateScreenState extends ConsumerState<BiometricGateScreen> {
   }
 
   Future<void> _runPrompt() async {
-    if (_started) return;
-    _started = true;
+    if (_busy) return;
+    if (mounted) {
+      setState(() {
+        _busy = true;
+        _errorMessage = null;
+      });
+    }
 
     final usecase = ref.read(authenticateWithBiometricUseCaseProvider);
     final result = await usecase(reason: 'Verify your identity to continue');
@@ -44,26 +66,37 @@ class _BiometricGateScreenState extends ConsumerState<BiometricGateScreen> {
         ref.read(biometricUnlockedThisSessionProvider.notifier).state = true;
         context.go('/home');
       },
-      err: (_) async {
-        // Cancellation OR hardware failure — both treat the same way: sign
-        // out so the user re-enters credentials, and show a non-shaming
-        // snackbar.
-        await ref.read(signOutUseCaseProvider)();
-        ref.read(biometricUnlockedThisSessionProvider.notifier).state = false;
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Couldn’t verify — please sign in again.'),
-          ),
-        );
-        context.go('/sign-in');
+      err: (failure) {
+        // Park on this screen so the user can retry or explicitly sign
+        // out — do NOT auto-eject to /sign-in. Surface the failure
+        // message inline; for the cancellation variant the message
+        // reads "Biometric verification was cancelled." which is fine
+        // info without being shaming.
+        setState(() {
+          _busy = false;
+          _errorMessage = failure.message;
+        });
       },
     );
+  }
+
+  /// Explicit exit affordance — signs out, clears the session-scoped
+  /// biometric flag, and returns to /sign-in. The router's auth gate
+  /// will then drive the rest of the redirect chain.
+  Future<void> _signOutInstead() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    await ref.read(signOutUseCaseProvider)();
+    if (!mounted) return;
+    ref.read(biometricUnlockedThisSessionProvider.notifier).state = false;
+    context.go('/sign-in');
   }
 
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
+    final theme = Theme.of(context);
+    final errorMessage = _errorMessage;
     return Scaffold(
       backgroundColor: mb.bg,
       body: SafeArea(
@@ -97,6 +130,18 @@ class _BiometricGateScreenState extends ConsumerState<BiometricGateScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
+                    if (errorMessage != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        errorMessage,
+                        textAlign: TextAlign.center,
+                        style: MbFonts.nunito(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 20),
                     MbPrimaryButton(
                       label: 'Try again',
@@ -105,10 +150,12 @@ class _BiometricGateScreenState extends ConsumerState<BiometricGateScreen> {
                         size: 18,
                         color: Colors.white,
                       ),
-                      onPressed: () {
-                        _started = false;
-                        _runPrompt();
-                      },
+                      onPressed: _busy ? null : _runPrompt,
+                    ),
+                    const SizedBox(height: 8),
+                    MbGhostButton(
+                      label: 'Sign out instead',
+                      onPressed: _busy ? null : _signOutInstead,
                     ),
                   ],
                 ),

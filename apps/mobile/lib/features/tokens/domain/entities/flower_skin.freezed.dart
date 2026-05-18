@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$FlowerSkin {
 
- String get skinId; FlowerSpecies get species; String get displayName; int get cost; bool get isDefault; int get paletteSeed;
+ String get skinId; FlowerSpecies get species; String get displayName; int get cost; bool get isDefault; int get paletteSeed; FlowerPetalShape get petalShape;
 /// Create a copy of FlowerSkin
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $FlowerSkinCopyWith<FlowerSkin> get copyWith => _$FlowerSkinCopyWithImpl<FlowerS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FlowerSkin&&(identical(other.skinId, skinId) || other.skinId == skinId)&&(identical(other.species, species) || other.species == species)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.cost, cost) || other.cost == cost)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.paletteSeed, paletteSeed) || other.paletteSeed == paletteSeed));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FlowerSkin&&(identical(other.skinId, skinId) || other.skinId == skinId)&&(identical(other.species, species) || other.species == species)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.cost, cost) || other.cost == cost)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.paletteSeed, paletteSeed) || other.paletteSeed == paletteSeed)&&(identical(other.petalShape, petalShape) || other.petalShape == petalShape));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,skinId,species,displayName,cost,isDefault,paletteSeed);
+int get hashCode => Object.hash(runtimeType,skinId,species,displayName,cost,isDefault,paletteSeed,petalShape);
 
 @override
 String toString() {
-  return 'FlowerSkin(skinId: $skinId, species: $species, displayName: $displayName, cost: $cost, isDefault: $isDefault, paletteSeed: $paletteSeed)';
+  return 'FlowerSkin(skinId: $skinId, species: $species, displayName: $displayName, cost: $cost, isDefault: $isDefault, paletteSeed: $paletteSeed, petalShape: $petalShape)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $FlowerSkinCopyWith<$Res>  {
   factory $FlowerSkinCopyWith(FlowerSkin value, $Res Function(FlowerSkin) _then) = _$FlowerSkinCopyWithImpl;
 @useResult
 $Res call({
- String skinId, FlowerSpecies species, String displayName, int cost, bool isDefault, int paletteSeed
+ String skinId, FlowerSpecies species, String displayName, int cost, bool isDefault, int paletteSeed, FlowerPetalShape petalShape
 });
 
 
@@ -65,7 +65,7 @@ class _$FlowerSkinCopyWithImpl<$Res>
 
 /// Create a copy of FlowerSkin
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? skinId = null,Object? species = null,Object? displayName = null,Object? cost = null,Object? isDefault = null,Object? paletteSeed = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? skinId = null,Object? species = null,Object? displayName = null,Object? cost = null,Object? isDefault = null,Object? paletteSeed = null,Object? petalShape = null,}) {
   return _then(_self.copyWith(
 skinId: null == skinId ? _self.skinId : skinId // ignore: cast_nullable_to_non_nullable
 as String,species: null == species ? _self.species : species // ignore: cast_nullable_to_non_nullable
@@ -73,7 +73,8 @@ as FlowerSpecies,displayName: null == displayName ? _self.displayName : displayN
 as String,cost: null == cost ? _self.cost : cost // ignore: cast_nullable_to_non_nullable
 as int,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cast_nullable_to_non_nullable
 as bool,paletteSeed: null == paletteSeed ? _self.paletteSeed : paletteSeed // ignore: cast_nullable_to_non_nullable
-as int,
+as int,petalShape: null == petalShape ? _self.petalShape : petalShape // ignore: cast_nullable_to_non_nullable
+as FlowerPetalShape,
   ));
 }
 
@@ -158,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String skinId,  FlowerSpecies species,  String displayName,  int cost,  bool isDefault,  int paletteSeed)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String skinId,  FlowerSpecies species,  String displayName,  int cost,  bool isDefault,  int paletteSeed,  FlowerPetalShape petalShape)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FlowerSkin() when $default != null:
-return $default(_that.skinId,_that.species,_that.displayName,_that.cost,_that.isDefault,_that.paletteSeed);case _:
+return $default(_that.skinId,_that.species,_that.displayName,_that.cost,_that.isDefault,_that.paletteSeed,_that.petalShape);case _:
   return orElse();
 
 }
@@ -179,10 +180,10 @@ return $default(_that.skinId,_that.species,_that.displayName,_that.cost,_that.is
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String skinId,  FlowerSpecies species,  String displayName,  int cost,  bool isDefault,  int paletteSeed)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String skinId,  FlowerSpecies species,  String displayName,  int cost,  bool isDefault,  int paletteSeed,  FlowerPetalShape petalShape)  $default,) {final _that = this;
 switch (_that) {
 case _FlowerSkin():
-return $default(_that.skinId,_that.species,_that.displayName,_that.cost,_that.isDefault,_that.paletteSeed);case _:
+return $default(_that.skinId,_that.species,_that.displayName,_that.cost,_that.isDefault,_that.paletteSeed,_that.petalShape);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -199,10 +200,10 @@ return $default(_that.skinId,_that.species,_that.displayName,_that.cost,_that.is
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String skinId,  FlowerSpecies species,  String displayName,  int cost,  bool isDefault,  int paletteSeed)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String skinId,  FlowerSpecies species,  String displayName,  int cost,  bool isDefault,  int paletteSeed,  FlowerPetalShape petalShape)?  $default,) {final _that = this;
 switch (_that) {
 case _FlowerSkin() when $default != null:
-return $default(_that.skinId,_that.species,_that.displayName,_that.cost,_that.isDefault,_that.paletteSeed);case _:
+return $default(_that.skinId,_that.species,_that.displayName,_that.cost,_that.isDefault,_that.paletteSeed,_that.petalShape);case _:
   return null;
 
 }
@@ -214,7 +215,7 @@ return $default(_that.skinId,_that.species,_that.displayName,_that.cost,_that.is
 @JsonSerializable()
 
 class _FlowerSkin implements FlowerSkin {
-  const _FlowerSkin({required this.skinId, required this.species, required this.displayName, required this.cost, required this.isDefault, required this.paletteSeed});
+  const _FlowerSkin({required this.skinId, required this.species, required this.displayName, required this.cost, required this.isDefault, required this.paletteSeed, this.petalShape = FlowerPetalShape.classic});
   factory _FlowerSkin.fromJson(Map<String, dynamic> json) => _$FlowerSkinFromJson(json);
 
 @override final  String skinId;
@@ -223,6 +224,7 @@ class _FlowerSkin implements FlowerSkin {
 @override final  int cost;
 @override final  bool isDefault;
 @override final  int paletteSeed;
+@override@JsonKey() final  FlowerPetalShape petalShape;
 
 /// Create a copy of FlowerSkin
 /// with the given fields replaced by the non-null parameter values.
@@ -237,16 +239,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FlowerSkin&&(identical(other.skinId, skinId) || other.skinId == skinId)&&(identical(other.species, species) || other.species == species)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.cost, cost) || other.cost == cost)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.paletteSeed, paletteSeed) || other.paletteSeed == paletteSeed));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FlowerSkin&&(identical(other.skinId, skinId) || other.skinId == skinId)&&(identical(other.species, species) || other.species == species)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.cost, cost) || other.cost == cost)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.paletteSeed, paletteSeed) || other.paletteSeed == paletteSeed)&&(identical(other.petalShape, petalShape) || other.petalShape == petalShape));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,skinId,species,displayName,cost,isDefault,paletteSeed);
+int get hashCode => Object.hash(runtimeType,skinId,species,displayName,cost,isDefault,paletteSeed,petalShape);
 
 @override
 String toString() {
-  return 'FlowerSkin(skinId: $skinId, species: $species, displayName: $displayName, cost: $cost, isDefault: $isDefault, paletteSeed: $paletteSeed)';
+  return 'FlowerSkin(skinId: $skinId, species: $species, displayName: $displayName, cost: $cost, isDefault: $isDefault, paletteSeed: $paletteSeed, petalShape: $petalShape)';
 }
 
 
@@ -257,7 +259,7 @@ abstract mixin class _$FlowerSkinCopyWith<$Res> implements $FlowerSkinCopyWith<$
   factory _$FlowerSkinCopyWith(_FlowerSkin value, $Res Function(_FlowerSkin) _then) = __$FlowerSkinCopyWithImpl;
 @override @useResult
 $Res call({
- String skinId, FlowerSpecies species, String displayName, int cost, bool isDefault, int paletteSeed
+ String skinId, FlowerSpecies species, String displayName, int cost, bool isDefault, int paletteSeed, FlowerPetalShape petalShape
 });
 
 
@@ -274,7 +276,7 @@ class __$FlowerSkinCopyWithImpl<$Res>
 
 /// Create a copy of FlowerSkin
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? skinId = null,Object? species = null,Object? displayName = null,Object? cost = null,Object? isDefault = null,Object? paletteSeed = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? skinId = null,Object? species = null,Object? displayName = null,Object? cost = null,Object? isDefault = null,Object? paletteSeed = null,Object? petalShape = null,}) {
   return _then(_FlowerSkin(
 skinId: null == skinId ? _self.skinId : skinId // ignore: cast_nullable_to_non_nullable
 as String,species: null == species ? _self.species : species // ignore: cast_nullable_to_non_nullable
@@ -282,7 +284,8 @@ as FlowerSpecies,displayName: null == displayName ? _self.displayName : displayN
 as String,cost: null == cost ? _self.cost : cost // ignore: cast_nullable_to_non_nullable
 as int,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cast_nullable_to_non_nullable
 as bool,paletteSeed: null == paletteSeed ? _self.paletteSeed : paletteSeed // ignore: cast_nullable_to_non_nullable
-as int,
+as int,petalShape: null == petalShape ? _self.petalShape : petalShape // ignore: cast_nullable_to_non_nullable
+as FlowerPetalShape,
   ));
 }
 

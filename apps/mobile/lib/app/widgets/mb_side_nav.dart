@@ -59,18 +59,13 @@ class MbSideNav extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 8, 12, 20),
                 child: Row(
                   children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: MoodBloomColors.softGreen,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.local_florist_outlined,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.primary,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(
+                        'assets/icon/app_icon.png',
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.cover,
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -138,7 +133,7 @@ class MbSideNavAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    final color = destructive ? MoodBloomColors.coralText : mb.text;
+    final color = destructive ? mb.destructiveText : mb.text;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

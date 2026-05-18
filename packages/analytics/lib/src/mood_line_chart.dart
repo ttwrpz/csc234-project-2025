@@ -188,53 +188,90 @@ class MoodLineChart extends StatelessWidget {
           lineTouchData: LineTouchData(
             handleBuiltInTouches: true,
             touchTooltipData: LineTouchTooltipData(
-              // Theme-aware tooltip surface. fl_chart's default is a light
-              // grey that disappears in dark mode and washes out the value
-              // text in light mode. We use the chart theme's gridColor as
-              // the on-surface fallback when the caller hasn't supplied a
-              // tooltip color, then auto-pick text color by background
-              // luminance so contrast meets WCAG AA in both modes.
-              getTooltipColor: (_) => theme.tooltipBgColor,
-              tooltipPadding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
+              // Solid theme.surface (not inverseSurface) so the tooltip
+              // reads like a small floating card. Cleaner UX than the
+              // inverse-mode floating chip, especially in light theme
+              // where the inverse hue was a strong contrast jump from
+              // the chart's cream background.
+              getTooltipColor: (_) => Theme.of(context).colorScheme.surface,
+              tooltipBorder: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                width: 1,
               ),
-              tooltipRoundedRadius: 8,
+              tooltipRoundedRadius: 12,
+              tooltipPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              tooltipMargin: 14,
+              fitInsideHorizontally: true,
+              fitInsideVertically: true,
+              maxContentWidth: 280,
               getTooltipItems: (touched) {
-                final fg =
-                    ThemeData.estimateBrightnessForColor(
-                          theme.tooltipBgColor,
-                        ) ==
-                        Brightness.dark
-                    ? Colors.white
-                    : const Color(0xFF1F2937);
-                final fgDim = fg.withValues(alpha: 0.7);
-                return [
-                  for (final t in touched)
+                final scheme = Theme.of(context).colorScheme;
+                final fg = scheme.onSurface;
+                final fgDim = scheme.onSurfaceVariant;
+                // Sort by barIndex so the tooltip reads Positive → Mild →
+                // Strong top-to-bottom; the date header attaches to the
+                // first row.
+                final sorted = [...touched]
+                  ..sort((a, b) => a.barIndex.compareTo(b.barIndex));
+                final result = <LineTooltipItem>[];
+                for (var i = 0; i < sorted.length; i += 1) {
+                  final t = sorted[i];
+                  final cat = t.barIndex < lineCategories.length
+                      ? lineCategories[t.barIndex]
+                      : null;
+                  final colorDot = t.barIndex < lineColors.length
+                      ? lineColors[t.barIndex]
+                      : fg;
+                  final intensity = t.y.toStringAsFixed(1);
+                  final headerText = i == 0
+                      ? '${_tooltipDateLabel(earliest, t.x)}\n'
+                      : '';
+                  result.add(
                     LineTooltipItem(
-                      // Header line: weekday + day, e.g. "Sun · Mar 9".
-                      _tooltipDateLabel(earliest, t.x),
+                      headerText,
                       TextStyle(
                         color: fgDim,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        height: 1.5,
+                        letterSpacing: 0.2,
                       ),
                       children: [
-                        const TextSpan(text: '\n'),
                         TextSpan(
-                          // Body line: category dot + label + value.
-                          text:
-                              '${_categoryLabel(t.barIndex < lineCategories.length ? lineCategories[t.barIndex] : null)} '
-                              '${t.y.toStringAsFixed(1)}',
+                          text: '●  ',
+                          style: TextStyle(
+                            color: colorDot,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            height: 1.5,
+                          ),
+                        ),
+                        TextSpan(
+                          text: '${_categoryLabel(cat)} mood ',
                           style: TextStyle(
                             color: fg,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
+                            height: 1.5,
+                          ),
+                        ),
+                        TextSpan(
+                          text: '· intensity $intensity / 5',
+                          style: TextStyle(
+                            color: fgDim,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            height: 1.5,
                           ),
                         ),
                       ],
                     ),
-                ];
+                  );
+                }
+                return result;
               },
             ),
           ),

@@ -1,0 +1,157 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{titling}
+\usepackage{fancyhdr}
+\usepackage{caption}
+\usepackage[backend=biber,style=apa]{biblatex}
+
+\addbibresource{references.bib}
+
+\definecolor{moodgreen}{HTML}{2E7D5B}
+\hypersetup{colorlinks=true, linkcolor=moodgreen, urlcolor=moodgreen, citecolor=moodgreen}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{MoodBloom --- Group 2}
+\lhead{\leftmark}
+\rfoot{\thepage}
+
+\title{Sprint 5 Demo \& Retrospective --- MoodBloom v1.5}
+\author{
+  Kraiwich Jaiton \and
+  Teerin Kittichaicharoen \and
+  Theerawat Patthawee \and
+  Jedsarit Fanpimiy \and
+  Napat Chang-ekwong \\[1ex]
+  \small Group 2 \\
+  \small CSC231 Agile SE / CSC234 User-Centric Mobile App Development \\
+  \small KMUTT, Semester 2/2568
+}
+\date{May 19, 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\section{What we shipped (v1.5)}
+
+Sprint 5 wires the safety net live. The Pattern Engine from Sprint 4 emits
+\texttt{Tier?} triggers; v1.0 fired them only internally. v1.5 surfaces
+them as Tiered Intervention notifications, routes to user-facing screens,
+and respects both cooldown and per-tier opt-outs.
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{5.4} Tiered Intervention dispatcher + \texttt{CooldownGuard} + three tier screens (Breathing, Journaling, Crisis) + banner.
+\item \textbf{5.5} Quote Library + curated pools (Tier 1/2/3) + \texttt{QuoteSafetyFilter} + \texttt{suggestQuote.ts} Cloud Function \autocite{nahum2018jitai}.
+\item \textbf{5.6} Insights screen + mandatory disclaimer ack on first view.
+\item \textbf{6.3} Flower skin system --- domain, data, modal, per-flower detail.
+\item \textbf{7.3} Per-tier FCM toggles in Settings with migration from legacy \texttt{cheerUpEnabled}.
+\item \textbf{7.4} Bipolar/medical Disclaimer Service --- footer on every notification, ack dialog on first Insights view, Settings restate \autocite{stanley2012safety}.
+\item \textbf{2.4} Account deletion --- reauth fence, admin-SDK cascade, client-side \texttt{auth.deleteUser}.
+\item \textbf{8.3} Integration tests for login, mood, AI override, harvest, all three tiers (TC-40 end-to-end).
+\item \textbf{8.4} A11y sweep + dark-mode contrast sweep + cross-platform runbook.
+\item \textbf{9.1} Final Security Posture Report --- GO with three conditions.
+\end{itemize}
+
+Six polish waves followed (responsive sheets, biometric gating per
+ADR-0013, Patterns/Insights redesign per HB-009, dark-mode contrast,
+plant-state visual impact), plus a WebAuthn foundation per ADR-0014
+shipped dark, three follow-up fixes (debug retrigger, capsule hitbox,
+WebAuthn Settings tile), and a self-initiated ``Take a breath'' CTA.
+
+\section{Test results --- TC-40 + TC-41}
+
+\textbf{TC-40} (Tier 3 must never call Gemini) is the highest-stakes test
+in the project. ADR-0012 defends it at five layers: (1) the type fence
+\texttt{AiAllowedTier \{ one, two \}} cannot represent Tier 3; (2) the
+dispatcher hard-branches on \texttt{Tier.three} before any AI-adjacent
+type is referenced; (3) the dispatcher unit test asserts
+\texttt{recordingFake.calls.isEmpty} unconditionally; (4) the controller
+test re-asserts at the controller layer; (5) the new integration test
+exercises the full app with only the AI repo mocked. A sixth layer
+exists at the server boundary: \texttt{suggestQuote.ts} rejects
+\texttt{tier: 3} with \texttt{HttpsError('invalid-argument')} before any
+Gemini SDK call.
+
+\textbf{TC-41} (Quote Safety Filter rejection) ran 55 adversarial
+inputs through \texttt{QuoteSafetyFilterImpl.gate} --- 25 forbidden-word,
+15 over-length, 10 off-script, 5 ``almost-OK'' tricks. \textbf{100\%
+rejection, zero pass-throughs.} Five known-good curated phrases passed
+as positive controls.
+
+At \texttt{977b86d3}: \texttt{flutter test} 1018/1018; \texttt{flutter
+analyze} clean; \texttt{npm test} 73/73 across 5 CF suites; domain
+coverage unchanged from v1.0's 94.6\% overall.
+
+\section{Bipolar disclaimer compliance (TC-36 .. TC-39)}
+
+The ack dialog is non-dismissible (\texttt{barrierDismissible: false} +
+back-gesture suppression); state persists via the
+\texttt{users/\{uid\}.insightsDisclaimerAcked} boolean with a one-way
+Firestore rule; every Tier 1/2/3 notification body contains
+\texttt{DisclaimerCopy.notificationFooter}; Settings $\to$ About has the
+full text verbatim.
+
+\section{A11y sweep + performance}
+
+Two a11y reports filed (light + dark theme contrast). 75 a11y tests
+pass on the final branch. One known LOW failure
+(\texttt{textDim/softCoral} at 4.38:1 on light theme) was fixed in
+\texttt{b864e438}. Static performance review confirms no unbounded
+\texttt{ListView} callsites and the chart caps at 30 data points (well
+within a single frame budget). Cross-platform runbook documented;
+device-side measurements pending.
+
+\section{What went well}
+
+The Tier 3 fence held. The Safety Filter shipped fail-closed with a
+100\% rejection rate across 55 adversarial inputs. The polish track
+absorbed five real user complaints without slipping the tag. The
+WebAuthn foundation shipped dark with auditable code and a build-time
+flag.
+
+\section{What was hard}
+
+Six dispatch salvages in one sprint cost 10--30 minutes each;
+memory \texttt{[[workflow\_parallel\_agent\_dispatch]]} now codifies six
+failure modes. Codegen LF/CRLF noise consumed reviewer attention on
+every salvage. Cross-platform device-side measurements remain pending
+the runbook execution.
+
+\section{What the human team caught that the agents missed}
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Skin-system widget tests deferred.} Day-1 agent errored mid-run; orchestrator salvaged $\sim$1700 lines; follow-up landed TC-6/7/8 widget tests next session.
+\item \textbf{WebAuthn settings tile not surfaced.} ADR-0014 deferred the UI; user asked ``why isn't it wired in Settings?'' Tile now ships in a state-aware preview mode.
+\item \textbf{Debug Tier triggers fired only once.} \texttt{debugDispatch} hit the cooldown guard; fix bypasses the use case for the debug path. ADR-0012 fence preserved.
+\item \textbf{Flower hitbox too small + offset.} Round 48--64\,dp circle missed the bloom across species. Fix: \texttt{StadiumBorder} capsule that hugs the full plant silhouette.
+\end{itemize}
+
+\section{Going into v1.5.1}
+
+WebAuthn lit up (three remaining CFs, Firestore rules block, JS-interop
+invocation, Jest suite) once a production origin is decided.
+Cross-platform runbook execution. Device-side performance baseline.
+
+The Sprint 5 final Security Posture Report is \textbf{GO with three
+conditions}: file D-M01 (transitive HIGH \texttt{pnpm} advisories) as a
+v1.6 ticket; confirm the skin-system branch merge state (done in
+\texttt{ed2cd755}); run the cross-platform runbook's done-criteria
+checklist on Android + Chrome before pushing the \texttt{v1.5} tag.
+
+\printbibliography
+
+\end{document}

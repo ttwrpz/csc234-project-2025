@@ -8,6 +8,7 @@ abstract class SignUpState with _$SignUpState {
     @Default('') String email,
     @Default('') String password,
     @Default('') String confirmPassword,
+    @Default('') String displayName,
     @Default(false) bool isSubmitting,
     String? errorMessage,
   }) = _SignUpState;

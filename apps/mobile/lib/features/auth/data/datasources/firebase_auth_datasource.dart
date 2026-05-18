@@ -1,9 +1,12 @@
+import 'package:core/core.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../domain/auth_failure.dart';
+
+const _log = Logger('auth.firebase');
 
 /// Thin wrapper around `FirebaseAuth` and `google_sign_in`. This is the
 /// boundary between Firebase types and the rest of the app — no domain types
@@ -126,14 +129,29 @@ class FirebaseAuthDatasource {
       }
       return user;
     } on GoogleSignInException catch (e) {
-      // 7.x: typed exception with a `code` enum. Map cancel/timeout to
-      // googleCancelled, configuration / unknown to googleConfigMissing.
+      // Always log the code + description before mapping so future
+      // "Google sign-in was cancelled" reports can be diagnosed without
+      // re-adding instrumentation. PII rule: `description` is the
+      // plugin's diagnostic text — never the user's email.
+      _log.warn(
+        'GoogleSignInException',
+        data: 'code=${e.code.name} description=${e.description ?? '<none>'}',
+      );
       switch (e.code) {
+        // Genuine user cancellation — back button / outside-tap.
         case GoogleSignInExceptionCode.canceled:
           throw AuthDatasourceException(const AuthFailure.googleCancelled());
+        // System killed the flow OR network issue. Surfacing this as a
+        // cancellation was misleading — users see "cancelled" when in
+        // fact a retry would succeed.
         case GoogleSignInExceptionCode.interrupted:
+          throw AuthDatasourceException(const AuthFailure.network());
+        // No compatible UI available on this device. Treat as a build
+        // configuration problem rather than a cancellation.
         case GoogleSignInExceptionCode.uiUnavailable:
-          throw AuthDatasourceException(const AuthFailure.googleCancelled());
+          throw AuthDatasourceException(
+            const AuthFailure.googleConfigMissing(),
+          );
         case GoogleSignInExceptionCode.clientConfigurationError:
         case GoogleSignInExceptionCode.providerConfigurationError:
           throw AuthDatasourceException(
@@ -152,6 +170,23 @@ class FirebaseAuthDatasource {
       throw AuthDatasourceException(_codeToFailure(e.code, e));
     } on AuthDatasourceException {
       rethrow;
+    } catch (e) {
+      throw AuthDatasourceException(AuthFailure.unknown(e));
+    }
+  }
+
+  /// Triggers Firebase's password-reset email flow. Newer Firebase Auth
+  /// versions silently succeed for non-existent addresses to avoid
+  /// account-enumeration leaks; callers treat any non-throwing return
+  /// as "request accepted." Maps Firebase codes to sealed
+  /// [AuthFailure] variants.
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on fb.FirebaseAuthException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } on PlatformException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
     } catch (e) {
       throw AuthDatasourceException(AuthFailure.unknown(e));
     }
@@ -212,6 +247,27 @@ class FirebaseAuthDatasource {
     try {
       final credential = fb.GoogleAuthProvider.credential(idToken: idToken);
       await user.reauthenticateWithCredential(credential);
+    } on fb.FirebaseAuthException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } on PlatformException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } catch (e) {
+      throw AuthDatasourceException(AuthFailure.unknown(e));
+    }
+  }
+
+  /// Updates the locally-signed-in user's `displayName`. After the
+  /// Firebase update we call `reload()` so the in-memory user object
+  /// reflects the new value — without it `authStateChanges()` does NOT
+  /// re-emit (the underlying token isn't rotated by a profile update).
+  Future<void> updateDisplayName(String name) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw AuthDatasourceException(const AuthFailure.userNotFound());
+    }
+    try {
+      await user.updateDisplayName(name);
+      await user.reload();
     } on fb.FirebaseAuthException catch (e) {
       throw AuthDatasourceException(_codeToFailure(e.code, e));
     } on PlatformException catch (e) {

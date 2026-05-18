@@ -25,8 +25,9 @@ class ThemeModeStorage {
   final SharedPreferences _prefs;
 
   /// Reads the persisted preference. Defaults to
-  /// [ThemeModePreference.system] when no value has been written yet
-  /// (first launch) or when the stored value is malformed.
+  /// [ThemeModePreference.light] on first launch — the warm cream
+  /// surface is the brand-canonical first-touch and tests in dark mode
+  /// always opt in explicitly. Malformed values fall back the same way.
   ThemeModePreference read() {
     switch (_prefs.getString(_key)) {
       case 'light':
@@ -36,9 +37,10 @@ class ThemeModeStorage {
       case 'follow_device_time':
         return ThemeModePreference.followDeviceTime;
       case 'system':
+        return ThemeModePreference.system;
       case null:
       default:
-        return ThemeModePreference.system;
+        return ThemeModePreference.light;
     }
   }
 
