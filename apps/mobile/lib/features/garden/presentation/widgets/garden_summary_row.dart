@@ -10,12 +10,10 @@ import 'sky_header.dart' show SkyHeader;
 /// tier tagline ("Resting — quiet days for the soil"), the optional
 /// token-balance chip, and the "View patterns →" CTA.
 ///
-/// v1.0 polish (2026-05-10): these elements used to overlay the
-/// SkyHeader canvas. The user reported that the floating overlays
-/// fought with the sky/plants and were hard to read against the
-/// gradient. Pulling them into a normal MbCard below the canvas
-/// keeps the SkyHeader visually clean and gives the meta info a
-/// readable home.
+/// Rendered as a normal MbCard below the canvas (not as a floating
+/// overlay) so the SkyHeader stays visually clean and the meta info
+/// has a readable home against the cream surface rather than fighting
+/// the sky/plants gradient.
 class GardenSummaryRow extends StatelessWidget {
   const GardenSummaryRow({super.key, required this.state, this.tokenChip});
 
@@ -47,11 +45,9 @@ class GardenSummaryRow extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Tier pill — colored at-a-glance badge identifying the
-              // ecosystem state. v1.5 polish: previously the only tier
-              // signal was the tagline below, which buried the state
-              // name in a longer sentence. The pill surfaces the name
-              // + a colored dot up front so the five states read
-              // distinctly across the row.
+              // ecosystem state. Surfaces the name + a colored dot up
+              // front so the five states read distinctly across the
+              // row, instead of being buried inside the longer tagline.
               _TierPill(tier: state.plantTier, isEmpty: state.isEmpty),
               const SizedBox(height: 6),
               Text(
@@ -104,11 +100,9 @@ class GardenSummaryRow extends StatelessWidget {
               Expanded(child: tierColumn),
               if (tokenChip != null) ...[const SizedBox(width: 12), tokenChip!],
               const SizedBox(width: 12),
-              // v1.6: the "Take a breath" pill is rendered by the home
-              // page itself (between SkyHeader+DailyScoreStrip on phone,
-              // foot of the right column on desktop) so this row only
-              // carries the tier badge, tagline, token chip, and
-              // Patterns CTA.
+              // The "Take a breath" pill is rendered by the home page
+              // itself, so this row only carries the tier badge,
+              // tagline, token chip, and Patterns CTA.
               patternsButton,
             ],
           );
@@ -172,10 +166,7 @@ class _ViewPatternsButton extends StatelessWidget {
 /// Colored at-a-glance badge identifying which of the five ecosystem
 /// tiers the garden is currently in. Sits above the tagline so the
 /// user reads "Thriving" or "Storm Season" as a named state before
-/// the longer compassionate sentence. v1.5 polish (2026-05-16) — the
-/// original design surfaced tier only through the tagline copy, which
-/// buried the name and let the five states blur together; the pill
-/// lifts the tier name into a glanceable colored chip.
+/// the longer compassionate sentence.
 ///
 /// Colors are deliberately compassionate, not alarming — Storm Season
 /// uses a soft coral (warm pink-amber) rather than a red, in keeping

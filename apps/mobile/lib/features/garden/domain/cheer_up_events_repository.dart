@@ -6,11 +6,12 @@ import 'package:core/core.dart';
 /// `${dayUtc}-${reason}` so two same-day re-evaluations collide and the
 /// second `create` short-circuits with the canonical `already-exists`
 /// error — caught by the impl and surfaced as success because that IS
-/// the idempotent path (HB-003 §"Event doc — idempotent trigger").
+/// the idempotent path.
 ///
-/// The Firestore-side trigger `sendCheerUpPush` (functions/src/sendCheerUpPush.ts)
-/// fires on the create and is the ONLY consumer of this collection.
-/// Append-only at the rules layer — update + delete denied.
+/// The Firestore-side trigger `sendCheerUpPush`
+/// (functions/src/sendCheerUpPush.ts) fires on the create and is the ONLY
+/// consumer of this collection. Append-only at the rules layer — update
+/// + delete denied.
 ///
 /// Domain-pure: no Firestore / Flutter / Firebase imports anywhere in
 /// this file. The impl in `data/` does the wire-format work.
@@ -33,7 +34,7 @@ abstract class CheerUpEventsRepository {
 }
 
 /// Failure modes for the cheer-up events store. Sealed for exhaustive
-/// switch and to mirror [InterventionStateFailure] from 5.5a.
+/// switch and to mirror [InterventionStateFailure].
 sealed class CheerUpEventsFailure extends Failure {
   const CheerUpEventsFailure({required super.message});
 

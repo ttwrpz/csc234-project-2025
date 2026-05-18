@@ -17,19 +17,14 @@ import 'garden_bed.dart';
 /// entries, an [AtmosphereOverlay] driven by [GardenState.atmosphere],
 /// and the "View patterns →" footer row.
 ///
-/// ADR-0010 redesign: the previous per-entry sprite dispatch (flowers /
-/// buds / wilting plants / rain clouds) is gone. The canvas now reads
-/// two signals on different timescales — the slow weekly EWMA (plant
-/// tier) and the fast today-only mood mean (atmosphere overlay).
-/// Plants are alive in every tier; rain belongs to the atmosphere
-/// layer, not the plant layer.
-///
-/// v1.0 polish (2026-05-10): the prior `PlantTierGroup` + `_WeeklyFlowerScatter`
-/// pair was replaced by a single entry-driven [GardenBed]. The bed paints
-/// one full plant per entry (stem + leaves + petals at canvas scale) and
-/// uses tier only as an ambient modulator (butterflies / cloud shadow /
-/// lanterns AROUND the plants). Empty entries paints ground+grass only,
-/// closing the wipe-still-shows-3-flowers bug at the source.
+/// The canvas reads two signals on different timescales — the slow
+/// weekly EWMA (plant tier) and the fast today-only mood mean
+/// (atmosphere overlay). Plants are alive in every tier; rain belongs
+/// to the atmosphere layer, not the plant layer. The bed paints one
+/// full plant per entry (stem + leaves + petals at canvas scale) and
+/// uses tier only as an ambient modulator (butterflies / cloud shadow
+/// / lanterns AROUND the plants). Empty entries paints ground+grass
+/// only.
 class SkyHeader extends StatelessWidget {
   const SkyHeader({
     super.key,
@@ -52,15 +47,7 @@ class SkyHeader extends StatelessWidget {
   /// This week's mood entries (any order). Forwarded to [GardenBed],
   /// which sorts newest-first internally, caps at 6, and paints one
   /// full plant per entry. Empty list yields a bare bed (ground +
-  /// grass only) so the wipe-account-data flow no longer leaves
-  /// ghost flowers behind.
-  ///
-  /// User feedback v1.0 polish (2026-05-10): the previous design relied
-  /// on a tier-driven `PlantTierGroup` that painted 3 generic buds even
-  /// when the user had zero entries, plus a `_WeeklyFlowerScatter` overlay
-  /// of 22 dp head-only sprites. Replacing both with an entry-driven
-  /// [GardenBed] makes the per-entry render the canonical visual and
-  /// closes the empty-state regression at the source.
+  /// grass only).
   final List<MoodEntry> recentEntries;
 
   /// Total canvas height. 320 dp is the phone-class default; desktop
@@ -68,16 +55,15 @@ class SkyHeader extends StatelessWidget {
   /// viewport instead of a thin band.
   final double height;
 
-  /// Per-flower tap router — TC-7 (S5 flower-skin Day 1). Forwarded
-  /// to the inner [GardenBed]; null disables the overlay so non-
-  /// interactive call-sites (harvest archive thumbnails) keep the
-  /// canvas tap-free.
+  /// Per-flower tap router. Forwarded to the inner [GardenBed]; null
+  /// disables the overlay so non-interactive call-sites (harvest archive
+  /// thumbnails) keep the canvas tap-free.
   final void Function(MoodEntry entry)? onFlowerTap;
 
-  /// Per-species accent override — TC-6 (flower-skin Day 1).
-  /// Forwarded to the inner [GardenBed]'s painter so plants whose
-  /// species has an alternate skin selected render with the chosen
-  /// petal tint. Null leaves the species' built-in palette intact.
+  /// Per-species accent override. Forwarded to the inner [GardenBed]'s
+  /// painter so plants whose species has an alternate skin selected
+  /// render with the chosen petal tint. Null leaves the species'
+  /// built-in palette intact.
   final Map<FlowerSpecies, Color>? speciesAccent;
 
   /// Height of the garden bed anchored above the ground line. Bumped
@@ -118,8 +104,7 @@ class SkyHeader extends StatelessWidget {
               // on storm, AND a per-tier tint biases sunny skies toward
               // golden-green for Flourishing or cool overcast for
               // Weathering/Storm Season so the 5 tiers read distinctly
-              // even when the atmosphere is the same (v1.5 polish —
-              // "the 5 tiers look too similar" user feedback).
+              // even when the atmosphere is the same.
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -167,12 +152,10 @@ class SkyHeader extends StatelessWidget {
                 ),
               ),
               // Garden bed at its dedicated row above the ground line.
-              // No longer wrapped in the AtmosphereOverlay — rain now
-              // falls across the full canvas via the dedicated
-              // Positioned.fill layer below. v1.0 polish (2026-05-10):
-              // user reported rain only filled half the canvas because
-              // the overlay was scoped to the 140dp bed slot. Splitting
-              // the layers fixes the half-canvas rain at the source.
+              // Not wrapped in the AtmosphereOverlay — rain falls across
+              // the full canvas via the dedicated Positioned.fill layer
+              // below, so storm reads as a whole-sky event rather than
+              // a half-canvas bed mist.
               Positioned(
                 left: 0,
                 right: 0,
@@ -195,26 +178,20 @@ class SkyHeader extends StatelessWidget {
               // line so storm reads as a whole-sky event, not a
               // ground-level mist.
               //
-              // v1.0 polish (2026-05-10): the atmosphere is gated by
-              // plant tier so the user never sees rain over a
-              // Resting/Thriving/Flourishing tier. The original spec
-              // computed atmosphere from `avg_S_today` independently
-              // of the weekly EWMA, but the resulting "rain on Resting
-              // plants" reads as a contradiction in the UI. We pin
-              // the atmosphere to the tier — rain only when the bed
-              // is also visually weathering.
+              // The atmosphere is gated by plant tier so the user never
+              // sees rain over a Resting/Thriving/Flourishing tier — the
+              // resulting "rain on Resting plants" would read as a
+              // contradiction in the UI.
               Positioned.fill(
                 child: AtmosphereOverlay(
                   atmosphere: atmosphere,
                   child: const SizedBox.expand(),
                 ),
               ),
-              // Top bar: greeting + entries-this-week pill.
-              // v1.0 polish (2026-05-10): the floating tier-tagline
-              // and "View patterns" pill that previously sat in the
-              // bottom of the canvas were moved out into a dedicated
-              // section below the SkyHeader (see [GardenSummaryRow])
-              // so the canvas reads as a clean visual hero.
+              // Top bar: greeting + entries-this-week pill. The
+              // tier-tagline and "View patterns" pill live in the
+              // dedicated [GardenSummaryRow] below the SkyHeader so the
+              // canvas reads as a clean visual hero.
               Positioned(
                 top: 16,
                 left: MoodBloomSpacing.pagePadding,
@@ -273,8 +250,7 @@ class SkyHeader extends StatelessWidget {
   /// mean) with the bed's [PlantTier]. Negative tiers may keep the
   /// raw atmosphere (rain belongs there visually); positive/neutral
   /// tiers force a sunny atmosphere so the user never sees rain over
-  /// flowering plants. v1.0 polish (2026-05-10) — addresses "why is
-  /// it raining but the tier is Resting?" feedback.
+  /// flowering plants.
   static Atmosphere _atmosphereForTier(PlantTier tier, Atmosphere raw) {
     switch (tier) {
       case PlantTier.stormSeason:
@@ -314,8 +290,7 @@ class SkyHeader extends StatelessWidget {
   /// Resting stays neutral; Weathering/Storm Season cool the sky
   /// toward overcast even when the atmosphere would otherwise be
   /// sunny. The net effect is that the five tier states read as
-  /// distinct skies at a glance instead of collapsing into the same
-  /// canvas (v1.5 polish — "the 5 tiers look too similar" feedback).
+  /// distinct skies at a glance.
   ///
   /// The tier tint is applied per-stop with a small lerp amount so
   /// it never overrides the atmosphere; rainy days still read as
@@ -355,7 +330,7 @@ class SkyHeader extends StatelessWidget {
   ///
   /// Storm Season's cool bias is intentionally compassionate — a
   /// muted slate, not an alarming charcoal. The garden is sheltered,
-  /// never threatened (ADR-0010 §4).
+  /// never threatened.
   static List<Color> _applyTierTint(List<Color> base, PlantTier tier) {
     final (Color tint, double t) = switch (tier) {
       PlantTier.flourishing => (const Color(0xFFFFE9B0), 0.22),
@@ -463,16 +438,11 @@ class _EntriesPill extends StatelessWidget {
   }
 }
 
-/// Paints the two-layer ground + grass blades along the horizon.
-///
-/// v1.0 polish (2026-05-10): rewritten to anchor the horizon at the
-/// bed's groundY (canvas.height - 36) instead of the prototype's
-/// hard-coded `viewBox y=260`. Previously the painter used
-/// `canvas.scale(width/400)` which meant the y-coords scaled with
-/// width — at 800 dp wide the ground rendered at `y=520` and fell
-/// off-canvas, leaving flowers floating above empty sky. Anchoring to
-/// the bottom keeps the ground line aligned with the [GardenBed]'s
-/// groundY at every canvas size.
+/// Paints the two-layer ground + grass blades along the horizon. The
+/// horizon is anchored at the bed's groundY (canvas.height - 36) so the
+/// ground line stays aligned with the [GardenBed]'s groundY at every
+/// canvas size — scaling y-coords by width would let the horizon fall
+/// off-canvas on wide layouts.
 class _GroundPainter extends CustomPainter {
   _GroundPainter({
     required this.ground,

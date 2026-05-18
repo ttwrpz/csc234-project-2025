@@ -9,14 +9,14 @@ import 'cheer_up_state.dart';
 
 part 'cheer_up_controller.g.dart';
 
-/// Controller for the cheer-up banner (HB-003 §5.5a + §5.5b).
+/// Controller for the cheer-up banner.
 ///
 /// Owns the banner's transient UI state (session-scoped dismissal +
 /// onShown idempotency) and orchestrates two writes when the detector
 /// flips to triggered:
 ///   1. The cooldown / escalation anchors via [InterventionStateRepository]
-///      (5.5a — `lastTriggeredAt`, `firstTriggeredAt`).
-///   2. The audit-log event via [CheerUpEventsRepository] (5.5b — the
+///      (`lastTriggeredAt`, `firstTriggeredAt`).
+///   2. The audit-log event via [CheerUpEventsRepository] (the
 ///      `users/{uid}/cheerUpEvents/{dayUtc}-{reason}` doc-create that
 ///      fires the `sendCheerUpPush` Cloud Function).
 ///
@@ -55,16 +55,12 @@ class CheerUpController extends _$CheerUpController {
     if (state.onShownDispatched) return;
     const logger = Logger('garden.cheerup.controller');
 
-    // Remote-Config gate (ADR-0011 §4). When v1.0's
-    // `interventionDispatchEnabled` flag is false, the legacy 2-rule
-    // dispatcher is dark — no anchor writes, no audit-log event, no
-    // FCM push. The new Pattern Engine writes
-    // `users/{uid}/patterns/{date}` independently upstream. Sprint 5
-    // re-points the dispatcher at that document, attaches the Quote
-    // Library safety filter + Bipolar/medical disclaimer footer, and
-    // flips the flag to true. Until then, this early-return is the
-    // single difference between "engine on, dispatcher off" (v1.0)
-    // and "engine on, dispatcher on" (S5).
+    // Remote-Config gate. When `interventionDispatchEnabled` is false,
+    // the legacy 2-rule dispatcher is dark — no anchor writes, no
+    // audit-log event, no FCM push. The Pattern Engine writes
+    // `users/{uid}/patterns/{date}` independently upstream; flipping
+    // the flag to true re-points the dispatcher at that document with
+    // the Quote Library safety filter + disclaimer footer attached.
     final flags = ref.read(featureFlagsProvider);
     if (!flags.interventionDispatchEnabled) {
       logger.info(
@@ -98,20 +94,19 @@ class CheerUpController extends _$CheerUpController {
       logger.warn('writeFirstTriggeredAtIfNull failed; mirror updated locally');
     }
 
-    // 5.5b — idempotent event-doc create. Independent of anchor writes
-    // above: if the cloud is reachable for ONE of the two it's almost
+    // Idempotent event-doc create. Independent of anchor writes above:
+    // if the cloud is reachable for ONE of the two it's almost
     // certainly reachable for both, but failure of the anchor writes
     // must not block this — the audit log is the canonical record of
     // a triggered cheer-up.
     //
-    // v1.0 polish (2026-05-10): the Cloud Function is no longer a
-    // Firestore document trigger (this project's Firestore lives in
-    // `asia-southeast3`, which neither v1 nor v2 Firestore triggers
-    // currently support). The event doc is still written for the
-    // audit trail; the push itself is dispatched by an HTTPS-callable
-    // `sendCheerUpPush` invoked from the client below. The 24h
-    // server-side rate limit on the function makes a duplicate call
-    // a no-op, so callers don't need their own dedupe.
+    // The Cloud Function is not a Firestore document trigger (this
+    // project's Firestore lives in `asia-southeast3`, which neither v1
+    // nor v2 Firestore triggers currently support). The event doc is
+    // still written for the audit trail; the push itself is dispatched
+    // by an HTTPS-callable `sendCheerUpPush` invoked from the client
+    // below. The 24h server-side rate limit on the function makes a
+    // duplicate call a no-op, so callers don't need their own dedupe.
     final eventResult = await eventsRepo.createEvent(reason: reason, now: now);
     final eventOk = eventResult is Ok;
     if (!eventOk) {
@@ -132,10 +127,9 @@ class CheerUpController extends _$CheerUpController {
         'requestId': '$dayKey-$reason',
       });
     } on FirebaseFunctionsException catch (e) {
-      // `not-found` means the CF isn't deployed yet (e.g. local dev
-      // before the v1.0 polish redeploy). Swallow without alarming
-      // the user — the audit doc is already written, and the push
-      // is best-effort by design.
+      // `not-found` means the CF isn't deployed yet (e.g. local dev).
+      // Swallow without alarming the user — the audit doc is already
+      // written, and the push is best-effort by design.
       logger.warn('sendCheerUpPush call failed: ${e.code}; push will not fire');
     } catch (e) {
       logger.warn(

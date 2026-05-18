@@ -8,8 +8,7 @@ import '../../domain/entities/plant_tier.dart';
 /// Renders the garden's plants for a given [PlantTier]. Five distinct
 /// scenes — every one renders plants alive, sheltered, and intact even
 /// in `stormSeason`. Rain belongs to [AtmosphereOverlay] (the weather
-/// layer above the plants); this widget never paints rain itself. See
-/// ADR-0010 §4 for the visual contract and copy rules.
+/// layer above the plants); this widget never paints rain itself.
 ///
 /// Per-tier visual palette (composed from `MoodBloomColors`):
 ///   * Flourishing — many large blossoms + butterflies, brightest greens.
@@ -93,9 +92,9 @@ class _PlantTierPainter extends CustomPainter {
   // the overall warm-cream identity.
   static const _stemColor = Color(0xFF4C8B6A);
 
-  // v1.6 — extra stem palettes to push tiers visually further apart.
-  // _stemBright lifts Flourishing into a vivid meadow green; _stemCream
-  // is the warm-cream Resting/Storm stem that reads as "alive but quiet"
+  // Extra stem palettes push tiers visually further apart. _stemBright
+  // lifts Flourishing into a vivid meadow green; _stemCream is the
+  // warm-cream Resting/Storm stem that reads as "alive but quiet"
   // without dropping into a desaturated gray that would look dormant.
   static const _stemBright = Color(0xFF3F8259);
   static const _stemCream = Color(0xFFB8A878);
@@ -116,10 +115,10 @@ class _PlantTierPainter extends CustomPainter {
     }
   }
 
-  // v1.6 — bloom palette pulled apart per tier so the three positive
-  // tiers don't all read as "green stems + small color dot". Flourishing
-  // = warm sun (amber + coral mix). Thriving = soft pink (mood-okay).
-  // Resting = misty lavender. Each one occupies a distinct hue family.
+  // Bloom palette pulled apart per tier so the three positive tiers
+  // don't all read as "green stems + small color dot". Flourishing =
+  // warm sun (amber + coral mix). Thriving = soft pink. Resting =
+  // misty lavender. Each one occupies a distinct hue family.
   static const _bloomFlourishingA = Color(0xFFE8A23B); // amber
   static const _bloomFlourishingB = Color(0xFFE77A8C); // coral
   static const _bloomFlourishingC = Color(0xFFF6C45A); // warm yellow
@@ -128,10 +127,10 @@ class _PlantTierPainter extends CustomPainter {
   static const _bloomRestingA = Color(0xFFB8A1C9); // soft lavender
 
   void _paintFlourishing(Canvas canvas, Size size) {
-    // v1.6 — 9 tall blossoms in a riot of warm sun colors, varying
-    // heights to break the "row of identical tulips" silhouette,
-    // bud satellites, ground micro-clusters, sun glow at top-right,
-    // and 3 butterflies. The clear-sky reading dominates the panel.
+    // 9 tall blossoms in a riot of warm sun colors, varying heights to
+    // break the "row of identical tulips" silhouette, bud satellites,
+    // ground micro-clusters, sun glow at top-right, and 3 butterflies.
+    // The clear-sky reading dominates the panel.
     const palette = [
       _bloomFlourishingA,
       _bloomFlourishingB,
@@ -175,10 +174,10 @@ class _PlantTierPainter extends CustomPainter {
   }
 
   void _paintThriving(Canvas canvas, Size size) {
-    // v1.6 — 5 medium blossoms in peach + dusty-pink, mid-height stems,
-    // double leaves on every stem. One butterfly. No sun, no clusters,
-    // no satellites — the visual delta vs Flourishing is now clear at
-    // a glance (different colors, fewer blooms, no ground decoration).
+    // 5 medium blossoms in peach + dusty-pink, mid-height stems, double
+    // leaves on every stem. One butterfly. No sun, no clusters, no
+    // satellites — the visual delta vs Flourishing is clear at a glance
+    // (different colors, fewer blooms, no ground decoration).
     const palette = [_bloomThrivingA, _bloomThrivingB];
     final centers = _evenlySpaced(size.width, 5);
     for (var i = 0; i < centers.length; i += 1) {
@@ -205,15 +204,15 @@ class _PlantTierPainter extends CustomPainter {
   }
 
   void _paintResting(Canvas canvas, Size size) {
-    // v1.6 — 3 closed lavender buds on cream stems, distinctive curved-
-    // wing pose so they read clearly as "not open yet", plus a wide
+    // 3 closed lavender buds on cream stems, distinctive curved-wing
+    // pose so they read clearly as "not open yet", plus a wide
     // morning-mist band that fills the upper third. The lavender hue
     // separates Resting from the warmer Thriving palette unambiguously.
     final centers = _evenlySpaced(size.width, 3);
 
-    // Wider mist band — bigger than v1.5 so the "quiet morning" reading
-    // is unmistakable. Two stacked ovals at decreasing alpha give it
-    // depth without consuming the bed.
+    // Wide mist band makes the "quiet morning" reading unmistakable.
+    // Two stacked ovals at decreasing alpha give it depth without
+    // consuming the bed.
     final mistFar = Paint()
       ..color = _bloomRestingA.withValues(alpha: 0.20)
       ..style = PaintingStyle.fill;
@@ -285,9 +284,9 @@ class _PlantTierPainter extends CustomPainter {
       );
     }
 
-    // v1.6 — single small fallen leaf on the soil signals "weather"
-    // without doom: a tilted oval at the bottom-center, low-alpha stem
-    // color, so the bed still reads as cared-for.
+    // A single small fallen leaf on the soil signals "weather" without
+    // doom: a tilted oval at the bottom-center in low-alpha stem color,
+    // so the bed still reads as cared-for.
     canvas.save();
     canvas.translate(size.width / 2 - 6, size.height - 6);
     canvas.rotate(-0.4);
@@ -358,7 +357,7 @@ class _PlantTierPainter extends CustomPainter {
     canvas.drawLine(Offset(cx, bottom), Offset(cx, bottom - height), paint);
   }
 
-  // v1.6 — tiny opening-bud satellite used in the Flourishing tier.
+  // Tiny opening-bud satellite used in the Flourishing tier.
   void _drawSatellite(Canvas canvas, Offset center, [Color? color]) {
     canvas.drawCircle(
       center,
@@ -368,8 +367,8 @@ class _PlantTierPainter extends CustomPainter {
     );
   }
 
-  // v1.6 — ground-level micro flower cluster (3 small circles) used to
-  // give Flourishing a "lush bed" feel without overcrowding the row.
+  // Ground-level micro flower cluster (3 small circles) used to give
+  // Flourishing a "lush bed" feel without overcrowding the row.
   void _drawGroundCluster(Canvas canvas, Offset center) {
     final p = Paint()..color = MoodBloomColors.moodCalm.withValues(alpha: 0.7);
     canvas.drawCircle(center.translate(-4, 0), 2.4, p);
@@ -438,8 +437,8 @@ class _PlantTierPainter extends CustomPainter {
   }
 
   void _drawLantern(Canvas canvas, Offset center) {
-    // v1.6 — brighter glow + slightly larger ring so "we're sheltered,
-    // light still on" reads even on the dimmer Storm Season backdrop.
+    // Brighter glow + slightly larger ring so "we're sheltered, light
+    // still on" reads even on the dimmer Storm Season backdrop.
     final glow = Paint()..color = MoodBloomColors.amber.withValues(alpha: 0.5);
     canvas.drawCircle(center, 14, glow);
     final core = Paint()..color = const Color(0xFFFFE9B8);

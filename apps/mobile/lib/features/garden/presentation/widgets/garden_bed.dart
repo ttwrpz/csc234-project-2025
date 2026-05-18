@@ -7,29 +7,24 @@ import '../../../mood/domain/entities/mood_entry.dart';
 import '../../domain/entities/flower_species.dart';
 import '../../domain/entities/plant_tier.dart';
 
-/// Real flower garden — replaces the prior `PlantTierGroup`. Renders one
-/// full plant per recent mood entry, each with stem + leaves + petals
-/// drawn at canvas scale. The garden visualisation is the most
-/// load-bearing surface of the app, so the painters are intentionally
-/// detailed: an 18-ray sunflower head with a brown disk, a 12-petal
-/// daisy on a slender stem, a forget-me-not cluster of 5 flowers on
-/// branched stems, a 4-petal poppy with stamens around a dark navy
-/// centre, a fern with 10 alternating pinnae, and a lavender stalk
-/// with 8 stacked bell buds.
+/// Real flower garden. Renders one full plant per recent mood entry,
+/// each with stem + leaves + petals drawn at canvas scale. The garden
+/// visualisation is the most load-bearing surface of the app, so the
+/// painters are intentionally detailed: an 18-ray sunflower head with a
+/// brown disk, a 12-petal daisy on a slender stem, a forget-me-not
+/// cluster of 5 flowers on branched stems, a 4-petal poppy with stamens
+/// around a dark navy centre, a fern with 10 alternating pinnae, and a
+/// lavender stalk with 8 stacked bell buds.
 ///
 /// **Empty `entries` paints ground+grass only** — no flowers, no buds,
-/// nothing. Fixes the wipe-still-shows-3-flowers bug at the source
-/// (the old `_paintResting` painted 3 buds unconditionally).
+/// nothing.
 ///
 /// Plants are species-driven from the entries' moods (via
 /// [FlowerSpecies.forMood]). Tier modulates AMBIENT extras only —
 /// butterflies on flourishing, lanterns on storm season, a soft cloud
 /// shadow on weathering. The plants themselves never change shape per
-/// tier; tier is the weather around them, not damage to them
-/// (ADR-0010 §4 "plants never die").
-///
-/// Caps at 6 plants to keep the bed readable. When entries > 6 the
-/// most-recent six are shown.
+/// tier; tier is the weather around them, not damage to them (plants
+/// never die).
 class GardenBed extends StatefulWidget {
   const GardenBed({
     super.key,
@@ -62,21 +57,19 @@ class GardenBed extends StatefulWidget {
   ///   doesn't read at thumbnail scale and would burn frames for nothing).
   final bool animate;
 
-  /// Per-flower tap router — TC-7 (S5 — flower skin system Day 1).
-  /// When non-null, the bed renders invisible hot-spots on top of each
-  /// painted flower (using the same x-placement math the painter uses
-  /// internally). Tapping a hot-spot dispatches the corresponding
-  /// [MoodEntry] back to the caller, which typically opens
-  /// `PerFlowerDetailModal`. Null disables the overlay entirely so
-  /// existing call-sites (history thumbnails, harvest archive) keep
-  /// their non-interactive canvas semantics.
+  /// Per-flower tap router. When non-null, the bed renders invisible
+  /// hot-spots on top of each painted flower (using the same x-placement
+  /// math the painter uses internally). Tapping a hot-spot dispatches
+  /// the corresponding [MoodEntry] back to the caller. Null disables the
+  /// overlay entirely so non-interactive call-sites (history thumbnails,
+  /// harvest archive) keep their tap-free canvas semantics.
   final void Function(MoodEntry entry)? onFlowerTap;
 
-  /// Per-species petal-accent override — TC-6 (flower skin system).
-  /// Maps a species to the accent colour the user picked for that
-  /// species' alternate skin. Absent species fall back to the species'
-  /// built-in default colour. The default-skin path keeps the existing
-  /// look exactly; only alternates shift hue.
+  /// Per-species petal-accent override. Maps a species to the accent
+  /// colour the user picked for that species' alternate skin. Absent
+  /// species fall back to the species' built-in default colour. The
+  /// default-skin path keeps the existing look exactly; only alternates
+  /// shift hue.
   ///
   /// Past harvested gardens never receive this override — the archive
   /// rendering surface passes `null` so historical weeks keep their
@@ -90,12 +83,11 @@ class GardenBed extends StatefulWidget {
   /// thicket" rule there); harvest-archive surfaces opt in.
   final bool showOverflowBadge;
 
-  /// Cap on the number of plants the bed can render at once. v1.0
-  /// polish (2026-05-10): bumped from 6 → 25 after user feedback that
-  /// a week of frequent logs (multiple entries per day) was being
-  /// truncated mid-week. 25 fits comfortably across the canvas at
-  /// desktop width without crowding; the per-entry x-jitter still
-  /// keeps individual plants readable.
+  /// Cap on the number of plants the bed can render at once. 25 fits
+  /// comfortably across the canvas at desktop width without crowding
+  /// and accommodates a week of frequent logs (multiple entries per
+  /// day); the per-entry x-jitter still keeps individual plants
+  /// readable.
   static const int _maxPlants = 25;
 
   @override
@@ -181,20 +173,13 @@ class _GardenBedState extends State<GardenBed> with TickerProviderStateMixin {
 
     final overlayChildren = <Widget>[];
     if (widget.onFlowerTap != null && shown.isNotEmpty) {
-      // Per-flower hit-spots — TC-7 (S5). The placements use the same
-      // math as the painter (`_PlantPlacement`) so the hit-capsules sit
-      // directly over the rendered flowers regardless of canvas width.
-      //
-      // v1.5 final polish (round 2) — switched from a small floating
-      // circle to a tall capsule (StadiumBorder) that hugs the FULL
-      // vertical silhouette of the plant: bloom at the top, stem, leaves
-      // all the way to ground level. The user reported the small circle
-      // felt offset (it sat at 35% bed height but tall species like the
-      // sunflower paint their bloom higher, while shorter species like
-      // forget-me-not paint lower — no single fixed offset works), AND
-      // too small for comfortable tap. The capsule resolves both: wider
-      // tap target, covers wherever the user instinctively taps, still
-      // not square (rounded ends match the soft visual language).
+      // Per-flower hit-spots. The placements use the same math as the
+      // painter (`_PlantPlacement`) so the hit-capsules sit directly
+      // over the rendered flowers regardless of canvas width. The hit
+      // shape is a tall capsule (StadiumBorder) that hugs the FULL
+      // vertical silhouette of the plant — bloom, stem, leaves — so
+      // tall species (sunflower) and short species (forget-me-not) both
+      // get a comfortable, well-aligned tap target.
       final placements = _computeXPositions(shown, widget.size.width);
       final stride = widget.size.width / (shown.length + 1);
       // Width = min(72, stride - 6) clamped to ≥ 48. The -6 keeps a
@@ -356,9 +341,7 @@ class _GardenBedPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final groundY = size.height - 6;
 
-    // Empty state: just ground + grass blades, no plants. This is the
-    // fix for the wipe-still-shows-3-flowers bug — the prior tier-
-    // driven painter ignored entry count and always drew buds.
+    // Empty state: just ground + grass blades, no plants.
     _drawBackdropGrass(canvas, size, groundY);
 
     if (entries.isEmpty) {
@@ -375,13 +358,9 @@ class _GardenBedPainter extends CustomPainter {
     // the camera").
     final n = entries.length;
     // Use a back-row pass for n ≥ 8 — gives the bed visual depth
-    // without making single-week views feel sparse. v1.0 polish
-    // (2026-05-10) — earlier we lifted the back row's BASE 14 dp
-    // above the ground to fake distance, but the resulting plants
-    // looked like they were floating mid-air because the ground line
-    // didn't follow them up. Both rows now share the same ground
-    // baseline; back-row plants are smaller (0.85×) AND tucked
-    // slightly behind the front row (paint order), which is enough
+    // without making single-week views feel sparse. Both rows share
+    // the same ground baseline; back-row plants are smaller (0.85×)
+    // AND tucked behind the front row (paint order), which is enough
     // to read as depth without orphaning the stem from the soil.
     final useTwoRows = n >= 8;
     final stride = size.width / (n + 1);
@@ -407,10 +386,10 @@ class _GardenBedPainter extends CustomPainter {
     // is a "growth confidence" modulation, never a wilt. Flourishing
     // bumps the plant 10% larger; Storm Season pulls it back 8% so the
     // bed reads as more contracted/sheltered, but all stems + petals +
-    // leaves are still rendered (ADR-0010 §4). The painter's growth
-    // stage already drops petal counts on lower tiers; this scale is
-    // an additional global multiplier on top of that, applied here at
-    // the placement site so back-row depth scaling composes cleanly.
+    // leaves are still rendered. The painter's growth stage already
+    // drops petal counts on lower tiers; this scale is an additional
+    // global multiplier on top of that, applied here at the placement
+    // site so back-row depth scaling composes cleanly.
     final tierScale = _tierScaleFor(tier);
     for (final p in placements) {
       // Gentle plant sway — each plant has its own phase offset (from
@@ -459,9 +438,9 @@ class _GardenBedPainter extends CustomPainter {
   /// taking shelter, not blooming. The species itself never changes —
   /// stage tunes how much of the plant is visible.
   ///
-  /// All stages are visually ALIVE (TC-24 — ADR-0010 §4 "plants never
-  /// die"). Stage 0 (Storm Season) is a closed bud, never wilted; stage
-  /// 4 (Flourishing) is full bloom.
+  /// All stages are visually ALIVE — plants never die. Stage 0 (Storm
+  /// Season) is a closed bud, never wilted; stage 4 (Flourishing) is
+  /// full bloom.
   int get _growthStage => switch (tier) {
     PlantTier.stormSeason => 0,
     PlantTier.weathering => 1,
@@ -474,10 +453,7 @@ class _GardenBedPainter extends CustomPainter {
   /// Stacks with the back-row depth scale (0.85×) at the placement
   /// site. Flourishing reads as larger and more present; Storm Season
   /// reads as more contracted/sheltered but is still rendered with
-  /// stem + petals + leaves (ADR-0010 §4 "plants never die"). v1.5
-  /// polish (2026-05-16) — tier differentiation pass; the bed used to
-  /// only differ between tiers via petal count, which the user
-  /// reported as too subtle on a glance.
+  /// stem + petals + leaves (plants never die).
   static double _tierScaleFor(PlantTier tier) => switch (tier) {
     PlantTier.flourishing => 1.10,
     PlantTier.thriving => 1.04,
@@ -507,16 +483,14 @@ class _GardenBedPainter extends CustomPainter {
 
   /// Returns the user's selected accent colour for [species] when an
   /// alternate skin is active, falling back to [fallback] otherwise.
-  /// The fallback path preserves the painter's prior hardcoded look —
-  /// default-skinned plants render byte-for-byte the same as before
-  /// the skin system landed (TC-6 only changes the live render of
-  /// alternate-skinned plants; default users see no change).
+  /// Default-skinned plants render with the species' built-in palette;
+  /// only alternate-skinned plants shift hue.
   ///
   /// Tier-aware: the returned colour is then run through
   /// [_tierSaturate] so Flourishing reads slightly more vivid and
   /// Storm Season slightly more muted while still rendering a fully
-  /// alive, coloured plant (plants are never desaturated to grey —
-  /// ADR-0010 §4). Resting and Thriving pass through unchanged.
+  /// alive, coloured plant (plants are never desaturated to grey).
+  /// Resting and Thriving pass through unchanged.
   Color _accentFor(FlowerSpecies species, Color fallback) {
     final override = speciesAccent;
     final base = override == null ? fallback : (override[species] ?? fallback);
@@ -1241,9 +1215,9 @@ class _GardenBedPainter extends CustomPainter {
 
   void _drawLantern(Canvas canvas, Offset center, double pulse) {
     // Bright amber glow + warm core. Brighter than the mood swatches
-    // so the storm tier still reads as hopeful per ADR-0010 §4.
-    // `pulse` (0..1) modulates the glow alpha so lanterns flicker
-    // gently — never going fully dark, never blowing out.
+    // so the storm tier still reads as hopeful. `pulse` (0..1)
+    // modulates the glow alpha so lanterns flicker gently — never
+    // going fully dark, never blowing out.
     final glowAlpha = 0.25 + pulse * 0.20; // 0.25..0.45
     final glowR = 13.0 + pulse * 3.0; // 13..16 dp
     final glow = Paint()

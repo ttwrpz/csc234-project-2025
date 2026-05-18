@@ -10,9 +10,7 @@ part 'garden_state.freezed.dart';
 /// `GardenScreen`. Pure Dart so the domain layer stays free of
 /// Flutter / Firebase imports.
 ///
-/// The Sprint 4–5 ecosystem redesign (ADR-0010) replaces the previous
-/// per-entry glyph counts (positive / wilting / rain-cloud) with two
-/// signals on different timescales:
+/// The garden state is composed of two signals on different timescales:
 ///   * [gardenHealth] — slow weekly EWMA (`H_t` ∈ [-1, +1]) folded over
 ///     per-day mood-score means. Drives [plantTier] (5 alive states).
 ///   * [atmosphere] — today-only mean mood-score, mapped to one of 4
@@ -21,13 +19,12 @@ part 'garden_state.freezed.dart';
 ///
 /// Plants are NEVER destroyed/wilting/dying in any tier — the Storm
 /// Season tier renders rain falling AROUND a sheltered garden, not on
-/// the plants themselves. See ADR-0010 §1 for the no-wilt copy rule.
+/// the plants themselves.
 @freezed
 abstract class GardenState with _$GardenState {
   const factory GardenState({
     /// Garden Health for the current week (`H_t`, range [-1, +1]).
-    /// Resets to 0 at the start of every week (weekly harvest cycle —
-    /// see ADR-0010 §3).
+    /// Resets to 0 at the start of every week (weekly harvest cycle).
     required double gardenHealth,
 
     /// 5-tier ecosystem state derived from [gardenHealth].

@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Thin Firestore wrapper for the `users/{uid}/cheerUpEvents/{evtId}`
-/// audit-log collection (HB-003 §5.5b). Pulled out of the repository
-/// impl so tests can fake the cloud surface without instantiating a
-/// real `FirebaseFirestore` (mirrors the
-/// [InterventionStateFirestoreDatasource] pattern from 5.5a).
+/// audit-log collection. Pulled out of the repository impl so tests can
+/// fake the cloud surface without instantiating a real `FirebaseFirestore`
+/// (mirrors the [InterventionStateFirestoreDatasource] pattern).
 ///
 /// The CF trigger `sendCheerUpPush` listens on document creates here.
 /// This datasource is therefore the seam where the client decides to

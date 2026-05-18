@@ -2,9 +2,9 @@
 //
 // `detectPattern` is intentionally consumed below while the legacy 2-rule
 // dispatcher path is gated behind `interventionDispatchEnabled` (default
-// false in v1.0). The new 5-algorithm engine writes
-// `users/{uid}/patterns/{date}` independently; S5 re-points the dispatcher
-// at that doc and removes this caller. ADR-0011.
+// false). The 5-algorithm engine writes `users/{uid}/patterns/{date}`
+// independently; the dispatcher will be re-pointed at that doc and this
+// caller removed.
 
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,8 +68,7 @@ final debugPlantTierOverrideProvider =
 /// emission is acceptable — the strip refreshes on the next interaction.
 ///
 /// `weekStart` is the local-midnight `DateTime` of the current week's
-/// Monday. `H_t` resets to 0 on every fresh week (weekly harvest cycle —
-/// ADR-0010 §3).
+/// Monday. `H_t` resets to 0 on every fresh week (weekly harvest cycle).
 final gardenStateStreamProvider = Provider<AsyncValue<GardenState>>((ref) {
   final useCase = ref.watch(computeGardenStateUseCaseProvider);
   final moods = ref.watch(myMoodsStreamProvider);
@@ -108,10 +107,9 @@ DateTime _localMondayMidnight(DateTime now) {
 }
 
 /// Underlying mood entries the garden canvas iterates to render per-entry
-/// glyphs (flower / wilting plant / rain cloud). Mirrors
-/// [myMoodsStreamProvider] under a garden-namespaced alias so the screen
-/// can compose state + entries without reaching into the mood feature's
-/// providers directly. WBS 4.3 — Day 2.
+/// glyphs. Mirrors [myMoodsStreamProvider] under a garden-namespaced alias
+/// so the screen can compose state + entries without reaching into the
+/// mood feature's providers directly.
 final gardenEntriesStreamProvider = Provider<AsyncValue<List<MoodEntry>>>(
   (ref) => ref.watch(myMoodsStreamProvider),
 );
@@ -121,10 +119,10 @@ final gardenEntriesStreamProvider = Provider<AsyncValue<List<MoodEntry>>>(
 /// `sharedPreferencesProvider` with a fake from
 /// `SharedPreferences.setMockInitialValues({...})`.
 ///
-/// Per ADR-0008 this is the OFFLINE MIRROR for [InterventionAnchors],
-/// not the source of truth — the cloud doc at
-/// `users/{uid}/interventionState/current` is canonical. Read+write
-/// callers go through [interventionStateRepositoryProvider].
+/// This is the OFFLINE MIRROR for [InterventionAnchors], not the source
+/// of truth — the cloud doc at `users/{uid}/interventionState/current` is
+/// canonical. Read+write callers go through
+/// [interventionStateRepositoryProvider].
 final interventionStateStorageProvider =
     FutureProvider<InterventionStateStorage>((ref) async {
       final prefs = await ref.watch(sharedPreferencesProvider.future);
@@ -141,8 +139,8 @@ final interventionStateFirestoreDatasourceProvider =
           InterventionStateFirestoreDatasource(ref.watch(firestoreProvider)),
     );
 
-/// Firestore-primary [InterventionStateRepository] (per ADR-0008). The
-/// SharedPreferences storage above is wrapped as the offline mirror.
+/// Firestore-primary [InterventionStateRepository]. The SharedPreferences
+/// storage above is wrapped as the offline mirror.
 final interventionStateRepositoryProvider =
     FutureProvider<InterventionStateRepository>((ref) async {
       final mirror = await ref.watch(interventionStateStorageProvider.future);
@@ -165,9 +163,9 @@ final cheerUpEventsFirestoreDatasourceProvider =
       (ref) => CheerUpEventsFirestoreDatasource(ref.watch(firestoreProvider)),
     );
 
-/// [CheerUpEventsRepository] for the cheer-up audit log (HB-003 §5.5b).
-/// Idempotent doc-create at `users/{uid}/cheerUpEvents/{dayUtc}-{reason}`;
-/// the Cloud Function `sendCheerUpPush` triggers on the create.
+/// [CheerUpEventsRepository] for the cheer-up audit log. Idempotent
+/// doc-create at `users/{uid}/cheerUpEvents/{dayUtc}-{reason}`; the Cloud
+/// Function `sendCheerUpPush` triggers on the create.
 final cheerUpEventsRepositoryProvider = Provider<CheerUpEventsRepository>((
   ref,
 ) {

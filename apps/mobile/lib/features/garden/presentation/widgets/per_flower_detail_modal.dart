@@ -8,7 +8,7 @@ import '../../domain/entities/flower_species.dart';
 import 'flower_sprite.dart';
 
 /// Bottom-sheet preview of a single mood entry — opens when the user
-/// taps a flower in the garden canvas (TC-7).
+/// taps a flower in the garden canvas.
 ///
 /// Shows:
 ///   * The species sprite at a generous size (60 dp).

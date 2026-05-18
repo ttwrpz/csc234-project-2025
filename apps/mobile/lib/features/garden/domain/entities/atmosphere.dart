@@ -1,7 +1,7 @@
 /// 4-state daily atmosphere overlay derived from `avg_S_today`. Resets
 /// at local midnight. Decoupled from `PlantTier`: the slow weekly EWMA
 /// answers "how is the week trending?", the fast daily atmosphere
-/// answers "how is today going so far?". See ADR-0010 §5.
+/// answers "how is today going so far?".
 ///
 /// Mapping (sign × magnitude):
 ///   * calmSunny    : avg_S >= 0   AND  |avg_S| < 0.3

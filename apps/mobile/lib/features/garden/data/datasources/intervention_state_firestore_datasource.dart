@@ -2,9 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Thin Firestore wrapper for the `users/{uid}/interventionState/current`
 /// document. Pulled out of [InterventionStateRepositoryImpl] so tests can
-/// fake the cloud surface without instantiating a real
-/// `FirebaseFirestore` (no `fake_cloud_firestore` dependency in the
-/// mobile pubspec — see ADR-0004 / mood test fixtures for the pattern).
+/// fake the cloud surface without instantiating a real `FirebaseFirestore`
+/// (no `fake_cloud_firestore` dependency in the mobile pubspec).
 ///
 /// Returns raw `DateTime?` values rather than `Timestamp`s so the repo
 /// stays free of cloud-types in its own logic. Throws on Firestore
