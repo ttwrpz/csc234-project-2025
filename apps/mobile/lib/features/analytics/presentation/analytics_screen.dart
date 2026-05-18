@@ -14,9 +14,8 @@ import 'controllers/analytics_controller.dart';
 import 'widgets/mood_window_selector.dart';
 import 'widgets/pattern_insight_card.dart';
 
-/// Read-only analytics dashboard — pivot feature #3. Restyled to the
-/// Sprint 2 Prototype: Fraunces-headed "Patterns" title, segmented
-/// 7/30/90 toggle, an [MbCard] holding the line chart, the
+/// Read-only analytics dashboard. Fraunces-headed "Patterns" title,
+/// segmented 7/30/90 toggle, an [MbCard] holding the line chart, the
 /// [PatternInsightCard], and a row of three quick-stat [MbCard]s.
 class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
@@ -54,12 +53,11 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             const SizedBox(height: MoodBloomSpacing.md),
             _ChartCard(state: state, window: _window),
             const SizedBox(height: MoodBloomSpacing.md),
-            // v1.6 ordering: AI-assisted PatternInsightCard sits FIRST,
+            // Ordering: AI-assisted PatternInsightCard sits FIRST,
             // immediately under the chart. The hero card uses a gradient
             // wrapper + sparkle badge so it reads as a personalised
             // observation, distinct from the static "open detailed
-            // insights" link below. The Insights-detail card below is
-            // demoted to a subdued outline-only CTA.
+            // insights" link below.
             if (ref.watch(featureFlagsProvider).aiPatternAnalysisEnabled) ...[
               const PatternInsightCard(),
               const SizedBox(height: MoodBloomSpacing.md),
@@ -346,23 +344,19 @@ class _MostFrequentCard extends StatelessWidget {
   }
 }
 
-/// Tappable entry-point card to the (S5) Insights screen. HB-009
-/// Decision D — primary-tinted CTA card that sits directly under the
-/// Patterns chart. Promoted from a subdued "more info" link to the
-/// most prominent affordance on this tab, because the Insights screen
-/// is where the Pattern-Engine output actually lives.
+/// Tappable entry-point card to the Insights screen — a subdued
+/// outline-only card that sits directly under the Patterns chart and
+/// reads as a "more details" link rather than a competing primary
+/// affordance.
 ///
 /// The route stays gated behind the bipolar / medical disclaimer ack —
-/// the Insights screen handles that gate itself (spec §4 TC-36 / TC-37).
+/// the Insights screen handles that gate itself.
 class _InsightsEntryCard extends StatelessWidget {
   const _InsightsEntryCard();
 
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    // v1.6 demoted style: subdued outline-only card so the AI Insight
-    // hero above keeps the visual weight. Reads as a "more details"
-    // link, not a competing primary affordance.
     return Semantics(
       button: true,
       label:
