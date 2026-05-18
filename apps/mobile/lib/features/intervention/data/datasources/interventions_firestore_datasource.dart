@@ -4,12 +4,12 @@ import '../../../pattern_engine/domain/entities/tier.dart';
 import '../../domain/entities/intervention_record.dart';
 
 /// Thin Firestore wrapper for the `users/{uid}/interventions/{dispatchId}`
-/// audit-log collection (HB-007 §"Files to extend").
+/// audit-log collection.
 ///
 /// Pulled out of the repository impl so tests can fake the cloud surface
 /// without instantiating a real `FirebaseFirestore` (mirrors the
 /// [InterventionStateFirestoreDatasource] and
-/// [CheerUpEventsFirestoreDatasource] patterns from S4/S5 Day-1).
+/// [CheerUpEventsFirestoreDatasource] patterns).
 ///
 /// **Server-time invariant.** The Firestore rule on this collection requires
 /// `dispatchedAt == request.time`, so the create write must use

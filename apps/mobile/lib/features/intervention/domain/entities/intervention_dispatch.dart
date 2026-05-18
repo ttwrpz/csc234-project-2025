@@ -8,8 +8,8 @@ part 'intervention_dispatch.freezed.dart';
 /// this into a banner / FCM push, but the dispatcher itself is pure-Dart.
 ///
 /// `body` is the full user-visible string AFTER the disclaimer footer has
-/// been appended (TC-38). Callers MUST NOT append the footer a second time.
-/// The exact contract is: `body == "${quote.text}\n\n${notificationFooter}"`.
+/// been appended. Callers MUST NOT append the footer a second time. The
+/// exact contract is: `body == "${quote.text}\n\n${notificationFooter}"`.
 ///
 /// `ctas` is intentionally `List<String>` (semantic keys, not widgets) so the
 /// domain layer stays pure. The presentation layer maps each key
@@ -22,7 +22,7 @@ abstract class InterventionDispatch with _$InterventionDispatch {
     required Tier tier,
 
     /// Quote text + `'\n\n'` + `DisclaimerCopy.notificationFooter`.
-    /// Always contains the footer as a suffix — asserted by TC-38.
+    /// Always contains the footer as a suffix.
     required String body,
 
     /// Semantic CTA keys for the renderer. Order matches reading order.

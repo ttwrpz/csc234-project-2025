@@ -14,10 +14,9 @@ import 'quote_library_impl.dart';
 import 'quote_safety_filter_impl.dart';
 import 'repositories/intervention_repository_impl.dart';
 
-/// Riverpod providers for the Day-2 quote infrastructure. Consumed by the
-/// Day-3 dispatcher-wire-up step; co-located with the `_impl` files so
-/// presentation never reaches into `data/` for a concrete type — it asks
-/// for the abstract via these providers.
+/// Riverpod providers for the quote infrastructure. Co-located with the
+/// `_impl` files so presentation never reaches into `data/` for a concrete
+/// type — it asks for the abstract via these providers.
 ///
 /// All four providers return the abstract type (e.g. [QuoteLibrary], not
 /// [QuoteLibraryImpl]) so overrides in tests can swap in fakes without

@@ -3,8 +3,8 @@ import 'package:core/core.dart';
 /// Failure modes for the Tier 1/2 hybrid quote path.
 ///
 /// The dispatcher treats EVERY one of these as "fall back to curated" — the
-/// Safety Filter is fail-closed (ADR-0012 §"Decision" point 3). The reasons
-/// are differentiated only so logs / analytics can attribute the fallback.
+/// Safety Filter is fail-closed. The reasons are differentiated only so
+/// logs / analytics can attribute the fallback.
 sealed class QuoteFailure extends Failure {
   const QuoteFailure({required super.message});
 

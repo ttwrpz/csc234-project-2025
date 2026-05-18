@@ -1,7 +1,6 @@
 import '../../../pattern_engine/domain/entities/tier.dart';
 
-/// Compiler-level fence for the Tier 3 determinism invariant (ADR-0012
-/// §"Decision" point 2).
+/// Compiler-level fence for the Tier 3 determinism invariant.
 ///
 /// `AIQuoteRepository.requestSuggestion` accepts this type, NOT [Tier]. The
 /// dispatcher's `if (tier == Tier.three)` arm returns before any call to
@@ -23,7 +22,7 @@ enum AiAllowedTier {
     Tier.two => AiAllowedTier.two,
     Tier.three => throw StateError(
       'AiAllowedTier.fromTier called with Tier.three — '
-      'ADR-0012 invariant violated. Tier 3 must never reach the AI path.',
+      'invariant violated. Tier 3 must never reach the AI path.',
     ),
   };
 }

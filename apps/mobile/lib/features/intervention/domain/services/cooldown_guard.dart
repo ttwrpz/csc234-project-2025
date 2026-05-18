@@ -5,26 +5,22 @@ import '../entities/cooldown_decision.dart';
 import '../entities/intervention_failure.dart';
 
 /// Stateless cooldown gate. Reads the anchor doc via
-/// [InterventionStateRepository] (ADR-0008) and returns a [CooldownDecision].
+/// [InterventionStateRepository] and returns a [CooldownDecision].
 ///
-/// Two windows, in priority order (TC-31 then TC-32):
-///   * `dailyLimit` — `now - lastTriggeredAt < 24h`. Spec §2.5 "max 1
-///     notification per 24h".
-///   * `cooldown48h` — `now - lastTriggeredAt < 48h` (but `≥ 24h`). Spec
-///     §2.5 "48h between alerts".
+/// Two windows, in priority order:
+///   * `dailyLimit` — `now - lastTriggeredAt < 24h` (max 1 notification
+///     per 24h).
+///   * `cooldown48h` — `now - lastTriggeredAt < 48h` (but `≥ 24h`).
 ///
-/// The guard is global across tiers per HB-007 OQ-B default — a Tier 1
-/// today blocks a Tier 3 tomorrow if inside 48h. The architect should
-/// confirm; flagged in the engineer's handback report.
+/// The guard is global across tiers — a Tier 1 today blocks a Tier 3
+/// tomorrow if inside 48h.
 ///
 /// Reads only — never writes. The dispatcher writes the new anchor via
 /// `InterventionStateRepository.writeLastTriggeredAt` AFTER a successful
 /// dispatch, not before — a write-before-dispatch race would block the
 /// next legitimate dispatch on a network failure.
 ///
-/// Pure-Dart class — no Flutter / Firebase imports. The repository
-/// abstract it depends on lives in the garden feature's `domain/` and is
-/// itself pure-Dart per ADR-0008.
+/// Pure-Dart class — no Flutter / Firebase imports.
 class CooldownGuard {
   CooldownGuard({
     required InterventionStateRepository stateRepo,
@@ -35,10 +31,10 @@ class CooldownGuard {
   final InterventionStateRepository _stateRepo;
   final DateTime Function() _now;
 
-  /// 24h window — TC-31.
+  /// 24h window.
   static const Duration dailyWindow = Duration(hours: 24);
 
-  /// 48h window — TC-32.
+  /// 48h window.
   static const Duration cooldownWindow = Duration(hours: 48);
 
   /// Checks the gate. Returns:

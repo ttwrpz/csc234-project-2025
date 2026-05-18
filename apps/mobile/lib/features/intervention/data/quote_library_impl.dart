@@ -3,30 +3,26 @@ import '../domain/entities/ai_allowed_tier.dart';
 import '../domain/entities/quote.dart';
 import '../domain/repositories/quote_library.dart';
 
-/// Concrete [QuoteLibrary] backed by team-reviewed curated phrase pools
-/// (HB-008 §"Curated pool authoring", ADR-0012 §"Decision" point 5).
+/// Concrete [QuoteLibrary] backed by team-reviewed curated phrase pools.
 ///
 /// The pools are `static const` lists so the phrases ship with the binary —
-/// per HB-008 OQ-B, this is on purpose: a Remote Config push CANNOT mutate
-/// safety-critical content. Remote Config is for kill-switches, not for
-/// quote text.
+/// this is on purpose: a Remote Config push CANNOT mutate safety-critical
+/// content. Remote Config is for kill-switches, not for quote text.
 ///
-/// **Determinism (ADR-0012 §"Decision" point 5):** Tier 3 rotation is
-/// `seed.toUtc().day % tier3Pool.length` — same calendar day → same phrase
-/// across cold launches. Tier 1/2 rotate by ISO week so a same-week
-/// 48h-spaced Tier 1 nudge does not echo itself, while a multi-week run
-/// cycles through the pool.
+/// **Determinism:** Tier 3 rotation is `seed.toUtc().day % tier3Pool.length`
+/// — same calendar day → same phrase across cold launches. Tier 1/2 rotate
+/// by ISO week so a same-week 48h-spaced Tier 1 nudge does not echo itself,
+/// while a multi-week run cycles through the pool.
 ///
-/// **Tier 3 footer rule (HB-008 "Authoring rules"):** every Tier 3 entry
-/// embeds "Hotline 1323" in the body. The dispatcher appends
-/// `DisclaimerCopy.notificationFooter` outside this string; we never
-/// duplicate the disclaimer inside the pool.
+/// **Tier 3 footer rule:** every Tier 3 entry embeds "Hotline 1323" in the
+/// body. The dispatcher appends `DisclaimerCopy.notificationFooter` outside
+/// this string; we never duplicate the disclaimer inside the pool.
 class QuoteLibraryImpl implements QuoteLibrary {
   const QuoteLibraryImpl();
 
   // ──────────────────────────────────────────────────────────────────────
   // Tier 1 — breathing-prompt curated pool (12 entries).
-  // Read aloud with the team before merge; HB-008 sign-off in PR body.
+  // Read aloud with the team before merge.
   // ──────────────────────────────────────────────────────────────────────
   static const List<String> tier1Pool = [
     'It looks like your garden has had some rainy days. Would you like a 2-minute breathing exercise?',
@@ -62,9 +58,9 @@ class QuoteLibraryImpl implements QuoteLibrary {
   ];
 
   // ──────────────────────────────────────────────────────────────────────
-  // Tier 3 — acute-care curated pool (8 entries).
-  // ADR-0012 §"Decision" point 5 — read aloud TWICE with the full team
-  // before merge. Every entry contains "Hotline 1323" in the body.
+  // Tier 3 — acute-care curated pool (8 entries). Read aloud TWICE with
+  // the full team before merge. Every entry contains "Hotline 1323" in
+  // the body.
   // ──────────────────────────────────────────────────────────────────────
   static const List<String> tier3Pool = [
     'We care about you. If it helps to talk, the Thai Mental Health Hotline is free at 1323, 24 hours.',
@@ -259,8 +255,8 @@ class QuoteLibraryImpl implements QuoteLibrary {
 
   @override
   Quote pickTier3({required DateTime seed}) {
-    // ADR-0012 §"Decision" point 5: deterministic on `dateOnly(seed)`.
-    // Same day → same phrase across devices; next day → next phrase.
+    // Deterministic on `dateOnly(seed)`: same day → same phrase across
+    // devices; next day → next phrase.
     final index = seed.toUtc().day % tier3Pool.length;
     return Quote(
       id: 'curated.tier3.$index',

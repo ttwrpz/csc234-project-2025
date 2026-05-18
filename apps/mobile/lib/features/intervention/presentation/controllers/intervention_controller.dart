@@ -45,14 +45,14 @@ final class InterventionPending extends InterventionControllerState {
 
 /// Bridges the Pattern Engine's per-day `triggeredTier` into a routed
 /// user-facing surface. Subscribes to today's [PatternResult] via
-/// [patternRepositoryProvider.watch] (an existing pattern-engine S4 read
-/// API). On each emission whose `triggeredTier` is non-null AND differs
-/// from the last seen tier, the controller:
+/// [patternRepositoryProvider.watch]. On each emission whose
+/// `triggeredTier` is non-null AND differs from the last seen tier, the
+/// controller:
 ///
 ///   1. Reads the per-tier toggle from [NotificationsToggleState]. If
 ///      the user has opted out of THIS tier, the controller skips
 ///      silently — other tiers stay live (FCM toggle expansion
-///      semantics from Day 2; see [NotificationsController]).
+///      semantics; see [NotificationsController]).
 ///   2. Builds a [QuoteContext] from `myMoodsStreamProvider`-derived
 ///      daily averages.
 ///   3. Invokes [DispatchInterventionUseCase] which already encapsulates
@@ -163,11 +163,10 @@ class InterventionController extends Notifier<InterventionControllerState> {
     return switch (tier) {
       Tier.one => toggles.tier1Enabled,
       Tier.two => toggles.tier2Enabled,
-      // Tier 3 still respects the user's explicit opt-out (CLAUDE.md
-      // "compassionate imperatives" + spec §2.5 "every notification
-      // includes opt-out"). The cooldown gate is independent and applies
-      // identically across tiers (HB-007 OQ-B default + spec §2.5 "max 1
-      // notification per day").
+      // Tier 3 still respects the user's explicit opt-out (every
+      // notification includes opt-out). The cooldown gate is independent
+      // and applies identically across tiers (max 1 notification per
+      // day).
       Tier.three => toggles.tier3Enabled,
     };
   }
@@ -279,9 +278,9 @@ class InterventionController extends Notifier<InterventionControllerState> {
     }
   }
 
-  /// Records the user's opt-out and advances the cooldown anchor.
-  /// Mirrors the spec's "48h cooldown applies even after opt-out so the
-  /// system does not re-nag" (HB-007 cooldown rules).
+  /// Records the user's opt-out and advances the cooldown anchor. The
+  /// 48h cooldown applies even after opt-out so the system does not
+  /// re-nag.
   Future<void> optOut() async {
     final current = state;
     if (current is! InterventionPending) return;
@@ -307,9 +306,9 @@ class InterventionController extends Notifier<InterventionControllerState> {
   /// each banner → screen flow on demand AND can re-trigger repeatedly
   /// without waiting 24h between fires. Production callers MUST gate
   /// invocations behind `kDebugMode` — there is no production surface
-  /// that should reach this path. ADR-0012's Tier 3 determinism
-  /// guarantee is preserved: the dispatcher's type-level fence still
-  /// routes Tier 3 to the curated pool only.
+  /// that should reach this path. The Tier 3 determinism guarantee is
+  /// preserved: the dispatcher's type-level fence still routes Tier 3
+  /// to the curated pool only.
   ///
   /// Implementation: we call the dispatcher DIRECTLY rather than going
   /// through `DispatchInterventionUseCase`, which would consult the
@@ -342,8 +341,9 @@ class InterventionController extends Notifier<InterventionControllerState> {
               tier: value.tier,
               dispatchedAt: value.dispatchedAt,
               quoteId: value.quoteId,
-              cooldownUntil:
-                  value.dispatchedAt.add(CooldownGuard.cooldownWindow),
+              cooldownUntil: value.dispatchedAt.add(
+                CooldownGuard.cooldownWindow,
+              ),
             ),
           ),
         );
@@ -360,8 +360,8 @@ class InterventionController extends Notifier<InterventionControllerState> {
 /// Public Riverpod provider for the controller. The view (the banner host
 /// + the tier screens) reads this provider; tests override its
 /// dependencies. The cooldown-anchor `interventionStateRepositoryProvider`
-/// is imported from `garden/data/providers.dart` (ADR-0008's canonical home)
-/// and read as `AsyncValue<InterventionStateRepository>` inside the
+/// is imported from `garden/data/providers.dart` (its canonical home) and
+/// read as `AsyncValue<InterventionStateRepository>` inside the
 /// controller; tests override that provider directly.
 final interventionControllerProvider =
     NotifierProvider<InterventionController, InterventionControllerState>(

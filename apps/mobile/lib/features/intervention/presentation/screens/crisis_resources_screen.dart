@@ -12,7 +12,7 @@ import '../widgets/intervention_opt_out_button.dart';
 
 /// Tier 3 surface — crisis resources, anchored on Hotline 1323.
 ///
-/// Hard rules (HB-007 + TC-33):
+/// Hard rules:
 ///   * Body is rendered verbatim from `dispatch.body` (already includes
 ///     "Hotline 1323" + the disclaimer footer). Falls back to the
 ///     [DispatchSafeDefaults.tier3] constant which is byte-for-byte
@@ -165,7 +165,8 @@ class _CrisisResourcesScreenState extends ConsumerState<CrisisResourcesScreen> {
                     style: MbFonts.fraunces(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: theme.extension<MbColors>()?.text ??
+                      color:
+                          theme.extension<MbColors>()?.text ??
                           theme.colorScheme.onSurface,
                     ),
                   ),

@@ -8,7 +8,7 @@ import '../controllers/intervention_controller.dart';
 /// Tapping advances the cooldown anchor + marks the audit row opted-out
 /// via [InterventionController.optOut] — so a swipe-out or this tap both
 /// route through the controller, which is the only path that may write
-/// `lastTriggeredAt` (HB-007 §"Cooldown guard rules").
+/// `lastTriggeredAt`.
 ///
 /// [onTapped] runs AFTER the controller's opt-out future resolves so the
 /// host screen can `context.pop()` (or otherwise dismiss) only once the
