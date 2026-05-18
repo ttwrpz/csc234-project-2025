@@ -250,7 +250,16 @@ void main() {
         ];
 
         for (final entry in cases) {
-          await tester.tap(find.text(entry.$1));
+          // The label text appears in TWO places once a preference
+          // becomes active: the radio tile itself AND the summary line
+          // under the "Theme" header (e.g. "Always light" / "Always
+          // dark"). Tap the radio tile specifically by scoping the
+          // text finder under RadioListTile.
+          final radioTile = find.ancestor(
+            of: find.text(entry.$1),
+            matching: find.byType(RadioListTile<ThemeModePreference>),
+          );
+          await tester.tap(radioTile);
           await tester.pumpAndSettle();
           expect(container.read(themeModeControllerProvider), entry.$2);
           expect(storage.read(), entry.$2);

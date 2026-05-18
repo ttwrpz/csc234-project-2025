@@ -125,14 +125,10 @@ void main() {
       },
     );
 
-    testWidgets('"Log mood" CTA (FAB) is reachable from the home page', (
-      tester,
-    ) async {
-      final repo = FakeMoodRepository()..streamedEntries = [const []];
-      await _pumpGarden(tester, repo: repo);
-
-      expect(find.text('Log mood'), findsOneWidget);
-    });
+    // GardenScreen used to mount a "Log mood" FAB. That CTA moved to
+    // the shell-level bottom nav (`MbBottomNav` center "Add" slot) so
+    // the home page no longer owns it — assertions on the shell live
+    // in the router-level integration tests.
 
     testWidgets('wide layout (≥720dp) mounts the bed in a two-column row with '
         'recent moods on the right', (tester) async {

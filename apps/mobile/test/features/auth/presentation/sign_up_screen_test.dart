@@ -38,10 +38,10 @@ void main() {
         final repo = FakeAuthRepository();
         await _pumpSignUp(tester, repo: repo);
 
-        // Field order: email, password, confirm-password.
-        await tester.enterText(find.byType(TextField).at(0), 'u@example.com');
-        await tester.enterText(find.byType(TextField).at(1), 'longenoughpw');
-        await tester.enterText(find.byType(TextField).at(2), 'something-else');
+        // Field order: name, email, password, confirm-password.
+        await tester.enterText(find.byType(TextField).at(1), 'u@example.com');
+        await tester.enterText(find.byType(TextField).at(2), 'longenoughpw');
+        await tester.enterText(find.byType(TextField).at(3), 'something-else');
 
         await tester.tap(
           find.widgetWithText(MbPrimaryButton, 'Create account'),
@@ -66,9 +66,10 @@ void main() {
         );
         await _pumpSignUp(tester, repo: repo);
 
-        await tester.enterText(find.byType(TextField).at(0), 'u@example.com');
-        await tester.enterText(find.byType(TextField).at(1), 'longenoughpw');
+        // Field order: name, email, password, confirm-password.
+        await tester.enterText(find.byType(TextField).at(1), 'u@example.com');
         await tester.enterText(find.byType(TextField).at(2), 'longenoughpw');
+        await tester.enterText(find.byType(TextField).at(3), 'longenoughpw');
 
         await tester.tap(
           find.widgetWithText(MbPrimaryButton, 'Create account'),

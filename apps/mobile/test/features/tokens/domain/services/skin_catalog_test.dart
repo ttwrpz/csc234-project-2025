@@ -36,10 +36,11 @@ void main() {
     });
 
     test('alternate costs are within the published tiers', () {
-      // Spec §5 — token economy is uniform; no bespoke pricing. The
-      // catalog file uses three tiers (50 / 100 / 150). Any new tier
-      // would land via a deliberate change to this test.
-      const allowedCosts = {0, 50, 100, 150};
+      // Token economy uses five tiers: bronze (50), silver (100), gold
+      // (150), platinum (200), mythic (250). Free default skins are
+      // cost 0. Any new tier lands via a deliberate change to this
+      // allowlist.
+      const allowedCosts = {0, 50, 100, 150, 200, 250};
       for (final skin in SkinCatalog.all()) {
         expect(
           allowedCosts.contains(skin.cost),

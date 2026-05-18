@@ -23,7 +23,7 @@ class MbIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mb = Theme.of(context).extension<MbColors>()!;
+    final mb = Theme.of(context).extension<MbColors>() ?? MbColors.light();
     final dim = size == MbIconButtonSize.md ? 36.0 : 28.0;
     final button = Material(
       color: mb.card,

@@ -1,6 +1,7 @@
 import 'package:core/core.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsFlag;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -241,9 +242,14 @@ void main() {
       // semantics carries `isSelected == true` for the Sad chip — and
       // false for every other chip. ChoiceChip composes the selected
       // flag into a SemanticsNode whose label is the chip text.
+      // `flagsCollection.isSelected` returns a Tristate (post-3.32
+      // semantics API), not a bool, so the `hasFlag` boolean variant
+      // is what we want here. `// ignore` suppresses the deprecation
+      // info — the migration to the Tristate API is a separate effort.
       final sadNode = tester.getSemantics(find.text('Sad'));
       expect(
-        sadNode.flagsCollection.isSelected,
+        // ignore: deprecated_member_use
+        sadNode.hasFlag(SemanticsFlag.isSelected),
         isTrue,
         reason:
             'Default-selected "Sad" chip must announce selected: true. '
@@ -252,7 +258,8 @@ void main() {
 
       final joyNode = tester.getSemantics(find.text('Joyful'));
       expect(
-        joyNode.flagsCollection.isSelected,
+        // ignore: deprecated_member_use
+        joyNode.hasFlag(SemanticsFlag.isSelected),
         isFalse,
         reason: 'Non-default chip must NOT carry the selected flag.',
       );
