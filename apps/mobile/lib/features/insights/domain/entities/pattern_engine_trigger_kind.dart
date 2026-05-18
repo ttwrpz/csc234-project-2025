@@ -1,4 +1,4 @@
-/// Identifies which of the 5 Pattern Engine algorithms (spec §2.4) most
+/// Identifies which of the 5 Pattern Engine algorithms most
 /// strongly fired on a given day. Surfaced to the Insights marker-tap
 /// popover so the popover can render a plain-English reason without
 /// re-running the engine.
@@ -31,7 +31,7 @@ enum PatternEngineTriggerKind {
   /// User-facing copy: "Today's mood is unusually lower than your own typical."
   zScore,
 
-  /// CUSUM change-point statistic breached the spec threshold → Tier 3.
+  /// CUSUM change-point statistic breached its threshold → Tier 3.
   /// User-facing copy: "A sustained shift below your usual ground line."
   cusum,
 }

@@ -8,7 +8,7 @@ import '../../domain/entities/daily_insight.dart';
 import '../../domain/entities/insight_window.dart';
 
 /// Window selection (segmented chips). Defaults to the 14-day fortnight
-/// — the Mann-Kendall trend test's natural span (spec §2.4 algo 1).
+/// — the Mann-Kendall trend test's natural span.
 final insightsWindowPresetProvider = StateProvider<InsightWindowPreset>(
   (_) => InsightWindowPreset.fortnight,
 );
@@ -25,9 +25,9 @@ final insightsWindowProvider = Provider<InsightWindow>((ref) {
 ///
 /// `disclaimerRequired` — the bipolar/medical disclaimer ack flag is
 /// still `false` for the signed-in user. Presentation MUST hide the
-/// chart and show the ack dialog (spec §4, TC-36). The flag persists in
+/// chart and show the ack dialog. The flag persists in
 /// `users/{uid}.insightsDisclaimerAcked` so this state never reappears
-/// after a sign-out / reinstall (TC-37).
+/// after a sign-out / reinstall.
 ///
 /// `ready` — ack landed; the chart can render. `loading` is the brief
 /// "stream hasn't emitted yet" gap (one frame in practice).
@@ -55,7 +55,7 @@ final insightsGateProvider = Provider<InsightsGateState>((ref) {
 final insightsStreamProvider = StreamProvider<List<DailyInsight>?>((ref) {
   final gate = ref.watch(insightsGateProvider);
   if (gate != InsightsGateState.ready) {
-    // Defence-in-depth (TC-36 invariant): even if the controller has
+    // Defence-in-depth: even if the controller has
     // data, the chart must not render until the ack lands.
     return Stream.value(null);
   }

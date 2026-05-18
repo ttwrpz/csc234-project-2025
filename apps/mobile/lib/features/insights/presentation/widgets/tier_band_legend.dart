@@ -1,7 +1,7 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
-/// HB-009 Decision C-2 — persistent tier-band legend card.
+/// Persistent tier-band legend card.
 ///
 /// Five swatch-plus-text rows naming the five plant-tier bands the chart
 /// paints behind the score line. Colour tokens are taken from the same

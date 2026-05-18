@@ -1,7 +1,7 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
-/// HB-009 Decision C-1 — "What am I looking at?" glossary card.
+/// "What am I looking at?" glossary card.
 ///
 /// Renders three plain-English lines that translate the chart's
 /// technical features (solid line / dashed rolling rhythm / coloured

@@ -14,14 +14,14 @@ import '../widgets/pattern_marker_band.dart';
 import '../widgets/recent_triggers_card.dart';
 import '../widgets/tier_band_legend.dart';
 
-/// (S5) Insights screen — visualises Pattern Engine output as a
+/// Insights screen — visualises Pattern Engine output as a
 /// mood-score time-series with a Garden-Health overlay and tier-trigger
 /// markers. Gated behind a mandatory bipolar / medical disclaimer ack
-/// on first view (spec §4, TC-36) — the chart is NEVER rendered until
+/// on first view — the chart is NEVER rendered until
 /// `users/{uid}.insightsDisclaimerAcked == true`.
 ///
 /// Persistence: the ack lives on the user doc, so a sign-out / reinstall
-/// still sees the same `true` and skips the dialog (TC-37). The
+/// still sees the same `true` and skips the dialog. The
 /// non-dismissible `DisclaimerAckDialog` is the only path to flip the
 /// flag from this screen.
 ///
@@ -39,7 +39,9 @@ class InsightsScreen extends ConsumerWidget {
       // Body-level back button matches the Entry Detail pattern. The
       // gate widget wraps the body so the back affordance stays
       // visible even when the disclaimer ack modal is presenting.
-      body: const InsightsDisclaimerGate(child: SafeArea(child: _InsightsBody())),
+      body: const InsightsDisclaimerGate(
+        child: SafeArea(child: _InsightsBody()),
+      ),
     );
   }
 }
@@ -286,11 +288,9 @@ class _ChartCard extends StatelessWidget {
   }
 }
 
-/// HB-009 Decision C-4 — inline "How to read this" footnote row,
-/// directly under the marker band. Replaces the legacy `_LegendRow`
-/// that used engineering jargon ("Tier 1 day"); the new copy maps
-/// the tier numerals to the public-facing words ("gentle / invitation
-/// / care") that match the dispatcher's surface copy.
+/// Inline "How to read this" footnote row, directly under the marker
+/// band. Maps the tier numerals to the public-facing words ("gentle /
+/// invitation / care") that match the dispatcher's surface copy.
 class _ChartKeyRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
