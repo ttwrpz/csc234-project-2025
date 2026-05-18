@@ -7,8 +7,7 @@ import '../../domain/repositories/token_repository.dart';
 import '../../domain/token_failure.dart';
 import '../datasources/token_balance_firestore_datasource.dart';
 
-/// Firestore-backed implementation of [TokenRepository] — pivot feature
-/// #10 (CLAUDE.md), HB-005 §"Track 6.2 — Token economy".
+/// Firestore-backed implementation of [TokenRepository].
 ///
 /// Failure mapping mirrors `PatternRepositoryImpl`:
 ///   * `permission-denied` → [TokenFailure.permissionDenied] — the rule

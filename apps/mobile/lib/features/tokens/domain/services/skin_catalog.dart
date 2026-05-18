@@ -6,12 +6,12 @@ import '../entities/flower_skin.dart';
 ///
 /// Each species has exactly one default skin (`isDefault: true`,
 /// `cost: 0`) plus a small set of alternates priced in tokens. Defaults
-/// are NEVER stored in `unlockedSkins` (TC-10: always available without
+/// are NEVER stored in `unlockedSkins` (always available without
 /// purchase); alternates are gated by the unlock flow.
 ///
 /// Pure Dart on purpose. The catalog is hand-authored rather than
 /// loaded from Firestore because:
-///   1. Cosmetic content is small and immutable in v1.0.
+///   1. Cosmetic content is small and immutable.
 ///   2. A hot-reloadable client-side catalog removes a network round-
 ///      trip from the modal's open path.
 ///   3. Pricing changes ship via app update (same blast radius as a
@@ -22,7 +22,7 @@ import '../entities/flower_skin.dart';
 /// meaning, just makes alternate skins look distinct on the modal grid
 /// without requiring a `Color` import in the domain layer.
 ///
-/// Spec §5 invariants enforced by construction:
+/// Invariants enforced by construction:
 ///   * Costs are uniform per tier (50 / 100 / 150 tokens) — never
 ///     mood-contingent. The pricing surface has no parameter for mood
 ///     or intensity.
@@ -41,9 +41,9 @@ class SkinCatalog {
   /// Top-tier alternate skin cost.
   static const int _tierGold = 150;
 
-  /// v1.6 — premium tier for geometry-changing skins (heart, star
-  /// petals). Higher cost reflects the larger visual difference
-  /// vs a plain palette swap.
+  /// Premium tier for geometry-changing skins (heart, star petals).
+  /// Higher cost reflects the larger visual difference vs a plain
+  /// palette swap.
   static const int _tierPlatinum = 200;
   static const int _tierMythic = 250;
 

@@ -15,7 +15,7 @@ import 'locked_skin_chip.dart';
 import 'spend_confirmation_dialog.dart';
 import 'token_balance_chip.dart';
 
-/// Bottom-sheet modal for flower-skin customization — TC-6..10.
+/// Bottom-sheet modal for flower-skin customization.
 ///
 /// Layout (top to bottom):
 ///   1. Header — "Customize flowers" title + a [TokenBalanceChip]
@@ -45,8 +45,9 @@ class SkinModalSheet extends ConsumerWidget {
   /// width. Exposed so widget tests can assert the chosen breakpoint
   /// without false-positives from Dialog's internal sizing layers.
   @visibleForTesting
-  static const Key dialogConstraintsKey =
-      ValueKey('skinModalSheet.dialogConstraints');
+  static const Key dialogConstraintsKey = ValueKey(
+    'skinModalSheet.dialogConstraints',
+  );
 
   /// Breakpoints mirror `_AppShell._tabletMin` / `_desktopMin` in
   /// `apps/mobile/lib/app/router.dart`. Keep these aligned with the
@@ -132,9 +133,7 @@ class SkinModalSheet extends ConsumerWidget {
       // Lift the sheet above the keyboard if it ever opens (e.g. a
       // future "rename skin" path). Today the modal has no inputs but
       // the bottom-sheet idiom still benefits from the inset bottom.
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.viewInsetsOf(context).bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: isPhoneWidth
           ? DraggableScrollableSheet(
               initialChildSize: 0.85,
@@ -344,7 +343,8 @@ class _SpeciesSection extends ConsumerWidget {
                 final skin = skins[index];
                 return _SkinCard(
                   skin: skin,
-                  isOwned: skin.isDefault ||
+                  isOwned:
+                      skin.isDefault ||
                       state.isUnlocked(skin.species, skin.skinId),
                   isSelected: skin.skinId == effectiveSelectedId,
                   userBalance: balance,
@@ -399,8 +399,7 @@ class _SkinCardState extends ConsumerState<_SkinCard> {
     final theme = Theme.of(context);
     final mb = theme.extension<MbColors>()!;
     final primary = theme.colorScheme.primary;
-    final affordable =
-        widget.isOwned || widget.userBalance >= widget.skin.cost;
+    final affordable = widget.isOwned || widget.userBalance >= widget.skin.cost;
     final borderColor = widget.isSelected
         ? primary
         : mb.textDim.withValues(alpha: 0.20);
@@ -429,8 +428,9 @@ class _SkinCardState extends ConsumerState<_SkinCard> {
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  borderRadius:
-                      BorderRadius.circular(MoodBloomSpacing.radiusLg),
+                  borderRadius: BorderRadius.circular(
+                    MoodBloomSpacing.radiusLg,
+                  ),
                   border: Border.all(
                     color: borderColor,
                     width: widget.isSelected ? 1.6 : 1,
@@ -544,9 +544,7 @@ class _SkinCardState extends ConsumerState<_SkinCard> {
           SnackBar(content: Text('Selected ${widget.skin.displayName}.')),
         );
       },
-      err: (f) => messenger.showSnackBar(
-        SnackBar(content: Text(f.message)),
-      ),
+      err: (f) => messenger.showSnackBar(SnackBar(content: Text(f.message))),
     );
   }
 
@@ -588,8 +586,7 @@ class _SkinCardState extends ConsumerState<_SkinCard> {
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
     final useCase = ref.read(unlockFlowerSkinUseCaseProvider);
-    final state =
-        ref.read(skinStateStreamProvider).value ?? SkinState.empty();
+    final state = ref.read(skinStateStreamProvider).value ?? SkinState.empty();
     final result = await useCase(
       userId: user.uid,
       skin: widget.skin,
@@ -600,16 +597,13 @@ class _SkinCardState extends ConsumerState<_SkinCard> {
     result.fold(
       ok: (_) {
         messenger.showSnackBar(
-          SnackBar(
-            content: Text('Unlocked ${widget.skin.displayName}!'),
-          ),
+          SnackBar(content: Text('Unlocked ${widget.skin.displayName}!')),
         );
       },
       err: (failure) {
         final message = switch (failure) {
           // Pull a clearer phrasing for the most common path.
-          SkinFailure() when failure.message
-                  .contains('Not enough tokens') =>
+          SkinFailure() when failure.message.contains('Not enough tokens') =>
             failure.message,
           _ => "Couldn't unlock — please try again.",
         };

@@ -52,7 +52,7 @@ final tokenBalanceStreamProvider = StreamProvider<TokenBalance>((ref) {
   return ref.watch(tokenRepositoryProvider).watchBalance(userId: user.uid);
 });
 
-// ───── Skin economy (S5 — HB-008 Day 1) ─────
+// ───── Skin economy ─────
 
 /// Firestore datasource for the two skin-economy map fields
 /// (`unlockedSkins`, `selectedSkins`) on the `users/{uid}` profile doc.

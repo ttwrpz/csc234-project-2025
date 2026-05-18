@@ -4,13 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 part 'token_visibility_controller.g.dart';
 
 /// SharedPreferences-backed controller for the "Show token balance"
-/// Settings toggle (HB-005 Track 6.2). Default `true`.
+/// Settings toggle. Default `true`.
 ///
 /// Anti-pattern guardrail: visibility is OPTIONAL — the user can hide
 /// the chip without forfeiting tokens. Tokens still accumulate in the
-/// background; only the chip render is suppressed. CLAUDE.md "no
-/// mood-contingent rewards" rule and ADR-0010 §7's optional-cosmetic
-/// stance apply here.
+/// background; only the chip render is suppressed.
 ///
 /// `build()` returns the synchronous default `true` so the first frame
 /// renders without a flicker. The async hydration from prefs runs in

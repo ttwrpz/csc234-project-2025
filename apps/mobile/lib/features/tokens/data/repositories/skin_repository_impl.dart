@@ -8,7 +8,7 @@ import '../../domain/repositories/skin_repository.dart';
 import '../../domain/skin_failure.dart';
 import '../datasources/skin_firestore_datasource.dart';
 
-/// Firestore-backed implementation of [SkinRepository] — HB-008 Day 1.
+/// Firestore-backed implementation of [SkinRepository].
 ///
 /// Failure mapping mirrors [TokenRepositoryImpl]:
 ///   * In-transaction guard failure (insufficient tokens / already
