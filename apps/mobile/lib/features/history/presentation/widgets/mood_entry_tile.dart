@@ -6,13 +6,10 @@ import '../../../garden/presentation/widgets/flower_sprite.dart';
 import '../../../mood/domain/entities/mood_entry.dart';
 import '../../../mood/presentation/widgets/mood_kind_adapter.dart';
 
-/// Single row in the History list. v1.0 polish (2026-05-10) replaced
-/// the leading mood emoji with a per-species `FlowerSprite` so the
-/// list visually matches the species vocabulary used everywhere else
-/// (the home garden, the harvest archive, the dominant-emotion chips).
-/// Layout: 40×40 mood-tinted square with the FlowerSprite, mood label +
-/// intensity dots + optional lock badge, 2-line clamped note, and a
-/// `relative · time` caption. Tap routes to `/history/<id>`.
+/// Single row in the History list. Layout: 40×40 mood-tinted square
+/// with a per-species `FlowerSprite`, mood label + intensity dots +
+/// optional lock badge, 2-line clamped note, and a `relative · time`
+/// caption. Tap routes to `/history/<id>`.
 class MoodEntryTile extends StatelessWidget {
   const MoodEntryTile({super.key, required this.entry, required this.onTap});
 
@@ -36,12 +33,8 @@ class MoodEntryTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 40×40 mood-tinted square with the per-species FlowerSprite
-          // as the primary glyph. Earlier the tile leaned on the
-          // mood emoji as the primary cue with a small flower badge
-          // overlaid; user feedback (v1.0 polish, 2026-05-10) was
-          // that the emoji felt out of vocabulary now that the rest
-          // of the app paints species. Promoting the FlowerSprite
-          // to the main glyph keeps the list visually consistent.
+          // as the primary glyph — keeps the list visually consistent
+          // with the species vocabulary the rest of the app uses.
           Container(
             width: 40,
             height: 40,

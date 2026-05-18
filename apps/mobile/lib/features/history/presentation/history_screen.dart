@@ -12,12 +12,8 @@ import 'widgets/mood_entry_tile.dart';
 
 /// Three views the user can flip between with a pill-segmented toggle:
 /// the entry list (default), the calendar, and the archived weekly
-/// harvests. The harvests view was wired into History on 2026-05-10
-/// (v1.0 polish — user feedback "where does the garden history
-/// render? It should be render on history page somehow"). Per
-/// HB-005 Track 6.1 the History tab is the canonical surface for the
-/// archive, but the WeeklyHarvestsTab widget shipped without a
-/// host — this fixes the orphan.
+/// harvests. The History tab is the canonical surface for the harvests
+/// archive.
 enum HistoryView { list, calendar, harvests }
 
 /// Four filters available on the list view. Order matches the prototype's
@@ -54,10 +50,9 @@ extension on HistoryFilter {
   }
 }
 
-/// History screen — pivot feature surface for the list ↔ calendar swap.
-/// Restyled to the Sprint 2 Prototype with [MbSegmentedToggle] for the
-/// view swap, a horizontal-scroll [MbFilterChip] row, and [MoodEntryTile]
-/// rows in [MbCard]s.
+/// History screen — surface for the list ↔ calendar ↔ harvests swap.
+/// Uses [MbSegmentedToggle] for the view swap, a horizontal-scroll
+/// [MbFilterChip] row, and [MoodEntryTile] rows in [MbCard]s.
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
@@ -138,9 +133,6 @@ class _Header extends StatelessWidget {
 
   /// Below this width the title + 280dp segmented toggle no longer
   /// fit comfortably side-by-side, so we stack them vertically.
-  /// v1.0 polish (2026-05-10): user feedback that the "History" title
-  /// was squished on phone-class viewports because the 3-segment
-  /// toggle ate most of the row.
   static const double _stackBelow = 520;
 
   @override

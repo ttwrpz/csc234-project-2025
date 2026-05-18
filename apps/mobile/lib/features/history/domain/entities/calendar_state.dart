@@ -4,8 +4,8 @@ import '../../../mood/domain/entities/mood_type.dart';
 
 part 'calendar_state.freezed.dart';
 
-/// Aggregated, presentation-friendly snapshot of one calendar month for the
-/// History calendar view (WBS 5.1). Computed in pure Dart by
+/// Aggregated, presentation-friendly snapshot of one calendar month for
+/// the History calendar view. Computed in pure Dart by
 /// `ComputeCalendarStateUseCase` from the user's mood entries.
 ///
 /// `month` is normalised to local-time midnight on the first of the month.

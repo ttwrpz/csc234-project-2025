@@ -102,8 +102,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
               // panel's own Column uses MainAxisSize.min, which would
               // otherwise push past the parent's allowed height —
               // surfacing as a `RenderFlex overflowed by …` warning on
-              // desktop where the side panel is enabled. Bug fix v1.0
-              // polish (2026-05-10).
+              // desktop where the side panel is enabled.
               child: _selectedDay == null
                   ? const SizedBox.shrink()
                   : SingleChildScrollView(
