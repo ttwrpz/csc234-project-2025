@@ -1,6 +1,6 @@
 // Gemini client wrapper.
 //
-// - Owns the canonical SYSTEM_PROMPT (do not edit without an ADR amendment).
+// - Owns the canonical SYSTEM_PROMPT.
 // - Reads GEMINI_API_KEY *lazily* via defineSecret so the secret binding is
 //   honoured at runtime, not at module load (matters for Cloud Functions cold
 //   starts and for tests that mock `defineSecret`).
@@ -8,12 +8,10 @@
 //   in `analyzeMoodText.ts` can enforce a 5s timeout that maps to
 //   `gemini_unavailable`.
 //
-// Sprint 5 — migrated from `@google/generative-ai` (deprecated 2025-09)
-// to the unified `@google/genai` SDK. The wire-level call shape changed
-// (`ai.models.generateContent({ model, contents, config })` instead of
-// `model.generateContent(req, opts)`), but the system prompt, response
-// schema, and downstream `Result<AiSuggestion, AiAnalysisFailure>`
-// mapping are byte-identical from the caller's perspective.
+// Uses the unified `@google/genai` SDK (call shape:
+// `ai.models.generateContent({ model, contents, config })`). The system
+// prompt, response schema, and downstream
+// `Result<AiSuggestion, AiAnalysisFailure>` mapping are stable.
 
 import { GoogleGenAI, Type, type Schema } from '@google/genai';
 import { defineSecret } from 'firebase-functions/params';
@@ -37,8 +35,8 @@ export const GEMINI_API_KEY: ReturnType<typeof defineSecret> = defineSecret(
 );
 
 /**
- * Canonical system prompt. Copied verbatim from ADR-0003 §"Gemini system prompt".
- * Any edit here MUST be paired with an ADR amendment + security-reviewer sign-off.
+ * Canonical system prompt. Any edit here MUST be paired with
+ * security-reviewer sign-off.
  */
 export const SYSTEM_PROMPT = `You are MoodBloom's mood classifier. You receive one short user-authored
 journal entry (Thai or English) and return a single JSON object describing
@@ -297,7 +295,7 @@ const PATTERNS_RESPONSE_SCHEMA: Schema = {
  * @throws under the same conditions as [analyze]: network, 5xx, abort,
  * JSON.parse failure. The caller in `analyzePatterns.ts` swallows all
  * of these as `geminiSkipped` paths — Gemini is supplementary, not
- * fatal (per ADR-0007 §"Decision: statistical-primary, Gemini-supplementary").
+ * fatal.
  */
 export async function analyzeForPatterns(
   history: HistoryEntryWire[],

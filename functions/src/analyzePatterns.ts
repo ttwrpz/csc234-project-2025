@@ -1,8 +1,8 @@
 // Cloud Function for pattern analysis on the user's mood history.
-// Statistical-primary, Gemini-supplementary per ADR-0007. Mirrors the
-// validation order of `analyzeMoodText.ts`: auth → Zod (.strict for the PII
-// fence) → rate-limit → deterministic statistical compute (always) →
-// optional Gemini themes → respond. Gemini failure is non-fatal.
+// Statistical-primary, Gemini-supplementary. Mirrors the validation
+// order of `analyzeMoodText.ts`: auth → Zod (.strict for the PII fence)
+// → rate-limit → deterministic statistical compute (always) → optional
+// Gemini themes → respond. Gemini failure is non-fatal.
 
 import { logger } from 'firebase-functions';
 import {
@@ -29,7 +29,7 @@ import {
 const PATTERNS_RATE_LIMIT_WINDOW_MS = 30_000;
 const PATTERNS_RATE_LIMIT_MAX = 1;
 
-/** Wall-clock cap for the Gemini supplementary call (per ADR-0007). */
+/** Wall-clock cap for the Gemini supplementary call. */
 const GEMINI_TIMEOUT_MS = 5_000;
 
 /**
@@ -40,10 +40,9 @@ const GEMINI_TIMEOUT_MS = 5_000;
  */
 const PATTERNS_GEMINI_SAMPLE_FLOOR = 30;
 
-/** Mood codes that are NOT positive. Mirrors `MoodType.category` on Dart.
- *  Per ADR-0010, `okay` was reclassified to positive (sign +1), so it is
- *  excluded here to keep the server's negativity bucket aligned with the
- *  client. */
+/** Mood codes that are NOT positive. Mirrors `MoodType.category` on
+ *  Dart. `okay` is classified as positive (sign +1), so it is excluded
+ *  here to keep the server's negativity bucket aligned with the client. */
 const NEGATIVE_MOOD_CODES = new Set<HistoryEntryWire['moodCode']>([
   'sad',
   'angry',
@@ -120,7 +119,7 @@ function preparseHistory(history: HistoryEntryWire[]): NumericEntry[] {
 /**
  * Weekday z-score over the supplied history. Considers only negative-category
  * entries; emits at most one insight (the worst weekday with `|z|>1.0` and
- * `n≥10`). See ADR-0007 §"Statistical insight definitions".
+ * `n≥10`).
  */
 export function weekdayInsight(
   history: NumericEntry[],
@@ -435,9 +434,8 @@ export async function handleAnalyzePatterns(
     if (tr) insights.push(tr);
   }
 
-  // 5. Gemini supplementary call (ADR-0007 §"Decision: statistical-primary,
-  // Gemini-supplementary"). Always non-fatal — any failure swallows
-  // gracefully and the statistical insights ship on their own.
+  // 5. Gemini supplementary call. Always non-fatal — any failure
+  // swallows gracefully and the statistical insights ship on their own.
   const statisticalInsightCount = insights.length;
   let geminiSkipped = false;
   let geminiSkipReason:
@@ -535,13 +533,12 @@ export async function handleAnalyzePatterns(
 /**
  * The exported v2 callable.
  *
- * App Check enforcement is **temporarily disabled** for the Sprint 2 demo.
- * The Flutter web client does not yet initialise `firebase_app_check`, so
- * with `enforceAppCheck: true` browser preflight requests were failing and
+ * App Check enforcement is **temporarily disabled**. The Flutter web
+ * client does not yet initialise `firebase_app_check`, so with
+ * `enforceAppCheck: true` browser preflight requests were failing and
  * surfacing as opaque CORS errors. Re-enable once the client wires up
- * `FirebaseAppCheck.instance.activate(...)` and a reCAPTCHA v3 site key is
- * registered in Firebase Console → App Check. Tracked separately from the
- * visual overhaul.
+ * `FirebaseAppCheck.instance.activate(...)` and a reCAPTCHA v3 site key
+ * is registered in Firebase Console → App Check.
  */
 export const analyzePatterns = onCall(
   {

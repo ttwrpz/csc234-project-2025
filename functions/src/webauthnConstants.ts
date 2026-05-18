@@ -1,14 +1,13 @@
-// WebAuthn server-side constants (ADR-0014 Decision F).
+// WebAuthn server-side constants.
 //
-// **Production origin is a v1.5-dark release blocker.** Until a
-// production hosting target is provisioned (and the build-time
-// `kEnableWebauthn` flag flips to `true`), `WEBAUTHN_PRODUCTION_ORIGIN`
-// defaults to the empty string. The four `webauthn*` CFs read these
-// constants and, when the production origin is empty AND the caller's
-// origin is not in the staging allow-list, reject every call with
+// **Production origin is a release blocker.** Until a production
+// hosting target is provisioned (and the build-time `kEnableWebauthn`
+// flag flips to `true`), `WEBAUTHN_PRODUCTION_ORIGIN` defaults to the
+// empty string. The four `webauthn*` CFs read these constants and, when
+// the production origin is empty AND the caller's origin is not in the
+// staging allow-list, reject every call with
 // `{ ok: false, code: 'webauthn_not_provisioned' }` — the server-side
-// safety net for the v1.5-dark client flag (ADR-0014 §"Cuts to make
-// first if a day slips" #3).
+// safety net for the client kill-switch.
 //
 // All three params are env-var driven:
 //   firebase functions:config:set webauthn.production_origin="https://moodbloom.app"
@@ -28,7 +27,7 @@ import { defineString } from 'firebase-functions/params';
  *
  * Empty default — when this is empty AND the caller's origin is not in
  * the staging allow-list, registration / assertion CFs reject with
- * `webauthn_not_provisioned`. This is the v1.5-dark posture.
+ * `webauthn_not_provisioned`.
  */
 export const WEBAUTHN_PRODUCTION_ORIGIN = defineString(
   'WEBAUTHN_PRODUCTION_ORIGIN',
@@ -82,7 +81,7 @@ export function resolveExpectedRpId(): string | null {
 
 /**
  * True when the production origin is set AND a non-empty RPID exists.
- * v1.5-dark default: false. The CFs short-circuit with
+ * Default: false. The CFs short-circuit with
  * `webauthn_not_provisioned` when this is false, regardless of how
  * the caller's origin compares against the staging allow-list.
  *

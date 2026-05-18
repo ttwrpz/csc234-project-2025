@@ -1,7 +1,6 @@
 // Wire types and Zod runtime schemas for the analyzeMoodText callable.
 //
-// The wire contract is canonical in ADR-0003 (`docs/adr/0003-gemini-cloud-function-contract.md`).
-// Keep this file in lockstep with the Dart side `ai_suggestion_dto.dart` (lands later this branch).
+// Keep this file in lockstep with the Dart side `ai_suggestion_dto.dart`.
 
 import { z } from 'zod';
 
@@ -11,7 +10,7 @@ export type MoodTypeWire = (typeof MOOD_TYPES)[number];
 
 export const MoodTypeSchema = z.enum(MOOD_TYPES);
 
-/** Self-harm safety flag. Only one variant in S3; keep open for future flags. */
+/** Self-harm safety flag. Only one variant today; keep open for future flags. */
 export const SAFETY_FLAGS = ['self_harm_safety'] as const;
 export type SafetyFlag = (typeof SAFETY_FLAGS)[number];
 
@@ -117,7 +116,7 @@ export const RATIONALE_WIRE_MAX = 80;
 export const TEXT_MAX = 500;
 
 // ---------------------------------------------------------------------------
-// analyzePatterns — request / response schemas (ADR-0007)
+// analyzePatterns — request / response schemas
 // ---------------------------------------------------------------------------
 
 /**
@@ -125,8 +124,6 @@ export const TEXT_MAX = 500;
  * Zod boundary so a buggy refactor cannot accidentally smuggle `text` or
  * `mediaRefs` through the proxy. The schema deliberately has NO `text` field;
  * pattern analysis is computed from numeric mood codes + dates only.
- *
- * See ADR-0007 §"Request schema" for the canonical contract.
  */
 export const AnalyzePatternsRequestSchema = z
   .object({
