@@ -8,7 +8,7 @@ import 'mood_failure.dart';
 /// Implementations live in `data/`; they may use Firestore, Drift, or a fake.
 /// The 24h lock is a domain-level check — callers should call
 /// `entry.isLocked()` before invoking [update]/[delete]; server-side
-/// enforcement via Firestore rules lands in S3.
+/// enforcement via Firestore rules backs this up.
 abstract class MoodRepository {
   /// Streams the user's mood entries ordered by `createdAt` desc.
   Stream<List<MoodEntry>> watchAll({required String userId});

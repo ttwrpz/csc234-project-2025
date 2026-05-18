@@ -1,8 +1,7 @@
 import 'package:drift/drift.dart';
 
-/// FIFO queue of mood mutations awaiting upload. The sync manager (PR-2) drains
-/// this; PR-1 only defines the schema and DAO. Coalescing rules per ADR-0004
-/// live in [SyncQueueDao.enqueue].
+/// FIFO queue of mood mutations awaiting upload. The sync manager drains
+/// this; coalescing rules live in [SyncQueueDao.enqueue].
 @DataClassName('SyncQueueRow')
 class SyncQueue extends Table {
   IntColumn get id => integer().autoIncrement()();

@@ -29,9 +29,9 @@ class MediaPermissionDeniedException implements Exception {
 /// method based on [MoodMediaSource]; this datasource only exposes the four
 /// concrete picker operations we need.
 ///
-/// v1.6: runtime permissions are now requested here, BEFORE handing off
-/// to `image_picker`. `image_picker` does not request CAMERA on Android
-/// — the camera intent fails silently if it isn't pre-granted — and the
+/// Runtime permissions are requested here, BEFORE handing off to
+/// `image_picker`. `image_picker` does not request CAMERA on Android — the
+/// camera intent fails silently if it isn't pre-granted — and the
 /// pre-Photo-Picker gallery flow on Android ≤12 needs storage permission
 /// declared + granted at runtime.
 class ImagePickerDatasource {

@@ -30,10 +30,6 @@ import 'repositories/mood_media_repository_impl.dart';
 import 'sync/connectivity_provider.dart';
 import 'sync/mood_sync_manager.dart';
 
-// PR-1 wires the DAOs as Riverpod providers but does NOT change the
-// repository wiring. PR-2 (sync manager) and PR-3 (repo cutover) consume
-// these. Until PR-3 lands, `moodRepositoryProvider` keeps routing through
-// the Firestore datasource — no behavior change at the UI layer.
 final moodDaoProvider = Provider<MoodDao>(
   (ref) => ref.watch(databaseProvider).moodDao,
 );
@@ -55,22 +51,16 @@ final moodDriftMapperProvider = Provider<MoodDriftMapper>(
   (ref) => const MoodDriftMapper(),
 );
 
-/// Feature flag for the offline-first cutover (PR-3). Default `!kIsWeb` —
-/// native targets get the Drift-first read/write path; Web routes through
-/// the Firestore-only fallback because Drift's native connector pulls
-/// `dart:ffi` which is not available on Web (ADR-0004 §"Risks #1" specified
-/// Android-only Drift for S3; revisit in S4 with `drift_flutter` OPFS).
-/// Override in tests or via Remote Config to flip behaviour at runtime.
+/// Feature flag for the offline-first path. Default `!kIsWeb` — native
+/// targets get the Drift-first read/write path; Web routes through the
+/// Firestore-only fallback because Drift's native connector pulls
+/// `dart:ffi` which is not available on Web. Override in tests or via
+/// Remote Config to flip behaviour at runtime.
 final offlineFirstEnabledProvider = Provider<bool>((_) => !kIsWeb);
 
-/// Sync manager singleton. PR-2 wires it; PR-3 will have the repository call
-/// `kick()` after every enqueue. Disposed via `ref.onDispose`, so sign-out
-/// (which tears down the auth scope) cleans the listener and timers.
-///
-/// Note: `ref.watch(connectivityProvider.stream)` returns a broadcast
-/// `Stream<bool>` of `[true|false]` events. The provider's initial Async-loading
-/// state is squelched — the manager defaults `_isOnline = true` so the first
-/// drain after boot proceeds; the listener corrects within milliseconds.
+/// Sync manager singleton. The repository calls `kick()` after every enqueue.
+/// Disposed via `ref.onDispose`, so sign-out (which tears down the auth scope)
+/// cleans the listener and timers.
 final moodSyncManagerProvider = Provider<MoodSyncManager>((ref) {
   final prefsAsync = ref.watch(sharedPreferencesProvider);
   final prefs = prefsAsync.value;
@@ -85,9 +75,8 @@ final moodSyncManagerProvider = Provider<MoodSyncManager>((ref) {
     syncQueueDao: ref.watch(syncQueueDaoProvider),
     remote: ref.watch(moodFirestoreDatasourceProvider),
     mapper: ref.watch(moodEntryMapperProvider),
-    // Riverpod 3: `StreamProvider.stream` was removed. The sibling
-    // `connectivityStreamProvider` exposes the raw `Stream<bool>` for
-    // plain-Dart consumers like MoodSyncManager.
+    // The sibling `connectivityStreamProvider` exposes the raw
+    // `Stream<bool>` for plain-Dart consumers like MoodSyncManager.
     connectivity: ref.watch(connectivityStreamProvider),
     deviceIdGetter: () => ref.read(deviceIdProvider).value ?? 'unknown-device',
     prefs: prefs,
@@ -120,9 +109,8 @@ final watchMyMoodsUseCaseProvider = Provider<WatchMyMoodsUseCase>((ref) {
   return WatchMyMoodsUseCase(repository: ref.watch(moodRepositoryProvider));
 });
 
-// Media (WBS 3.3) — picker + Storage upload. Sibling to the entry repository
-// so the Drift cutover (WBS 3.5) can rewrite mood storage without touching
-// media plumbing.
+// Media — picker + Storage upload. Sibling to the entry repository so mood
+// storage can evolve without touching media plumbing.
 
 final imagePickerDatasourceProvider = Provider<ImagePickerDatasource>((ref) {
   return ImagePickerDatasource();
@@ -178,8 +166,8 @@ final moodEntryByIdProvider = FutureProvider.family<MoodEntry?, String>((
   };
 });
 
-// AI analysis providers (WBS 3.4 — analyzeMoodText proxy per ADR-0003).
-// Region must match the function's deploy target (asia-southeast1).
+// AI analysis providers — `analyzeMoodText` proxy. Region must match the
+// function's deploy target (asia-southeast1).
 
 final firebaseFunctionsProvider = Provider<FirebaseFunctions>(
   (ref) => FirebaseFunctions.instanceFor(region: 'asia-southeast1'),

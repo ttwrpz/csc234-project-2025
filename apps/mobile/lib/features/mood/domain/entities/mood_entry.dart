@@ -36,12 +36,9 @@ abstract class MoodEntry with _$MoodEntry {
   /// yesterday or earlier in the user's local time. Same-day edits and
   /// deletes are allowed regardless of how many hours have elapsed.
   ///
-  /// Switched from a "24 hours after createdAt" rule on user feedback:
-  /// the previous behaviour locked an 11pm entry at midnight the next
-  /// day, which was both confusing (the "today's entry" was suddenly
-  /// uneditable mid-evening the following day) and inconsistent with
-  /// the prototype copy ("locked thereafter" implied a clean
-  /// day-boundary cutoff). Use [now] in tests for determinism.
+  /// A calendar-day boundary is used rather than a flat "24 hours after
+  /// createdAt" rule so that an 11pm entry doesn't become uneditable
+  /// mid-evening the following day. Use [now] in tests for determinism.
   bool isLocked({DateTime? now}) {
     final n = (now ?? DateTime.now()).toLocal();
     final c = createdAt.toLocal();
@@ -51,8 +48,8 @@ abstract class MoodEntry with _$MoodEntry {
   }
 
   /// Validates inputs and returns a populated [MoodEntry] on success, or a
-  /// [MoodFailure] on failure. Used by the SaveMoodEntry use case (lands in
-  /// 3.2) so that controllers never construct invalid entries directly.
+  /// [MoodFailure] on failure. Used by the SaveMoodEntry use case so that
+  /// controllers never construct invalid entries directly.
   static Result<MoodEntry, MoodFailure> create({
     required String id,
     required String userId,

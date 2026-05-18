@@ -15,16 +15,15 @@ class MoodSyncState {
   static const String error = 'error';
 }
 
-/// DAO for `mood_entries`. PR-1 ships the schema, the watch query, and the LWW
-/// rule for `upsertFromRemote`. The remaining mutators are wired now so PR-2
-/// (sync manager) and PR-3 (repo cutover) can call them without further schema
-/// churn.
+/// DAO for `mood_entries`. Ships the schema, the watch query, the LWW rule
+/// for `upsertFromRemote`, and the mutators the sync manager / repository
+/// call into.
 @DriftAccessor(tables: [MoodEntries])
 class MoodDao extends DatabaseAccessor<MoodDatabase> with _$MoodDaoMixin {
   MoodDao(super.db);
 
-  /// All non-deleted entries for [userId], newest first. Drives the future
-  /// PR-3 `MoodRepositoryImpl.watchAll` refactor.
+  /// All non-deleted entries for [userId], newest first. Drives
+  /// `MoodRepositoryImpl.watchAll`.
   Stream<List<MoodEntryRow>> watchAllForUser(String userId) {
     return (select(moodEntries)
           ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())
@@ -41,7 +40,7 @@ class MoodDao extends DatabaseAccessor<MoodDatabase> with _$MoodDaoMixin {
     )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
-  /// True when the user has zero entries (live or tombstoned). Used by PR-3 to
+  /// True when the user has zero entries (live or tombstoned). Used to
   /// decide whether to bootstrap-fetch from Firestore on first launch.
   Future<bool> isEmpty(String userId) async {
     final row =
@@ -54,7 +53,7 @@ class MoodDao extends DatabaseAccessor<MoodDatabase> with _$MoodDaoMixin {
   }
 
   /// Local mutation path: inserts or replaces and marks the row pending so the
-  /// sync worker (PR-2) picks it up.
+  /// sync worker picks it up.
   Future<void> upsertFromLocal(MoodEntriesCompanion row) {
     return into(moodEntries).insert(
       row.copyWith(syncState: const Value(MoodSyncState.pending)),
@@ -62,8 +61,7 @@ class MoodDao extends DatabaseAccessor<MoodDatabase> with _$MoodDaoMixin {
     );
   }
 
-  /// Remote echo path: applies a server-originated row using Last-Write-Wins
-  /// per ADR-0005:
+  /// Remote echo path: applies a server-originated row using Last-Write-Wins:
   ///   - newer `updated_at` wins;
   ///   - on equal `updated_at`, lexicographically smaller `device_id` wins;
   ///   - if the local row is `pending` and not strictly older, the remote
@@ -128,7 +126,7 @@ class MoodDao extends DatabaseAccessor<MoodDatabase> with _$MoodDaoMixin {
   }
 
   /// Marks a row as successfully uploaded and stamps the server-assigned
-  /// `updated_at`. Used by PR-2's sync worker.
+  /// `updated_at`. Used by the sync worker.
   Future<void> markSynced(String id, {required int updatedAt}) {
     return (update(moodEntries)..where((t) => t.id.equals(id))).write(
       MoodEntriesCompanion(
@@ -150,8 +148,8 @@ class MoodDao extends DatabaseAccessor<MoodDatabase> with _$MoodDaoMixin {
     );
   }
 
-  /// Tombstones a row locally. PR-3 wires this to the delete path with the
-  /// 24h-lock guard. PR-1 just defines the operation.
+  /// Tombstones a row locally. The repository wires this to the delete path
+  /// with the 24h-lock guard.
   Future<void> softDelete(String id, {required int now}) {
     return (update(moodEntries)..where((t) => t.id.equals(id))).write(
       MoodEntriesCompanion(
@@ -162,7 +160,7 @@ class MoodDao extends DatabaseAccessor<MoodDatabase> with _$MoodDaoMixin {
     );
   }
 
-  /// Removes the row entirely. Used by PR-2 when a remote-delete event arrives
+  /// Removes the row entirely. Used when a remote-delete event arrives
   /// (Firestore is the system of record post-upload).
   Future<void> hardDelete(String id) {
     return (delete(moodEntries)..where((t) => t.id.equals(id))).go();

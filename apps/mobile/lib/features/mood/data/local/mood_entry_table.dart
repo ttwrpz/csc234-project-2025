@@ -22,7 +22,7 @@ class MediaRefsConverter extends TypeConverter<List<String>, String> {
 /// Local mirror of the Firestore `users/{uid}/moods/{moodId}` document plus
 /// the offline-first sync bookkeeping columns (`sync_state`, `device_id`,
 /// `deleted_at`). Times are stored as INTEGER epoch milliseconds UTC — never
-/// Firestore `Timestamp`, never ISO strings (per ADR-0004).
+/// Firestore `Timestamp`, never ISO strings.
 @DataClassName('MoodEntryRow')
 class MoodEntries extends Table {
   TextColumn get id => text()();
@@ -51,10 +51,10 @@ class MoodEntries extends Table {
       .map(const MediaRefsConverter())
       .withDefault(const Constant('[]'))();
 
-  /// `pending` / `syncing` / `synced` / `error` — see ADR-0004.
+  /// `pending` / `syncing` / `synced` / `error`.
   TextColumn get syncState => text().named('sync_state')();
 
-  /// Per-install UUID; LWW tiebreak on equal `updated_at` (ADR-0005).
+  /// Per-install UUID; LWW tiebreak on equal `updated_at`.
   TextColumn get deviceId => text().named('device_id')();
 
   /// Tombstone marker. NULL means alive; non-NULL means soft-deleted.

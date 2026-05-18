@@ -8,11 +8,10 @@ import '../../domain/entities/mood_media.dart';
 
 /// Horizontal scrollable preview of media the user has picked but not yet
 /// uploaded. Tiles are 60×60 r12 with a soft `mb.line` placeholder bg and a
-/// circular ✕ remove affordance per the Sprint 2 prototype.
+/// circular ✕ remove affordance.
 ///
 /// On Web `Image.file` does not work (no `dart:io` File on the platform), so
-/// we fall back to a generic icon — full Web image previews land in S4 if we
-/// ship Web GA.
+/// we fall back to a generic icon.
 class MediaThumbnailStrip extends StatelessWidget {
   const MediaThumbnailStrip({
     super.key,

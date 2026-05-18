@@ -6,7 +6,7 @@ part 'mood_score.freezed.dart';
 
 /// Per-entry mood score `S_t = v × (i / 5)`, where `v` is the emotion sign
 /// (+1 for Joy/Calm/Okay; -1 for Sadness/Anger/Anxiety) and `i` is the
-/// user-reported intensity (1..5). See ADR-0010 §2 and spec §2.1.
+/// user-reported intensity (1..5).
 @freezed
 abstract class MoodScore with _$MoodScore {
   const factory MoodScore({

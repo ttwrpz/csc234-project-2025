@@ -64,10 +64,9 @@ class LogMoodController extends _$LogMoodController {
   void pickMood(MoodType mood) => state = state.copyWith(mood: mood);
 
   /// Apply a mood (and optionally an inferred intensity) that came from
-  /// the AI suggestion pill. v1.0 polish (2026-05-10) extends the
-  /// contract to accept `intensity` so the user doesn't have to set it
-  /// manually after accepting Gemini's read of the journal. When omitted
-  /// (older deployments or direct callers), intensity is left unchanged.
+  /// the AI suggestion pill. Accepts `intensity` so the user doesn't have
+  /// to set it manually after accepting Gemini's read of the journal.
+  /// When omitted, intensity is left unchanged.
   void applyAiSuggestion(MoodType mood, {int? intensity}) {
     state = state.copyWith(mood: mood, intensity: intensity ?? state.intensity);
   }
@@ -100,10 +99,9 @@ class LogMoodController extends _$LogMoodController {
   /// Remove an already-uploaded attachment from the entry (edit flow only).
   /// We drop the gs:// URI from `mediaRefs`; the next `updateExisting` call
   /// will persist the shorter list. The Storage blob remains until the
-  /// orphan-janitor sweeps it (same path as a failed save) — we accept
-  /// the temporary leak rather than firing a delete here, because the
-  /// user might still cancel the edit and we'd have already destroyed
-  /// the file.
+  /// orphan-janitor sweeps it — we accept the temporary leak rather than
+  /// firing a delete here, because the user might still cancel the edit
+  /// and we'd have already destroyed the file.
   void removeMediaRef(int index) {
     if (index < 0 || index >= state.mediaRefs.length) return;
     final next = [...state.mediaRefs]..removeAt(index);
@@ -114,14 +112,14 @@ class LogMoodController extends _$LogMoodController {
   /// the populated entry to the save use case. Returns the saved [MoodEntry]
   /// on success or `null` on failure.
   ///
-  /// Upload sequencing — see WBS 3.3 brief: pick-time uploads are wasteful if
-  /// the user backs out, so we upload at save time. Sequential (not parallel)
-  /// keeps low-bandwidth users from saturating their pipe and simplifies
-  /// error handling — first failure aborts and the entry is NOT half-written.
+  /// Upload sequencing: pick-time uploads are wasteful if the user backs out,
+  /// so we upload at save time. Sequential (not parallel) keeps low-bandwidth
+  /// users from saturating their pipe and simplifies error handling — first
+  /// failure aborts and the entry is NOT half-written.
   ///
   /// If uploads succeed but the Firestore save fails, the uploaded blobs are
-  /// orphaned at `users/{uid}/media/{moodId}/...`. A janitor cron in S4
-  /// reaps these — see [MoodMediaRepositoryImpl] doc.
+  /// orphaned at `users/{uid}/media/{moodId}/...`. A janitor cron reaps these
+  /// — see [MoodMediaRepositoryImpl] doc.
   Future<MoodEntry?> save() async {
     final submission = ref.read(logMoodSubmissionControllerProvider.notifier);
     final user = ref.read(currentUserStreamProvider).value;
@@ -229,21 +227,16 @@ class LogMoodController extends _$LogMoodController {
     ref.invalidate(aiSuggestionControllerProvider);
     // Best-effort post-save Pattern Engine run. Failures are logged
     // (no PII) and swallowed so they cannot block the user's save
-    // success surfacing — see HB-006 sub-track B.
-    //
-    // The brief named `log_mood_submission_controller.dart` as the
-    // edit site, but that controller only holds transient submission
-    // flags (no `Ok` branch). The actual `Ok` branch lives here, so
-    // the wire-up follows the success path instead. Both `save()` and
-    // `updateExisting()` route through `_onSaveOk`, so the engine
-    // also runs on edits — desired behaviour: an edited entry can
-    // change today's `avgScore` and therefore today's tier.
+    // success surfacing. Both `save()` and `updateExisting()` route
+    // through `_onSaveOk`, so the engine also runs on edits — desired
+    // behaviour: an edited entry can change today's `avgScore` and
+    // therefore today's tier.
     unawaited(_runPatternEngine(entry.userId));
     // Best-effort post-save token award. Mood-agnostic — the
     // repository's `awardForLog` takes only the userId. Failures are
     // logged (failure runtimeType only — no userId, no balance, no
     // award value, no PII) and swallowed so they cannot block the
-    // user's save success surfacing (HB-005 Track 6.2).
+    // user's save success surfacing.
     unawaited(_awardTokens(entry.userId));
     return entry;
   }
@@ -295,8 +288,7 @@ class LogMoodController extends _$LogMoodController {
   ///
   /// Mood-agnostic by construction: the repository's `awardForLog`
   /// accepts only the userId. Logging a sad-5 entry earns the same
-  /// as logging a joy-5 entry — pivot feature #10 (CLAUDE.md),
-  /// ADR-0010 §7.
+  /// as logging a joy-5 entry.
   Future<void> _awardTokens(String userId) async {
     const logger = Logger('mood.tokens');
     try {

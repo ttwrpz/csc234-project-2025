@@ -15,8 +15,7 @@ abstract class AIAnalysisRepository {
   /// Returns `false` when the `ai_pattern_analysis_enabled` Remote Config
   /// flag is off. Callers MUST short-circuit `analyzePatterns` when this
   /// is false — both as defence in depth (the server still runs) and as
-  /// the kill-switch hook for the demo rehearsal (per kickoff Open
-  /// Question O-3).
+  /// the kill-switch hook.
   bool get isEnabled;
 
   Future<Result<AiSuggestion, AiAnalysisFailure>> analyzeMoodText({

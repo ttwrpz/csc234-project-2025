@@ -16,17 +16,15 @@ import 'sync/mood_sync_manager.dart';
 
 /// Repository for mood entries.
 ///
-/// PR-3 cutover: when [offlineFirstEnabled] returns `true` (the default), reads
-/// stream from Drift and writes go to Drift + the sync queue, with the
-/// `MoodSyncManager` draining the queue to Firestore. The cloud is never the
-/// UI's source of truth on this path — the user always sees their own writes
-/// instantly, and offline writes succeed.
+/// When [offlineFirstEnabled] returns `true` (the default), reads stream from
+/// Drift and writes go to Drift + the sync queue, with the `MoodSyncManager`
+/// draining the queue to Firestore. The cloud is never the UI's source of
+/// truth on this path — the user always sees their own writes instantly, and
+/// offline writes succeed.
 ///
-/// When the flag is `false`, the implementation falls back to the pre-PR-3
+/// When the flag is `false`, the implementation falls back to the
 /// Firestore-only path so the cutover is reversible without a hotfix (canary
-/// rollback). The 24h-lock guard now applies to BOTH paths on update *and*
-/// delete; the long-standing gap on the delete side (the original line-102
-/// "no isLocked check") is closed regardless of which path is active.
+/// rollback). The 24h-lock guard applies to BOTH paths on update *and* delete.
 class MoodRepositoryImpl implements MoodRepository {
   MoodRepositoryImpl({
     required MoodFirestoreDatasource datasource,
@@ -210,7 +208,7 @@ class MoodRepositoryImpl implements MoodRepository {
   }
 
   // ---------------------------------------------------------------------------
-  // delete — NEW lock guard applies to BOTH paths.
+  // delete — lock guard applies to BOTH paths.
   // ---------------------------------------------------------------------------
 
   @override
@@ -252,8 +250,7 @@ class MoodRepositoryImpl implements MoodRepository {
       }
     }
 
-    // Cloud-only fallback: also gated by the lock guard. This closes the
-    // long-standing "delete has no isLocked check" gap on every path.
+    // Cloud-only fallback: also gated by the lock guard.
     try {
       final dto = await _datasource.findById(userId: userId, id: id);
       if (dto == null) return Err(MoodFailure.notFound(id));

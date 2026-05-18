@@ -10,10 +10,9 @@ import '../local/mood_database.dart';
 /// domain `MoodEntry`. Lives in `data/` so the domain layer remains free of
 /// any `package:drift` import (per the CLAUDE.md "domain layer purity" rule).
 ///
-/// PR-3 only needs the Row → Entity direction (for `watchAll` + `findById`) and
-/// the Entity → Companion direction (for `save` + `update`). DTO ↔ Companion
-/// continues to live inside `MoodSyncManager`'s private `_toCompanion` helper
-/// from PR-2 — moving it here would be churn for no PR-3 caller.
+/// Provides the Row → Entity direction (for `watchAll` + `findById`) and the
+/// Entity → Companion direction (for `save` + `update`). DTO ↔ Companion
+/// continues to live inside `MoodSyncManager`'s private `_toCompanion` helper.
 class MoodDriftMapper {
   const MoodDriftMapper();
 
@@ -50,7 +49,7 @@ class MoodDriftMapper {
   /// and the desired [syncState] (typically `pending` for a fresh local
   /// mutation). When [updatedAtOverride] is supplied it wins; otherwise the
   /// entity's own `updatedAt` is used. Times are stored as UTC epoch
-  /// milliseconds per ADR-0004 §"Time normalisation".
+  /// milliseconds.
   MoodEntriesCompanion entityToCompanion(
     MoodEntry entry, {
     required String deviceId,

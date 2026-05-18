@@ -13,14 +13,14 @@ class SyncOperation {
   static const String delete = 'delete';
 }
 
-/// DAO for `sync_queue`. The PR-1 contract: enqueue with idempotent coalescing
-/// per ADR-0004, plus the FIFO peek/dequeue plumbing PR-2 will drain.
+/// DAO for `sync_queue`. Provides enqueue with idempotent coalescing, plus
+/// the FIFO peek/dequeue plumbing the sync manager drains.
 @DriftAccessor(tables: [SyncQueue])
 class SyncQueueDao extends DatabaseAccessor<MoodDatabase>
     with _$SyncQueueDaoMixin {
   SyncQueueDao(super.db);
 
-  /// Coalescing-aware enqueue. Per ADR-0004:
+  /// Coalescing-aware enqueue:
   ///   - a new `update` for a pending entry replaces the pending payload
   ///     (idempotent — N saves from one user gesture become 1 mutation);
   ///   - a new `delete` drops every pending mutation for the same `entry_id`
@@ -67,7 +67,7 @@ class SyncQueueDao extends DatabaseAccessor<MoodDatabase>
             operation: row.operation,
             payload: row.payload,
             // `attempt_count` and `retry_after` reset so the coalesced payload
-            // is treated as a fresh attempt by PR-2's worker.
+            // is treated as a fresh attempt by the sync worker.
             attemptCount: const Value(0),
             retryAfter: const Value(0),
             lastError: const Value(null),
@@ -87,7 +87,7 @@ class SyncQueueDao extends DatabaseAccessor<MoodDatabase>
   }
 
   /// Lowest-id row whose `retry_after` is in the past. Drives the worker's
-  /// "next due mutation" loop in PR-2.
+  /// "next due mutation" loop.
   Future<SyncQueueRow?> peekNextDue({required int now}) {
     return (select(syncQueue)
           ..where((t) => t.retryAfter.isSmallerOrEqualValue(now))
@@ -98,7 +98,7 @@ class SyncQueueDao extends DatabaseAccessor<MoodDatabase>
         .getSingleOrNull();
   }
 
-  /// Batched variant for PR-2's drain. [limit] caps the per-tick batch.
+  /// Batched variant for the drain. [limit] caps the per-tick batch.
   Future<List<SyncQueueRow>> peekAllDue({required int now, int limit = 32}) {
     return (select(syncQueue)
           ..where((t) => t.retryAfter.isSmallerOrEqualValue(now))
@@ -114,8 +114,7 @@ class SyncQueueDao extends DatabaseAccessor<MoodDatabase>
   /// By default `attempt_count` is incremented; pass `bumpAttempt: false` for
   /// poison-pill outcomes (e.g. `permission-denied`) where retrying would
   /// never succeed and the counter would mislead the "12 attempts" terminal
-  /// path. Error metadata is truncated to the 200-char cap mandated by
-  /// ADR-0004.
+  /// path. Error metadata is truncated to the 200-char cap.
   Future<void> markFailed(
     int queueId, {
     required int retryAfter,
@@ -152,7 +151,7 @@ class SyncQueueDao extends DatabaseAccessor<MoodDatabase>
     return row.read(count) ?? 0;
   }
 
-  /// Live count for the future "N pending uploads" UI badge.
+  /// Live count for the "N pending uploads" UI badge.
   Stream<int> watchPendingCount() {
     final count = countAll();
     final query = selectOnly(syncQueue)..addColumns([count]);

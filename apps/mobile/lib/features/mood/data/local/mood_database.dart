@@ -11,17 +11,16 @@ import 'sync_queue_table.dart';
 part 'mood_database.g.dart';
 
 /// Single Drift database for the mood feature. Two tables (`mood_entries`,
-/// `sync_queue`) and two DAOs back the offline-first persistence per ADR-0004.
+/// `sync_queue`) and two DAOs back the offline-first persistence.
 ///
-/// Schema version 1 is what S3 ships. v2 will use `MigrationStrategy.onUpgrade`
+/// Schema version 1. Future versions will use `MigrationStrategy.onUpgrade`
 /// step-by-step migrations.
 ///
 /// Connector platform split: `dart.library.io` is used as the conditional
 /// import switch — native targets (Android, iOS, desktop, VM) get the
 /// FFI-backed `NativeDatabase` from `mood_database_native.dart`; Web gets a
-/// throwing stub from `mood_database_web.dart` (see ADR-0004 §"Risks #1"
-/// — Web ships through the Firestore-only fallback path, so the stub is
-/// never invoked at runtime).
+/// throwing stub from `mood_database_web.dart` (Web ships through the
+/// Firestore-only fallback path, so the stub is never invoked at runtime).
 @DriftDatabase(tables: [MoodEntries, SyncQueue], daos: [MoodDao, SyncQueueDao])
 class MoodDatabase extends _$MoodDatabase {
   MoodDatabase() : super(platform.openConnection());
@@ -37,7 +36,7 @@ class MoodDatabase extends _$MoodDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async => m.createAll(),
     onUpgrade: (m, from, to) async {
-      // v2+ migrations land in a future sprint; v1 ships clean.
+      // Future schema migrations land here.
     },
   );
 }

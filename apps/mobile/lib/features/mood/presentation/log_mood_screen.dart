@@ -22,8 +22,8 @@ import 'widgets/media_thumbnail_strip.dart';
 import 'widgets/mood_text_field.dart';
 import 'widgets/mood_type_grid.dart';
 
-/// Mood logging screen — pivot feature #1 (intensity 1..5) and the entry
-/// point for AI mood detection.
+/// Mood logging screen — intensity 1..5 entry plus the AI mood detection
+/// entry point.
 ///
 /// This is a ConsumerStatefulWidget specifically so we can reset the draft
 /// + AI suggestion + submission state on every screen-enter. Without that,
@@ -219,10 +219,8 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
       // Edit returns to the detail screen so the user can verify the
       // updated values. New-entry flows drop on the garden home (`/home`)
       // — the user just logged a mood and the SkyHeader / daily-score
-      // strip is where they SEE the impact (atmosphere shift, EWMA
-      // tier, today's cell). Routing to /history skipped the visual
-      // feedback the user expected; v1.0 polish round (negative-mood-
-      // not-visible feedback) routes them to garden instead.
+      // strip is where they SEE the impact (atmosphere shift, EWMA tier,
+      // today's cell).
       if (original != null) {
         context.go('/history/${entry.id}');
       } else {
@@ -249,9 +247,7 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
   }
 }
 
-/// Original phone layout — single-column ListView with the sticky-bottom
-/// Save bar. Preserved verbatim from the pre-redesign version so existing
-/// goldens / widget tests stay green.
+/// Phone layout — single-column ListView with the sticky-bottom Save bar.
 class _NarrowLayout extends ConsumerWidget {
   const _NarrowLayout({
     required this.draft,
@@ -433,11 +429,10 @@ class _WideLayout extends StatelessWidget {
                       controller: controller,
                     ),
                   ),
-                  // 48dp gap between columns — twice the `xl` value
-                  // (24dp). User feedback v1.0 polish ("more gap on
-                  // between 2 column"): the 24dp gap left the two
-                  // halves visually adjacent on a 1280dp window. 48dp
-                  // makes the form feel like two distinct zones.
+                  // 48dp gap between columns — twice the `xl` value (24dp).
+                  // The 24dp gap left the two halves visually adjacent on a
+                  // 1280dp window; 48dp makes the form feel like two
+                  // distinct zones.
                   const SizedBox(width: 48),
                   Expanded(
                     flex: 45,
@@ -663,7 +658,7 @@ class _IntensitySection extends StatelessWidget {
 
 /// Note card — 4-row text field, attach buttons row, and "n/500" counter
 /// in the same card so the counter sits inside the same chrome as the
-/// field, matching the prototype.
+/// field.
 ///
 /// In wide layouts the attach affordance becomes a single full-width
 /// "Attach a photo" outlined button that sits BELOW the counter row, so
@@ -788,9 +783,7 @@ class _SaveButton extends StatelessWidget {
 /// page. Surfaces the short "not a medical device" line ([DisclaimerCopy
 /// .notificationFooter]) so the framing is visible on every entry — the
 /// surface where users spend the most time and where AI mood
-/// interpretation is offered. v1.0 polish (2026-05-10): the disclaimer
-/// previously only appeared in onboarding, Settings, and the (future)
-/// Insights ack dialog; the user asked for it on the Add page too.
+/// interpretation is offered.
 class _LogMoodDisclaimerFootnote extends StatelessWidget {
   const _LogMoodDisclaimerFootnote();
 
