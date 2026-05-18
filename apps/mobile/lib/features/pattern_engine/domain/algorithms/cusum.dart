@@ -20,7 +20,7 @@ import '../entities/daily_score.dart';
 /// `c` across days; we fold from the start of `history` every time.
 /// Acceptable because `history.length` is bounded by Drift cache + Firestore
 /// page limits, and the recompute is < 1 ms even at 1000 days. No
-/// persisted CUSUM state. (HB-004 open question 2 — closed in HB-006.)
+/// persisted CUSUM state.
 ///
 /// **Variance divisor:** population stddev (`n`), matching [zScoreToday].
 ///
@@ -69,8 +69,7 @@ double cusumC(
 /// engine is still warming up).
 ///
 /// Sibling pure function so the orchestrator can pull `c` and `h` from
-/// the same module without re-deriving σ_30. (HB-006 open question 1 —
-/// architect default: a sibling function.)
+/// the same module without re-deriving σ_30.
 double cusumThreshold(
   List<DailyScore> history, {
   required DateTime now,

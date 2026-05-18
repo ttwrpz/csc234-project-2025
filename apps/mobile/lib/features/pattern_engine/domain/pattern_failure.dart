@@ -6,8 +6,8 @@ import 'package:core/core.dart';
 /// from the analyzer. Extends [Failure] directly (NOT `MoodFailure`) — pattern
 /// engine failures are conceptually distinct from mood-entity failures.
 ///
-/// Narrow on purpose: v1.0 only needs surface for "the write failed and the
-/// next render should not assume it succeeded." Match the shape of
+/// Narrow on purpose: only needs surface for "the write failed and the
+/// next render should not assume it succeeded." Matches the shape of
 /// `apps/mobile/lib/features/mood/domain/ai_analysis_failure.dart`.
 ///
 /// Imports only `package:core/core.dart` — domain-purity rule per CLAUDE.md.

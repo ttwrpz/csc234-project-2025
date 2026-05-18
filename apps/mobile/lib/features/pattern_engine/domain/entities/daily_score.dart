@@ -11,7 +11,6 @@ part 'daily_score.freezed.dart';
 /// `entryCount` is for diagnostics — the algorithms do not read it.
 ///
 /// Pure-Dart entity — only imports `freezed_annotation` (annotation-only).
-/// See HB-004 §"Domain shape — DailyScore" and ADR-0011 §2.
 @freezed
 abstract class DailyScore with _$DailyScore {
   const factory DailyScore({

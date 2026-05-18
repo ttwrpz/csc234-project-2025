@@ -18,14 +18,14 @@ import '../entities/daily_score.dart';
 /// but logged on `PatternResult` for diagnostic surfaces.
 ///
 /// **Variance divisor:** population stddev (`n` divisor), NOT sample
-/// stddev (`n-1`). The spec frames the baseline as the user's *own* 30
-/// days — they ARE the population, not a sample drawn from one — so
-/// dividing by `n` is the truer translation. Sample stddev is acceptable
-/// (the warm-up gate hides the divisor distinction at small `n`); flip
-/// to `n-1` if downstream test cases need it. See HB-006 open question 2.
+/// stddev (`n-1`). The baseline is the user's *own* 30 days — they ARE
+/// the population, not a sample drawn from one — so dividing by `n` is
+/// the truer translation. Sample stddev is acceptable (the warm-up gate
+/// hides the divisor distinction at small `n`); flip to `n-1` if
+/// downstream test cases need it.
 ///
 /// Note: this Z is NOT the same as Mann-Kendall's Z (same letter,
-/// different statistic; see HB-004 algorithm 4).
+/// different statistic).
 ///
 /// Pure-Dart function — imports only `dart:math`, `package:core/core.dart`
 /// (for `localMidnight`), and the sibling [DailyScore] entity.

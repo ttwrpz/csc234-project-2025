@@ -6,8 +6,7 @@ import '../../domain/pattern_failure.dart';
 import '../../domain/repositories/pattern_repository.dart';
 import '../datasources/patterns_firestore_datasource.dart';
 
-/// Firestore-backed implementation of [PatternRepository] (HB-006
-/// sub-track A; spec §4.2 data model).
+/// Firestore-backed implementation of [PatternRepository].
 ///
 /// Failure mapping mirrors `CheerUpEventsRepositoryImpl`:
 ///   * `permission-denied` → [PatternFailure.permissionDenied] — the

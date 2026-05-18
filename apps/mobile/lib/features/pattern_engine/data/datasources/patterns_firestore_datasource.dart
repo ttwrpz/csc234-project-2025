@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/pattern_result.dart';
 
 /// Thin Firestore wrapper for the `users/{userId}/patterns/{dateId}`
-/// collection (HB-006 sub-track A; spec §4.2 data model).
+/// collection.
 ///
 /// One doc per local-midnight day; `dateId` IS the doc id, formatted
 /// `yyyy-MM-dd`. Same-day re-evaluations overwrite the doc cleanly via
@@ -13,10 +13,9 @@ import '../../domain/entities/pattern_result.dart';
 /// from a re-eval.
 ///
 /// Uses `PatternResult.toJson()` / `fromJson()` directly — the entity is
-/// already JSON-serialisable from Day 2, no separate DTO needed. The
-/// Firestore document shape matches the entity's JSON shape 1:1, which
-/// is exactly the shape the firestore.rules `affectedKeys()` allowlist
-/// pins (HB-006 sub-track D).
+/// already JSON-serialisable, no separate DTO needed. The Firestore
+/// document shape matches the entity's JSON shape 1:1, which is exactly
+/// the shape the firestore.rules `affectedKeys()` allowlist pins.
 class PatternsFirestoreDatasource {
   const PatternsFirestoreDatasource(this._firestore);
 
@@ -37,8 +36,8 @@ class PatternsFirestoreDatasource {
     await ref.set(result.toJson(), SetOptions(merge: false));
   }
 
-  /// Streams the per-day pattern document for the dispatcher (S5 read
-  /// path). Emits `null` when the document does not yet exist.
+  /// Streams the per-day pattern document for the dispatcher read path.
+  /// Emits `null` when the document does not yet exist.
   Stream<PatternResult?> watchPatternResult({
     required String userId,
     required String dateId,
@@ -56,7 +55,7 @@ class PatternsFirestoreDatasource {
   }
 
   /// Streams every pattern document with id in `[startDateId, endDateId]`
-  /// inclusive — used by the (S5) Insights screen for historical reads.
+  /// inclusive — used by the Insights screen for historical reads.
   ///
   /// Firestore document ids are strings, so the inclusive range filter is
   /// `FieldPath.documentId() >= startDateId && <= endDateId`. The dateId

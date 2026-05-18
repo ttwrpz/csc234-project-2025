@@ -7,7 +7,7 @@ import '../pattern_failure.dart';
 /// documents.
 ///
 /// Implementations live in `data/` and may use Firestore, Drift, or a fake.
-/// The Day-3 concrete implementation writes to
+/// The concrete implementation writes to
 /// `users/{userId}/patterns/{result.dateId}` via `set(merge: false)` so that
 /// same-day re-evaluations replace the doc cleanly (the dateId is the
 /// document id — one doc per local-midnight day).
@@ -22,19 +22,19 @@ abstract class PatternRepository {
     required PatternResult result,
   });
 
-  /// Streams a single per-day pattern document for the dispatcher (S5 read
-  /// path). Emits `null` when the document does not yet exist.
+  /// Streams a single per-day pattern document for the dispatcher read
+  /// path. Emits `null` when the document does not yet exist.
   Stream<PatternResult?> watch({
     required String userId,
     required String dateId,
   });
 
   /// Streams every pattern document with a `dateId` between [startDateId]
-  /// and [endDateId] inclusive — used by the (S5) Insights screen to
-  /// render historical Tier markers and the `H_t` overlay without
-  /// recomputing the algorithms. The dateId format matches the storage
-  /// convention (`yyyy-MM-dd`); the data layer orders the snapshot by
-  /// document id which is the natural date order.
+  /// and [endDateId] inclusive — used by the Insights screen to render
+  /// historical Tier markers and the `H_t` overlay without recomputing the
+  /// algorithms. The dateId format matches the storage convention
+  /// (`yyyy-MM-dd`); the data layer orders the snapshot by document id
+  /// which is the natural date order.
   ///
   /// Emits an empty list when the user has no patterns yet. Errors flow
   /// through the stream's error channel — the consumer (the Insights

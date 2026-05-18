@@ -7,15 +7,14 @@ import '../entities/daily_score.dart';
 ///
 /// Returns `null` when `history.length < 14` — not enough samples for a
 /// defensible Z. A user newly onboarded within the past two weeks therefore
-/// never trips Tier 1, which is the intended "warm-up" semantics
-/// (HB-004 §"NEW — Five algorithm functions" algorithm 1).
+/// never trips Tier 1, which is the intended "warm-up" semantics.
 ///
 /// Trigger semantics (caller decides — this function returns Z only):
 ///  * `Z < -1.96` → Tier 1 (gradual worsening, two-tailed α = 0.05).
 ///  * `Z > +1.96` → encouragement (no alert — gradual improvement).
 ///  * |Z| ≤ 1.96  → no signal.
 ///
-/// Algorithm (spec §2.4 algorithm 1):
+/// Algorithm:
 ///   Step 1: S = Σ_{i<j} sign(x_j - x_i)
 ///   Step 2: V = n × (n - 1) × (2n + 5) / 18
 ///   Step 3: Z = (S - 1)/√V if S > 0

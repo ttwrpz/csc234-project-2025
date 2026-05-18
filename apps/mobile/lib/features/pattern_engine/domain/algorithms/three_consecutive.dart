@@ -19,8 +19,6 @@ import '../entities/daily_score.dart';
 /// Pure-Dart function — imports only `package:core/core.dart` (for
 /// `localMidnight`) and the sibling [DailyScore] entity. No Flutter /
 /// Firebase imports per CLAUDE.md.
-///
-/// See HB-004 §"Five algorithm functions" algorithm 3 + spec §2.4.
 int consecutiveHighIntensityCount(
   List<DailyScore> history, {
   required DateTime now,
