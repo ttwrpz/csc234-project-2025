@@ -29,8 +29,7 @@ final sharedPreferencesProvider = FutureProvider<SharedPreferences>(
 );
 
 /// Singleton Drift database. Closed automatically when the provider scope is
-/// disposed. PR-1 ships the schema; PR-2 wires it to the sync manager and
-/// PR-3 routes `MoodRepositoryImpl` through it.
+/// disposed.
 final databaseProvider = Provider<MoodDatabase>((ref) {
   final db = MoodDatabase();
   ref.onDispose(() async => db.close());
@@ -38,7 +37,7 @@ final databaseProvider = Provider<MoodDatabase>((ref) {
 });
 
 /// Per-install UUID stored in SharedPreferences under `mood.device_id`.
-/// Used as the LWW tiebreak in [MoodDao.upsertFromRemote] (ADR-0005).
+/// Used as the LWW tiebreak in [MoodDao.upsertFromRemote].
 /// Generated lazily on first read; never PII (random per install).
 final deviceIdProvider = FutureProvider<String>((ref) async {
   final prefs = await SharedPreferences.getInstance();
@@ -78,9 +77,7 @@ final featureFlagsProvider = Provider<FeatureFlags>((ref) {
       interventionDispatchEnabled: source.getBool(
         'intervention_dispatch_enabled',
       ),
-      historyPrivacyLockEnabled: source.getBool(
-        'history_privacy_lock_enabled',
-      ),
+      historyPrivacyLockEnabled: source.getBool('history_privacy_lock_enabled'),
     );
   } catch (_) {
     // Source throws if RC hasn't been initialised yet (e.g. before

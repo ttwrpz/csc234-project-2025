@@ -33,9 +33,9 @@ class MbSideNav extends StatelessWidget {
   final String? footer;
 
   /// Account-level action widgets rendered above the [footer] caption.
-  /// Used on desktop for the sign-out button + theme switcher (v1.0
-  /// polish). Empty list (default) collapses the slot — phones / tablet
-  /// shells that never compose this widget keep their original layout.
+  /// Used on desktop for the sign-out button + theme switcher. Empty
+  /// list (default) collapses the slot — phones / tablet shells that
+  /// never compose this widget keep their original layout.
   final List<Widget> actions;
 
   @override
