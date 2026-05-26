@@ -26,7 +26,7 @@ class LocalNotificationDatasource {
     await _plugin.show(
       _debugNotificationId,
       'MoodBloom',
-      'Test notification — this is what real cheer-up notifications look '
+      'Test notification - this is what real cheer-up notifications look '
           'like.',
       const NotificationDetails(
         android: AndroidNotificationDetails(

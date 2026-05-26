@@ -11,7 +11,7 @@
 //      Server-side safety net for the client kill-switch.
 //   4. Rate-limit consume via rateLimits.webauthn/{uid}.
 //   5. Generate creation options via @simplewebauthn/server.
-//   6. Persist the challenge at users/{uid}/security/webauthnChallenges/
+//   6. Persist the challenge at users/{uid}/webauthnChallenges/
 //      {challengeId} with expiresAt = now + 5min.
 //   7. Return { ok: true, options, challengeId }.
 //
@@ -145,7 +145,7 @@ export async function handleWebauthnRegisterStart(
   // finish handler also explicitly deletes the doc on success.
   const challengeId = options.challenge;
   await db
-    .doc(`users/${uid}/security/webauthnChallenges/${challengeId}`)
+    .doc(`users/${uid}/webauthnChallenges/${challengeId}`)
     .set({
       challenge: options.challenge,
       purpose: 'register',

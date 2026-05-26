@@ -16,6 +16,13 @@ sealed class HarvestFailure extends Failure {
   const factory HarvestFailure.alreadyArchived(String weekId) =
       _AlreadyArchived;
   const factory HarvestFailure.noEntries() = _NoEntries;
+
+  /// True when Firestore reported the week's archive already exists.
+  /// This is a benign cross-device race: another device wrote the
+  /// canonical archive while this device still had the week marked as
+  /// pending in its local cache. Presentation treats it as a success
+  /// path (close the popup) rather than a recoverable error.
+  bool get isAlreadyArchived => this is _AlreadyArchived;
 }
 
 class _Unknown extends HarvestFailure {
@@ -40,5 +47,5 @@ class _AlreadyArchived extends HarvestFailure {
 
 class _NoEntries extends HarvestFailure {
   const _NoEntries()
-    : super(message: 'No entries this week — nothing to summarise yet.');
+    : super(message: 'No entries this week - nothing to summarise yet.');
 }

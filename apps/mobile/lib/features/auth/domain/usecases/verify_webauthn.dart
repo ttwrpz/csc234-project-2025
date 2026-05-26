@@ -7,10 +7,10 @@ import '../repositories/webauthn_repository.dart';
 /// Decision D).
 ///
 /// Thin orchestration over [WebauthnRepository.verify]. Called from
-/// `PinVerifyScreen` when the user taps "Use security key" above the
+/// `PrivacyLockScreen` when the user taps "Use security key" above the
 /// PIN keypad; on success the calling controller flips
-/// `historyUnlockedThisSessionProvider` exactly as the PIN happy path
-/// does today.
+/// `privacyLockUnlockedThisSessionProvider` exactly as the PIN happy
+/// path does today.
 class VerifyWebauthnUseCase {
   const VerifyWebauthnUseCase(this._repository);
 

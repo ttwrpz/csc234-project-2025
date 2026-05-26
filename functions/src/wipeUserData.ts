@@ -55,6 +55,8 @@ const SUBCOLLECTIONS = [
   'patterns',
   'security',
   'settings',
+  'webauthn',
+  'webauthnChallenges',
   'weeklyGardens',
 ] as const;
 
@@ -71,6 +73,7 @@ const RATE_LIMIT_COLLECTIONS = [
   'rateLimits.patterns',
   'rateLimits.cheerUp',
   'rateLimits.suggestQuote',
+  'rateLimits.webauthn',
 ] as const;
 
 type Deleted = Record<(typeof SUBCOLLECTIONS)[number], number>;

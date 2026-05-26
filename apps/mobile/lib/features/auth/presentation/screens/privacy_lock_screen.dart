@@ -4,34 +4,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../data/history_unlocked_this_session_provider.dart';
 import '../../data/providers.dart';
 import '../../domain/entities/biometric_capability.dart';
 import '../../domain/entities/pin_verify_failure.dart';
 import '../widgets/pin_keypad.dart';
 
-/// `/unlock-history` screen — the History privacy gate's verification
-/// surface.
+/// `/privacy-lock` — the unified Privacy Lock verification screen.
+///
+/// Replaces the prior `BiometricGateScreen` (biometric-only cold-boot
+/// gate) and `PinVerifyScreen` (biometric-first + PIN-fallback history
+/// gate). One screen now serves the whole-app cold-boot gate: biometric
+/// is the primary verification method when available, and PIN is the
+/// mandatory fallback.
 ///
 /// Flow:
-///   1. On mount, if the device has a usable biometric AND the user
-///      has opted into biometric, fire the OS biometric prompt.
-///      Successful biometric → unlock + return to `?returnTo=...`.
-///   2. Always show the PIN keypad fallback. Successful PIN → unlock
-///      + return to `?returnTo=...`.
+///   1. On mount, if the device has a usable biometric AND the user has
+///      opted into biometric, fire the OS biometric prompt. Successful
+///      biometric → unlock + navigate to `?returnTo=...`.
+///   2. Always show the PIN keypad fallback. Successful PIN → unlock +
+///      navigate to `?returnTo=...`.
+///   3. A "Sign out instead" affordance lives at the bottom so the
+///      cold-boot user always has an exit hatch — there is no app shell
+///      to "go back" to before unlock.
 ///
-/// `returnTo` defaults to `/history` when absent so a direct visit to
-/// `/unlock-history` lands on the History list after unlock.
-class PinVerifyScreen extends ConsumerStatefulWidget {
-  const PinVerifyScreen({super.key, this.returnTo});
+/// `returnTo` defaults to `/home` when absent: this is the cold-boot
+/// gate, and `/home` is the canonical post-sign-in landing route. There
+/// is no appbar back button — there is nowhere to back-navigate to
+/// when this screen is the first frame after sign-in.
+class PrivacyLockScreen extends ConsumerStatefulWidget {
+  const PrivacyLockScreen({super.key, this.returnTo});
 
   final String? returnTo;
 
   @override
-  ConsumerState<PinVerifyScreen> createState() => _PinVerifyScreenState();
+  ConsumerState<PrivacyLockScreen> createState() => _PrivacyLockScreenState();
 }
 
-class _PinVerifyScreenState extends ConsumerState<PinVerifyScreen> {
+class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
   bool _busy = false;
   String? _errorText;
   DateTime? _lockedUntil;
@@ -52,24 +61,20 @@ class _PinVerifyScreenState extends ConsumerState<PinVerifyScreen> {
     // Synchronously pre-set `_biometricInProgress = true` when we
     // already know biometric will fire — this stops the PIN keypad
     // from flashing on the first frame before the post-frame callback
-    // sets the flag. The capability provider is a `FutureProvider`,
-    // but by the time the user lands on /unlock-history the value is
-    // almost always cached, so `.value` returns the resolved record.
-    // If it isn't cached yet the keypad shows briefly — acceptable
-    // edge case, since the alternative is a perpetual placeholder for
-    // users with no biometric at all.
+    // sets the flag. By the time the user lands on /privacy-lock the
+    // capability value is pre-resolved by `main.dart`, so `.value`
+    // returns the resolved record on the first read.
     final cap = ref.read(biometricCapabilityProvider).value;
     if (cap != null && _hasBiometric(cap)) {
       _biometricInProgress = true;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Defence-in-depth: if biometric was already verified this
-      // session (cold-boot gate or any earlier verify), auto-unlock
-      // and skip the screen entirely. The router redirect at
-      // app/router.dart already catches this on the way in, but in
-      // case a deep link lands us here directly we still short-
-      // circuit. Same hardware verification — no need to prompt twice.
-      if (ref.read(biometricUnlockedThisSessionProvider)) {
+      // Defence-in-depth: if the session is already unlocked (deep
+      // link landed us here despite the redirect having no work to
+      // do), short-circuit and route to the destination. The router
+      // redirect should catch this on the way in, but a stray push
+      // could land here directly.
+      if (ref.read(privacyLockUnlockedThisSessionProvider)) {
         _onUnlocked();
         return;
       }
@@ -77,20 +82,26 @@ class _PinVerifyScreenState extends ConsumerState<PinVerifyScreen> {
     });
   }
 
-  String get _returnPath => widget.returnTo ?? '/history';
+  String get _returnPath => widget.returnTo ?? '/home';
 
   Future<void> _tryBiometric() async {
     if (_biometricTried) return;
     _biometricTried = true;
     final cap = ref.read(biometricCapabilityProvider).value;
-    if (cap == null || !_hasBiometric(cap)) return;
+    if (cap == null || !_hasBiometric(cap)) {
+      // No biometric on this device or user hasn't opted in — fall
+      // straight through to the PIN keypad. Reset the in-progress
+      // flag so the keypad is visible on first paint.
+      if (mounted) setState(() => _biometricInProgress = false);
+      return;
+    }
     if (!mounted) return;
     setState(() {
       _busy = true;
       _biometricInProgress = true;
     });
     final result = await ref.read(authenticateWithBiometricUseCaseProvider)(
-      reason: 'Unlock your journal',
+      reason: 'Unlock MoodBloom',
     );
     if (!mounted) return;
     result.fold(
@@ -111,18 +122,7 @@ class _PinVerifyScreenState extends ConsumerState<PinVerifyScreen> {
       cap.isAvailable && cap.hasEnrolledBiometrics && cap.userOptedIn;
 
   void _onUnlocked() {
-    // Also flip the cold-boot biometric flag so the next router pass
-    // does NOT redirect the user to /biometric-gate. Without this, the
-    // flow was:
-    //   1. Tap History → privacy-lock fires (biometricUnlocked=false)
-    //   2. User unlocks via PIN or biometric on /unlock-history
-    //   3. context.go('/history') → router redirect re-runs
-    //   4. Cold-boot biometric gate fires (still biometricUnlocked=false)
-    //   5. Second biometric prompt — the "double lock".
-    // Both flags clear on sign-out (router.dart auth-state listener),
-    // so the session-bind is still tight.
-    ref.read(biometricUnlockedThisSessionProvider.notifier).state = true;
-    ref.read(historyUnlockedThisSessionProvider.notifier).unlock();
+    ref.read(privacyLockUnlockedThisSessionProvider.notifier).state = true;
     if (mounted) context.go(_returnPath);
   }
 
@@ -130,7 +130,7 @@ class _PinVerifyScreenState extends ConsumerState<PinVerifyScreen> {
     if (_busy) return;
     final user = ref.read(currentUserStreamProvider).value;
     if (user == null) {
-      setState(() => _errorText = 'Sign in first to unlock your journal.');
+      setState(() => _errorText = 'Sign in first to unlock MoodBloom.');
       _keypadController.clear();
       return;
     }
@@ -160,6 +160,53 @@ class _PinVerifyScreenState extends ConsumerState<PinVerifyScreen> {
 
   DateTime? _lockedUntilFrom(PinVerifyFailure failure) => failure.lockedUntil;
 
+  /// "Use security key" tap handler — ADR-0014 Decision D. Runs the
+  /// WebAuthn assertion ceremony; on success flips the session unlock
+  /// flag exactly as the PIN happy-path does and navigates onwards. On
+  /// failure surfaces a compact inline error (mirroring the biometric
+  /// inline-error pattern), keeping the PIN keypad reachable as the
+  /// fallback factor.
+  Future<void> _onUseSecurityKey() async {
+    if (_busy) return;
+    final user = ref.read(currentUserStreamProvider).value;
+    if (user == null) {
+      setState(() => _errorText = 'Sign in first to unlock MoodBloom.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _errorText = null;
+    });
+    final result = await ref.read(verifyWebauthnUseCaseProvider)(
+      userId: user.uid,
+    );
+    if (!mounted) return;
+    result.fold(
+      ok: (_) => _onUnlocked(),
+      err: (failure) {
+        setState(() {
+          _busy = false;
+          // userCanceled is silent — the user dismissed the prompt and
+          // already knows. Anything else surfaces the failure message.
+          _errorText = failure.isUserCanceled ? null : failure.message;
+          _lockedUntil = failure.lockedUntil;
+        });
+      },
+    );
+  }
+
+  /// Explicit exit affordance — signs out, clears the session-scoped
+  /// unlock flag, and returns to /sign-in. The router's auth gate
+  /// then drives the rest of the redirect chain.
+  Future<void> _signOutInstead() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    await ref.read(signOutUseCaseProvider)();
+    if (!mounted) return;
+    ref.read(privacyLockUnlockedThisSessionProvider.notifier).state = false;
+    context.go('/sign-in');
+  }
+
   /// Phone / tablet / desktop breakpoints — mirrored from `_AppShell`
   /// and `OnboardingScreen` so the privacy lock matches the rest of
   /// the app's responsive behaviour.
@@ -186,20 +233,20 @@ class _PinVerifyScreenState extends ConsumerState<PinVerifyScreen> {
         cap.hasEnrolledBiometrics &&
         cap.userOptedIn;
 
+    // ADR-0014 Decision D — the "Use security key" affordance appears
+    // when WebAuthn is reachable on this platform AND the user has
+    // registered a credential. On native or pre-flag-flip builds the
+    // available flag stays false and the button never shows.
+    final webauthnAvailable = ref.watch(webauthnAvailableProvider);
+    final webauthnCredential = ref.watch(webauthnCredentialProvider).value;
+    final canUseSecurityKey = webauthnAvailable && webauthnCredential != null;
+
     return Scaffold(
       backgroundColor: mb.bg,
       appBar: AppBar(
         title: const Text('Privacy lock'),
         backgroundColor: mb.bg,
-        // Back button so a user who misclicks into /history has an
-        // escape hatch. Routes to /home (the only safe target — the
-        // user can't go "back" because /unlock-history was a
-        // redirect, not a push).
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Back to home',
-          onPressed: _busy ? null : () => context.go('/home'),
-        ),
+        automaticallyImplyLeading: false,
       ),
       body: SafeArea(
         child: LayoutBuilder(
@@ -225,7 +272,7 @@ class _PinVerifyScreenState extends ConsumerState<PinVerifyScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Unlock your journal',
+                        'Unlock MoodBloom',
                         style: MbFonts.fraunces(
                           fontSize: w >= _desktopMin ? 28 : 22,
                           fontWeight: FontWeight.w600,
@@ -306,6 +353,27 @@ class _PinVerifyScreenState extends ConsumerState<PinVerifyScreen> {
                             label: const Text('Use biometric instead'),
                           ),
                         ),
+                      if (canUseSecurityKey)
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: _busy ? null : _onUseSecurityKey,
+                            icon: const Icon(Icons.key),
+                            label: const Text('Use security key'),
+                          ),
+                        ),
+                      // Cold-boot exit hatch — the unlock screen is the
+                      // first frame after sign-in, so there's no app
+                      // shell to back-navigate to. "Sign out instead"
+                      // lets the user explicitly leave the locked state
+                      // without being trapped. Mirrors the affordance
+                      // from the prior `BiometricGateScreen`.
+                      const SizedBox(height: 4),
+                      Center(
+                        child: TextButton(
+                          onPressed: _busy ? null : _signOutInstead,
+                          child: const Text('Sign out instead'),
+                        ),
+                      ),
                     ],
                   ),
                 ),

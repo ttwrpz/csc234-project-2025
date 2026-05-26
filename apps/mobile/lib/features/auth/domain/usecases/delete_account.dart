@@ -75,13 +75,13 @@ class DeleteAccountUseCase {
       final failure = deleteAuthResult.failure;
       if (identical(failure, _requiresRecentLogin)) {
         _logger.info(
-          'deleteCurrentUser hit recent-login window post-cascade — '
+          'deleteCurrentUser hit recent-login window post-cascade - '
           'proceeding to signOut anyway',
         );
       } else {
         _logger.warn(
           'deleteCurrentUser failed post-cascade '
-          '(${failure.runtimeType}) — proceeding to signOut anyway',
+          '(${failure.runtimeType}) - proceeding to signOut anyway',
         );
       }
     }

@@ -38,7 +38,7 @@ sealed class PinSetupFailure extends Failure {
 }
 
 class _Mismatch extends PinSetupFailure {
-  const _Mismatch() : super(message: 'PINs didn’t match — try again.');
+  const _Mismatch() : super(message: 'PINs didn’t match - try again.');
 
   @override
   bool get isMismatch => true;

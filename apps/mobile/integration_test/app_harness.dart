@@ -72,6 +72,15 @@ defaultIntegrationOverrides() async {
           userOptedIn: false,
         ),
       ),
+      // Privacy Lock overrides — keep the cold-boot gate off in
+      // integration flows so the harness lands on the screen each test
+      // is exercising rather than `/privacy-lock`. The session-unlocked
+      // flag is pre-flipped to `true` for defence in depth in case any
+      // test path opts into Privacy Lock mid-flow.
+      privacyLockEnabledProvider.overrideWith(
+        () => SeededPrivacyLockEnabledNotifier(false),
+      ),
+      privacyLockUnlockedThisSessionProvider.overrideWith((_) => true),
       moodSyncManagerProvider.overrideWithValue(syncManager),
     ],
     syncManager: syncManager,

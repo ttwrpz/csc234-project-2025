@@ -141,7 +141,7 @@ List<MoodEntry> _sevenDaysFor(String uid, DateTime weekStart) {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Weekly Harvest cycle (WBS 8.3 — Test 4)', () {
+  group('Weekly Harvest cycle (WBS 8.3 - Test 4)', () {
     late _RecordingHarvestRepository harvestRepo;
     late DateTime weekStart;
     late List<MoodEntry> weekEntries;
@@ -155,7 +155,7 @@ void main() {
     });
 
     testWidgets(
-      'banner copy is compassionate — no forbidden vocabulary in rendered text',
+      'banner copy is compassionate - no forbidden vocabulary in rendered text',
       (tester) async {
         const summary = WeeklySummary(
           averageMoodScore: 0.24,
@@ -180,7 +180,7 @@ void main() {
           find.text(WeeklySummaryScreen.harvestBanner),
           findsOneWidget,
           reason:
-              'WeeklySummaryScreen.harvestBanner must render verbatim — '
+              'WeeklySummaryScreen.harvestBanner must render verbatim - '
               'the constant is the single source of truth (CLAUDE.md '
               "Pre-approved intervention phrasing § 'Weekly harvest banner')",
         );
@@ -214,19 +214,19 @@ void main() {
         expect(
           banner.toLowerCase(),
           contains('harvested'),
-          reason: 'harvest banner must use "harvested" — the canonical word',
+          reason: 'harvest banner must use "harvested" - the canonical word',
         );
         expect(
           banner.toLowerCase(),
           contains('new week'),
           reason:
-              'harvest banner must signal "new week" — fresh canvas framing',
+              'harvest banner must signal "new week" - fresh canvas framing',
         );
         expect(
           banner.toLowerCase(),
           contains('fresh canvas'),
           reason:
-              'harvest banner must use "fresh canvas" — narrative '
+              'harvest banner must use "fresh canvas" - narrative '
               'externalization (CLAUDE.md "Compassionate imperatives")',
         );
 
@@ -247,7 +247,7 @@ void main() {
       },
     );
 
-    test('real ArchiveWeeklyGardenUseCase persists a WeeklyGarden — '
+    test('real ArchiveWeeklyGardenUseCase persists a WeeklyGarden - '
         'weekId is YYYY-Www, payload carries all 7 seeded entries', () async {
       // The router-driven flow ends here: the controller's
       // acknowledge() invokes this very use case after building the
@@ -272,7 +272,7 @@ void main() {
         result,
         isA<Ok<WeeklyGarden, HarvestFailure>>(),
         reason:
-            'archive must succeed for a populated week — only empty '
+            'archive must succeed for a populated week - only empty '
             'weeks return Err(noEntries)',
       );
 
@@ -296,7 +296,7 @@ void main() {
         archived.weekId,
         matches(RegExp(r'^\d{4}-W\d{2}$')),
         reason:
-            'archived WeeklyGarden.weekId must follow "YYYY-Www" — '
+            'archived WeeklyGarden.weekId must follow "YYYY-Www" - '
             'the Firestore rule pins doc id to this format',
       );
       expect(
@@ -304,7 +304,7 @@ void main() {
         equals(ArchiveWeeklyGardenUseCase.formatWeekId(weekStart)),
         reason:
             'the archived weekId must match the use case helper for '
-            'the seeded weekStart — guards against drift between the '
+            'the seeded weekStart - guards against drift between the '
             'controller-side and use-case-side derivation',
       );
 
@@ -316,7 +316,7 @@ void main() {
         archived.entries,
         hasLength(7),
         reason:
-            'the archived WeeklyGarden must carry all 7 seeded entries — '
+            'the archived WeeklyGarden must carry all 7 seeded entries - '
             'weekly harvest is purely additive',
       );
       expect(
@@ -356,7 +356,7 @@ void main() {
     });
 
     test('WeeklyGarden entries + healthHistory are immutable post-archive '
-        '(TC-23 — history is a record, not a redo)', () async {
+        '(TC-23 - history is a record, not a redo)', () async {
       // The brief asks: "Verify past entries remain readable in
       // History." History is a stream of [WeeklyGarden] docs from
       // the repo. The audit-trail invariant is that those docs are
@@ -396,7 +396,7 @@ void main() {
         () => garden.healthHistory.add(0.5),
         throwsUnsupportedError,
         reason:
-            'WeeklyGarden.healthHistory must be unmodifiable — same '
+            'WeeklyGarden.healthHistory must be unmodifiable - same '
             'write-once contract as entries',
       );
 

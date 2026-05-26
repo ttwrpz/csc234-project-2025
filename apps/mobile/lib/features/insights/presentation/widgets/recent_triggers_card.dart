@@ -54,7 +54,7 @@ class RecentTriggersCard extends ConsumerWidget {
             const SizedBox(height: 10),
             if (triggers.isEmpty)
               Text(
-                'No triggers in this window yet — quiet days only.',
+                'No triggers in this window yet - quiet days only.',
                 style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
               )
             else

@@ -16,6 +16,11 @@ sealed class WebauthnVerifyFailure extends Failure {
   /// Returns null for every variant except [WebauthnVerifyFailure.rateLimited].
   DateTime? get lockedUntil => null;
 
+  /// Convenience getters for UI screens that branch on the failure
+  /// variant without importing the file-private classes.
+  bool get isUserCanceled => false;
+  bool get isNoCredential => false;
+
   /// No credential is registered for this account. UI should hide the
   /// "Use security key" button when this surfaces.
   const factory WebauthnVerifyFailure.noCredential() = _NoCredential;
@@ -47,10 +52,14 @@ sealed class WebauthnVerifyFailure extends Failure {
 class _NoCredential extends WebauthnVerifyFailure {
   const _NoCredential()
     : super(message: 'No security key is registered on this account.');
+  @override
+  bool get isNoCredential => true;
 }
 
 class _UserCanceled extends WebauthnVerifyFailure {
   const _UserCanceled() : super(message: 'Security key prompt canceled.');
+  @override
+  bool get isUserCanceled => true;
 }
 
 class _CounterRegression extends WebauthnVerifyFailure {

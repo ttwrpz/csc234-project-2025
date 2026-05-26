@@ -15,10 +15,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AiSuggestionDto {
 
- bool get ok; int get v; String get requestId; String get mood; double get confidence; AiSuggestionAlternativeDto? get alternative; String get rationale; String? get flag; int get latencyMs; String get modelVersion;/// Inferred 1..5 intensity. Optional on the wire so we stay
-/// compatible with the Cloud Function before the v1.0-polish
-/// (2026-05-10) redeploy that adds it. Defaults to 3 (neutral)
-/// when the server omits it.
+ bool get ok; int get v; String get requestId; String get mood; double get confidence; AiSuggestionAlternativeDto? get alternative; String get rationale; String? get flag; int get latencyMs; String get modelVersion;/// Inferred 1..5 intensity. Optional on the wire for backward
+/// compatibility with older Cloud Function deploys that omit it;
+/// defaults to 3 (neutral) when missing.
  int get intensity;
 /// Create a copy of AiSuggestionDto
 /// with the given fields replaced by the non-null parameter values.
@@ -248,10 +247,9 @@ class _AiSuggestionDto extends AiSuggestionDto {
 @override final  String? flag;
 @override final  int latencyMs;
 @override final  String modelVersion;
-/// Inferred 1..5 intensity. Optional on the wire so we stay
-/// compatible with the Cloud Function before the v1.0-polish
-/// (2026-05-10) redeploy that adds it. Defaults to 3 (neutral)
-/// when the server omits it.
+/// Inferred 1..5 intensity. Optional on the wire for backward
+/// compatibility with older Cloud Function deploys that omit it;
+/// defaults to 3 (neutral) when missing.
 @override@JsonKey() final  int intensity;
 
 /// Create a copy of AiSuggestionDto

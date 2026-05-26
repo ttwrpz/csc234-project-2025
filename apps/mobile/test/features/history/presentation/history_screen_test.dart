@@ -56,7 +56,7 @@ void main() {
     });
 
     testWidgets(
-      'starts on the List tab — CalendarView is not in the foreground',
+      'starts on the List tab - CalendarView is not in the foreground',
       (tester) async {
         await _pumpHistory(tester);
         // The list-empty-state copy is visible (Sprint 2 prototype copy).
@@ -77,7 +77,7 @@ void main() {
 
       expect(find.byType(CalendarView), findsOneWidget);
       expect(
-        find.text('No moods this month — tap Log Mood to start.'),
+        find.text('No moods this month - tap Log Mood to start.'),
         findsOneWidget,
       );
     });

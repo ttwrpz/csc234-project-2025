@@ -144,7 +144,7 @@ class InterventionController extends Notifier<InterventionControllerState> {
     final ctx = await _buildContext();
     final useCase = await _useCase();
     if (useCase == null) {
-      logger.warn('dispatch skipped — use case unavailable');
+      logger.warn('dispatch skipped - use case unavailable');
       return;
     }
 

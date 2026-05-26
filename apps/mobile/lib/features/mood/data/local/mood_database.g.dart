@@ -303,10 +303,10 @@ class MoodEntryRow extends DataClass implements Insertable<MoodEntryRow> {
   final int? updatedAt;
   final List<String> mediaRefs;
 
-  /// `pending` / `syncing` / `synced` / `error` — see ADR-0004.
+  /// `pending` / `syncing` / `synced` / `error`.
   final String syncState;
 
-  /// Per-install UUID; LWW tiebreak on equal `updated_at` (ADR-0005).
+  /// Per-install UUID; LWW tiebreak on equal `updated_at`.
   final String deviceId;
 
   /// Tombstone marker. NULL means alive; non-NULL means soft-deleted.

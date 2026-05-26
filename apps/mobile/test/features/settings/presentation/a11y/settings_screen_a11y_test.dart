@@ -100,9 +100,6 @@ Future<void> _pumpSettings(
           ),
         ),
         fcmTokenRepositoryProvider.overrideWithValue(_StubFcmRepo()),
-        // ADR-0013 (v1.5 Wave E): hide the PRIVACY section in this
-        // a11y test rig; Wave E ships its own a11y coverage.
-        privacyLockMasterEnabledProvider.overrideWithValue(false),
       ],
       child: MaterialApp(
         theme: buildLightTheme(),

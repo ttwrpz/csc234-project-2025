@@ -116,7 +116,7 @@ class TierToggleTile extends ConsumerWidget {
       title: 'Support reminders',
       subtitle:
           'If something feels heavy, we\'ll quietly share where to find a '
-          'kind voice — including Hotline 1323.',
+          'kind voice - including Hotline 1323.',
     ),
   };
 }

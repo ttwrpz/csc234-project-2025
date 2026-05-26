@@ -32,7 +32,7 @@ class _InvalidInput extends AiAnalysisFailure {
 
 class _RateLimited extends AiAnalysisFailure {
   const _RateLimited(this.retryAfter)
-    : super(message: 'AI is busy — try again shortly.');
+    : super(message: 'AI is busy - try again shortly.');
   final Duration retryAfter;
 }
 

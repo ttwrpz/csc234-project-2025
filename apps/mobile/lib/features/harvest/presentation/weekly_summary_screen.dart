@@ -42,7 +42,7 @@ class WeeklySummaryScreen extends ConsumerWidget {
   /// intervention phrasing". Test asserts the exact string is rendered.
   static const String harvestBanner =
       'Your garden this week has been harvested and saved to your history. '
-      'A new week begins — a fresh canvas for your story.';
+      'A new week begins - a fresh canvas for your story.';
 
   /// Locked CTA label — keeps the screen's only navigation action
   /// stable so widget + golden tests pin to a known string.
@@ -64,7 +64,10 @@ class WeeklySummaryScreen extends ConsumerWidget {
       prev,
       next,
     ) {
-      if (next is HarvestArchiveSuccess) {
+      // Pop on Success AND on AlreadyDone (cross-device race outcome).
+      // Both represent "the archive exists" from the user's POV; only
+      // the local write path differs.
+      if (next is HarvestArchiveSuccess || next is HarvestArchiveAlreadyDone) {
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop();
         }
@@ -365,7 +368,7 @@ class _PatternCheckInsSection extends StatelessWidget {
     final mb = Theme.of(context).extension<MbColors>()!;
     final dayWord = count == 1 ? 'day' : 'days';
     final body = count == 0
-        ? 'No pattern check-ins this week — the engine stayed quiet.'
+        ? 'No pattern check-ins this week - the engine stayed quiet.'
         : '$count $dayWord the engine paused with you.';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -389,10 +392,16 @@ class _ContinueButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final loading = status is HarvestArchiveRunning;
+    // Disable the CTA on every terminal status. Without this guard the
+    // button stays tappable after AlreadyDone or Success, and a re-tap
+    // no-ops silently via the controller's early-return guard - the
+    // user would perceive a frozen button.
+    final terminal =
+        status is HarvestArchiveSuccess || status is HarvestArchiveAlreadyDone;
     return MbPrimaryButton(
       label: WeeklySummaryScreen.continueLabel,
       loading: loading,
-      onPressed: loading
+      onPressed: (loading || terminal)
           ? null
           : () => ref
                 .read(weeklySummaryControllerProvider.notifier)

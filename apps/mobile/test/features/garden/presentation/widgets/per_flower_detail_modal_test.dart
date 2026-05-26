@@ -30,7 +30,7 @@ MoodEntry _entry({
 }
 
 void main() {
-  group('PerFlowerDetailModal — TC-7 entry-detail surface', () {
+  group('PerFlowerDetailModal - TC-7 entry-detail surface', () {
     testWidgets('renders mood title, intensity dots, text snippet, and date', (
       tester,
     ) async {
@@ -74,7 +74,7 @@ void main() {
       );
 
       // Empty-string text resolves to "—" in the modal's body card.
-      expect(find.text('—'), findsOneWidget);
+      expect(find.text('-'), findsOneWidget);
     });
 
     testWidgets(
@@ -197,7 +197,7 @@ void main() {
     });
   });
 
-  group('GardenBed — TC-7 per-flower tap dispatches onFlowerTap', () {
+  group('GardenBed - TC-7 per-flower tap dispatches onFlowerTap', () {
     testWidgets(
       'tapping the hit-area for the first flower invokes onFlowerTap with the '
       'corresponding MoodEntry',

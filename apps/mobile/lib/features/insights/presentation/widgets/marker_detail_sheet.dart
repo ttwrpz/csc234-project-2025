@@ -78,7 +78,7 @@ class MarkerDetailSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'A quiet day — nothing flagged.',
+              'A quiet day - nothing flagged.',
               style: MbFonts.nunito(fontSize: 14, color: mb.text),
             ),
           ],

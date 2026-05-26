@@ -567,7 +567,7 @@ class _SkinCardState extends ConsumerState<_SkinCard> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'You have ${widget.userBalance} tokens — '
+            'You have ${widget.userBalance} tokens - '
             '${widget.skin.cost - widget.userBalance} short.',
           ),
         ),
@@ -605,7 +605,7 @@ class _SkinCardState extends ConsumerState<_SkinCard> {
           // Pull a clearer phrasing for the most common path.
           SkinFailure() when failure.message.contains('Not enough tokens') =>
             failure.message,
-          _ => "Couldn't unlock — please try again.",
+          _ => "Couldn't unlock - please try again.",
         };
         messenger.showSnackBar(SnackBar(content: Text(message)));
       },

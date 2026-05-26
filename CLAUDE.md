@@ -305,6 +305,57 @@ Paths that agents must NOT edit without explicit orchestrator approval:
 
 ---
 
+## Testing during iteration (READ BEFORE RUNNING TESTS)
+
+The full test suite takes ~5 minutes. Running it after every edit is the single biggest source of wasted wall-clock time in this project. The harness MUST follow these rules:
+
+### When to run tests
+
+- **DO NOT** run `flutter test` after every edit.
+- Run `flutter analyze` after every batch of edits — it is fast (~30s warm, ~70s cold) and catches the same class of breakage for most refactors.
+- Run tests ONLY when:
+  - (a) the user explicitly asks ("run the tests", "check tests pass", etc.)
+  - (b) you are about to mark a TaskCreate/TaskUpdate task as `completed`
+  - (c) you are about to commit, push, or open a PR
+  - (d) you just changed a domain algorithm, a Firestore rule, a Riverpod provider graph, or anything in `lib/app/` (router, theme, providers)
+
+### How to run tests (scope-first)
+
+Always run the **narrowest** scope that exercises the touched code:
+
+```bash
+# Single file — fastest, use when you changed exactly one widget/service
+cd apps/mobile && flutter test test/features/<feature>/path/to/specific_test.dart
+
+# Feature directory — use when you changed multiple files in one feature
+cd apps/mobile && flutter test test/features/<feature>/
+
+# Name regex — use when iterating on one test
+cd apps/mobile && flutter test --name "<regex>"
+
+# Parallel + skip slow shader-bound + golden tests
+cd apps/mobile && flutter test --concurrency=8 --exclude-tags=golden,shader
+
+# Full suite — ONLY for (b) or (c) above
+cd apps/mobile && flutter test --concurrency=8 --exclude-tags=golden,shader
+```
+
+Scope heuristics:
+- **Domain-only edit** (`lib/features/<x>/domain/`) → `flutter test test/features/<x>/domain/`. Skip widget tests entirely.
+- **UI-only edit** (`lib/features/<x>/presentation/`) → `flutter test test/features/<x>/presentation/`. Skip domain tests.
+- **Color/copy edit** (one or two lines, no logic) → `flutter analyze` only. Do not run tests.
+- **Router or provider graph edit** → `flutter test test/app/`.
+- **Pattern engine threshold edit** → `flutter test test/features/pattern_engine/`.
+
+### Other speed rules
+
+- **Never** run `flutter clean` between iterations — it cold-starts the build cache and adds 2-3 minutes.
+- **Never** pass `--coverage` during iteration — it roughly doubles test time. Reserve it for end-of-task verification (rule (c)).
+- The `ink_sparkle.frag` shader-version mismatch on this machine causes ~25 widget tests to fail with `Unsupported runtime stages format version. Expected 2, got 1`. This is an environment issue, NOT a regression. If only those tests fail, the suite is green — verify by running `flutter test --exclude-tags=shader`.
+- If a test you just modified hangs, kill it and rerun with `--reporter=expanded` to see which case is stuck. Do not retry the full suite in a loop.
+
+---
+
 ## Quick commands
 
 ```bash

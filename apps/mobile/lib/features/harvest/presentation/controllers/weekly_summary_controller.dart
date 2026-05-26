@@ -7,6 +7,7 @@ import '../../../mood/domain/entities/mood_entry.dart';
 import '../../data/providers.dart';
 import '../../domain/entities/weekly_garden.dart';
 import '../../domain/harvest_failure.dart';
+import '../../domain/usecases/archive_weekly_garden.dart';
 
 /// Pending-harvest signal: `true` when the user's earliest unarchived
 /// week has crossed its 7-day boundary AND no archive doc yet exists
@@ -115,6 +116,15 @@ class HarvestArchiveSuccess extends HarvestArchiveStatus {
   final WeeklyGarden garden;
 }
 
+/// Cross-device race outcome: Firestore reported the week was already
+/// archived by another device. The user's intent ("harvest this week")
+/// is fulfilled - the canonical archive doc exists - so presentation
+/// treats this like Success (close the popup) rather than Error.
+class HarvestArchiveAlreadyDone extends HarvestArchiveStatus {
+  const HarvestArchiveAlreadyDone({required this.weekId});
+  final String weekId;
+}
+
 class HarvestArchiveError extends HarvestArchiveStatus {
   const HarvestArchiveError(this.failure);
   final HarvestFailure failure;
@@ -140,7 +150,9 @@ class WeeklySummaryController extends Notifier<HarvestArchiveStatus> {
   /// (the screen should pop on success, but defense in depth in case
   /// the user double-taps Continue).
   Future<WeeklyGarden?> acknowledge() async {
-    if (state is HarvestArchiveRunning || state is HarvestArchiveSuccess) {
+    if (state is HarvestArchiveRunning ||
+        state is HarvestArchiveSuccess ||
+        state is HarvestArchiveAlreadyDone) {
       return null;
     }
 
@@ -196,6 +208,19 @@ class WeeklySummaryController extends Notifier<HarvestArchiveStatus> {
         return garden;
       },
       err: (failure) {
+        if (failure.isAlreadyArchived) {
+          // Cross-device race: another device wrote the canonical
+          // archive while this device's snapshot listener hadn't caught
+          // up. Invalidating the history provider forces a re-subscribe
+          // so the local cache pulls the canonical doc; flipping to
+          // HarvestArchiveAlreadyDone lets the screen pop via the same
+          // listener that handles HarvestArchiveSuccess.
+          ref.invalidate(weeklyGardenHistoryProvider);
+          state = HarvestArchiveAlreadyDone(
+            weekId: ArchiveWeeklyGardenUseCase.formatWeekId(activeWeekStart),
+          );
+          return null;
+        }
         state = HarvestArchiveError(failure);
         return null;
       },
@@ -207,6 +232,16 @@ class WeeklySummaryController extends Notifier<HarvestArchiveStatus> {
     if (state is HarvestArchiveError) {
       state = const HarvestArchiveIdle();
     }
+  }
+
+  /// Resets any terminal status (success or error) back to idle.
+  /// Called by the home screen before pushing a fresh harvest screen so
+  /// the previous week's `HarvestArchiveSuccess` doesn't make
+  /// [acknowledge] a no-op on the next Continue tap. Running state is
+  /// preserved — we never drop an in-flight archive write.
+  void reset() {
+    if (state is HarvestArchiveRunning) return;
+    state = const HarvestArchiveIdle();
   }
 }
 

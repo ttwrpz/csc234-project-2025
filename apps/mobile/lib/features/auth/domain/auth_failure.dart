@@ -85,7 +85,7 @@ class _BiometricCancelled extends AuthFailure {
 
 class _BiometricFailed extends AuthFailure {
   const _BiometricFailed(this.reason)
-    : super(message: 'Couldn’t verify — please sign in again.');
+    : super(message: 'Couldn’t verify - please sign in again.');
   final String reason;
 }
 

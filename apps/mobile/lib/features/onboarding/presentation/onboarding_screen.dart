@@ -206,7 +206,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           layout: layout,
           title: 'Meet your garden',
           body:
-              'Your feelings become a living scene. Nothing to fix — just to '
+              'Your feelings become a living scene. Nothing to fix - just to '
               'notice.',
         );
       case _SlideKind.logEntry:
@@ -480,11 +480,11 @@ class _NotificationsSlideState extends ConsumerState<_NotificationsSlide> {
     final String bodyCopy;
     if (_granted && _alreadyGranted) {
       bodyCopy =
-          "You've already allowed notifications for MoodBloom — nothing "
+          "You've already allowed notifications for MoodBloom - nothing "
           'else to do here. You can revoke this in your device or '
           'browser settings any time.';
     } else if (_granted) {
-      bodyCopy = "Thanks — we'll only nudge if your week looks heavy.";
+      bodyCopy = "Thanks - we'll only nudge if your week looks heavy.";
     } else if (_denied) {
       bodyCopy =
           'Looks like the request was declined. Tap below to try again, '
@@ -572,7 +572,7 @@ class _NotificationsSlideState extends ConsumerState<_NotificationsSlide> {
     );
 
     return Semantics(
-      label: 'Stay connected — notification permission request',
+      label: 'Stay connected - notification permission request',
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
         child: switch (layout) {

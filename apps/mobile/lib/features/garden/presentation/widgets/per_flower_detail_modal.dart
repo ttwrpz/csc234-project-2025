@@ -200,7 +200,7 @@ class PerFlowerDetailModal extends StatelessWidget {
               borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusMd),
             ),
             child: Text(
-              note.isEmpty ? '—' : note,
+              note.isEmpty ? '-' : note,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
               style: MbFonts.nunito(fontSize: 13, height: 1.5, color: mb.text),

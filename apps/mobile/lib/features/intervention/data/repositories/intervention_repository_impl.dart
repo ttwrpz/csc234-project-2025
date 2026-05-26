@@ -45,7 +45,7 @@ class InterventionRepositoryImpl implements InterventionRepository {
       // controller already surfaced the banner in-memory; this failure
       // is the bookkeeping cost the dispatcher accepts (the render
       // happens before the persist).
-      _logger.warn('writeRecord skipped — no uid');
+      _logger.warn('writeRecord skipped - no uid');
       return const Err(InterventionFailure.anchorReadFailed());
     }
 
@@ -75,7 +75,7 @@ class InterventionRepositoryImpl implements InterventionRepository {
   ) async {
     final uid = _uidGetter();
     if (uid == null || uid.isEmpty) {
-      _logger.warn('markOptedOut skipped — no uid');
+      _logger.warn('markOptedOut skipped - no uid');
       return const Err(InterventionFailure.anchorReadFailed());
     }
 

@@ -49,6 +49,12 @@ dependencies:
   # transitive-dep version-pin risk. PBKDF2 is hand-rolled on top of
   # `crypto`'s `Hmac` primitive — see ADR-0013 Open Follow-up #1.
   crypto: ^3.0.7
+  # Promoted from transitive to a direct dep so the WebAuthn JS-interop
+  # binding at `features/auth/data/datasources/webauthn_browser_datasource_web.dart`
+  # can `import 'package:web/web.dart'` without a transitive-pin risk
+  # (ADR-0014 Decision A). Used ONLY by the web-conditional WebAuthn
+  # datasource; the native build never reaches `dart:js_interop` either.
+  web: ^1.1.0
   core:
     path: ../../packages/core
   design_system:

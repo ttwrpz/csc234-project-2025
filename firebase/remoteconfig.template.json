@@ -21,13 +21,6 @@
       },
       "description": "Master enable for the cheer-up push dispatcher. Default false: the Pattern Engine still writes patterns/{date}, but no push fires. Flip on once the dispatcher reads triggeredTier (ADR-0011 §4).",
       "valueType": "BOOLEAN"
-    },
-    "history_privacy_lock_enabled": {
-      "defaultValue": {
-        "value": "true"
-      },
-      "description": "Kill-switch for the History privacy gate (ADR-0013). Default true. Flip to false to disable globally; stored PIN hashes stay at rest, no data loss.",
-      "valueType": "BOOLEAN"
     }
   },
   "version": {

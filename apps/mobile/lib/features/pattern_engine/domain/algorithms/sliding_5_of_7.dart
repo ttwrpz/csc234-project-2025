@@ -19,7 +19,12 @@ import '../entities/daily_score.dart';
 /// exactly 0.0 is not negative. (`avgScore = -0.0001` IS negative.)
 ///
 /// Trigger semantics (caller decides):
-///  * count `>= 5` → Tier 2.
+///  * count `>= 4` → Tier 2.
+///
+/// v1.5.1 note: the original threshold was 5-of-7 (PHQ-9 phrasing
+/// "more than half the days"). It was relaxed to 4-of-7 (~57%) so
+/// Insights surface sooner. Still above the daily-coin-flip baseline
+/// (3.5/7 = 50%), so we avoid a per-bad-week false-positive carpet.
 ///
 /// Pure-Dart function — imports only `package:core/core.dart` (for
 /// `localMidnight`) and the sibling [DailyScore] entity. No Flutter /

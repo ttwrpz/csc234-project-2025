@@ -73,7 +73,7 @@ class DailyScoreStrip extends StatelessWidget {
     final headerSpacing = compact ? 10.0 : 16.0;
 
     return Semantics(
-      label: 'Daily score strip — last 7 days',
+      label: 'Daily score strip - last 7 days',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -202,7 +202,7 @@ class _ScoreCell extends StatelessWidget {
     }
     return Semantics(
       button: true,
-      label: '$semanticLabel — open entries',
+      label: '$semanticLabel - open entries',
       child: InkWell(
         borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusSm),
         onTap: onTap,

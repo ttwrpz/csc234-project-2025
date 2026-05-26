@@ -43,7 +43,7 @@ class FcmTokenRepositoryImpl implements FcmTokenRepository {
     try {
       final outcome = await _fcm.requestPermission();
       if (outcome == FcmPermissionOutcome.denied) {
-        _logger.info('permission denied — skipping token upsert');
+        _logger.info('permission denied - skipping token upsert');
         return const Err(NotificationFailure.permissionDenied());
       }
       final token = await _fcm.getToken();

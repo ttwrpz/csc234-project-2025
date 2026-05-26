@@ -8,14 +8,14 @@ part of 'cheer_up_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Controller for the cheer-up banner (HB-003 §5.5a + §5.5b).
+/// Controller for the cheer-up banner.
 ///
 /// Owns the banner's transient UI state (session-scoped dismissal +
 /// onShown idempotency) and orchestrates two writes when the detector
 /// flips to triggered:
 ///   1. The cooldown / escalation anchors via [InterventionStateRepository]
-///      (5.5a — `lastTriggeredAt`, `firstTriggeredAt`).
-///   2. The audit-log event via [CheerUpEventsRepository] (5.5b — the
+///      (`lastTriggeredAt`, `firstTriggeredAt`).
+///   2. The audit-log event via [CheerUpEventsRepository] (the
 ///      `users/{uid}/cheerUpEvents/{dayUtc}-{reason}` doc-create that
 ///      fires the `sendCheerUpPush` Cloud Function).
 ///
@@ -34,14 +34,14 @@ part of 'cheer_up_controller.dart';
 @ProviderFor(CheerUpController)
 final cheerUpControllerProvider = CheerUpControllerProvider._();
 
-/// Controller for the cheer-up banner (HB-003 §5.5a + §5.5b).
+/// Controller for the cheer-up banner.
 ///
 /// Owns the banner's transient UI state (session-scoped dismissal +
 /// onShown idempotency) and orchestrates two writes when the detector
 /// flips to triggered:
 ///   1. The cooldown / escalation anchors via [InterventionStateRepository]
-///      (5.5a — `lastTriggeredAt`, `firstTriggeredAt`).
-///   2. The audit-log event via [CheerUpEventsRepository] (5.5b — the
+///      (`lastTriggeredAt`, `firstTriggeredAt`).
+///   2. The audit-log event via [CheerUpEventsRepository] (the
 ///      `users/{uid}/cheerUpEvents/{dayUtc}-{reason}` doc-create that
 ///      fires the `sendCheerUpPush` Cloud Function).
 ///
@@ -58,14 +58,14 @@ final cheerUpControllerProvider = CheerUpControllerProvider._();
 /// (idempotent path — the trigger already fired earlier today).
 final class CheerUpControllerProvider
     extends $NotifierProvider<CheerUpController, CheerUpUiState> {
-  /// Controller for the cheer-up banner (HB-003 §5.5a + §5.5b).
+  /// Controller for the cheer-up banner.
   ///
   /// Owns the banner's transient UI state (session-scoped dismissal +
   /// onShown idempotency) and orchestrates two writes when the detector
   /// flips to triggered:
   ///   1. The cooldown / escalation anchors via [InterventionStateRepository]
-  ///      (5.5a — `lastTriggeredAt`, `firstTriggeredAt`).
-  ///   2. The audit-log event via [CheerUpEventsRepository] (5.5b — the
+  ///      (`lastTriggeredAt`, `firstTriggeredAt`).
+  ///   2. The audit-log event via [CheerUpEventsRepository] (the
   ///      `users/{uid}/cheerUpEvents/{dayUtc}-{reason}` doc-create that
   ///      fires the `sendCheerUpPush` Cloud Function).
   ///
@@ -109,14 +109,14 @@ final class CheerUpControllerProvider
 
 String _$cheerUpControllerHash() => r'0b2243c6052216b508540f593254924cc9eabdb1';
 
-/// Controller for the cheer-up banner (HB-003 §5.5a + §5.5b).
+/// Controller for the cheer-up banner.
 ///
 /// Owns the banner's transient UI state (session-scoped dismissal +
 /// onShown idempotency) and orchestrates two writes when the detector
 /// flips to triggered:
 ///   1. The cooldown / escalation anchors via [InterventionStateRepository]
-///      (5.5a — `lastTriggeredAt`, `firstTriggeredAt`).
-///   2. The audit-log event via [CheerUpEventsRepository] (5.5b — the
+///      (`lastTriggeredAt`, `firstTriggeredAt`).
+///   2. The audit-log event via [CheerUpEventsRepository] (the
 ///      `users/{uid}/cheerUpEvents/{dayUtc}-{reason}` doc-create that
 ///      fires the `sendCheerUpPush` Cloud Function).
 ///

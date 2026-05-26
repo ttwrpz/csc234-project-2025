@@ -256,7 +256,8 @@ function call(uid: string | null): CallableLike {
 }
 
 // Seed a "first-run" fixture: profile doc + one mood + one cooldown +
-// the four rate-limit docs the cleanup pass should sweep.
+// the five rate-limit docs the cleanup pass should sweep (four pre-S5
+// CFs plus the WebAuthn ladder added by ADR-0014).
 function seedFullAccount(uid: string): void {
   docStore.set(`users/${uid}`, {
     displayName: 'Test',
@@ -271,6 +272,7 @@ function seedFullAccount(uid: string): void {
   docStore.set(`rateLimits.patterns/${uid}`, { count: 1 });
   docStore.set(`rateLimits.cheerUp/${uid}`, { count: 1 });
   docStore.set(`rateLimits.suggestQuote/${uid}`, { count: 2 });
+  docStore.set(`rateLimits.webauthn/${uid}`, { count: 1 });
 }
 
 // ---------------------------------------------------------------------------
@@ -362,23 +364,27 @@ describe('wipeUserData handler', () => {
   // -------------------------------------------------------------------------
   describe('R-M01 rate-limit cleanup', () => {
     test(
-      'deletes all four rate-limit collection docs when present',
+      'deletes all five rate-limit collection docs when present',
       async () => {
         const uid = 'test-uid';
         seedFullAccount(uid);
 
         const out = await handleWipeUserData(call(uid) as never);
 
+        // Five collections — one per CF (analyzeMoodText / analyzePatterns
+        // / sendCheerUpPush / suggestQuote) plus `rateLimits.webauthn`
+        // added by ADR-0014 for the four `webauthn*` callables.
         expect(out).toMatchObject({
           ok: true,
           alreadyDeleted: false,
-          rateLimitDeletedCount: 4,
+          rateLimitDeletedCount: 5,
         });
-        // All four docs cleared.
+        // All five docs cleared.
         expect(docStore.has(`rateLimits/${uid}`)).toBe(false);
         expect(docStore.has(`rateLimits.patterns/${uid}`)).toBe(false);
         expect(docStore.has(`rateLimits.cheerUp/${uid}`)).toBe(false);
         expect(docStore.has(`rateLimits.suggestQuote/${uid}`)).toBe(false);
+        expect(docStore.has(`rateLimits.webauthn/${uid}`)).toBe(false);
       },
     );
 

@@ -60,12 +60,24 @@ class _PrivacySetupFlowScreenState
 
   Future<void> _runBiometricCheck() async {
     final result = await ref.read(authenticateWithBiometricUseCaseProvider)(
-      reason: 'Verify your fingerprint to set up the privacy lock',
+      reason: 'Verify your fingerprint to set up Privacy Lock',
     );
     if (!mounted) return;
-    result.fold(
-      ok: (_) => setState(() => _step = _Step.pin),
-      err: (_) {
+    await result.fold(
+      ok: (_) async {
+        // Privacy Lock setup is the single source of truth for
+        // opting into biometric — when the user confirms their
+        // biometric here, persist the opt-in so the unlock screen
+        // fires the OS prompt on future cold boots. The
+        // BiometricCapability provider is invalidated so dependent
+        // widgets (the Privacy Lock settings tile subtitle) re-read
+        // the new userOptedIn value.
+        await ref.read(setBiometricOptInUseCaseProvider)(true);
+        ref.invalidate(biometricCapabilityProvider);
+        if (!mounted) return;
+        setState(() => _step = _Step.pin);
+      },
+      err: (_) async {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Biometric verification was cancelled.'),

@@ -39,7 +39,7 @@ class CheerUpEventsRepositoryImpl implements CheerUpEventsRepository {
       // but a malformed reason should never round-trip even once.
       // Returning `unknown` rather than `permission` because the issue
       // is local (client bug), not the cloud's verdict.
-      _logger.warn('createEvent rejected — unknown reason');
+      _logger.warn('createEvent rejected - unknown reason');
       return Err(CheerUpEventsFailure.unknown('reason: $reason'));
     }
 

@@ -10,6 +10,13 @@ import 'package:core/core.dart';
 sealed class WebauthnRegisterFailure extends Failure {
   const WebauthnRegisterFailure({required super.message});
 
+  /// Convenience getters for UI screens that branch on the failure
+  /// variant without importing the file-private classes. Each returns
+  /// `false` by default; the matching sub-class overrides to `true`.
+  bool get isPinRequired => false;
+  bool get isNotProvisioned => false;
+  bool get isUserCanceled => false;
+
   /// The user has no PIN set. Per ADR-0014 Decision E, WebAuthn cannot
   /// be enabled without a PIN — the PIN is the recovery factor.
   const factory WebauthnRegisterFailure.pinRequired() = _PinRequired;
@@ -41,8 +48,10 @@ class _PinRequired extends WebauthnRegisterFailure {
   const _PinRequired()
     : super(
         message:
-            "Set up a PIN first — it’s your fallback if you lose this device.",
+            "Set up a PIN first - it’s your fallback if you lose this device.",
       );
+  @override
+  bool get isPinRequired => true;
 }
 
 class _NotProvisioned extends WebauthnRegisterFailure {
@@ -52,10 +61,14 @@ class _NotProvisioned extends WebauthnRegisterFailure {
             'Security keys are not available in this build. '
             'Use your PIN to unlock the journal.',
       );
+  @override
+  bool get isNotProvisioned => true;
 }
 
 class _UserCanceled extends WebauthnRegisterFailure {
   const _UserCanceled() : super(message: 'Security key setup canceled.');
+  @override
+  bool get isUserCanceled => true;
 }
 
 class _VerificationFailed extends WebauthnRegisterFailure {

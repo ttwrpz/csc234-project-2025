@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 mixin _$InterventionDispatch {
 
  Tier get tier;/// Quote text + `'\n\n'` + `DisclaimerCopy.notificationFooter`.
-/// Always contains the footer as a suffix — asserted by TC-38.
+/// Always contains the footer as a suffix.
  String get body;/// Semantic CTA keys for the renderer. Order matches reading order.
 /// Tier 1: `['open_breathing', 'opt_out']`.
 /// Tier 2: `['open_journal', 'opt_out']`.
@@ -229,7 +229,7 @@ class _InterventionDispatch implements InterventionDispatch {
 
 @override final  Tier tier;
 /// Quote text + `'\n\n'` + `DisclaimerCopy.notificationFooter`.
-/// Always contains the footer as a suffix — asserted by TC-38.
+/// Always contains the footer as a suffix.
 @override final  String body;
 /// Semantic CTA keys for the renderer. Order matches reading order.
 /// Tier 1: `['open_breathing', 'opt_out']`.

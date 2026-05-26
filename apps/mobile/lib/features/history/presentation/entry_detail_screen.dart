@@ -236,27 +236,30 @@ class _Detail extends StatelessWidget {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete entry?'),
-        content: const Text(
-          'This entry will be removed from your history. '
-          'You can always log a new mood today.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+      builder: (dialogContext) {
+        final colors = Theme.of(dialogContext).colorScheme;
+        return AlertDialog(
+          title: const Text('Delete entry?'),
+          content: const Text(
+            'This entry will be removed from your history. '
+            'You can always log a new mood today.',
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: MoodBloomColors.coral,
-              foregroundColor: Colors.white,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
             ),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.error,
+                foregroundColor: colors.onError,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
     );
     if (confirmed != true || !context.mounted) return;
     // We use a one-shot ProviderContainer read via the navigator's
@@ -321,8 +324,9 @@ class _ActionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mb = Theme.of(context).extension<MbColors>()!;
-    final coral = MoodBloomColors.coral;
+    final theme = Theme.of(context);
+    final mb = theme.extension<MbColors>()!;
+    final errorColor = theme.colorScheme.error;
     final disabledEdit = locked || onEdit == null;
     final disabledDelete = locked || onDelete == null;
     return Row(
@@ -341,10 +345,10 @@ class _ActionsRow extends StatelessWidget {
               onPressed: disabledDelete ? null : onDelete,
               style: OutlinedButton.styleFrom(
                 backgroundColor: Colors.transparent,
-                foregroundColor: disabledDelete ? mb.textDim : coral,
+                foregroundColor: disabledDelete ? mb.textDim : errorColor,
                 disabledForegroundColor: mb.textDim,
                 side: BorderSide(
-                  color: disabledDelete ? mb.line : coral.withAlpha(0x88),
+                  color: disabledDelete ? mb.line : errorColor.withAlpha(0x88),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(

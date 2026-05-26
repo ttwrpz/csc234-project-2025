@@ -108,10 +108,6 @@ Future<void> _pumpSettings(
       // soon as a signed-in user is available. Stub it out so the
       // screen renders without spinning up a real Firestore.
       fcmTokenRepositoryProvider.overrideWithValue(_StubFcmRepo()),
-      // ADR-0013 (v1.5 Wave E): the PRIVACY section reads the
-      // Remote Config kill-switch which would otherwise drag in
-      // FirebaseRemoteConfig.instance. Hide the section in tests.
-      privacyLockMasterEnabledProvider.overrideWithValue(false),
     ],
     child: const SettingsScreen(),
   );
@@ -178,7 +174,6 @@ void main() {
                 userOptedIn: false,
               ),
             ),
-            privacyLockMasterEnabledProvider.overrideWithValue(false),
           ],
           child: Builder(
             builder: (context) {
@@ -232,7 +227,6 @@ void main() {
               ),
             ),
             fcmTokenRepositoryProvider.overrideWithValue(_StubFcmRepo()),
-            privacyLockMasterEnabledProvider.overrideWithValue(false),
           ],
           child: Builder(
             builder: (context) {

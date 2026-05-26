@@ -26,7 +26,7 @@ class QuoteLibraryImpl implements QuoteLibrary {
   // ──────────────────────────────────────────────────────────────────────
   static const List<String> tier1Pool = [
     'It looks like your garden has had some rainy days. Would you like a 2-minute breathing exercise?',
-    'Rainy days happen. A short breath might help — only if you would like.',
+    'Rainy days happen. A short breath might help - only if you would like.',
     'A gentle breath can help the soil settle. Would you like to try a 2-minute pause?',
     'Storms pass. If it helps, a few slow breaths can soften the moment.',
     'Your garden has weathered a stretch. Want to pause for a slow breath?',
@@ -67,7 +67,7 @@ class QuoteLibraryImpl implements QuoteLibrary {
     'These feelings can be very heavy. You do not have to face them alone. Hotline 1323 is available any time.',
     'Reaching out for support is a sign of strength. Hotline 1323 connects to trained listeners, free, 24 hours.',
     'You are not alone in this. If it helps to talk, Hotline 1323 is free and open 24 hours.',
-    'The weather has been hard. A kind voice can help — Hotline 1323 is free, any time of day.',
+    'The weather has been hard. A kind voice can help - Hotline 1323 is free, any time of day.',
     'It takes courage to notice you are struggling. Hotline 1323 has trained listeners, free, 24 hours.',
     'We are here for you. If a conversation would help, Hotline 1323 is available, free, around the clock.',
     'Heavy stretches deserve support. Hotline 1323 connects you with a kind listener, free, 24 hours.',

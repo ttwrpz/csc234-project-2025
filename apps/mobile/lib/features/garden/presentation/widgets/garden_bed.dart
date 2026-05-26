@@ -95,14 +95,14 @@ class GardenBed extends StatefulWidget {
 
   static String _semanticsLabel(List<MoodEntry> shown, PlantTier tier) {
     if (shown.isEmpty) {
-      return 'Empty garden bed — ${tier.name} tier. Log a mood to plant '
+      return 'Empty garden bed - ${tier.name} tier. Log a mood to plant '
           'your first flower.';
     }
     final species = shown
         .map((e) => FlowerSpecies.forMood(e.mood).name)
         .toSet()
         .join(', ');
-    return 'Garden bed — ${shown.length} plant${shown.length == 1 ? "" : "s"} '
+    return 'Garden bed - ${shown.length} plant${shown.length == 1 ? "" : "s"} '
         '($species). ${tier.name} tier.';
   }
 }

@@ -167,7 +167,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         Text(
           "If an account exists for the email you entered, we've sent a "
           'link to reset your password. The link may take a minute to '
-          "arrive — be sure to check your spam folder if you don't see it.",
+          "arrive - be sure to check your spam folder if you don't see it.",
           textAlign: TextAlign.center,
           style: MbFonts.nunito(fontSize: 14, height: 1.5, color: mb.textDim),
         ),

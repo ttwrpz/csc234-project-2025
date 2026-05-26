@@ -96,7 +96,7 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
     final title = isConfirmPass ? 'Confirm your PIN' : 'Set a 6-digit PIN';
     final subtitle = isConfirmPass
         ? 'Enter the same 6 digits again to confirm.'
-        : "PIN is the fallback when biometric isn’t available — for "
+        : "PIN is the fallback when biometric isn’t available - for "
               'example on the web, or if your device’s fingerprint stops working.';
 
     return Scaffold(

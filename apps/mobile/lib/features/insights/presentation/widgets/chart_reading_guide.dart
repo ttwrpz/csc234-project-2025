@@ -90,7 +90,7 @@ class _GuideBody extends StatelessWidget {
       children: [
         _bullet(
           context,
-          'The solid line is the mood you have been logging — higher is '
+          'The solid line is the mood you have been logging - higher is '
           'brighter, lower is rainier. Empty spots are quiet days, never '
           'a streak break.',
           style: body,
@@ -98,7 +98,7 @@ class _GuideBody extends StatelessWidget {
         const SizedBox(height: 8),
         _bullet(
           context,
-          'The dashed line is the rolling rhythm — a weighted average '
+          'The dashed line is the rolling rhythm - a weighted average '
           'that smooths the daily wobbles so a single rough day does '
           'not tilt it.',
           style: body,
@@ -107,7 +107,7 @@ class _GuideBody extends StatelessWidget {
         _bullet(
           context,
           'The soft coloured bands are the garden tiers. Every tier is '
-          'alive — even Storm Season is sheltered, never withered.',
+          'alive - even Storm Season is sheltered, never withered.',
           style: body,
         ),
       ],

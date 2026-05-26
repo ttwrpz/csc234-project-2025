@@ -2,16 +2,18 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'insight_window.freezed.dart';
 
-/// User-visible window over which the Insights screen aggregates mood +
-/// pattern history. Default is 14 days — the Mann-Kendall trend test's
-/// natural span and a comfortable mid-month read.
+/// User-visible window over which the Patterns screen aggregates mood +
+/// pattern history. The Patterns picker exposes 7 / 30 / 90; the
+/// `fortnight` (14d) value is retained as the Mann-Kendall trend test's
+/// natural span and remains available for non-user-facing callers.
 ///
 /// Pure-Dart entity — no Flutter / Firebase imports per the
 /// domain-purity rule in CLAUDE.md.
 enum InsightWindowPreset {
   week(days: 7, label: '7d'),
   fortnight(days: 14, label: '14d'),
-  month(days: 30, label: '30d');
+  month(days: 30, label: '30d'),
+  quarter(days: 90, label: '90d');
 
   const InsightWindowPreset({required this.days, required this.label});
 

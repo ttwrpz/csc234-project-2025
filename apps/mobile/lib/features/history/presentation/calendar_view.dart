@@ -362,7 +362,7 @@ class DayEntriesPanel extends ConsumerWidget {
           MbCard(
             padding: const EdgeInsets.all(16),
             child: Text(
-              "Nothing logged here yet — tap Log mood when you're ready.",
+              "Nothing logged here yet - tap Log mood when you're ready.",
               style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
               textAlign: TextAlign.center,
             ),
@@ -757,7 +757,7 @@ class _EmptyStateOverlay extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(MoodBloomSpacing.lg),
       child: Text(
-        'No moods this month — tap Log Mood to start.',
+        'No moods this month - tap Log Mood to start.',
         style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
         textAlign: TextAlign.center,
       ),

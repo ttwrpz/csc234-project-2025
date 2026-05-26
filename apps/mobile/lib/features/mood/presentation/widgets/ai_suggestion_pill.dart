@@ -155,7 +155,7 @@ class _ErrorBody extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            "Couldn't analyze — pick manually or retry.",
+            "Couldn't analyze - pick manually or retry.",
             style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
           ),
         ),

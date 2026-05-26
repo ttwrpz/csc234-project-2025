@@ -9,13 +9,11 @@ part of 'token_visibility_controller.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// SharedPreferences-backed controller for the "Show token balance"
-/// Settings toggle (HB-005 Track 6.2). Default `true`.
+/// Settings toggle. Default `true`.
 ///
 /// Anti-pattern guardrail: visibility is OPTIONAL — the user can hide
 /// the chip without forfeiting tokens. Tokens still accumulate in the
-/// background; only the chip render is suppressed. CLAUDE.md "no
-/// mood-contingent rewards" rule and ADR-0010 §7's optional-cosmetic
-/// stance apply here.
+/// background; only the chip render is suppressed.
 ///
 /// `build()` returns the synchronous default `true` so the first frame
 /// renders without a flicker. The async hydration from prefs runs in
@@ -31,13 +29,11 @@ part of 'token_visibility_controller.dart';
 final tokenVisibilityProvider = TokenVisibilityProvider._();
 
 /// SharedPreferences-backed controller for the "Show token balance"
-/// Settings toggle (HB-005 Track 6.2). Default `true`.
+/// Settings toggle. Default `true`.
 ///
 /// Anti-pattern guardrail: visibility is OPTIONAL — the user can hide
 /// the chip without forfeiting tokens. Tokens still accumulate in the
-/// background; only the chip render is suppressed. CLAUDE.md "no
-/// mood-contingent rewards" rule and ADR-0010 §7's optional-cosmetic
-/// stance apply here.
+/// background; only the chip render is suppressed.
 ///
 /// `build()` returns the synchronous default `true` so the first frame
 /// renders without a flicker. The async hydration from prefs runs in
@@ -51,13 +47,11 @@ final tokenVisibilityProvider = TokenVisibilityProvider._();
 final class TokenVisibilityProvider
     extends $NotifierProvider<TokenVisibility, bool> {
   /// SharedPreferences-backed controller for the "Show token balance"
-  /// Settings toggle (HB-005 Track 6.2). Default `true`.
+  /// Settings toggle. Default `true`.
   ///
   /// Anti-pattern guardrail: visibility is OPTIONAL — the user can hide
   /// the chip without forfeiting tokens. Tokens still accumulate in the
-  /// background; only the chip render is suppressed. CLAUDE.md "no
-  /// mood-contingent rewards" rule and ADR-0010 §7's optional-cosmetic
-  /// stance apply here.
+  /// background; only the chip render is suppressed.
   ///
   /// `build()` returns the synchronous default `true` so the first frame
   /// renders without a flicker. The async hydration from prefs runs in
@@ -98,13 +92,11 @@ final class TokenVisibilityProvider
 String _$tokenVisibilityHash() => r'ed8c2c8cece9af7c5ade8affd6962b7cb6389df9';
 
 /// SharedPreferences-backed controller for the "Show token balance"
-/// Settings toggle (HB-005 Track 6.2). Default `true`.
+/// Settings toggle. Default `true`.
 ///
 /// Anti-pattern guardrail: visibility is OPTIONAL — the user can hide
 /// the chip without forfeiting tokens. Tokens still accumulate in the
-/// background; only the chip render is suppressed. CLAUDE.md "no
-/// mood-contingent rewards" rule and ADR-0010 §7's optional-cosmetic
-/// stance apply here.
+/// background; only the chip render is suppressed.
 ///
 /// `build()` returns the synchronous default `true` so the first frame
 /// renders without a flicker. The async hydration from prefs runs in

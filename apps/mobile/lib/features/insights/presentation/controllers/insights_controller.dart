@@ -7,10 +7,11 @@ import '../../data/providers.dart';
 import '../../domain/entities/daily_insight.dart';
 import '../../domain/entities/insight_window.dart';
 
-/// Window selection (segmented chips). Defaults to the 14-day fortnight
-/// — the Mann-Kendall trend test's natural span.
+/// Window selection (segmented chips). Defaults to the 30-day month -
+/// the same default the legacy Analytics screen shipped with, so users
+/// who upgrade across the merge land on a familiar window.
 final insightsWindowPresetProvider = StateProvider<InsightWindowPreset>(
-  (_) => InsightWindowPreset.fortnight,
+  (_) => InsightWindowPreset.month,
 );
 
 /// Resolved [InsightWindow] for the current selection. Re-derives when

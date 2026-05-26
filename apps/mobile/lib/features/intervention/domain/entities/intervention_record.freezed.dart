@@ -18,8 +18,8 @@ mixin _$InterventionRecord {
  String get dispatchId; Tier get tier; DateTime get dispatchedAt; String get quoteId;/// 48h gate the dispatcher enforces. Persisted so the Cloud Function
 /// (or admin tooling) can audit the cooldown without re-deriving from
 /// the anchor doc.
- DateTime get cooldownUntil;/// True when the user tapped "I'm okay" (TC-34). One-way false → true;
-/// the rules enforce this at the wire level.
+ DateTime get cooldownUntil;/// True when the user tapped "I'm okay". One-way false → true; the
+/// rules enforce this at the wire level.
  bool get optedOut; int get schemaV;
 /// Create a copy of InterventionRecord
 /// with the given fields replaced by the non-null parameter values.
@@ -231,8 +231,8 @@ class _InterventionRecord implements InterventionRecord {
 /// (or admin tooling) can audit the cooldown without re-deriving from
 /// the anchor doc.
 @override final  DateTime cooldownUntil;
-/// True when the user tapped "I'm okay" (TC-34). One-way false → true;
-/// the rules enforce this at the wire level.
+/// True when the user tapped "I'm okay". One-way false → true; the
+/// rules enforce this at the wire level.
 @override@JsonKey() final  bool optedOut;
 @override@JsonKey() final  int schemaV;
 

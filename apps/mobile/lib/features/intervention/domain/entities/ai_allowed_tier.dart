@@ -21,7 +21,7 @@ enum AiAllowedTier {
     Tier.one => AiAllowedTier.one,
     Tier.two => AiAllowedTier.two,
     Tier.three => throw StateError(
-      'AiAllowedTier.fromTier called with Tier.three — '
+      'AiAllowedTier.fromTier called with Tier.three - '
       'invariant violated. Tier 3 must never reach the AI path.',
     ),
   };

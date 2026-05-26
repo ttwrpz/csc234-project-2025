@@ -12,6 +12,12 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/bootstrap.dart';
+import 'features/auth/data/datasources/biometric_datasource.dart';
+import 'features/auth/data/datasources/biometric_preference_datasource.dart';
+import 'features/auth/data/datasources/privacy_lock_preference_datasource.dart';
+import 'features/auth/data/providers.dart';
+import 'features/auth/data/repositories/biometric_repository_impl.dart';
+import 'features/auth/domain/entities/biometric_capability.dart';
 import 'features/settings/data/theme_mode_storage.dart';
 import 'features/settings/presentation/controllers/theme_mode_controller.dart';
 import 'firebase_options.dart';
@@ -89,11 +95,6 @@ Future<void> main() async {
         // patterns/{date} regardless, but no notification fires until
         // the dispatcher reading patterns/{date}.triggeredTier ships.
         'intervention_dispatch_enabled': false,
-        // Default true so the History privacy gate honours user opt-in
-        // out of the box. Flip to `false` via Remote Config to disable
-        // the gate globally if a critical post-release bug surfaces —
-        // stored PIN hashes stay at rest, no data loss.
-        'history_privacy_lock_enabled': true,
       });
       await rc.setConfigSettings(
         RemoteConfigSettings(
@@ -179,11 +180,59 @@ Future<void> main() async {
       final prefs = await SharedPreferences.getInstance();
       final themeStorage = ThemeModeStorage(prefs);
 
+      // Pre-resolve Privacy Lock state BEFORE runApp so the router
+      // redirect reads synchronous values on the very first pass.
+      // Without this, the biometric capability provider is a
+      // FutureProvider whose `.value` is `null` on first redirect, the
+      // gate is skipped, and the user sees the home screen for one
+      // frame before the gate fires. ~50–150 ms added to cold start;
+      // worth it for a settled first frame.
+      //
+      // On Web `local_auth` throws on every call (no platform impl),
+      // so we wrap the capability lookup and fall back to "unavailable"
+      // — the unlock screen handles that gracefully (PIN-only).
+      // SharedPreferences is platform-safe on every supported target.
+      BiometricCapability cap = const BiometricCapability(
+        isAvailable: false,
+        hasEnrolledBiometrics: false,
+        userOptedIn: false,
+      );
+      try {
+        final biometricRepo = BiometricRepositoryImpl(
+          datasource: BiometricDatasource(),
+          preference: BiometricPreferenceDatasource(prefs),
+        );
+        cap = await biometricRepo.capability();
+      } catch (_) {
+        // Web (no local_auth impl) or transient platform failure —
+        // fall back to the unavailable record so the unlock screen
+        // shows the PIN keypad only.
+      }
+      final privacyLockEnabled = PrivacyLockPreferenceDatasource(
+        prefs,
+      ).isEnabled();
+
+      // One-shot migration marker. Flips the marker forward without
+      // mutating any existing keys — old `auth.biometric_enabled` and
+      // `auth.privacy_lock_enabled` keep their values, and the unified
+      // tile in Settings now reads both correctly. Existing biometric-
+      // only users will see Privacy Lock OFF (no PIN was ever set);
+      // they re-enable via the unified tile, which now bundles PIN +
+      // biometric in one setup flow.
+      const privacyLockV2MigratedKey = 'auth.privacy_lock_v2_migrated';
+      if (!(prefs.getBool(privacyLockV2MigratedKey) ?? false)) {
+        await prefs.setBool(privacyLockV2MigratedKey, true);
+      }
+
       runApp(
         ProviderScope(
           overrides: [
             themeModeControllerProvider.overrideWith(
               () => ThemeModeController(storage: themeStorage),
+            ),
+            biometricCapabilityProvider.overrideWith((ref) async => cap),
+            privacyLockEnabledProvider.overrideWith(
+              () => SeededPrivacyLockEnabledNotifier(privacyLockEnabled),
             ),
           ],
           child: const MoodBloomApp(),

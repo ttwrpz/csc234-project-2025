@@ -49,6 +49,19 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
   /// again, but in a new build pass after the route returns).
   bool _harvestRouteScheduled = false;
 
+  /// Session-scoped record of which weekStart the user has already
+  /// dismissed. Prevents the popup from re-opening immediately after
+  /// the screen pops in the cross-device race window where Firestore
+  /// has not yet pushed the canonical archive snapshot to this device -
+  /// without this guard, `pendingWeeklySummaryProvider` would still emit
+  /// the same weekStart on the next rebuild and we would re-push the
+  /// just-dismissed harvest screen.
+  ///
+  /// Cold-restart resets this (the state is local to `_GardenScreenState`).
+  /// When a NEW week's harvest becomes pending, its weekStart differs and
+  /// the gate naturally lets the new popup through.
+  DateTime? _lastDismissedWeekStart;
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(gardenStateStreamProvider);
@@ -74,14 +87,26 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
     // stays clean. The flag prevents double-pushing across identical
     // rebuilds.
     final pendingSummary = ref.watch(pendingWeeklySummaryProvider);
-    if (pendingSummary != null && !_harvestRouteScheduled) {
+    final isAlreadyDismissed =
+        pendingSummary != null &&
+        _lastDismissedWeekStart != null &&
+        pendingSummary.weekStart == _lastDismissedWeekStart;
+    if (pendingSummary != null &&
+        !_harvestRouteScheduled &&
+        !isAlreadyDismissed) {
       _harvestRouteScheduled = true;
+      final pushedWeekStart = pendingSummary.weekStart;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         // Reset the StateNotifier scoped state before each new push so
         // a previous week's success/error from this app session does
-        // not carry into a fresh pending harvest.
-        ref.read(weeklySummaryControllerProvider.notifier).resetError();
+        // not carry into a fresh pending harvest. `reset()` (not
+        // `resetError`) is required: a lingering `HarvestArchiveSuccess`
+        // from the prior harvest would make the next `acknowledge` tap
+        // a no-op (the controller short-circuits on terminal success),
+        // and the screen's `ref.listen` does not fire on initial state —
+        // so without this reset the Continue button would do nothing.
+        ref.read(weeklySummaryControllerProvider.notifier).reset();
         Navigator.of(context)
             .push(
               MaterialPageRoute<void>(
@@ -95,6 +120,16 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
               if (mounted) {
                 setState(() {
                   _harvestRouteScheduled = false;
+                  // Mark this weekStart as dismissed regardless of the
+                  // outcome (acked, swiped back, cross-device race).
+                  // The Firestore listener will normally pull the
+                  // canonical archive in within a frame or two, at
+                  // which point `pendingWeeklySummaryProvider` returns
+                  // null for this weekStart and the gate is redundant
+                  // - but in the race window where the listener is
+                  // slow, this flag prevents an immediate re-push of
+                  // the same week.
+                  _lastDismissedWeekStart = pushedWeekStart;
                 });
               }
             });

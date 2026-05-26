@@ -18,10 +18,9 @@ import 'package:flutter/material.dart';
 /// (guide + chips), centre (chart), right rail (legend + triggers).
 ///
 /// The disclaimer ack gate sits OUTSIDE this wrapper in
-/// `insights_screen.dart` — the wrapper renders the same children in
-/// the pre-ack state too (the caller short-circuits to a `_PreAckCard`
-/// in the chart slot), so the layout switch is the single source of
-/// truth.
+/// `analytics_screen.dart` (since v1.5.1) - the wrapper renders the
+/// same children in the pre-ack state too, so the layout switch is the
+/// single source of truth.
 class InsightsLayout extends StatelessWidget {
   const InsightsLayout({
     super.key,

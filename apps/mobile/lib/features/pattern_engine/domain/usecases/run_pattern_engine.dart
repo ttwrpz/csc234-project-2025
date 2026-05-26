@@ -43,12 +43,17 @@ class RunPatternEngineUseCase {
     // Highest tier wins. Three checks for Tier 3 are independently
     // sufficient (any one fires); Tier 2 only if no Tier-3 trigger;
     // Tier 1 only if neither 2 nor 3 fired.
+    //
+    // Tier 1 + 2 thresholds were relaxed in v1.5.1 to make Insights
+    // surface earlier (gentle nudges should arrive sooner). Tier 3
+    // (3-consecutive, z<-2.5, CUSUM) is unchanged — those are
+    // safety-critical and stay on their academic anchors.
     Tier? tier;
     if (consec >= 3 || (z != null && z < -2.5) || c > h) {
       tier = Tier.three;
-    } else if (negCount >= 5) {
+    } else if (negCount >= 4) {
       tier = Tier.two;
-    } else if (mkZ != null && mkZ < -1.96) {
+    } else if (mkZ != null && mkZ < -1.64) {
       tier = Tier.one;
     }
 

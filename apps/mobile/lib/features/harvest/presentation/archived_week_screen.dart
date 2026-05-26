@@ -111,7 +111,7 @@ class _SummaryHeader extends StatelessWidget {
               ),
               const SizedBox(height: MoodBloomSpacing.md),
               Text(
-                'A complete chapter — ${week.summary.totalEntryCount} '
+                'A complete chapter - ${week.summary.totalEntryCount} '
                 '${week.summary.totalEntryCount == 1 ? "entry" : "entries"} · '
                 'avg ${week.summary.averageMoodScore.toStringAsFixed(2)}',
                 textAlign: TextAlign.center,

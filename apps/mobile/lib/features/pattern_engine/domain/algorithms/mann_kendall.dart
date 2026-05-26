@@ -10,9 +10,14 @@ import '../entities/daily_score.dart';
 /// never trips Tier 1, which is the intended "warm-up" semantics.
 ///
 /// Trigger semantics (caller decides — this function returns Z only):
-///  * `Z < -1.96` → Tier 1 (gradual worsening, two-tailed α = 0.05).
-///  * `Z > +1.96` → encouragement (no alert — gradual improvement).
-///  * |Z| ≤ 1.96  → no signal.
+///  * `Z < -1.64` → Tier 1 (gradual worsening, one-tailed α = 0.05).
+///  * `Z > +1.64` → encouragement (no alert — gradual improvement).
+///  * |Z| ≤ 1.64  → no signal.
+///
+/// v1.5.1 note: the original -1.96 (two-tailed α=0.05) was relaxed to
+/// -1.64 (one-tailed α=0.05 ≡ two-tailed α=0.10) so Insights surface a
+/// gentle nudge sooner. Tier 1 is the lowest-risk surface (breathing
+/// invitation), so the false-positive cost is small.
 ///
 /// Algorithm:
 ///   Step 1: S = Σ_{i<j} sign(x_j - x_i)

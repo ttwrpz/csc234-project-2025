@@ -76,7 +76,7 @@ class MoodEntryTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  note.isEmpty ? '—' : note,
+                  note.isEmpty ? '-' : note,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: MbFonts.nunito(

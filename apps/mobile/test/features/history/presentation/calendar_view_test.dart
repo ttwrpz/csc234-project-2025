@@ -82,7 +82,7 @@ void main() {
     testWidgets('empty state renders compassionate copy', (tester) async {
       await _pumpCalendar(tester, entries: const []);
       expect(
-        find.text('No moods this month — tap Log Mood to start.'),
+        find.text('No moods this month - tap Log Mood to start.'),
         findsOneWidget,
       );
       // No streak-shaming copy.
@@ -114,7 +114,7 @@ void main() {
 
       // Empty-state copy must NOT appear.
       expect(
-        find.text('No moods this month — tap Log Mood to start.'),
+        find.text('No moods this month - tap Log Mood to start.'),
         findsNothing,
       );
     });
@@ -161,7 +161,7 @@ void main() {
 
       // Still on the calendar — empty-state copy still visible.
       expect(
-        find.text('No moods this month — tap Log Mood to start.'),
+        find.text('No moods this month - tap Log Mood to start.'),
         findsOneWidget,
       );
     });

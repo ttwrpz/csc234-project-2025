@@ -49,9 +49,9 @@ abstract class WebauthnRepository {
   ///   3. `webauthnAssertionFinish` (CF) — server verifies signature,
   ///      bumps counter.
   ///
-  /// On success, the History privacy gate's session flag is flipped by
-  /// the calling controller (mirroring the PIN verify flow's
-  /// `historyUnlockedThisSessionProvider.unlock()` call).
+  /// On success, the Privacy Lock session flag is flipped by the
+  /// calling controller (mirroring the PIN verify flow's
+  /// `privacyLockUnlockedThisSessionProvider` set-to-true call).
   Future<Result<void, WebauthnVerifyFailure>> verify({required String uid});
 
   /// Reactive stream of the user's registered credential, or null when

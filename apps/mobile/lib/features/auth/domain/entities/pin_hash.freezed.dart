@@ -15,10 +15,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PinHash {
 
-/// PBKDF2 variant identifier. Fixed at `'pbkdf2-sha256'` for v1.5.
-/// Stored explicitly so a future rotation (e.g. Argon2id in v2.0)
-/// can be distinguished at read time without a schema migration.
- String get algorithm;/// PBKDF2 iteration count. ADR-0013: ≥ 100 000.
+/// PBKDF2 variant identifier. Fixed at `'pbkdf2-sha256'`. Stored
+/// explicitly so a future rotation (e.g. Argon2id) can be
+/// distinguished at read time without a schema migration.
+ String get algorithm;/// PBKDF2 iteration count. ≥ 100 000.
  int get iterations;/// Base64-encoded 16-byte random salt. Per-user; generated once at
 /// setup and never rotated unless the PIN itself is replaced.
  String get saltBase64;/// Base64-encoded 32-byte PBKDF2 derived key.
@@ -232,11 +232,11 @@ class _PinHash implements PinHash {
   const _PinHash({required this.algorithm, required this.iterations, required this.saltBase64, required this.hashBase64, required this.createdAt, this.failedAttempts = 0, this.lockedUntil});
   factory _PinHash.fromJson(Map<String, dynamic> json) => _$PinHashFromJson(json);
 
-/// PBKDF2 variant identifier. Fixed at `'pbkdf2-sha256'` for v1.5.
-/// Stored explicitly so a future rotation (e.g. Argon2id in v2.0)
-/// can be distinguished at read time without a schema migration.
+/// PBKDF2 variant identifier. Fixed at `'pbkdf2-sha256'`. Stored
+/// explicitly so a future rotation (e.g. Argon2id) can be
+/// distinguished at read time without a schema migration.
 @override final  String algorithm;
-/// PBKDF2 iteration count. ADR-0013: ≥ 100 000.
+/// PBKDF2 iteration count. ≥ 100 000.
 @override final  int iterations;
 /// Base64-encoded 16-byte random salt. Per-user; generated once at
 /// setup and never rotated unless the PIN itself is replaced.

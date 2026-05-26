@@ -39,10 +39,13 @@ class InterventionBanner extends ConsumerWidget {
         ? theme.colorScheme.onErrorContainer
         : theme.colorScheme.onSurface;
 
-    // Truncate to the first sentence (rough heuristic: stop at the
-    // first `.`, `?`, or `!`) plus an ellipsis if the body continues.
-    final preview = _previewBody(dispatch.body);
-
+    // Render the full body and let the Text widget's maxLines+ellipsis
+    // handle overflow. The previous "stop at the first sentence-ending
+    // punctuation" heuristic clipped two-sentence Tier 1/2 quotes
+    // (e.g. "A few quiet lines can help the weather pass. Would you
+    // like to write?") down to the lead-in only - the actionable
+    // invitation got lost. maxLines: 2 gives natural word-wrap on
+    // phone widths and reserves the second line for the CTA sentence.
     return SafeArea(
       top: false,
       child: Padding(
@@ -72,8 +75,8 @@ class InterventionBanner extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        preview,
-                        maxLines: 2,
+                        dispatch.body,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: fgColor,
@@ -107,19 +110,6 @@ class InterventionBanner extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  static String _previewBody(String body) {
-    // Stop at the first sentence-ending punctuation; keep the punctuation
-    // and append an ellipsis to signal there's more behind the banner.
-    for (var i = 0; i < body.length; i++) {
-      final ch = body[i];
-      if (ch == '.' || ch == '?' || ch == '!') {
-        final head = body.substring(0, i + 1);
-        return i + 1 < body.length ? '$head…' : head;
-      }
-    }
-    return body;
   }
 
   /// Maps the dispatched tier to its named route. Kept private here so

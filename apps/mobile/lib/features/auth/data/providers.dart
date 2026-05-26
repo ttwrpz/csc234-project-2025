@@ -37,6 +37,12 @@ import 'datasources/firebase_auth_datasource.dart';
 import 'datasources/pin_firestore_datasource.dart';
 import 'datasources/privacy_lock_preference_datasource.dart';
 import 'datasources/webauthn_browser_datasource.dart';
+// Conditional import: native builds get the unsupported-stub factory;
+// web builds get the real `package:web` JS-interop binding. See ADR-0014
+// Decision A for the two-file seam rationale.
+import 'datasources/webauthn_browser_datasource_io.dart'
+    if (dart.library.js_interop) 'datasources/webauthn_browser_datasource_web.dart'
+    as webauthn_browser_impl;
 import 'datasources/webauthn_credential_firestore_datasource.dart';
 import 'datasources/webauthn_functions_datasource.dart';
 import 'pin_hasher_impl.dart';
@@ -169,15 +175,23 @@ final biometricCapabilityProvider = FutureProvider<BiometricCapability>((ref) {
   return ref.watch(checkBiometricCapabilityUseCaseProvider)();
 });
 
-/// Session-scoped flag flipped to `true` after a successful biometric unlock.
-/// Used by the router to avoid re-prompting on every redirect tick within
-/// the same app session. Reset to `false` on sign-out so a future re-sign-in
-/// re-prompts (correct security behaviour).
+/// Session-scoped flag flipped to `true` after a successful Privacy Lock
+/// unlock (biometric or PIN). Used by the router to avoid re-prompting
+/// on every redirect tick within the same app session. Reset to `false`
+/// on sign-out so a future re-sign-in re-prompts (correct security
+/// behaviour).
+///
+/// Replaces the prior `biometricUnlockedThisSessionProvider` +
+/// `historyUnlockedThisSessionProvider` pair — one cold-boot gate, one
+/// flag. Whole-app scope means no idle/background timer; the gate fires
+/// once per session and the flag stays set until sign-out.
 ///
 /// Riverpod 3 retired `StateProvider` from the public API. We import it
 /// from `legacy.dart` to keep the trivially-ergonomic toggle without
 /// expanding the surface area to a full `Notifier` class for one bool.
-final biometricUnlockedThisSessionProvider = StateProvider<bool>((_) => false);
+final privacyLockUnlockedThisSessionProvider = StateProvider<bool>(
+  (_) => false,
+);
 
 // ────────────────────────────────────────────────────────────────────────
 // PIN fallback factor
@@ -234,9 +248,16 @@ final privacyLockPreferenceDatasourceProvider =
       return PrivacyLockPreferenceDatasource(prefs);
     });
 
-/// Notifier exposing the user's "Require unlock to view history" toggle.
-/// The router redirect reads `state.value` synchronously to decide
-/// whether to gate `/history`; the Settings tile updates it on flip.
+/// Notifier exposing the user's Privacy Lock opt-in toggle. The router
+/// redirect reads `state` synchronously to decide whether to gate
+/// cold-boot navigation; the Settings tile updates it on flip.
+///
+/// `main.dart` pre-resolves SharedPreferences and overrides this
+/// notifier with [SeededPrivacyLockEnabledNotifier] so the very first
+/// router redirect pass reads a real value — without the override, the
+/// build() below would read `sharedPreferencesProvider.requireValue`
+/// which throws until the async provider settles, producing a
+/// flash-of-home race on cold boot.
 class PrivacyLockEnabledNotifier extends Notifier<bool> {
   @override
   bool build() {
@@ -253,21 +274,30 @@ class PrivacyLockEnabledNotifier extends Notifier<bool> {
   }
 }
 
+/// Override variant used by `main.dart` to seed Privacy Lock's enabled
+/// state from a pre-resolved SharedPreferences read. `build()` returns
+/// the seeded bool synchronously (no provider reads), `set()` persists
+/// via the data source resolved through the container.
+///
+/// Extends [PrivacyLockEnabledNotifier] so `provider.notifier` still
+/// returns the same static type for callers (the Settings tile calls
+/// `.set()` on whichever notifier the override produced). Lives in the
+/// data layer (not main.dart) so the same class is reachable from tests
+/// that need to seed a deterministic value without touching
+/// SharedPreferences mocks.
+class SeededPrivacyLockEnabledNotifier extends PrivacyLockEnabledNotifier {
+  SeededPrivacyLockEnabledNotifier(this._initial);
+
+  final bool _initial;
+
+  @override
+  bool build() => _initial;
+}
+
 final privacyLockEnabledProvider =
     NotifierProvider<PrivacyLockEnabledNotifier, bool>(
       PrivacyLockEnabledNotifier.new,
     );
-
-/// Derived from the Remote Config kill-switch. Hidden from the
-/// Settings UI and short-circuited by the router redirect when `false`.
-/// Separate from [privacyLockEnabledProvider] (the user's per-account
-/// opt-in) so the rollback path can be tested independently of any
-/// stored preferences.
-final privacyLockMasterEnabledProvider = Provider<bool>((ref) {
-  return ref.watch(
-    featureFlagsProvider.select((f) => f.historyPrivacyLockEnabled),
-  );
-});
 
 // ────────────────────────────────────────────────────────────────────────
 // WebAuthn fallback factor — ships DARK behind `kEnableWebauthn` (a
@@ -299,11 +329,17 @@ final webauthnCredentialFirestoreDatasourceProvider =
     );
 
 /// The JS-interop seam over `navigator.credentials.create()` / `.get()`.
-/// Hands out the unsupported stub until `kEnableWebauthn` flips and the
-/// production `package:web` binding lands. Widget tests override this
-/// provider directly with a `_FakeWebauthnBrowserDatasource`.
+///
+/// Returns the real `package:web` binding on web builds; falls back to
+/// the unsupported stub on native builds (Android / iOS / desktop). The
+/// conditional-import factory keeps `package:web` out of the native
+/// build graph entirely.
+///
+/// Widget tests override this provider directly with a
+/// `_FakeWebauthnBrowserDatasource` so the test path never invokes the
+/// real browser.
 final webauthnBrowserDatasourceProvider = Provider<WebauthnBrowserDatasource>(
-  (_) => const WebauthnBrowserDatasourceUnsupportedStub(),
+  (_) => webauthn_browser_impl.createWebauthnBrowserDatasource(),
 );
 
 final webauthnRepositoryProvider = Provider<WebauthnRepository>((ref) {

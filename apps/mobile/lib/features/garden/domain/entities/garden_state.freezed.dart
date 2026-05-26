@@ -15,8 +15,7 @@ T _$identity<T>(T value) => value;
 mixin _$GardenState {
 
 /// Garden Health for the current week (`H_t`, range [-1, +1]).
-/// Resets to 0 at the start of every week (weekly harvest cycle —
-/// see ADR-0010 §3).
+/// Resets to 0 at the start of every week (weekly harvest cycle).
  double get gardenHealth;/// 5-tier ecosystem state derived from [gardenHealth].
  PlantTier get plantTier;/// 4-state weather overlay derived from today's mean mood-score.
 /// Defaults to `calmSunny` when the user has not yet logged today.
@@ -224,8 +223,7 @@ class _GardenState extends GardenState {
   
 
 /// Garden Health for the current week (`H_t`, range [-1, +1]).
-/// Resets to 0 at the start of every week (weekly harvest cycle —
-/// see ADR-0010 §3).
+/// Resets to 0 at the start of every week (weekly harvest cycle).
 @override final  double gardenHealth;
 /// 5-tier ecosystem state derived from [gardenHealth].
 @override final  PlantTier plantTier;

@@ -81,7 +81,7 @@ class _MoodTextFieldState extends State<MoodTextField> {
       textCapitalization: TextCapitalization.sentences,
       style: MbFonts.nunito(fontSize: 14, height: 1.5, color: mb.text),
       decoration: InputDecoration(
-        hintText: 'Optional — whatever feels true right now.',
+        hintText: 'Optional - whatever feels true right now.',
         hintStyle: MbFonts.nunito(fontSize: 14, color: mb.textDim),
         border: InputBorder.none,
         enabledBorder: InputBorder.none,

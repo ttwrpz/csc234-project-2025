@@ -65,15 +65,15 @@ class PlantTierGroup extends StatelessWidget {
     final entries = entryCount == 1 ? '1 entry' : '$entryCount entries';
     return switch (tier) {
       PlantTier.flourishing =>
-        'Flourishing garden — full blossoms across the row. $entries this week.',
+        'Flourishing garden - full blossoms across the row. $entries this week.',
       PlantTier.thriving =>
-        'Thriving garden — tall stems with bright blossoms. $entries this week.',
+        'Thriving garden - tall stems with bright blossoms. $entries this week.',
       PlantTier.resting =>
-        'Resting garden — closed buds and gentle greens. $entries this week.',
+        'Resting garden - closed buds and gentle greens. $entries this week.',
       PlantTier.weathering =>
-        'Weathering garden — buds sheltered, plants intact. $entries this week.',
+        'Weathering garden - buds sheltered, plants intact. $entries this week.',
       PlantTier.stormSeason =>
-        'Storm Season — plants sheltered, lanterns lit. $entries this week.',
+        'Storm Season - plants sheltered, lanterns lit. $entries this week.',
     };
   }
 }

@@ -4,23 +4,30 @@ part 'feature_flags.freezed.dart';
 
 /// Build-time flag for the WebAuthn fallback factor.
 ///
-/// WebAuthn ships `dark` — the full domain/data/CF surface is in the
-/// repo and tested, but no UI tile or verify-button is reachable
-/// because this build-time flag is `false`. The reason: WebAuthn
-/// credentials bind to a specific origin at registration time, and the
-/// current build ships as a local demo with no production hosting target.
-/// Flipping this flag to `true` requires:
-///   1. A deployed production origin (`WEBAUTHN_PRODUCTION_ORIGIN`
-///      in `functions/src/webauthnConstants.ts`).
-///   2. The FIDO2 RPID rules verified against that domain (Chrome
-///      accepts `*.web.app`; Firefox may not — cross-browser smoke).
-///   3. Security-reviewer pass on the lit-up flow.
+/// When `true`, the WebAuthn surface is **reachable from the UI**:
+///   * `WebauthnSettingsTile` (Settings → Privacy) is interactive.
+///   * `PrivacyLockScreen` exposes the "Use security key" affordance.
+///   * `webauthnAvailableProvider` returns `true` on web platforms.
+///
+/// The server-side fence still owns the deploy-blocker: when
+/// `WEBAUTHN_PRODUCTION_ORIGIN` (functions/src/webauthnConstants.ts) is
+/// empty AND the caller is not on a staging origin, every
+/// `webauthn*Start` CF returns `{ok: false, code: 'webauthn_not_provisioned'}`.
+/// The UI surfaces that gracefully as a snackbar, then falls back to
+/// PIN. Staging origins (`localhost:5173`, etc.) keep working under the
+/// default env-var values.
+///
+/// Flip-to-false rollback path: the const can drop to `false` in a
+/// hotfix build to hide the whole surface without touching CFs. The
+/// Remote Config `historyPrivacyLockEnabled` switch (ADR-0014 Decision
+/// G) hides the entire Privacy card on top of this for the runtime
+/// kill-switch path.
 ///
 /// This is intentionally a top-level compile-time `const` rather than a
 /// Remote Config field on [FeatureFlags]. Compile-time means dead-code
-/// elimination keeps the WebAuthn JS-interop out of production binaries
-/// entirely when the flag is `false`.
-const bool kEnableWebauthn = false;
+/// elimination keeps the WebAuthn JS-interop out of native binaries
+/// entirely.
+const bool kEnableWebauthn = true;
 
 /// Snapshot of all Remote Config-driven feature flags read at app start.
 ///
@@ -43,15 +50,6 @@ abstract class FeatureFlags with _$FeatureFlags {
     /// Library safety filter is attached, and the bipolar/medical
     /// disclaimer footer is in place.
     required bool interventionDispatchEnabled,
-
-    /// Master kill-switch for the History privacy gate. Default
-    /// `true`: the gate is honored when the user has opted in via
-    /// Settings. Flipping to `false` short-circuits the router
-    /// redirect — users are never locked out of `/history`, the
-    /// PRIVACY card in Settings is hidden, and existing stored PIN
-    /// hashes stay at rest (no data loss). Use this if a critical
-    /// post-release bug surfaces.
-    required bool historyPrivacyLockEnabled,
   }) = _FeatureFlags;
 
   const FeatureFlags._();
@@ -60,7 +58,6 @@ abstract class FeatureFlags with _$FeatureFlags {
     aiPatternAnalysisEnabled: true,
     geminiDetectionEnabled: true,
     interventionDispatchEnabled: false,
-    historyPrivacyLockEnabled: true,
   );
 }
 

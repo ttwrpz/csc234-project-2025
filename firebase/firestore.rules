@@ -380,6 +380,36 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // Per-user WebAuthn credential (ADR-0014 Decision C). One doc per
+      // registered credential at users/{uid}/webauthn/{credentialId};
+      // v1.5 ships single-credential, so the collection holds at most
+      // one entry. The client UI reads the doc directly to render the
+      // "Security key registered May 15, last used May 17" status tile
+      // without a CF round-trip; ALL writes (counter bump, lastUsedAt,
+      // failedAttempts, lockedUntil) come through the admin SDK from
+      // webauthnRegisterFinish / webauthnAssertionFinish.
+      //
+      // The read is gated by the rate-limit lockout — a tampered client
+      // cannot bypass the per-credential lock by skipping the failure
+      // write because the read itself fails when lockedUntil > now.
+      // Mirrors the PIN block's pattern at the lockedUntil gate.
+      match /webauthn/{credentialId} {
+        allow read: if isOwner(uid)
+          && (resource.data.get('lockedUntil', null) == null
+              || request.time >= resource.data.lockedUntil);
+        // Writes by Admin SDK only — CF surface owns these docs.
+        allow create, update, delete: if false;
+      }
+
+      // Per-user in-flight WebAuthn challenges (ADR-0014 Decision C).
+      // 5-minute TTL; CF surface owns the docs end-to-end. The client
+      // never reads or writes them — webauthnRegisterStart /
+      // webauthnAssertionStart return the challenge in the response
+      // payload; webauthn*Finish reads + deletes via admin SDK.
+      match /webauthnChallenges/{challengeId} {
+        allow read, write: if false;
+      }
+
       // Weekly Harvest archive (HB-005 Track 6.1; ADR-0010 §6).
       // Write-once-on-archive: history is a record, not a redo. Each
       // doc id is the ISO-8601 weekId formatted `YYYY-Www`; the

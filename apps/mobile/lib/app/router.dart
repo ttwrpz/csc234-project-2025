@@ -5,21 +5,17 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../features/analytics/presentation/analytics_screen.dart';
-import 'providers.dart';
 
-import '../features/auth/data/history_unlocked_this_session_provider.dart';
 import '../features/auth/data/providers.dart';
 import '../features/auth/domain/entities/app_user.dart';
-import '../features/auth/presentation/biometric_gate_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
-import '../features/auth/presentation/screens/pin_verify_screen.dart';
+import '../features/auth/presentation/screens/privacy_lock_screen.dart';
 import '../features/auth/presentation/screens/privacy_setup_flow_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/garden/presentation/garden_screen.dart';
 import '../features/history/presentation/entry_detail_screen.dart';
 import '../features/history/presentation/history_screen.dart';
-import '../features/insights/presentation/screens/insights_screen.dart';
 import '../features/intervention/domain/entities/intervention_dispatch.dart';
 import '../features/intervention/presentation/screens/breathing_screen.dart';
 import '../features/intervention/presentation/screens/crisis_resources_screen.dart';
@@ -98,14 +94,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
     }
 
-    // On sign-out (non-null → null), clear the session-scoped biometric
-    // unlock flag so a future re-sign-in re-prompts. Correct security
-    // behaviour: a fresh login should re-verify biometric on cold boot.
-    // The History privacy unlock is cleared on the same edge, so a fresh
-    // sign-in always re-prompts on the History route.
+    // On sign-out (non-null → null), clear the session-scoped Privacy
+    // Lock unlock flag so a future re-sign-in re-prompts. Correct
+    // security behaviour: a fresh login should re-verify on cold boot.
     if (previous?.value != null && next.value == null) {
-      ref.read(biometricUnlockedThisSessionProvider.notifier).state = false;
-      ref.read(historyUnlockedThisSessionProvider.notifier).lock();
+      ref.read(privacyLockUnlockedThisSessionProvider.notifier).state = false;
     }
   });
 
@@ -128,84 +121,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       if (refresh.value != null && isAuthRoute) return '/home';
 
-      // Biometric gate. Only inserts itself when (a) the user is signed
-      // in, (b) capability + opt-in are present AND ready synchronously,
-      // and (c) we haven't already unlocked this session. We avoid
-      // awaiting the FutureProvider here to keep redirects fast — if
-      // capability hasn't resolved yet, we let the user through and the
-      // gate will only kick in on the next router refresh once data lands.
-      if (refresh.value != null &&
-          loc != '/biometric-gate' &&
-          !ref.read(biometricUnlockedThisSessionProvider)) {
-        final cap = ref.read(biometricCapabilityProvider).value;
-        if (cap != null && cap.shouldGate) {
-          // Thread the original destination through as `returnTo` so
-          // the user lands where they were navigating instead of
-          // being dumped on `/home` after biometric. The cold-boot
-          // path (loc == '/home') passes `/home` and is a no-op; the
-          // History-tap path passes `/history` and lands the user on
-          // /history. Prevents the "biometric then re-tap History to
-          // actually get there" double-tap UX.
-          final returnTo = Uri.encodeComponent(loc);
-          return '/biometric-gate?returnTo=$returnTo';
-        }
-      }
-
-      // History privacy gate. Guards `/history` and any sub-route
-      // (`/history/:id` and future deep links). Mirrors the cold-boot
-      // biometric gate pattern: gracefully exits when any precondition
-      // isn't ready (no flag, no opt-in, no PIN). The redirect must not
-      // loop — `/unlock-history` itself short-circuits the gate, and
-      // the `/privacy/setup` modal route is also exempt so toggling ON
-      // during setup doesn't fire the gate on a Settings-sourced visit.
-      final isHistoryRoute = loc == '/history' || loc.startsWith('/history/');
-      final isUnlockRoute = loc == '/unlock-history';
+      // Privacy Lock gate — whole-app cold-boot scope. Inserts itself
+      // when (a) the user is signed in, (b) the user has opted into
+      // Privacy Lock, and (c) we haven't already unlocked this session.
+      //
+      // `privacyLockEnabledProvider` is pre-resolved in main.dart via
+      // `SeededPrivacyLockEnabledNotifier`, so this read returns a real
+      // bool on the very first redirect pass — no FutureProvider race,
+      // no flash-of-home. The `/privacy/setup` modal route is exempt so
+      // toggling ON from Settings doesn't fire the lock mid-setup; the
+      // unlock screen itself short-circuits the redirect.
+      final isUnlockRoute = loc == '/privacy-lock';
       final isPrivacySetup = loc == '/privacy/setup';
-      if (isHistoryRoute && !isUnlockRoute && !isPrivacySetup) {
-        final flags = ref.read(featureFlagsProvider);
-        final userOptedIn = ref.read(privacyLockEnabledProvider);
-        if (flags.historyPrivacyLockEnabled && userOptedIn) {
-          final unlock = ref.read(historyUnlockedThisSessionProvider);
-          final unlocked = unlock.isUnlocked(now: DateTime.now().toUtc());
-          if (!unlocked) {
-            // If biometric was already verified this session
-            // (cold-boot gate or any prior unlock), treat history as
-            // unlocked too. Same hardware verification — prompting
-            // again is friction. Without this, the user sees a
-            // "double lock" when the 5-minute idle window has cleared
-            // the history flag but the biometric flag (which only
-            // clears on sign-out) is still good.
-            final biometricUnlocked = ref.read(
-              biometricUnlockedThisSessionProvider,
-            );
-            if (biometricUnlocked) {
-              ref.read(historyUnlockedThisSessionProvider.notifier).unlock();
-              return null;
-            }
-            // If biometric is opted-in but hasn't fired yet (race:
-            // capability provider hadn't resolved on the earlier
-            // cold-boot redirect pass, so the cold-boot gate was
-            // skipped), route through /biometric-gate instead of
-            // /unlock-history. Three reasons:
-            //   1. Biometric users should never see two different
-            //      verification screens. The privacy lock fallback is
-            //      for PIN-only users.
-            //   2. /biometric-gate sets BOTH session flags on success,
-            //      so the user lands on /history without a second
-            //      gate firing afterwards.
-            //   3. Removes the back-button trap: pressing back from
-            //      /unlock-history called `context.go('/home')` →
-            //      the cold-boot biometric gate then re-fired on
-            //      /home (cap now loaded) → user bounced to
-            //      /biometric-gate. Going to /biometric-gate directly
-            //      removes the back-from-PIN-screen trap.
-            final cap = ref.read(biometricCapabilityProvider).value;
-            if (cap != null && cap.shouldGate) {
-              return '/biometric-gate?returnTo=${Uri.encodeComponent(loc)}';
-            }
-            return '/unlock-history?returnTo=${Uri.encodeComponent(loc)}';
-          }
-        }
+      if (refresh.value != null &&
+          !isUnlockRoute &&
+          !isPrivacySetup &&
+          ref.read(privacyLockEnabledProvider) &&
+          !ref.read(privacyLockUnlockedThisSessionProvider)) {
+        // Thread the original destination through as `returnTo` so the
+        // user lands where they were navigating instead of being
+        // dumped on `/home` after unlock. The cold-boot path
+        // (loc == '/home') passes `/home` and is a no-op.
+        final returnTo = Uri.encodeComponent(loc);
+        return '/privacy-lock?returnTo=$returnTo';
       }
       return null;
     },
@@ -227,28 +165,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'forgot-password',
         pageBuilder: (c, s) => _noTransition(const ForgotPasswordScreen()),
       ),
+      // Unified Privacy Lock unlock screen — biometric (when available)
+      // + PIN fallback. Reachable via the cold-boot redirect above when
+      // the user has opted in. `returnTo` is URL-encoded by the redirect
+      // so any deep-link destination survives the round-trip.
       GoRoute(
-        path: '/biometric-gate',
+        path: '/privacy-lock',
         pageBuilder: (c, s) {
           final returnTo = s.uri.queryParameters['returnTo'];
-          return _noTransition(BiometricGateScreen(returnTo: returnTo));
+          return _noTransition(PrivacyLockScreen(returnTo: returnTo));
         },
       ),
-      // History privacy gate (biometric + PIN fallback). Reachable via
-      // the redirect above when the user has opted in. `returnTo` is
-      // URL-encoded by the redirect so any `/history/<id>` deep link
-      // survives the round-trip.
-      GoRoute(
-        path: '/unlock-history',
-        pageBuilder: (c, s) {
-          final returnTo = s.uri.queryParameters['returnTo'];
-          return _noTransition(PinVerifyScreen(returnTo: returnTo));
-        },
-      ),
-      // First-time setup flow for the History privacy gate. Modal route
-      // reached via Settings → PRIVACY → "Set up PIN" or by flipping
-      // the master switch ON. Pops with `true` on success and `false`
-      // on cancellation.
+      // First-time setup flow for Privacy Lock. Modal route reached via
+      // Settings → PRIVACY → "Privacy Lock" switch ON. Pops with `true`
+      // on success and `false` on cancellation. Exempt from the
+      // cold-boot gate so toggling ON doesn't fire the lock mid-setup.
       GoRoute(
         path: '/privacy/setup',
         pageBuilder: (c, s) => _noTransition(const PrivacySetupFlowScreen()),
@@ -371,15 +302,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Patterns / Analytics.
-          //
-          // `/analytics` is the read-mode "Patterns" dashboard. The
-          // `/insights` sub-route is a deeper read with the
-          // Pattern-Engine output (mood score time-series + tier
-          // markers) gated behind the bipolar / medical disclaimer ack
-          // dialog. It nests under the Patterns branch so the
-          // bottom-nav highlight stays on the Patterns tab while the
-          // user reads insights.
+          // Patterns. Single screen since v1.5.1 — the former
+          // `/analytics/insights` sub-route was folded into the dashboard
+          // with the bipolar/medical disclaimer rendered as an inline
+          // banner instead of a route-level modal gate.
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -390,14 +316,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                     const AnalyticsScreen(),
                   ),
                 ),
-                routes: [
-                  GoRoute(
-                    path: 'insights',
-                    name: 'insights',
-                    pageBuilder: (c, s) =>
-                        _noTransition(const InsightsScreen()),
-                  ),
-                ],
               ),
             ],
           ),

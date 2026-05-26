@@ -20,8 +20,7 @@ import '../../mood/data/providers.dart'
         moodSyncManagerProvider,
         myMoodsStreamProvider;
 import '../../mood/data/sync/mood_sync_manager.dart' show MoodSyncManager;
-import '../../auth/presentation/widgets/biometric_settings_tile.dart';
-import '../../auth/presentation/widgets/privacy_settings_tile.dart';
+import '../../auth/presentation/widgets/privacy_lock_settings_tile.dart';
 import '../../auth/presentation/widgets/webauthn_settings_tile.dart';
 import '../../disclaimer/presentation/widgets/disclaimer_panel.dart';
 import '../../garden/data/providers.dart' show debugPlantTierOverrideProvider;
@@ -159,32 +158,14 @@ class SettingsScreen extends ConsumerWidget {
 
               const SizedBox(height: 18),
 
-              // ── Security zone ──
-              // Platform gating: biometric (local_auth) is Android-only;
-              // WebAuthn is web-only. Hide the irrelevant tile entirely
-              // instead of rendering its disabled preview — cleaner UX than
-              // "this isn't for your platform" copy.
-              if (!kIsWeb) ...[
-                const MbSectionLabel('SECURITY'),
-                const SizedBox(height: 6),
-                MbCard(
-                  clipBehavior: Clip.hardEdge,
-                  padding: EdgeInsets.zero,
-                  child: const BiometricSettingsTile(),
-                ),
-                const SizedBox(height: 18),
-              ],
-
               // ── Privacy zone ──
-              // Hidden when signed out (defence in depth — the tile
-              // itself renders a disabled affordance, but skipping the
-              // section entirely keeps the visual hierarchy clean for
-              // the unauthenticated sign-out → sign-in transition).
-              // Also hidden when the Remote Config kill-switch is off,
-              // so a rollback can yank the feature without leaving the
-              // Settings UI dangling.
-              if (user != null &&
-                  ref.watch(privacyLockMasterEnabledProvider)) ...[
+              // Hosts the unified Privacy Lock tile (biometric + PIN
+              // fallback) plus the WebAuthn tile on web. Hidden when
+              // signed out (defence in depth — the tile itself renders
+              // a disabled affordance, but skipping the section
+              // entirely keeps the visual hierarchy clean for the
+              // unauthenticated sign-out → sign-in transition).
+              if (user != null) ...[
                 const MbSectionLabel('PRIVACY'),
                 const SizedBox(height: 6),
                 MbCard(
@@ -192,10 +173,10 @@ class SettingsScreen extends ConsumerWidget {
                   padding: EdgeInsets.zero,
                   child: Column(
                     children: [
-                      const PrivacySettingsTile(),
-                      // WebAuthn is web-only — keep the tile on web, drop
-                      // it (and the divider) on native where biometric
-                      // already covers the same affordance.
+                      const PrivacyLockSettingsTile(),
+                      // WebAuthn is web-only — keep the tile on web,
+                      // drop it (and the divider) on native where
+                      // biometric already covers the same affordance.
                       if (kIsWeb) ...const [
                         Divider(height: 1),
                         WebauthnSettingsTile(),
@@ -687,7 +668,7 @@ class _AboutCluster extends StatelessWidget {
             leading: const Icon(Icons.medical_information_outlined),
             title: const Text('Medical disclaimer'),
             subtitle: const Text(
-              'MoodBloom is not a medical device — tap to read more.',
+              'MoodBloom is not a medical device - tap to read more.',
             ),
             children: const [
               Padding(
@@ -825,7 +806,7 @@ class _DebugCluster extends ConsumerWidget {
         child: ExpansionTile(
           leading: const Icon(Icons.build_outlined),
           title: const Text('Debug tools'),
-          subtitle: const Text('Power-user only — tap to expand'),
+          subtitle: const Text('Power-user only - tap to expand'),
           tilePadding: const EdgeInsets.symmetric(horizontal: 16),
           childrenPadding: EdgeInsets.zero,
           children: [
@@ -987,7 +968,7 @@ class _DebugCluster extends ConsumerWidget {
   void _crashNow() {
     if (kIsWeb) {
       Future<void>(() {
-        throw StateError('Debug crash from Settings — web');
+        throw StateError('Debug crash from Settings - web');
       });
       return;
     }
@@ -1030,7 +1011,7 @@ class _DebugCluster extends ConsumerWidget {
       SnackBar(
         content: Text(
           fired
-              ? 'Notification fired — check your system tray.'
+              ? 'Notification fired - check your system tray.'
               : 'Real local notifications fire only on Android. '
                     '(Web uses the browser permission flow.)',
         ),
@@ -1096,7 +1077,7 @@ class _DebugCluster extends ConsumerWidget {
         messenger.showSnackBar(
           SnackBar(
             content: Text(
-              'wipeWeeklyGarden failed: ${e.code} — '
+              'wipeWeeklyGarden failed: ${e.code} - '
               '${e.message ?? "unknown"}. Continuing anyway.',
             ),
           ),
@@ -1113,7 +1094,7 @@ class _DebugCluster extends ConsumerWidget {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            'Harvested ${garden.weekId} — '
+            'Harvested ${garden.weekId} - '
             '${garden.entries.length} entries archived '
             '(prior archive cleared first).',
           ),
@@ -1140,7 +1121,7 @@ class _DebugCluster extends ConsumerWidget {
         content: const Text(
           'Wipes the offline mood database AND SharedPreferences on this '
           'device. Cloud data (Firestore) is untouched and will re-sync '
-          'automatically — no restart needed.',
+          'automatically - no restart needed.',
         ),
         actions: [
           TextButton(
@@ -1242,7 +1223,7 @@ class _DebugCluster extends ConsumerWidget {
       if (!context.mounted) return;
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Wipe failed: ${e.code} — ${e.message ?? "unknown"}'),
+          content: Text('Wipe failed: ${e.code} - ${e.message ?? "unknown"}'),
         ),
       );
       return;
@@ -1295,15 +1276,11 @@ class _DebugTierCycleTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final current = ref.watch(debugPlantTierOverrideProvider);
-    final label = current?.name ?? 'off (use EWMA)';
+    final label = current?.name ?? 'off';
     return ListTile(
       leading: const Icon(Icons.local_florist_outlined),
-      title: const Text('Cycle plant tier (5 states)'),
-      subtitle: Text(
-        'Tap to advance: $label ? next. Forces the home canvas to '
-        'render Storm Season / Weathering / Resting / Thriving / '
-        'Flourishing without manufacturing entries.',
-      ),
+      title: const Text('Cycle plant tier'),
+      subtitle: Text('Current: $label'),
       onTap: () {
         final notifier = ref.read(debugPlantTierOverrideProvider.notifier);
         final idx = _cycle.indexOf(current);

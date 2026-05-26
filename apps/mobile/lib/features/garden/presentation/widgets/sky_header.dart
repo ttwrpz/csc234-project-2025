@@ -86,7 +86,7 @@ class SkyHeader extends StatelessWidget {
     return Semantics(
       container: true,
       label:
-          'Garden canvas — ${state.plantTier.name} tier, '
+          'Garden canvas - ${state.plantTier.name} tier, '
           '${state.atmosphere.name} sky.',
       child: SizedBox(
         height: height,
@@ -351,12 +351,12 @@ class SkyHeader extends StatelessWidget {
   /// Public so [GardenSummaryRow] (in `garden_summary_row.dart`) can
   /// render the same tagline in the page flow below the canvas.
   static String tierTagline(GardenState state) {
-    if (state.isEmpty) return 'Plant your first mood — a fresh canvas awaits.';
+    if (state.isEmpty) return 'Plant your first mood - a fresh canvas awaits.';
     return switch (state.plantTier) {
       PlantTier.flourishing => 'A flourishing week.',
-      PlantTier.thriving => 'Thriving — the garden has grown.',
-      PlantTier.resting => 'Resting — quiet days for the soil.',
-      PlantTier.weathering => 'Weathering a soft week — roots hold.',
+      PlantTier.thriving => 'Thriving - the garden has grown.',
+      PlantTier.resting => 'Resting - quiet days for the soil.',
+      PlantTier.weathering => 'Weathering a soft week - roots hold.',
       PlantTier.stormSeason => 'Storms pass. The roots hold.',
     };
   }
