@@ -6,6 +6,8 @@
 // independently; the dispatcher will be re-pointed at that doc and this
 // caller removed.
 
+import 'dart:ui' show Color;
+
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,7 +16,11 @@ import '../../auth/data/providers.dart';
 import '../../mood/data/providers.dart';
 import '../../mood/domain/entities/mood_entry.dart';
 import '../../pattern_engine/domain/legacy_pattern_detector.dart';
+import '../../tokens/data/providers.dart';
+import '../../tokens/domain/entities/per_species_skin_state.dart';
+import '../../tokens/domain/services/resolve_species_accent.dart';
 import '../domain/cheer_up_events_repository.dart';
+import '../domain/entities/flower_species.dart';
 import '../domain/entities/garden_state.dart';
 import '../domain/entities/intervention_state.dart';
 import '../domain/entities/plant_tier.dart';
@@ -223,4 +229,30 @@ final interventionStateProvider = Provider<AsyncValue<InterventionState>>((
       firstTriggeredAt: anchors.firstTriggeredAt,
     );
   });
+});
+
+/// Resolved per-species petal-accent overrides for the LIVE garden,
+/// keyed by [FlowerSpecies]. Species with no per-species skin equipped
+/// are omitted so the caller's fallback (global skin / default) stays in
+/// force - this is the presentation-layer half of the precedence rule
+/// documented in [ResolveSpeciesAccent].
+///
+/// Bridges the pure-Dart domain resolver (ARGB ints) into Flutter
+/// [Color]s for [FlowerSprite.speciesAccent] / `GardenBed.speciesAccent`.
+/// Past harvested gardens never read this provider - the archive surfaces
+/// pass `null` so historical weeks keep their snapshot look.
+final liveSpeciesAccentProvider = Provider<Map<FlowerSpecies, Color>>((ref) {
+  final perSpecies =
+      ref.watch(perSpeciesSkinStateStreamProvider).value ??
+      PerSpeciesSkinState.initial();
+  final global = ref.watch(skinStateStreamProvider).value;
+  final globalEquipped = global?.equippedSkinId;
+  if (globalEquipped == null) return const <FlowerSpecies, Color>{};
+  final argb = ResolveSpeciesAccent.accentMap(
+    perSpecies: perSpecies,
+    globalEquipped: globalEquipped,
+  );
+  return <FlowerSpecies, Color>{
+    for (final entry in argb.entries) entry.key: Color(entry.value),
+  };
 });

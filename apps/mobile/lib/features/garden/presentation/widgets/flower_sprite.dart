@@ -9,13 +9,24 @@ import '../../domain/entities/flower_species.dart';
 /// [FlowerSpecies]. Rendered as a [CustomPaint] so we avoid pulling in
 /// SVG / image asset dependencies.
 ///
-/// Under the v1.6 global skin model, a [GardenSkinId] re-themes every
-/// plant in the garden. When [skinId] is supplied and is non-meadow,
-/// the sprite dispatches to [MbSkinPlant] (the shared 30-painter
-/// library in design_system). When [skinId] is null or Meadow, the
-/// classic per-species shape paints inline (preserved here so the
-/// post-save toast and other call-sites that don't carry skin state
-/// still read as the species' canonical bloom).
+/// Two skin models coexist (an explicit product decision):
+///
+///   * GLOBAL skin ([skinId], a [GardenSkinId]) re-themes EVERY plant at
+///     once via [MbSkinPlant] (the shared 30-painter library).
+///   * PER-SPECIES skin ([speciesAccent], a petal-accent [Color]) recolours
+///     just THIS species' bloom on the classic painter.
+///
+/// Rendering precedence for a given species (highest wins):
+///   1. PER-SPECIES accent equipped -> paint the classic species shape
+///      with [speciesAccent] as the petal colour (rule below).
+///   2. else GLOBAL skin non-meadow -> dispatch to [MbSkinPlant].
+///   3. else (Meadow / no skin) -> classic species bloom in its default
+///      mood colour.
+///
+/// The per-species accent intentionally sits ABOVE the global skin so a
+/// user who bought, say, a custom sunflower still sees it even while a
+/// global skin is equipped - the override applies only to that one
+/// species, every other plant follows the global skin as before.
 class FlowerSprite extends StatelessWidget {
   const FlowerSprite({
     super.key,
@@ -24,12 +35,19 @@ class FlowerSprite extends StatelessWidget {
     this.tint,
     this.excludeSemantics = true,
     this.skinId,
+    this.speciesAccent,
     this.intensity = 3,
   });
 
   final FlowerSpecies species;
   final double size;
   final Color? tint;
+
+  /// Per-species petal-accent override. When non-null it takes precedence
+  /// over both [skinId] and [tint] for this species' bloom (see the
+  /// class docstring's precedence list). Null -> fall through to the
+  /// global skin / default path.
+  final Color? speciesAccent;
 
   /// When `true` (the default) the sprite is hidden from the a11y tree
   /// - the parent widget (e.g. `MoodEntryTile`) typically already
@@ -59,7 +77,21 @@ class FlowerSprite extends StatelessWidget {
     final color = tint ?? palette.colorOf(moodKind);
 
     Widget paint;
-    if (skinId != null && skinId != GardenSkinId.meadow) {
+    if (speciesAccent != null) {
+      // Precedence rule 1: a per-species skin is equipped for this
+      // species - paint the classic silhouette with the chosen accent.
+      paint = SizedBox(
+        width: size,
+        height: size,
+        child: CustomPaint(
+          painter: _FlowerSpritePainter(
+            species: species,
+            color: speciesAccent!,
+          ),
+        ),
+      );
+    } else if (skinId != null && skinId != GardenSkinId.meadow) {
+      // Precedence rule 2: a non-meadow global skin re-themes this plant.
       paint = MbSkinPlant(
         skinId: skinId!,
         mood: moodKind,
@@ -68,6 +100,7 @@ class FlowerSprite extends StatelessWidget {
         size: Size(size, size),
       );
     } else {
+      // Precedence rule 3: Meadow / no skin - the classic species bloom.
       paint = SizedBox(
         width: size,
         height: size,

@@ -5,12 +5,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../auth/data/providers.dart';
+import '../../../garden/domain/entities/flower_species.dart';
 import '../../../garden/domain/entities/plant_tier.dart';
 import '../../../garden/data/providers.dart';
+import '../../../garden/presentation/widgets/flower_sprite.dart';
 import '../../data/providers.dart';
 import '../../domain/entities/garden_skin.dart';
+import '../../domain/entities/per_species_skin.dart';
+import '../../domain/entities/per_species_skin_state.dart';
 import '../../domain/entities/skin_state.dart';
 import '../../domain/services/garden_skin_catalog.dart';
+import '../../domain/services/per_species_skin_catalog.dart';
+import '../widgets/per_species_skin_purchase_confirm_sheet.dart';
 import '../widgets/skin_purchase_confirm_sheet.dart';
 
 /// User-facing screen for browsing + purchasing global garden skins.
@@ -37,6 +43,9 @@ class SkinShopScreen extends ConsumerWidget {
     final gardenAsync = ref.watch(gardenStateStreamProvider);
     final tier = gardenAsync.value?.plantTier ?? PlantTier.resting;
     final hasFlourishing = tier == PlantTier.flourishing;
+    final perSpeciesState =
+        ref.watch(perSpeciesSkinStateStreamProvider).value ??
+        PerSpeciesSkinState.initial();
 
     return Scaffold(
       backgroundColor: mb.bg,
@@ -94,6 +103,24 @@ class SkinShopScreen extends ConsumerWidget {
                     state: state,
                     balance: balance,
                     hasFlourishing: hasFlourishing,
+                  ),
+                  const SizedBox(height: 22),
+                  const MbSectionLabel('PER-FLOWER SKINS'),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Personalise one flower at a time. A per-flower skin '
+                    'recolours just that mood, layered over your garden skin.',
+                    style: MbFonts.nunito(
+                      fontSize: 12,
+                      color: mb.textDim,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _PerSpeciesSection(
+                    cols: cols,
+                    state: perSpeciesState,
+                    balance: balance,
                   ),
                   const SizedBox(height: 14),
                   Text(
@@ -650,6 +677,402 @@ class _SkinCardPreview extends StatelessWidget {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// PER-FLOWER skin section. Lists the catalog grouped by species, each
+/// group a labelled sub-header with that species' alternate cards. This
+/// is the additive per-species shelf - it never touches the global skin
+/// state above it.
+class _PerSpeciesSection extends StatelessWidget {
+  const _PerSpeciesSection({
+    required this.cols,
+    required this.state,
+    required this.balance,
+  });
+
+  final int cols;
+  final PerSpeciesSkinState state;
+  final int balance;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (final species in FlowerSpecies.values) ...[
+          _PerSpeciesGroup(
+            species: species,
+            cols: cols,
+            state: state,
+            balance: balance,
+          ),
+          const SizedBox(height: 14),
+        ],
+      ],
+    );
+  }
+}
+
+class _PerSpeciesGroup extends StatelessWidget {
+  const _PerSpeciesGroup({
+    required this.species,
+    required this.cols,
+    required this.state,
+    required this.balance,
+  });
+
+  final FlowerSpecies species;
+  final int cols;
+  final PerSpeciesSkinState state;
+  final int balance;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final skins = PerSpeciesSkinCatalog.forSpecies(species);
+    final equippedId = state.equippedFor(species);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            FlowerSprite(species: species, size: 22),
+            const SizedBox(width: 8),
+            Text(
+              _speciesLabel(species),
+              style: MbFonts.nunito(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: mb.text,
+              ),
+            ),
+            const Spacer(),
+            // "Use default" affordance only when a per-species skin is on.
+            if (equippedId != null) _UseDefaultButton(species: species),
+          ],
+        ),
+        const SizedBox(height: 8),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const gap = 14.0;
+            final cellWidth = (constraints.maxWidth - gap * (cols - 1)) / cols;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: <Widget>[
+                for (final skin in skins)
+                  SizedBox(
+                    width: cellWidth,
+                    child: _PerSpeciesCard(
+                      skin: skin,
+                      state: state,
+                      balance: balance,
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  static String _speciesLabel(FlowerSpecies species) => switch (species) {
+    FlowerSpecies.sunflower => 'Sunflower',
+    FlowerSpecies.lavender => 'Lavender',
+    FlowerSpecies.daisy => 'Daisy',
+    FlowerSpecies.poppy => 'Poppy',
+    FlowerSpecies.fern => 'Fern',
+    FlowerSpecies.forgetMeNot => 'Forget-me-not',
+  };
+}
+
+/// Clears the per-species override for a species, reverting it to the
+/// global skin / default. Mirrors the global "Equip" ghost button.
+class _UseDefaultButton extends ConsumerStatefulWidget {
+  const _UseDefaultButton({required this.species});
+
+  final FlowerSpecies species;
+
+  @override
+  ConsumerState<_UseDefaultButton> createState() => _UseDefaultButtonState();
+}
+
+class _UseDefaultButtonState extends ConsumerState<_UseDefaultButton> {
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return TextButton(
+      onPressed: _busy ? null : _onTap,
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        minimumSize: const Size(0, 28),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        'Use default',
+        style: MbFonts.nunito(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: primary,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onTap() async {
+    final user = ref.read(currentUserStreamProvider).value;
+    if (user == null) return;
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = ref.read(perSpeciesSkinRepositoryProvider);
+    final result = await repo.equip(
+      userId: user.uid,
+      species: widget.species,
+      skinId: null,
+    );
+    if (!mounted) return;
+    setState(() => _busy = false);
+    result.fold(
+      ok: (_) {},
+      err: (f) => messenger.showSnackBar(SnackBar(content: Text(f.message))),
+    );
+  }
+}
+
+class _PerSpeciesCard extends ConsumerStatefulWidget {
+  const _PerSpeciesCard({
+    required this.skin,
+    required this.state,
+    required this.balance,
+  });
+
+  final PerSpeciesSkin skin;
+  final PerSpeciesSkinState state;
+  final int balance;
+
+  @override
+  ConsumerState<_PerSpeciesCard> createState() => _PerSpeciesCardState();
+}
+
+class _PerSpeciesCardState extends ConsumerState<_PerSpeciesCard> {
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final primary = Theme.of(context).colorScheme.primary;
+    final equipped =
+        widget.state.equippedFor(widget.skin.species) == widget.skin.id;
+    final owned = widget.state.isUnlocked(widget.skin.species, widget.skin.id);
+    final affordable = widget.balance >= widget.skin.cost;
+    final accent = Color(widget.skin.accentArgb);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: mb.card,
+        borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusCardLg),
+        border: Border.all(color: equipped ? primary : mb.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          _PerSpeciesPreview(skin: widget.skin, mb: mb),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  widget.skin.displayName,
+                  style: MbFonts.fraunces(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: mb.text,
+                  ),
+                ),
+              ),
+              if (!owned)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    MbTokenGlyphSvg(size: 13, color: primary),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${widget.skin.cost}',
+                      style: MbFonts.nunito(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: mb.text,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 32),
+            child: Text(
+              widget.skin.tagline,
+              style: MbFonts.nunito(
+                fontSize: 12,
+                color: mb.textDim,
+                height: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _action(
+            equipped: equipped,
+            owned: owned,
+            affordable: affordable,
+            accent: accent,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _action({
+    required bool equipped,
+    required bool owned,
+    required bool affordable,
+    required Color accent,
+  }) {
+    if (equipped) {
+      return Container(
+        height: 44,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: MoodBloomColors.softGreen,
+          borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusButton),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const Icon(
+              Icons.check_circle,
+              size: 16,
+              color: MoodBloomColors.seedDark,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Equipped',
+              style: MbFonts.nunito(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: MoodBloomColors.seedDark,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    if (owned) {
+      return MbGhostButton(label: 'Equip', onPressed: _busy ? null : _onEquip);
+    }
+    if (affordable) {
+      return MbPrimaryButton(
+        label: 'Purchase',
+        leading: const Icon(
+          Icons.shopping_bag_outlined,
+          size: 16,
+          color: Colors.white,
+        ),
+        loading: _busy,
+        onPressed: _busy ? null : _onPurchase,
+      );
+    }
+    return MbGhostButton(label: 'Need more tokens', onPressed: null);
+  }
+
+  Future<void> _onEquip() async {
+    final user = ref.read(currentUserStreamProvider).value;
+    if (user == null) return;
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = ref.read(perSpeciesSkinRepositoryProvider);
+    final result = await repo.equip(
+      userId: user.uid,
+      species: widget.skin.species,
+      skinId: widget.skin.id,
+    );
+    if (!mounted) return;
+    setState(() => _busy = false);
+    result.fold(
+      ok: (_) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Equipped ${widget.skin.displayName}.')),
+        );
+      },
+      err: (f) => messenger.showSnackBar(SnackBar(content: Text(f.message))),
+    );
+  }
+
+  Future<void> _onPurchase() async {
+    await PerSpeciesSkinPurchaseConfirmSheet.show(
+      context,
+      skin: widget.skin,
+      currentBalance: widget.balance,
+    );
+    // Snackbar shown inside the sheet; the per-species stream rebuild
+    // flows back into this card naturally.
+  }
+}
+
+/// Card preview window for a per-species skin: the species' classic
+/// bloom painted in the skin's accent colour on a soft sky gradient.
+class _PerSpeciesPreview extends StatelessWidget {
+  const _PerSpeciesPreview({required this.skin, required this.mb});
+
+  final PerSpeciesSkin skin;
+  final MbColors mb;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 90,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [mb.skyTop, mb.skyMid, mb.ground],
+          stops: const [0.0, 0.6, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: <Widget>[
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 26,
+            child: Container(color: mb.ground2),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 8,
+            child: Center(
+              child: FlowerSprite(
+                species: skin.species,
+                speciesAccent: Color(skin.accentArgb),
+                size: 46,
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -24,9 +24,21 @@ import 'flower_sprite.dart';
 /// the user identify a flower without losing their place on the home
 /// page.
 class PerFlowerDetailModal extends StatelessWidget {
-  const PerFlowerDetailModal({super.key, required this.entry});
+  const PerFlowerDetailModal({
+    super.key,
+    required this.entry,
+    this.speciesAccent,
+  });
 
   final MoodEntry entry;
+
+  /// Optional per-species petal accent for the header sprite. When the
+  /// user has equipped a per-species skin for this entry's species, the
+  /// live opener passes the resolved colour so the preview matches the
+  /// garden. `null` (the default, and the value all widget tests use)
+  /// falls back to the species' mood colour - precedence rule 1 vs 3 in
+  /// [FlowerSprite].
+  final Color? speciesAccent;
 
   /// Stable key on the ConstrainedBox that caps the centered-dialog
   /// width. Exposed so widget tests can assert the chosen breakpoint
@@ -61,13 +73,18 @@ class PerFlowerDetailModal extends StatelessWidget {
   /// Responsive launcher — bottom sheet on phone, centered dialog on
   /// tablet + desktop. Picks presentation off `MediaQuery.sizeOf` at the
   /// call site so a window-resize before the tap closes is respected.
-  static Future<void> show(BuildContext context, MoodEntry entry) {
+  static Future<void> show(
+    BuildContext context,
+    MoodEntry entry, {
+    Color? speciesAccent,
+  }) {
     final size = MediaQuery.sizeOf(context);
     if (size.width < _tabletMin) {
       return showModalBottomSheet<void>(
         context: context,
         backgroundColor: Colors.transparent,
-        builder: (_) => PerFlowerDetailModal(entry: entry),
+        builder: (_) =>
+            PerFlowerDetailModal(entry: entry, speciesAccent: speciesAccent),
       );
     }
     final dialogMaxWidth = size.width >= _desktopMin
@@ -87,7 +104,10 @@ class PerFlowerDetailModal extends StatelessWidget {
             maxWidth: dialogMaxWidth,
             maxHeight: dialogMaxHeight,
           ),
-          child: PerFlowerDetailModal(entry: entry),
+          child: PerFlowerDetailModal(
+            entry: entry,
+            speciesAccent: speciesAccent,
+          ),
         ),
       ),
     );
@@ -157,7 +177,12 @@ class PerFlowerDetailModal extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 alignment: Alignment.center,
-                child: FlowerSprite(species: species, size: 42, tint: color),
+                child: FlowerSprite(
+                  species: species,
+                  size: 42,
+                  tint: color,
+                  speciesAccent: speciesAccent,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
