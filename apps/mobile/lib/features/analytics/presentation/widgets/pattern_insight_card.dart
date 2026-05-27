@@ -209,8 +209,9 @@ class _EmptyCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.only(top: 10),
         child: Text(
-          'Log a few more moods to see patterns.',
-          style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
+          'Keep tending your garden - patterns bloom here as the days '
+          'fill in.',
+          style: MbFonts.nunito(fontSize: 13, height: 1.4, color: mb.textDim),
         ),
       ),
     );

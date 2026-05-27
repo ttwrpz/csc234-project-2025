@@ -106,7 +106,7 @@ void main() {
         aiRepo: FakeAiAnalysisRepository(),
       );
       expect(
-        find.text('Log a few more moods to see patterns.'),
+        find.text('Keep tending your garden - patterns bloom here as the days fill in.'),
         findsOneWidget,
       );
     });
@@ -185,7 +185,7 @@ void main() {
         aiRepo: aiRepo,
       );
       expect(
-        find.text('Log a few more moods to see patterns.'),
+        find.text('Keep tending your garden - patterns bloom here as the days fill in.'),
         findsOneWidget,
       );
     });

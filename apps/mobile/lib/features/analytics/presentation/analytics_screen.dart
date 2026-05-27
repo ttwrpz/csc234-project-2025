@@ -256,8 +256,9 @@ class _ChartCard extends StatelessWidget {
     if (!hasAnyEntry) {
       return Center(
         child: Text(
-          'Your insights will appear here as your garden grows.',
-          style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
+          'A few moods in and your patterns start to bloom here - '
+          'the more days you tend, the clearer the picture.',
+          style: MbFonts.nunito(fontSize: 13, height: 1.4, color: mb.textDim),
           textAlign: TextAlign.center,
         ),
       );
