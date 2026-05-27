@@ -2,10 +2,10 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../garden/presentation/widgets/garden_bed.dart';
 import '../../history/presentation/entry_detail_screen.dart';
 import '../../history/presentation/widgets/mood_entry_tile.dart';
 import '../domain/entities/weekly_garden.dart';
+import 'widgets/harvest_mini_garden.dart';
 
 /// Detail screen for a single archived [WeeklyGarden].
 ///
@@ -104,18 +104,16 @@ class _SummaryHeader extends StatelessWidget {
       clipBehavior: Clip.hardEdge,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final w = constraints.maxWidth.clamp(280.0, 720.0);
-          final h = w >= 600 ? w * 0.42 : w * 0.5;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Center(
-                child: GardenBed(
-                  entries: week.entries,
-                  tier: week.summary.endingPlantTier,
-                  size: Size(w, h),
-                  showOverflowBadge: true,
-                ),
+              // Same mini-garden the harvest cards + home use, taller
+              // here so the detail hero reads as a feature.
+              HarvestMiniGarden(
+                entries: week.entries,
+                weekStart: week.weekStart,
+                tier: week.summary.endingPlantTier,
+                height: 160,
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(

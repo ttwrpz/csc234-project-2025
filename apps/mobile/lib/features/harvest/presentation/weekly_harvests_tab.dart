@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../garden/data/providers.dart';
 import '../../garden/domain/entities/plant_tier.dart';
-import '../../garden/presentation/widgets/sky_plot_strip.dart';
 import '../../mood/data/providers.dart';
 import '../../mood/domain/entities/mood_entry.dart';
 import '../../mood/domain/entities/mood_type.dart';
@@ -13,6 +12,7 @@ import '../../mood/presentation/widgets/mood_kind_adapter.dart';
 import '../data/providers.dart';
 import '../domain/entities/weekly_garden.dart';
 import 'archived_week_screen.dart';
+import 'widgets/harvest_mini_garden.dart';
 
 /// History tab listing the user's weeks newest-first, per
 /// `HistoryHarvestScreen` in `prototype/screens-extra.jsx`.
@@ -386,11 +386,10 @@ class _HarvestCard extends StatelessWidget {
           // mini-plant strip the home SkyHeader uses (one cluster per
           // day, no labels), so the harvest garden reads consistently
           // with the live home garden.
-          _HarvestMiniGarden(
+          HarvestMiniGarden(
             entries: vm.entries,
             weekStart: vm.weekStart,
             tier: vm.tier,
-            mb: mb,
           ),
           Padding(
             padding: const EdgeInsets.all(MoodBloomSpacing.lg),
@@ -441,118 +440,6 @@ class _HarvestCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Compact garden snapshot for a harvest card: per-tier sky gradient +
-/// a two-tone ground band + the home garden's [SkyPlotStrip] (one
-/// mood-keyed plant cluster per day, day labels hidden). Fixes the
-/// missing background visual and keeps the flower model identical to
-/// the home screen.
-class _HarvestMiniGarden extends StatelessWidget {
-  const _HarvestMiniGarden({
-    required this.entries,
-    required this.weekStart,
-    required this.tier,
-    required this.mb,
-  });
-
-  final List<MoodEntry> entries;
-  final DateTime weekStart;
-  final PlantTier tier;
-  final MbColors mb;
-
-  /// Per-tier sky gradient stops, ported from the prototype's
-  /// `MiniHarvestGarden > TIER_BG`. Storm reads as a muted slate, never
-  /// an alarming charcoal (CLAUDE.md "sheltered, never threatened").
-  static List<Color> _skyFor(PlantTier tier) => switch (tier) {
-    PlantTier.flourishing => const [
-      Color(0xFFFFE0BA),
-      Color(0xFFFFEAD0),
-      Color(0xFFDDEFD8),
-    ],
-    PlantTier.thriving => const [
-      Color(0xFFFFE4D1),
-      Color(0xFFF5E9DA),
-      Color(0xFFE8F3ED),
-    ],
-    PlantTier.resting => const [
-      Color(0xFFF4DCC4),
-      Color(0xFFECDFD0),
-      Color(0xFFDAE2CE),
-    ],
-    PlantTier.weathering => const [
-      Color(0xFFC8C9BC),
-      Color(0xFFC2C7BA),
-      Color(0xFFB8C5B0),
-    ],
-    PlantTier.stormSeason => const [
-      Color(0xFF6E7C8B),
-      Color(0xFF61707F),
-      Color(0xFF4C606A),
-    ],
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final isStorm = tier == PlantTier.stormSeason;
-    final groundFront = isStorm ? const Color(0xFF2E4538) : mb.ground2;
-    final groundBack = isStorm ? const Color(0xFF3D5040) : mb.ground;
-    final labelTint = isStorm ? Colors.white : mb.text;
-    return SizedBox(
-      height: 130,
-      child: ClipRect(
-        child: Stack(
-          children: [
-            // Sky.
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    stops: const [0, 0.55, 1],
-                    colors: _skyFor(tier),
-                  ),
-                ),
-              ),
-            ),
-            // Two-tone ground band.
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: 30,
-              child: DecoratedBox(decoration: BoxDecoration(color: groundBack)),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: 18,
-              child: DecoratedBox(
-                decoration: BoxDecoration(color: groundFront),
-              ),
-            ),
-            // Plants — same model + bucketing as the home strip.
-            Positioned(
-              left: 8,
-              right: 8,
-              bottom: 8,
-              child: SkyPlotStrip(
-                weekEntries: entries,
-                weekStart: weekStart,
-                tier: tier,
-                compact: true,
-                showDayLabels: false,
-                labelColor: labelTint,
-                darkOverlay: isStorm,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

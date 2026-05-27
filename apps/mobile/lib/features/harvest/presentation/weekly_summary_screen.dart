@@ -5,12 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../garden/domain/entities/flower_species.dart';
 import '../../garden/domain/entities/plant_tier.dart';
 import '../../garden/presentation/widgets/flower_sprite.dart';
-import '../../garden/presentation/widgets/garden_bed.dart';
 import '../../mood/domain/entities/mood_entry.dart';
 import '../../mood/domain/entities/mood_type.dart';
 import '../../mood/presentation/widgets/mood_kind_adapter.dart';
 import '../domain/entities/weekly_garden.dart';
 import 'controllers/weekly_summary_controller.dart';
+import 'widgets/harvest_mini_garden.dart';
 
 /// Pre-harvest summary shown ONCE before each archival commits, now
 /// presented as a modal (bottom sheet on phone, dialog on tablet+) per
@@ -133,13 +133,12 @@ class _Hero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: GardenBed(
-        entries: entries,
-        tier: tier,
-        size: const Size(280, 140),
-        showOverflowBadge: true,
-      ),
+    // Same mini-garden as the harvest cards + detail screen + home, so
+    // the whole harvest flow renders one consistent garden. weekStart is
+    // derived from the entries (this is the week being archived).
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusCardLg),
+      child: HarvestMiniGarden(entries: entries, tier: tier, height: 140),
     );
   }
 }
