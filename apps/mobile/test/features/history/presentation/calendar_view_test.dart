@@ -204,7 +204,9 @@ void main() {
           'November',
           'December',
         ];
-        final currentLabel = '${monthNames[now.month - 1]} ${now.year}';
+        // v1.6 prototype: month header drops the year; it shows the
+        // bare month name (e.g. "May"). The chevrons scope context.
+        final currentLabel = monthNames[now.month - 1];
         expect(find.text(currentLabel), findsOneWidget);
 
         await tester.tap(find.widgetWithIcon(MbIconButton, Icons.chevron_left));
@@ -212,9 +214,16 @@ void main() {
 
         // Now showing the previous month.
         final prev = DateTime(now.year, now.month - 1, 1);
-        final prevLabel = '${monthNames[prev.month - 1]} ${prev.year}';
+        final prevLabel = monthNames[prev.month - 1];
         expect(find.text(prevLabel), findsOneWidget);
-        expect(find.text(currentLabel), findsNothing);
+        // The previous-month name may also equal the current-month name
+        // when the test happens to run in January (e.g. previous = Dec)
+        // - in that case both labels resolve to different strings, so
+        // this still holds. When they DO differ, the current month name
+        // is gone after the chevron tap.
+        if (prevLabel != currentLabel) {
+          expect(find.text(currentLabel), findsNothing);
+        }
       },
     );
   });

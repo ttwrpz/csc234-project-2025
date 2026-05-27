@@ -44,7 +44,7 @@ abstract class WeeklyGarden with _$WeeklyGarden {
       _$WeeklyGardenFromJson(json);
 }
 
-/// Compact stats rendered on the [WeeklySummaryScreen] and the History
+/// Compact stats rendered on the weekly summary sheet and the History
 /// tile. Pure-Dart entity; computed by `ComputeWeeklySummaryUseCase`.
 ///
 /// `averageMoodScore` is the mean of `MoodScore.value` over every entry

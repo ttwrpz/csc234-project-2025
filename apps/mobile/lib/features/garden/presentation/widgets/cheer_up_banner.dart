@@ -1,7 +1,7 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
-import 'breathing_overlay.dart';
+import '../../../intervention/presentation/screens/breathing_screen.dart';
 
 /// Compassionate intervention card shown above the weekly bloom bar
 /// when the pattern detector trips (`InterventionState.triggered`) and
@@ -12,7 +12,8 @@ import 'breathing_overlay.dart';
 ///  * Body:  "Want to try a two-minute breathing exercise?"
 ///  * Reason caption echoes the human-readable form of `pattern.reason`.
 ///
-/// "Try it" opens the [BreathingOverlay]. "Not now" calls [onDismiss],
+/// "Try it" opens the breathing modal via [BreathingSheet]. "Not now"
+/// calls [onDismiss],
 /// which the parent uses to hide the banner for the rest of the session
 /// (it does NOT write the cooldown to storage — that flow lives in the
 /// pattern detector).
@@ -118,7 +119,7 @@ class CheerUpBanner extends StatelessWidget {
                         label: 'Try it',
                         background: _fg,
                         foreground: Colors.white,
-                        onTap: () => BreathingOverlay.show(context),
+                        onTap: () => BreathingSheet.show(context),
                       ),
                       const SizedBox(width: 8),
                       _PillButton(

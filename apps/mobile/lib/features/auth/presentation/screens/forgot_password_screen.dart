@@ -56,52 +56,53 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Row(
-                            children: [
-                              MbIconButton(
-                                icon: const Icon(Icons.arrow_back),
-                                semanticLabel: 'Back to sign in',
-                                onPressed: () {
-                                  if (Navigator.of(context).canPop()) {
-                                    Navigator.of(context).pop();
-                                  } else {
-                                    // ignore: discarded_futures
-                                    GoRouter.of(context).go('/sign-in');
-                                  }
-                                },
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'Reset password',
-                                style: MbFonts.fraunces(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: mb.text,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Forgot your password?',
-                            style: MbFonts.fraunces(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.2,
-                              color: mb.text,
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: MbIconButton(
+                              icon: const Icon(Icons.arrow_back),
+                              semanticLabel: 'Back to sign in',
+                              onPressed: () {
+                                if (Navigator.of(context).canPop()) {
+                                  Navigator.of(context).pop();
+                                } else {
+                                  // ignore: discarded_futures
+                                  GoRouter.of(context).go('/sign-in');
+                                }
+                              },
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            "Enter the email you signed up with. We'll "
-                            'send a link to set a new password.',
-                            style: MbFonts.nunito(
-                              fontSize: 14,
-                              height: 1.5,
-                              color: mb.textDim,
+                          Center(
+                            child: Column(
+                              children: [
+                                const MbBrandSvg(
+                                  size: 48,
+                                  color: MoodBloomColors.seed,
+                                ),
+                                const SizedBox(height: 14),
+                                Text(
+                                  'MoodBloom',
+                                  style: MbFonts.fraunces(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: -0.3,
+                                    color: mb.text,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Enter your email and we'll send a "
+                                  'reset link',
+                                  textAlign: TextAlign.center,
+                                  style: MbFonts.nunito(
+                                    fontSize: 14,
+                                    color: mb.textDim,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 24),
                           MbInputField(
                             label: 'Email',
                             controller: _emailController,

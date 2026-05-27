@@ -3,17 +3,17 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'insight_window.freezed.dart';
 
 /// User-visible window over which the Patterns screen aggregates mood +
-/// pattern history. The Patterns picker exposes 7 / 30 / 90; the
-/// `fortnight` (14d) value is retained as the Mann-Kendall trend test's
-/// natural span and remains available for non-user-facing callers.
+/// pattern history. The v1.6 redesign locked the picker to **7d / 14d /
+/// 30d** (per the user's locked decision), so the quarter (90d) preset
+/// is gone. `fortnight` (14d) is the default — it matches the Mann-Kendall
+/// trend test's natural span and the prototype's middle tab.
 ///
 /// Pure-Dart entity — no Flutter / Firebase imports per the
 /// domain-purity rule in CLAUDE.md.
 enum InsightWindowPreset {
   week(days: 7, label: '7d'),
   fortnight(days: 14, label: '14d'),
-  month(days: 30, label: '30d'),
-  quarter(days: 90, label: '90d');
+  month(days: 30, label: '30d');
 
   const InsightWindowPreset({required this.days, required this.label});
 

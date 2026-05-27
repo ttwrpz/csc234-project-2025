@@ -55,23 +55,42 @@ class MbSideNav extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 16),
+              // Brand row — 36×36 gradient tile (seed → seedDark) hosts
+              // the inline `MbBrandSvg`, paired with the "MoodBloom"
+              // wordmark in Fraunces 17 / w700.
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 12, 20),
                 child: Row(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.asset(
-                        'assets/icon/app_icon.png',
-                        width: 32,
-                        height: 32,
-                        fit: BoxFit.cover,
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            MoodBloomColors.seed,
+                            MoodBloomColors.seedDark,
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: MoodBloomColors.seed.withValues(alpha: 0.30),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: MbBrandSvg(size: 20, color: Colors.white),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Text(
                       brandLabel,
-                      style: TextStyle(
+                      style: MbFonts.fraunces(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
                         color: mb.text,
@@ -133,7 +152,7 @@ class MbSideNavAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    final color = destructive ? mb.destructiveText : mb.text;
+    final color = destructive ? mb.destructiveText : mb.textDim;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -156,7 +175,7 @@ class MbSideNavAction extends StatelessWidget {
                     label,
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: color,
                     ),
                   ),
@@ -186,8 +205,30 @@ class _MbSideNavTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mb = theme.extension<MbColors>()!;
-    final color = active ? mb.text : mb.textDim;
-    final bg = active ? mb.bg : Colors.transparent;
+
+    // FAB-class items (the central "Add" slot) always paint with the
+    // brand seed background + white foreground, regardless of active
+    // state. This mirrors the bottom-nav FAB treatment so the action
+    // reads as "primary" everywhere it appears.
+    final isFab = item.highlighted;
+    final Color fg;
+    final Color bg;
+    final FontWeight weight;
+    if (isFab) {
+      fg = Colors.white;
+      bg = MoodBloomColors.seed;
+      weight = FontWeight.w600;
+    } else if (active) {
+      // Active rows use the brand-tinted soft-green wash from the
+      // prototype (`--mb-soft-green`) with full-strength text colour.
+      fg = mb.text;
+      bg = MoodBloomColors.softGreen;
+      weight = FontWeight.w600;
+    } else {
+      fg = mb.textDim;
+      bg = Colors.transparent;
+      weight = FontWeight.w500;
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -209,14 +250,14 @@ class _MbSideNavTab extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Row(
                 children: [
-                  Icon(item.icon, size: 18, color: color),
+                  Icon(item.icon, size: 18, color: fg),
                   const SizedBox(width: 10),
                   Text(
                     item.label,
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                      color: color,
+                      fontWeight: weight,
+                      color: fg,
                     ),
                   ),
                 ],

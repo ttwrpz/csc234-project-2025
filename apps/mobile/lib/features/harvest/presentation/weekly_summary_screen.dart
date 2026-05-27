@@ -12,19 +12,53 @@ import '../../mood/presentation/widgets/mood_kind_adapter.dart';
 import '../domain/entities/weekly_garden.dart';
 import 'controllers/weekly_summary_controller.dart';
 
-/// Pre-harvest summary shown ONCE before each archival commits. The
-/// user reviews their week's stats and taps **Continue to new week** to
-/// commit the archive and start fresh.
+/// Pre-harvest summary shown ONCE before each archival commits, now
+/// presented as a modal (bottom sheet on phone, dialog on tablet+) per
+/// the v1.6 prototype's `ModalFrame`. The user reviews their week's
+/// stats and taps **Continue to new week** to commit the archive.
 ///
 /// Locked banner copy (CLAUDE.md §"Pre-approved phrasing"):
 /// "Your garden this week has been harvested and saved to your history.
 /// A new week begins — a fresh canvas for your story."
 ///
-/// Layout (top → bottom): app-bar "Your week" → hero `PlantTierGroup` →
+/// Layout (top → bottom): "Your week" modal header → hero `GardenBed` →
 /// banner copy → average-mood scale → top-3 dominant emotion chips →
 /// "Pattern check-ins" line → full-width Continue button.
-class WeeklySummaryScreen extends ConsumerWidget {
-  const WeeklySummaryScreen({
+class WeeklySummarySheet {
+  const WeeklySummarySheet._();
+
+  /// Locked banner phrasing — verbatim from CLAUDE.md "Pre-approved
+  /// intervention phrasing". Test asserts the exact string is rendered.
+  static const String harvestBanner =
+      'Your garden this week has been harvested and saved to your history. '
+      'A new week begins - a fresh canvas for your story.';
+
+  /// Locked CTA label — keeps the screen's only navigation action
+  /// stable so widget + golden tests pin to a known string.
+  static const String continueLabel = 'Continue to new week';
+
+  /// Presents the harvest summary as a modal. Resolves when the modal
+  /// is dismissed (either after the archive commits + auto-pop, or via
+  /// the header close icon). [isDismissible] is false so a stray
+  /// barrier tap doesn't skip the archive review.
+  static Future<void> show(
+    BuildContext context, {
+    required WeeklySummary summary,
+    List<MoodEntry> entries = const <MoodEntry>[],
+  }) {
+    return MbModalSheet.show<void>(
+      context,
+      isDismissible: false,
+      builder: (_) => WeeklySummaryView(summary: summary, entries: entries),
+    );
+  }
+}
+
+/// Modal body for the weekly harvest summary. Hosts the archive
+/// controller listen → auto-pop and renders the section stack inside
+/// an [MbModalScaffold].
+class WeeklySummaryView extends ConsumerWidget {
+  const WeeklySummaryView({
     super.key,
     required this.summary,
     this.entries = const <MoodEntry>[],
@@ -38,23 +72,11 @@ class WeeklySummaryScreen extends ConsumerWidget {
   /// marker so the screen still mounts on edge-case test rigs.
   final List<MoodEntry> entries;
 
-  /// Locked banner phrasing — verbatim from CLAUDE.md "Pre-approved
-  /// intervention phrasing". Test asserts the exact string is rendered.
-  static const String harvestBanner =
-      'Your garden this week has been harvested and saved to your history. '
-      'A new week begins - a fresh canvas for your story.';
-
-  /// Locked CTA label — keeps the screen's only navigation action
-  /// stable so widget + golden tests pin to a known string.
-  static const String continueLabel = 'Continue to new week';
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final mb = theme.extension<MbColors>()!;
     final status = ref.watch(weeklySummaryControllerProvider);
 
-    // Pop the screen as soon as the archive write resolves. The
+    // Pop the modal as soon as the archive write resolves. The
     // controller doesn't navigate itself — it only flips state — so the
     // Continue button used to leave the user stuck on a "Running…" CTA
     // even though the archive landed cleanly. Listening once at the
@@ -74,51 +96,30 @@ class WeeklySummaryScreen extends ConsumerWidget {
       }
     });
 
-    return Scaffold(
-      backgroundColor: mb.bg,
-      appBar: AppBar(
-        title: Text(
-          'Your week',
-          style: MbFonts.fraunces(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: mb.text,
-          ),
-        ),
-        backgroundColor: mb.bg,
-        elevation: 0,
-        centerTitle: false,
-        automaticallyImplyLeading: false,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            MoodBloomSpacing.pagePadding,
-            MoodBloomSpacing.lg,
-            MoodBloomSpacing.pagePadding,
-            MoodBloomSpacing.xl,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _Hero(tier: summary.endingPlantTier, entries: entries),
-              const SizedBox(height: MoodBloomSpacing.lg),
-              _HarvestBanner(text: harvestBanner),
-              const SizedBox(height: MoodBloomSpacing.xl),
-              _AverageMoodSection(value: summary.averageMoodScore),
-              const SizedBox(height: MoodBloomSpacing.xl),
-              _DominantEmotionsSection(counts: summary.moodCounts),
-              const SizedBox(height: MoodBloomSpacing.xl),
-              _PatternCheckInsSection(count: summary.triggeredTierCount),
-              const SizedBox(height: MoodBloomSpacing.xl),
-              _ContinueButton(status: status),
-              if (status is HarvestArchiveError) ...[
-                const SizedBox(height: MoodBloomSpacing.md),
-                _ErrorRow(message: status.failure.message),
-              ],
-            ],
-          ),
-        ),
+    return MbModalScaffold(
+      title: 'Your week',
+      onClose: () => Navigator.of(context).pop(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: MoodBloomSpacing.sm),
+          _Hero(tier: summary.endingPlantTier, entries: entries),
+          const SizedBox(height: MoodBloomSpacing.lg),
+          _HarvestBanner(text: WeeklySummarySheet.harvestBanner),
+          const SizedBox(height: MoodBloomSpacing.xl),
+          _AverageMoodSection(value: summary.averageMoodScore),
+          const SizedBox(height: MoodBloomSpacing.xl),
+          _DominantEmotionsSection(counts: summary.moodCounts),
+          const SizedBox(height: MoodBloomSpacing.xl),
+          _PatternCheckInsSection(count: summary.triggeredTierCount),
+          const SizedBox(height: MoodBloomSpacing.xl),
+          _ContinueButton(status: status),
+          if (status is HarvestArchiveError) ...[
+            const SizedBox(height: MoodBloomSpacing.md),
+            _ErrorRow(message: status.failure.message),
+          ],
+        ],
       ),
     );
   }
@@ -151,14 +152,21 @@ class _HarvestBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
+    // Prototype's harvest banner uses the AI-tint card style — `aiBg`
+    // background + `aiBd` border + body Nunito 14 line-height 1.55.
+    // The string itself is the locked
+    // [WeeklySummarySheet.harvestBanner]; we only refresh the
+    // surrounding card treatment.
     return MbCard(
-      child: Padding(
-        padding: const EdgeInsets.all(MoodBloomSpacing.lg),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: MbFonts.nunito(fontSize: 14, height: 1.5, color: mb.text),
-        ),
+      decoration: BoxDecoration(
+        color: mb.aiBg,
+        border: Border.all(color: mb.aiBd),
+        borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusCardLg),
+      ),
+      padding: const EdgeInsets.all(MoodBloomSpacing.lg),
+      child: Text(
+        text,
+        style: MbFonts.nunito(fontSize: 14, height: 1.55, color: mb.text),
       ),
     );
   }
@@ -399,7 +407,7 @@ class _ContinueButton extends ConsumerWidget {
     final terminal =
         status is HarvestArchiveSuccess || status is HarvestArchiveAlreadyDone;
     return MbPrimaryButton(
-      label: WeeklySummaryScreen.continueLabel,
+      label: WeeklySummarySheet.continueLabel,
       loading: loading,
       onPressed: (loading || terminal)
           ? null

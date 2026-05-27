@@ -1,42 +1,84 @@
+import 'package:design_system/design_system.dart' show GardenSkinId;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:moodbloom/features/garden/domain/entities/flower_species.dart';
 import 'package:moodbloom/features/tokens/domain/entities/skin_state.dart';
 
+/// Pure-Dart invariants for the v1.6 global SkinState.
 void main() {
-  group('SkinState — pool + selection', () {
-    test('empty() has no entries', () {
-      final s = SkinState.empty();
-      expect(s.unlockedBySpecies, isEmpty);
-      expect(s.selectedBySpecies, isEmpty);
-      expect(s.isUnlocked(FlowerSpecies.sunflower, 'whatever'), isFalse);
-      expect(s.selectedFor(FlowerSpecies.sunflower), isNull);
-    });
+  group('SkinState.initial', () {
+    test('fresh-user state has Meadow equipped and Meadow in the pool', () {
+      final state = SkinState.initial();
 
-    test('isUnlocked reflects pool membership only', () {
-      const s = SkinState(
-        unlockedBySpecies: {
-          FlowerSpecies.sunflower: {'sunflower_sunset'},
-        },
-        selectedBySpecies: {FlowerSpecies.sunflower: 'sunflower_sunset'},
-      );
-      expect(s.isUnlocked(FlowerSpecies.sunflower, 'sunflower_sunset'), isTrue);
       expect(
-        s.isUnlocked(FlowerSpecies.sunflower, 'sunflower_moonlit'),
-        isFalse,
+        state.equippedSkinId,
+        equals(GardenSkinId.meadow),
+        reason: 'Meadow is the default for a fresh user',
       );
-      // Cross-species lookup never leaks.
-      expect(s.isUnlocked(FlowerSpecies.lavender, 'sunflower_sunset'), isFalse);
+      expect(
+        state.unlockedSkinIds,
+        equals(<GardenSkinId>{GardenSkinId.meadow}),
+        reason:
+            'a brand-new account owns exactly one skin (Meadow); the rest '
+            'are unlocked via the Skin Shop',
+      );
     });
 
-    test('selectedFor returns null when no explicit selection', () {
-      const s = SkinState(
-        unlockedBySpecies: {
-          FlowerSpecies.sunflower: {'sunflower_sunset'},
+    test('isUnlocked agrees with the underlying set', () {
+      final state = SkinState.initial();
+      expect(state.isUnlocked(GardenSkinId.meadow), isTrue);
+      expect(state.isUnlocked(GardenSkinId.origami), isFalse);
+      expect(state.isUnlocked(GardenSkinId.lantern), isFalse);
+      expect(state.isUnlocked(GardenSkinId.constellation), isFalse);
+      expect(state.isUnlocked(GardenSkinId.crystal), isFalse);
+    });
+  });
+
+  group('SkinState.isUnlocked', () {
+    test('returns true only for ids in the unlocked pool', () {
+      const state = SkinState(
+        equippedSkinId: GardenSkinId.origami,
+        unlockedSkinIds: <GardenSkinId>{
+          GardenSkinId.meadow,
+          GardenSkinId.origami,
         },
-        // Note: pool entry without a selection.
-        selectedBySpecies: {},
       );
-      expect(s.selectedFor(FlowerSpecies.sunflower), isNull);
+      expect(state.isUnlocked(GardenSkinId.meadow), isTrue);
+      expect(state.isUnlocked(GardenSkinId.origami), isTrue);
+      expect(state.isUnlocked(GardenSkinId.lantern), isFalse);
+      expect(state.isUnlocked(GardenSkinId.constellation), isFalse);
+      expect(state.isUnlocked(GardenSkinId.crystal), isFalse);
+    });
+  });
+
+  group('SkinState equality', () {
+    test('two states with the same equipped id + pool are equal', () {
+      const a = SkinState(
+        equippedSkinId: GardenSkinId.meadow,
+        unlockedSkinIds: <GardenSkinId>{GardenSkinId.meadow},
+      );
+      const b = SkinState(
+        equippedSkinId: GardenSkinId.meadow,
+        unlockedSkinIds: <GardenSkinId>{GardenSkinId.meadow},
+      );
+      expect(a, equals(b));
+      expect(a.hashCode, equals(b.hashCode));
+    });
+
+    test('different equipped ids yield unequal states', () {
+      const a = SkinState(
+        equippedSkinId: GardenSkinId.meadow,
+        unlockedSkinIds: <GardenSkinId>{
+          GardenSkinId.meadow,
+          GardenSkinId.origami,
+        },
+      );
+      const b = SkinState(
+        equippedSkinId: GardenSkinId.origami,
+        unlockedSkinIds: <GardenSkinId>{
+          GardenSkinId.meadow,
+          GardenSkinId.origami,
+        },
+      );
+      expect(a, isNot(equals(b)));
     });
   });
 }

@@ -56,11 +56,10 @@ class MbBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    final primary = Theme.of(context).colorScheme.primary;
 
     return ClipRect(
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: mb.navBg,
@@ -78,7 +77,7 @@ class MbBottomNav extends StatelessWidget {
                       child: _MbBottomNavTab(
                         item: items[i],
                         active: i == currentIndex,
-                        primary: primary,
+                        primary: MoodBloomColors.seed,
                         textDim: mb.textDim,
                         onTap: () => onTap(i),
                       ),
@@ -152,6 +151,11 @@ class _MbBottomNavTab extends StatelessWidget {
 
 /// Primary-tinted circular bottom-nav item used for the centred Log slot.
 /// Visually distinct so first-time users notice "this is the main action".
+///
+/// Per the v1.6 prototype: 52×52 circle, vertical offset −12 dp (lifts
+/// the FAB above the nav baseline), `MoodBloomColors.seed` fill, white
+/// `Icons.add` 24 dp glyph, soft drop-shadow tinted with the seed colour
+/// at 30 % alpha so the lift reads as elevation rather than a flat disc.
 class _HighlightedTab extends StatelessWidget {
   const _HighlightedTab({
     required this.item,
@@ -172,24 +176,27 @@ class _HighlightedTab extends StatelessWidget {
       selected: active,
       label: item.label,
       child: Center(
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: primary,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: primary.withAlpha(0x55),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+        child: Transform.translate(
+          offset: const Offset(0, -12),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: primary,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: primary.withValues(alpha: 0.30),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Icon(item.icon, size: 24, color: Colors.white),
             ),
-            child: Icon(item.icon, size: 24, color: Colors.white),
           ),
         ),
       ),

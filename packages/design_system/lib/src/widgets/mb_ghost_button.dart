@@ -5,6 +5,11 @@ import '../tokens/colors.dart';
 import '../tokens/spacing.dart';
 
 /// Secondary CTA. Card background, line border, onSurface text, r14.
+///
+/// When [danger] is true the button switches to the destructive-action
+/// palette: theme `error` foreground + coral-tinted border. Used by
+/// the entry-detail Delete affordance and any other "destructive but
+/// reversible" CTAs.
 class MbGhostButton extends StatelessWidget {
   const MbGhostButton({
     super.key,
@@ -12,6 +17,7 @@ class MbGhostButton extends StatelessWidget {
     required this.onPressed,
     this.leading,
     this.fullWidth = true,
+    this.danger = false,
   });
 
   final String label;
@@ -19,16 +25,25 @@ class MbGhostButton extends StatelessWidget {
   final Widget? leading;
   final bool fullWidth;
 
+  /// When true, the foreground + border switch to the destructive
+  /// palette so the button reads as "Delete / Discard" rather than a
+  /// neutral secondary action.
+  final bool danger;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mb = theme.extension<MbColors>()!;
+    final fg = danger ? mb.destructiveText : mb.text;
+    final borderColor = danger
+        ? theme.colorScheme.error.withValues(alpha: 0.55)
+        : mb.line;
     final button = OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         backgroundColor: mb.card,
-        foregroundColor: mb.text,
-        side: BorderSide(color: mb.line),
+        foregroundColor: fg,
+        side: BorderSide(color: borderColor),
         // Size.fromHeight builds Size(double.infinity, h) — that makes
         // the button's minWidth = infinity, which throws when the
         // parent (e.g. a Row's non-flex slot) passes unbounded width.
@@ -48,7 +63,15 @@ class MbGhostButton extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (leading != null) ...[leading!, const SizedBox(width: 8)],
-          Text(label),
+          // Flexible so the label can shrink-to-fit at 200% dynamic
+          // type on narrow surfaces - same fix as MbPrimaryButton.
+          Flexible(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

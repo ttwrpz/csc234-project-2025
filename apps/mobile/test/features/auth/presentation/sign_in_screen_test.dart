@@ -54,9 +54,14 @@ void main() {
       expect(find.text('PASSWORD'), findsOneWidget);
       // Primary action.
       expect(find.widgetWithText(MbPrimaryButton, 'Sign in'), findsOneWidget);
-      // Secondary actions.
+      // Footer link (v1.6: prompt + action split across two TextSpans
+      // inside a Text.rich; `find.text` does not descend into
+      // TextSpans). Walk the RichText widgets and match on the
+      // composed plain text - "Create one" is the action verb.
       expect(
-        find.widgetWithText(TextButton, 'Create an account'),
+        find.byWidgetPredicate(
+          (w) => w is RichText && (w.text.toPlainText()).contains('Create one'),
+        ),
         findsOneWidget,
       );
       // Google button is shown on non-Web (kIsWeb is false in flutter_test).

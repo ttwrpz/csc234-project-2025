@@ -24,7 +24,7 @@ abstract final class MoodBloomColors {
   // Neutrals (light mode)
   /// Warm cream scaffold. Updated to the prototype value `#FBFAF6`.
   static const Color surfaceCream = Color(0xFFFBFAF6);
-  static const Color surfaceDim = Color(0xFFEEE9DF);
+  static const Color surfaceDim = Color(0xFFEEEFDF);
   static const Color outline = Color(0xFFECE7DC);
   static const Color onSurface = Color(0xFF1F2937);
   static const Color onSurfaceMuted = Color(0xFF6B7280);

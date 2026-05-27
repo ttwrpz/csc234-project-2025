@@ -1,7 +1,9 @@
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:moodbloom/features/garden/presentation/widgets/breathing_overlay.dart';
 import 'package:moodbloom/features/garden/presentation/widgets/cheer_up_banner.dart';
+import 'package:moodbloom/features/intervention/presentation/screens/breathing_screen.dart';
 
 /// Locked sentence per CLAUDE.md "Copy rules — Intervention banner text".
 /// The visual layout splits this across two `Text` widgets (titleSmall +
@@ -16,9 +18,12 @@ Future<void> _pumpBanner(
   VoidCallback? onDismiss,
 }) {
   return tester.pumpWidget(
-    MaterialApp(
-      home: Scaffold(
-        body: CheerUpBanner(reason: reason, onDismiss: onDismiss ?? () {}),
+    ProviderScope(
+      child: MaterialApp(
+        theme: buildLightTheme(),
+        home: Scaffold(
+          body: CheerUpBanner(reason: reason, onDismiss: onDismiss ?? () {}),
+        ),
       ),
     ),
   );
@@ -90,16 +95,14 @@ void main() {
       expect(find.byType(CheerUpBanner), findsOneWidget);
     });
 
-    testWidgets('"Try it" pumps a BreathingOverlay into the dialog tree', (
-      tester,
-    ) async {
+    testWidgets('"Try it" opens the breathing modal', (tester) async {
       await _pumpBanner(tester);
 
       await tester.tap(find.text('Try it'));
-      await tester.pump(); // dialog route push
+      await tester.pump(); // modal route push
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(BreathingOverlay), findsOneWidget);
+      expect(find.byType(BreathingView), findsOneWidget);
     });
   });
 

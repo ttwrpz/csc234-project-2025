@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:core/core.dart';
+import 'package:design_system/design_system.dart' show GardenSkinId;
 
-import '../../../garden/domain/entities/flower_species.dart';
-import '../../domain/entities/flower_skin.dart';
+import '../../domain/entities/garden_skin.dart';
 import '../../domain/entities/skin_state.dart';
 import '../../domain/repositories/skin_repository.dart';
 import '../../domain/skin_failure.dart';
@@ -12,14 +12,13 @@ import '../datasources/skin_firestore_datasource.dart';
 ///
 /// Failure mapping mirrors [TokenRepositoryImpl]:
 ///   * In-transaction guard failure (insufficient tokens / already
-///     unlocked) → [SkinFailure.insufficientTokens] or
-///     [SkinFailure.alreadyUnlocked]. These are the "expected" failures
-///     and never log as errors.
-///   * `permission-denied` → [SkinFailure.permissionDenied] — the rule
-///     rejected the write (e.g. a stale uid in the path).
-///   * `unavailable`, `deadline-exceeded`, `cancelled` →
-///     [SkinFailure.network] — transient; the next user tap retries.
-///   * everything else → [SkinFailure.unknown] with the exception's
+///     unlocked) -> [SkinFailure.insufficientTokens] /
+///     [SkinFailure.alreadyUnlocked]. Expected failures, never logged
+///     as errors.
+///   * `permission-denied` -> [SkinFailure.permissionDenied].
+///   * `unavailable`, `deadline-exceeded`, `cancelled` ->
+///     [SkinFailure.network] (transient).
+///   * everything else -> [SkinFailure.unknown] with the exception's
 ///     `code` as the message (PII-free).
 class SkinRepositoryImpl implements SkinRepository {
   const SkinRepositoryImpl({required SkinFirestoreDatasource datasource})
@@ -32,15 +31,15 @@ class SkinRepositoryImpl implements SkinRepository {
       _datasource.watchSkinState(userId: userId);
 
   @override
-  Future<Result<SkinState, SkinFailure>> unlockAndSelect({
+  Future<Result<SkinState, SkinFailure>> unlockAndEquip({
     required String userId,
-    required FlowerSkin skin,
+    required GardenSkin skin,
   }) async {
     if (userId.isEmpty) {
       return const Err(SkinFailure.network());
     }
     try {
-      final updated = await _datasource.unlockAndSelect(
+      final updated = await _datasource.unlockAndEquip(
         userId: userId,
         skin: skin,
       );
@@ -65,20 +64,15 @@ class SkinRepositoryImpl implements SkinRepository {
   }
 
   @override
-  Future<Result<SkinState, SkinFailure>> select({
+  Future<Result<SkinState, SkinFailure>> equip({
     required String userId,
-    required FlowerSpecies species,
-    required String skinId,
+    required GardenSkinId id,
   }) async {
     if (userId.isEmpty) {
       return const Err(SkinFailure.network());
     }
     try {
-      final updated = await _datasource.select(
-        userId: userId,
-        species: species,
-        skinId: skinId,
-      );
+      final updated = await _datasource.equip(userId: userId, id: id);
       return Ok(updated);
     } on FirebaseException catch (e) {
       return Err(_failureFor(e));

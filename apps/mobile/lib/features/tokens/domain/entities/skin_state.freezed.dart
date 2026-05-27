@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SkinState {
 
- Map<FlowerSpecies, Set<String>> get unlockedBySpecies; Map<FlowerSpecies, String> get selectedBySpecies;
+ GardenSkinId get equippedSkinId; Set<GardenSkinId> get unlockedSkinIds;
 /// Create a copy of SkinState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $SkinStateCopyWith<SkinState> get copyWith => _$SkinStateCopyWithImpl<SkinState>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SkinState&&const DeepCollectionEquality().equals(other.unlockedBySpecies, unlockedBySpecies)&&const DeepCollectionEquality().equals(other.selectedBySpecies, selectedBySpecies));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SkinState&&(identical(other.equippedSkinId, equippedSkinId) || other.equippedSkinId == equippedSkinId)&&const DeepCollectionEquality().equals(other.unlockedSkinIds, unlockedSkinIds));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(unlockedBySpecies),const DeepCollectionEquality().hash(selectedBySpecies));
+int get hashCode => Object.hash(runtimeType,equippedSkinId,const DeepCollectionEquality().hash(unlockedSkinIds));
 
 @override
 String toString() {
-  return 'SkinState(unlockedBySpecies: $unlockedBySpecies, selectedBySpecies: $selectedBySpecies)';
+  return 'SkinState(equippedSkinId: $equippedSkinId, unlockedSkinIds: $unlockedSkinIds)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $SkinStateCopyWith<$Res>  {
   factory $SkinStateCopyWith(SkinState value, $Res Function(SkinState) _then) = _$SkinStateCopyWithImpl;
 @useResult
 $Res call({
- Map<FlowerSpecies, Set<String>> unlockedBySpecies, Map<FlowerSpecies, String> selectedBySpecies
+ GardenSkinId equippedSkinId, Set<GardenSkinId> unlockedSkinIds
 });
 
 
@@ -62,11 +62,11 @@ class _$SkinStateCopyWithImpl<$Res>
 
 /// Create a copy of SkinState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? unlockedBySpecies = null,Object? selectedBySpecies = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? equippedSkinId = null,Object? unlockedSkinIds = null,}) {
   return _then(_self.copyWith(
-unlockedBySpecies: null == unlockedBySpecies ? _self.unlockedBySpecies : unlockedBySpecies // ignore: cast_nullable_to_non_nullable
-as Map<FlowerSpecies, Set<String>>,selectedBySpecies: null == selectedBySpecies ? _self.selectedBySpecies : selectedBySpecies // ignore: cast_nullable_to_non_nullable
-as Map<FlowerSpecies, String>,
+equippedSkinId: null == equippedSkinId ? _self.equippedSkinId : equippedSkinId // ignore: cast_nullable_to_non_nullable
+as GardenSkinId,unlockedSkinIds: null == unlockedSkinIds ? _self.unlockedSkinIds : unlockedSkinIds // ignore: cast_nullable_to_non_nullable
+as Set<GardenSkinId>,
   ));
 }
 
@@ -151,10 +151,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Map<FlowerSpecies, Set<String>> unlockedBySpecies,  Map<FlowerSpecies, String> selectedBySpecies)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GardenSkinId equippedSkinId,  Set<GardenSkinId> unlockedSkinIds)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SkinState() when $default != null:
-return $default(_that.unlockedBySpecies,_that.selectedBySpecies);case _:
+return $default(_that.equippedSkinId,_that.unlockedSkinIds);case _:
   return orElse();
 
 }
@@ -172,10 +172,10 @@ return $default(_that.unlockedBySpecies,_that.selectedBySpecies);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Map<FlowerSpecies, Set<String>> unlockedBySpecies,  Map<FlowerSpecies, String> selectedBySpecies)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GardenSkinId equippedSkinId,  Set<GardenSkinId> unlockedSkinIds)  $default,) {final _that = this;
 switch (_that) {
 case _SkinState():
-return $default(_that.unlockedBySpecies,_that.selectedBySpecies);case _:
+return $default(_that.equippedSkinId,_that.unlockedSkinIds);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -192,10 +192,10 @@ return $default(_that.unlockedBySpecies,_that.selectedBySpecies);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Map<FlowerSpecies, Set<String>> unlockedBySpecies,  Map<FlowerSpecies, String> selectedBySpecies)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GardenSkinId equippedSkinId,  Set<GardenSkinId> unlockedSkinIds)?  $default,) {final _that = this;
 switch (_that) {
 case _SkinState() when $default != null:
-return $default(_that.unlockedBySpecies,_that.selectedBySpecies);case _:
+return $default(_that.equippedSkinId,_that.unlockedSkinIds);case _:
   return null;
 
 }
@@ -207,21 +207,15 @@ return $default(_that.unlockedBySpecies,_that.selectedBySpecies);case _:
 
 
 class _SkinState extends SkinState {
-  const _SkinState({required final  Map<FlowerSpecies, Set<String>> unlockedBySpecies, required final  Map<FlowerSpecies, String> selectedBySpecies}): _unlockedBySpecies = unlockedBySpecies,_selectedBySpecies = selectedBySpecies,super._();
+  const _SkinState({required this.equippedSkinId, required final  Set<GardenSkinId> unlockedSkinIds}): _unlockedSkinIds = unlockedSkinIds,super._();
   
 
- final  Map<FlowerSpecies, Set<String>> _unlockedBySpecies;
-@override Map<FlowerSpecies, Set<String>> get unlockedBySpecies {
-  if (_unlockedBySpecies is EqualUnmodifiableMapView) return _unlockedBySpecies;
+@override final  GardenSkinId equippedSkinId;
+ final  Set<GardenSkinId> _unlockedSkinIds;
+@override Set<GardenSkinId> get unlockedSkinIds {
+  if (_unlockedSkinIds is EqualUnmodifiableSetView) return _unlockedSkinIds;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableMapView(_unlockedBySpecies);
-}
-
- final  Map<FlowerSpecies, String> _selectedBySpecies;
-@override Map<FlowerSpecies, String> get selectedBySpecies {
-  if (_selectedBySpecies is EqualUnmodifiableMapView) return _selectedBySpecies;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableMapView(_selectedBySpecies);
+  return EqualUnmodifiableSetView(_unlockedSkinIds);
 }
 
 
@@ -235,16 +229,16 @@ _$SkinStateCopyWith<_SkinState> get copyWith => __$SkinStateCopyWithImpl<_SkinSt
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SkinState&&const DeepCollectionEquality().equals(other._unlockedBySpecies, _unlockedBySpecies)&&const DeepCollectionEquality().equals(other._selectedBySpecies, _selectedBySpecies));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SkinState&&(identical(other.equippedSkinId, equippedSkinId) || other.equippedSkinId == equippedSkinId)&&const DeepCollectionEquality().equals(other._unlockedSkinIds, _unlockedSkinIds));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_unlockedBySpecies),const DeepCollectionEquality().hash(_selectedBySpecies));
+int get hashCode => Object.hash(runtimeType,equippedSkinId,const DeepCollectionEquality().hash(_unlockedSkinIds));
 
 @override
 String toString() {
-  return 'SkinState(unlockedBySpecies: $unlockedBySpecies, selectedBySpecies: $selectedBySpecies)';
+  return 'SkinState(equippedSkinId: $equippedSkinId, unlockedSkinIds: $unlockedSkinIds)';
 }
 
 
@@ -255,7 +249,7 @@ abstract mixin class _$SkinStateCopyWith<$Res> implements $SkinStateCopyWith<$Re
   factory _$SkinStateCopyWith(_SkinState value, $Res Function(_SkinState) _then) = __$SkinStateCopyWithImpl;
 @override @useResult
 $Res call({
- Map<FlowerSpecies, Set<String>> unlockedBySpecies, Map<FlowerSpecies, String> selectedBySpecies
+ GardenSkinId equippedSkinId, Set<GardenSkinId> unlockedSkinIds
 });
 
 
@@ -272,11 +266,11 @@ class __$SkinStateCopyWithImpl<$Res>
 
 /// Create a copy of SkinState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? unlockedBySpecies = null,Object? selectedBySpecies = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? equippedSkinId = null,Object? unlockedSkinIds = null,}) {
   return _then(_SkinState(
-unlockedBySpecies: null == unlockedBySpecies ? _self._unlockedBySpecies : unlockedBySpecies // ignore: cast_nullable_to_non_nullable
-as Map<FlowerSpecies, Set<String>>,selectedBySpecies: null == selectedBySpecies ? _self._selectedBySpecies : selectedBySpecies // ignore: cast_nullable_to_non_nullable
-as Map<FlowerSpecies, String>,
+equippedSkinId: null == equippedSkinId ? _self.equippedSkinId : equippedSkinId // ignore: cast_nullable_to_non_nullable
+as GardenSkinId,unlockedSkinIds: null == unlockedSkinIds ? _self._unlockedSkinIds : unlockedSkinIds // ignore: cast_nullable_to_non_nullable
+as Set<GardenSkinId>,
   ));
 }
 

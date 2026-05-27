@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/mood_type.dart';
 import 'mood_type_tile.dart';
 
-/// Responsive mood-type picker. Always 3 across; tiles fill the row.
-/// The tile width is derived from the available column width and only
-/// clamps at extremes (72dp lower bound for cramped narrow phones, 240dp
-/// upper bound so a 1440dp window doesn't get cartoon-sized tiles).
+/// Responsive mood-type picker — 3-column x 2-row grid with the prototype's
+/// 1.1:1 aspect ratio (84 dp tall floor). The grid uses `LayoutBuilder` so
+/// it adapts to the parent column width without overflowing on narrow
+/// phones (<360 dp) or stretching on a wide desktop slot.
 ///
 /// Stateless; the parent controller owns the selection.
 class MoodTypeGrid extends StatelessWidget {
@@ -20,38 +20,30 @@ class MoodTypeGrid extends StatelessWidget {
   final MoodType? selected;
   final ValueChanged<MoodType> onSelect;
 
-  /// Lower bound — protects the 5-letter labels (`happy`, `angry`)
-  /// from clipping on a < 360dp phone width.
-  static const double _minTileWidth = 72;
+  /// Minimum tile height per the prototype spec (84 dp).
+  static const double _minTileHeight = 84;
 
-  /// Upper bound — keeps tiles readable on a 24" monitor without
-  /// turning the row into a billboard. 240dp is the sweet spot for a
-  /// 600dp left-column width (the LogMood wide-layout 55% slice of a
-  /// 1080dp form: 600dp - 2×md gap = ~580 / 3 ≈ 193dp per tile).
-  static const double _maxTileWidth = 240;
-
-  static const double _tileHeight = 84;
+  /// Aspect ratio width:height per the prototype spec (1.1 : 1).
+  static const double _aspect = 1.1;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const gap = MoodBloomSpacing.md;
+        const gap = MoodBloomSpacing.sm + 2; // 10 dp between cells.
         final available = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : 360.0;
-        // Always 3 across; tile fills its share of the row.
-        final threeColWidth = (available - gap * 2) / 3;
-        final tileWidth = threeColWidth.clamp(_minTileWidth, _maxTileWidth);
+        final tileWidth = (available - gap * 2) / 3;
+        final tileHeight = (tileWidth / _aspect).clamp(_minTileHeight, 160.0);
         return Wrap(
           spacing: gap,
           runSpacing: gap,
-          alignment: WrapAlignment.start,
           children: [
             for (final type in MoodType.values)
               SizedBox(
                 width: tileWidth,
-                height: _tileHeight,
+                height: tileHeight,
                 child: MoodTypeTile(
                   type: type,
                   selected: selected == type,

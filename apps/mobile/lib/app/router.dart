@@ -1,3 +1,4 @@
+import 'package:design_system/design_system.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +15,8 @@ import '../features/auth/presentation/screens/privacy_setup_flow_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/garden/presentation/garden_screen.dart';
-import '../features/history/presentation/entry_detail_screen.dart';
+import '../features/history/presentation/entry_detail_screen.dart'
+    show EntryDetailSheet;
 import '../features/history/presentation/history_screen.dart';
 import '../features/intervention/domain/entities/intervention_dispatch.dart';
 import '../features/intervention/presentation/screens/breathing_screen.dart';
@@ -26,12 +28,60 @@ import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/settings/domain/entities/theme_mode_preference.dart';
 import '../features/settings/presentation/controllers/theme_mode_controller.dart';
+import '../features/tokens/presentation/screens/skin_shop_screen.dart';
 import 'widgets/mb_bottom_nav.dart';
 import 'widgets/mb_side_nav.dart';
 
 // Route swaps render instantly to reduce perceived lag.
 NoTransitionPage<void> _noTransition(Widget child) =>
     NoTransitionPage<void>(child: child);
+
+/// Transparent route page that hosts a [_ModalLauncher]. `opaque: false`
+/// lets the branch content below show through the modal's scrim so a
+/// deep-linked modal (e.g. notification → breathing) appears over the
+/// real shell rather than a blank page. Uses [CustomTransitionPage]
+/// because `NoTransitionPage` is always opaque.
+CustomTransitionPage<void> _modalLauncherPage(
+  Future<void> Function(BuildContext) open,
+) => CustomTransitionPage<void>(
+  opaque: false,
+  transitionDuration: Duration.zero,
+  reverseTransitionDuration: Duration.zero,
+  transitionsBuilder: (_, _, _, child) => child,
+  child: _ModalLauncher(open: open),
+);
+
+/// Opens a modal once after the first frame, then pops its own route
+/// when the modal is dismissed. Used to make `pushNamed` / deep-linked
+/// routes resolve to a modal surface while keeping the navigation
+/// contract (route name + extra) unchanged.
+class _ModalLauncher extends StatefulWidget {
+  const _ModalLauncher({required this.open});
+
+  final Future<void> Function(BuildContext) open;
+
+  @override
+  State<_ModalLauncher> createState() => _ModalLauncherState();
+}
+
+class _ModalLauncherState extends State<_ModalLauncher> {
+  bool _opened = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_opened || !mounted) return;
+      _opened = true;
+      await widget.open(context);
+      if (!mounted) return;
+      if (context.canPop()) context.pop();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+}
 
 const _onboardingCompleteKey = 'onboarding_complete';
 
@@ -218,7 +268,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                       final dispatch = s.extra is InterventionDispatch
                           ? s.extra as InterventionDispatch
                           : null;
-                      return _noTransition(BreathingScreen(dispatch: dispatch));
+                      // Present the breathing exercise as a modal over
+                      // the shell. The launcher pops this route when the
+                      // sheet is dismissed.
+                      return _modalLauncherPage(
+                        (ctx) => BreathingSheet.show(ctx, dispatch: dispatch),
+                      );
                     },
                   ),
                   GoRoute(
@@ -247,6 +302,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                 ],
               ),
+              // Skin Shop. Nested under /home so the shell nav (bottom
+              // nav on phone, sidebar on desktop) stays visible while
+              // the user browses skins. Reachable from (a) the
+              // "Customize" pill in the SkyHeader top-right, and
+              // (b) the GARDEN -> "Customize your garden" Settings tile.
+              GoRoute(
+                path: '/garden/skins',
+                pageBuilder: (c, s) => _noTransition(const SkinShopScreen()),
+              ),
             ],
           ),
           StatefulShellBranch(
@@ -262,9 +326,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: ':id',
-                    pageBuilder: (c, s) => _noTransition(
-                      EntryDetailScreen(id: s.pathParameters['id'] ?? ''),
-                    ),
+                    // Entry detail is a modal now. A deep link to
+                    // /history/<id> lands on the History list with the
+                    // entry-detail sheet opened over it; dismissing the
+                    // sheet pops this launcher route back to the list.
+                    pageBuilder: (c, s) {
+                      final id = s.pathParameters['id'] ?? '';
+                      return _modalLauncherPage(
+                        (ctx) => EntryDetailSheet.show(ctx, id),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -342,14 +413,15 @@ class _AppShell extends ConsumerStatefulWidget {
   const _AppShell({required this.navigationShell});
   final StatefulNavigationShell navigationShell;
 
-  /// Phone vs tablet vs desktop breakpoints. Below `tabletMin` we render
-  /// the prototype's phone shell verbatim (bottom nav, edge-to-edge page).
-  /// At `tabletMin..desktopMin` we keep the bottom nav but add comfortable
-  /// horizontal padding around a centred content column. At `desktopMin`
-  /// and above we switch to a 240 dp sidebar + flexible body that fills the
-  /// remaining width up to a generous reading cap.
-  static const double _tabletMin = 600;
-  static const double _desktopMin = 900;
+  /// Phone vs tablet vs desktop breakpoints. Below `MbBreakpoints.phone`
+  /// we render the prototype's phone shell verbatim (bottom nav,
+  /// edge-to-edge page). At `phone..desktop` we keep the bottom nav but
+  /// add comfortable horizontal padding around a centred content column.
+  /// At `MbBreakpoints.desktop` and above we switch to a 240 dp sidebar
+  /// + flexible body that fills the remaining width up to a generous
+  /// reading cap.
+  static const double _tabletMin = MbBreakpoints.phone;
+  static const double _desktopMin = MbBreakpoints.desktop;
 
   /// Reading cap on very wide displays. A 22 sp paragraph stretched across
   /// 2000 dp is unreadable; capping at 1280 keeps the chart cards a sane
@@ -357,8 +429,10 @@ class _AppShell extends ConsumerStatefulWidget {
   static const double _desktopBodyMax = 1280;
 
   /// Tablets get a tighter content column so cards don't grow to half a
-  /// metre wide. ~840 mirrors common tablet "reader" widths.
-  static const double _tabletBodyMax = 840;
+  /// metre wide. ~720 mirrors the prototype's tablet artboard reading
+  /// width — the same value used by `MbBreakpoints.homeWide` so the
+  /// shell cap and the screen-internal "go wide" cutover coincide.
+  static const double _tabletBodyMax = MbBreakpoints.homeWide;
 
   /// 5 nav items, in the same order as the [StatefulShellRoute.indexedStack]
   /// branches above. Index here MUST match index there. Material icons

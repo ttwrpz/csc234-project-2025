@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:moodbloom/features/auth/data/providers.dart';
 import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
-import 'package:moodbloom/features/garden/presentation/widgets/breathing_overlay.dart';
 import 'package:moodbloom/features/garden/presentation/widgets/cheer_up_banner.dart';
+import 'package:moodbloom/features/intervention/presentation/screens/breathing_screen.dart';
 import 'package:moodbloom/features/mood/data/providers.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_entry.dart';
 import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
@@ -164,16 +164,16 @@ void main() {
           reason: 'the persisted anchor must round-trip via DateTime.parse',
         );
 
-        // 4. Tap "Try it" → BreathingOverlay opens.
+        // 4. Tap "Try it" → breathing modal opens.
         await tester.tap(find.text('Try it'));
-        await tester.pump(); // dialog route push
+        await tester.pump(); // modal route push
         await tester.pump(const Duration(milliseconds: 200));
 
         expect(
-          find.byType(BreathingOverlay),
+          find.byType(BreathingView),
           findsOneWidget,
           reason:
-              'tapping "Try it" must open the 4-7-8 BreathingOverlay '
+              'tapping "Try it" must open the breathing modal '
               'so the user can act on the cheer-up nudge inline',
         );
       },

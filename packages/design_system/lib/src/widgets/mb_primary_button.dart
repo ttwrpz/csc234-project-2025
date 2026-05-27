@@ -58,7 +58,17 @@ class MbPrimaryButton extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (leading != null) ...[leading!, const SizedBox(width: 8)],
-                Text(label),
+                // Flexible so the label can shrink-to-fit at 200% dynamic
+                // type on narrow surfaces - prevents a RenderFlex overflow
+                // when the scaled text is wider than the button's inner
+                // constraint (caught by the disclaimer dialog a11y test).
+                Flexible(
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
     );

@@ -10,12 +10,17 @@ class MbFilterChip extends StatelessWidget {
     super.key,
     required this.label,
     required this.selected,
-    required this.onTap,
+    this.onTap,
   });
 
   final String label;
   final bool selected;
-  final VoidCallback onTap;
+
+  /// Optional tap handler. When `null`, the chip is display-only - used
+  /// by surfaces (e.g. the History calendar header) that surface a
+  /// chip strip purely for visual parity with the prototype while the
+  /// underlying filter wiring lives elsewhere.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

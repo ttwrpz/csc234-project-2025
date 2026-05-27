@@ -6,10 +6,12 @@ import 'package:flutter/services.dart';
 import '../../domain/entities/mood_type.dart';
 import 'mood_kind_adapter.dart';
 
-/// 1..5 discrete slider:
-///  - filled track gradient `mood.color@33 → mood.color`
-///  - knob 22 dp white circle with 2 px primary border + soft drop shadow
-///  - 48 dp tap-target host
+/// 1..5 discrete slider matching the v1.6 prototype's `IntensitySlider`:
+///  - rail 6 dp `mb.line`; filled portion = selected mood color (or seed
+///    when nothing is picked yet)
+///  - 5 small (4 dp) tick circles at the 1..5 stop positions
+///  - thumb is a 24 dp white circle with a 3 dp colored border
+///  - 48 dp tap-target host (Material accessibility minimum)
 ///
 /// On Android (non-Web) physical devices, fires
 /// [HapticFeedback.selectionClick] when the rounded value transitions to a
@@ -26,8 +28,8 @@ class IntensitySlider extends StatelessWidget {
   final ValueChanged<int> onChanged;
 
   /// Active mood used to tint the slider's filled track. Falls back to the
-  /// theme primary so the slider still looks intentional before the user has
-  /// picked a mood.
+  /// theme primary (`MoodBloomColors.seed`) so the slider still looks
+  /// intentional before the user has picked a mood.
   final MoodType? mood;
 
   static bool get _hapticEnabled =>
@@ -46,10 +48,10 @@ class IntensitySlider extends StatelessWidget {
       slider: true,
       value: '$intensity of 5',
       child: SizedBox(
-        height: 56,
+        height: 48,
         child: SliderTheme(
           data: SliderThemeData(
-            trackHeight: 8,
+            trackHeight: 6,
             activeTrackColor: tint,
             inactiveTrackColor: mb.line,
             // SliderThemeData's `thumbColor` is overridden by the painter
@@ -59,26 +61,38 @@ class IntensitySlider extends StatelessWidget {
             valueIndicatorColor: tint,
             valueIndicatorTextStyle: const TextStyle(color: Colors.white),
             thumbShape: _RingedThumbShape(
-              radius: 11,
-              borderColor: theme.colorScheme.primary,
-              borderWidth: 2,
+              radius: 12,
+              borderColor: tint,
+              borderWidth: 3,
               elevation: 2,
             ),
+            // Hide the default divider ticks — we paint our own 4 dp dots
+            // on top in `_TickOverlay`.
+            tickMarkShape: SliderTickMarkShape.noTickMark,
           ),
-          child: Slider(
-            min: 1,
-            max: 5,
-            divisions: 4,
-            value: intensity.toDouble(),
-            label: '$intensity',
-            onChanged: (raw) {
-              final next = raw.round();
-              if (next == intensity) return;
-              if (_hapticEnabled) {
-                HapticFeedback.selectionClick();
-              }
-              onChanged(next);
-            },
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Slider(
+                min: 1,
+                max: 5,
+                divisions: 4,
+                value: intensity.toDouble(),
+                label: '$intensity',
+                onChanged: (raw) {
+                  final next = raw.round();
+                  if (next == intensity) return;
+                  if (_hapticEnabled) {
+                    HapticFeedback.selectionClick();
+                  }
+                  onChanged(next);
+                },
+              ),
+              // Tick overlay sits on top of the slider so the white dots
+              // float on the rail. IgnorePointer so the slider still
+              // receives every drag.
+              IgnorePointer(child: _TickOverlay(intensity: intensity)),
+            ],
           ),
         ),
       ),
@@ -86,7 +100,53 @@ class IntensitySlider extends StatelessWidget {
   }
 }
 
-/// White-fill thumb with a primary stroke and a soft drop shadow.
+/// Five 4-dp tick dots painted over the slider rail at the 1..5 stop
+/// positions. Filled ticks (≤ current intensity) are white at 85% opacity;
+/// unfilled ticks are `mb.textDim` at 45% opacity, matching the prototype.
+class _TickOverlay extends StatelessWidget {
+  const _TickOverlay({required this.intensity});
+
+  final int intensity;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        // Mirror the Material Slider's default horizontal padding so our
+        // tick positions line up with the thumb track's 1..5 stops.
+        const inset = 24.0;
+        final railWidth = width - inset * 2;
+        if (railWidth <= 0) return const SizedBox.shrink();
+        return Stack(
+          children: [
+            for (var i = 1; i <= 5; i++)
+              Positioned(
+                left: inset + railWidth * (i - 1) / 4 - 2,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: Container(
+                    width: 4,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: i <= intensity
+                          ? Colors.white.withAlpha(0xD9)
+                          : mb.textDim.withAlpha(0x73),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// White-fill thumb with a colored stroke and a soft drop shadow.
 class _RingedThumbShape extends SliderComponentShape {
   const _RingedThumbShape({
     required this.radius,

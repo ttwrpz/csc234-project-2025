@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -169,18 +170,21 @@ void main() {
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
         await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(home: WeeklySummaryScreen(summary: summary)),
+          ProviderScope(
+            child: MaterialApp(
+              theme: buildLightTheme(),
+              home: Scaffold(body: WeeklySummaryView(summary: summary)),
+            ),
           ),
         );
         await tester.pumpAndSettle();
 
         // Locked banner phrase renders verbatim.
         expect(
-          find.text(WeeklySummaryScreen.harvestBanner),
+          find.text(WeeklySummarySheet.harvestBanner),
           findsOneWidget,
           reason:
-              'WeeklySummaryScreen.harvestBanner must render verbatim - '
+              'WeeklySummarySheet.harvestBanner must render verbatim - '
               'the constant is the single source of truth (CLAUDE.md '
               "Pre-approved intervention phrasing § 'Weekly harvest banner')",
         );
@@ -188,7 +192,7 @@ void main() {
         // The locked string itself must obey the copy rules. A
         // regression that swaps "harvested" for "deleted" or "lost"
         // gets caught here even if the constant still compiles.
-        const banner = WeeklySummaryScreen.harvestBanner;
+        const banner = WeeklySummarySheet.harvestBanner;
         const forbidden = <String>[
           'delete',
           'clear',
@@ -232,11 +236,11 @@ void main() {
 
         // Continue CTA label is also locked.
         expect(
-          find.text(WeeklySummaryScreen.continueLabel),
+          find.text(WeeklySummarySheet.continueLabel),
           findsOneWidget,
           reason: 'the Continue CTA label must render verbatim',
         );
-        const cta = WeeklySummaryScreen.continueLabel;
+        const cta = WeeklySummarySheet.continueLabel;
         for (final word in forbidden) {
           expect(
             cta.toLowerCase().contains(word),

@@ -338,10 +338,10 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.byType(BreathingScreen),
+          find.byType(BreathingView),
           findsOneWidget,
           reason:
-              'Tier 1 banner Open must route to BreathingScreen — the '
+              'Tier 1 banner Open must open the breathing modal — the '
               '2-minute paced-breathing therapeutic dose',
         );
         // The breathing screen renders the dispatched body verbatim

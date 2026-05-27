@@ -3,38 +3,47 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../auth/data/providers.dart';
 import '../../harvest/presentation/controllers/weekly_summary_controller.dart';
 import '../../harvest/presentation/weekly_summary_screen.dart';
-import '../../history/presentation/calendar_view.dart' show DayEntriesSheet;
+import '../../history/presentation/entry_detail_screen.dart';
 import '../../history/presentation/widgets/mood_entry_tile.dart';
 import '../../mood/data/providers.dart';
 import '../../mood/domain/entities/mood_entry.dart';
-import '../../tokens/data/providers.dart';
-import '../../tokens/domain/entities/skin_state.dart';
-import '../../tokens/domain/services/skin_catalog.dart';
-import '../../tokens/presentation/controllers/token_visibility_controller.dart';
-import '../../tokens/presentation/widgets/skin_modal_sheet.dart';
-import '../../tokens/presentation/widgets/token_balance_chip.dart';
 import '../data/providers.dart';
-import '../domain/entities/flower_species.dart';
 import '../domain/entities/garden_state.dart';
 import '../domain/entities/intervention_state.dart';
 import 'controllers/cheer_up_controller.dart';
 import 'widgets/cheer_up_banner.dart';
-import 'widgets/daily_score_strip.dart';
-import 'widgets/garden_summary_row.dart';
+import 'widgets/dominant_emotions_card.dart';
+import 'widgets/gentle_nudge_card.dart';
 import 'widgets/hotline_footer.dart';
-import 'widgets/per_flower_detail_modal.dart';
 import 'widgets/sky_header.dart';
 import 'widgets/take_a_breath_button.dart';
+import 'widgets/this_weeks_tier_card.dart';
+import 'widgets/today_moods_card.dart';
+import 'widgets/weekly_score_card.dart';
 
-/// Home screen — the canvas reads two ecosystem signals (slow weekly EWMA
-/// → plant tier; fast today-only mean → atmosphere overlay) instead of
-/// dispatching one sprite per entry. Below the canvas: the cheer-up banner
-/// (when the pattern detector trips), a `DailyScoreStrip` in an `MbCard`,
-/// the "Recent moods" preview list, and the hotline footer (only after
-/// the 10-day escalation threshold).
+/// Home / Garden screen - v1.6 redesign per the Claude Design handoff
+/// prototype (`.tmp-handoff/.../screens.jsx > GardenScreen`).
+///
+/// The page reads as a vertical chapter:
+///   1. `SkyHeader` - atmospheric hero with eyebrow + tagline AND a
+///      7-day plot strip across its bottom (mood-keyed mini-plants).
+///   2. `TakeABreathButton` pill.
+///   3. `CheerUpBanner` when the pattern detector trips (Tier 1/2/3).
+///   4. `ThisWeeksTierCard` - tier name in serif + token pill.
+///   5. `WeeklyScoreCard` - "DAILY SCORE" eyebrow + signed weekly avg +
+///      7-bar mini chart + "Mood is weather. The ecosystem holds."
+///   6. `TodayMoodsCard` - today's mood chips + log-mood `+` button.
+///   7. `DominantEmotionsCard` - top 3 mood chips this week.
+///   8. `GentleNudgeCard` - soft AI nudge + medical disclaimer.
+///   9. Recent moods card (up to 4 tiles + "See all" link).
+///  10. `HotlineFooter` when the user has escalated to Tier 3.
+///
+/// On tablet/desktop (`>= MbBreakpoints.homeWide`) the page splits
+/// into a 60/40 two-column layout: left column = SkyHeader through
+/// WeeklyScoreCard; right column = CheerUpBanner through HotlineFooter.
+/// Desktop wraps the whole block in a 1100 dp `ConstrainedBox`.
 class GardenScreen extends ConsumerStatefulWidget {
   const GardenScreen({super.key});
 
@@ -43,49 +52,28 @@ class GardenScreen extends ConsumerStatefulWidget {
 }
 
 class _GardenScreenState extends ConsumerState<GardenScreen> {
-  /// One-shot guard so we only push the [WeeklySummaryScreen] once per
-  /// pending-harvest signal. Reset after the user acknowledges the
-  /// archive (a fresh harvest a week later flips the provider true
-  /// again, but in a new build pass after the route returns).
+  /// One-shot guard so we only show the [WeeklySummarySheet] once
+  /// per pending-harvest signal. Reset after the user acknowledges
+  /// the archive (a fresh harvest a week later flips the provider
+  /// true again, but in a new build pass after the route returns).
   bool _harvestRouteScheduled = false;
 
   /// Session-scoped record of which weekStart the user has already
   /// dismissed. Prevents the popup from re-opening immediately after
   /// the screen pops in the cross-device race window where Firestore
-  /// has not yet pushed the canonical archive snapshot to this device -
-  /// without this guard, `pendingWeeklySummaryProvider` would still emit
-  /// the same weekStart on the next rebuild and we would re-push the
-  /// just-dismissed harvest screen.
-  ///
-  /// Cold-restart resets this (the state is local to `_GardenScreenState`).
-  /// When a NEW week's harvest becomes pending, its weekStart differs and
-  /// the gate naturally lets the new popup through.
+  /// has not yet pushed the canonical archive snapshot to this
+  /// device.
   DateTime? _lastDismissedWeekStart;
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(gardenStateStreamProvider);
     final intervention = ref.watch(interventionStateProvider);
-    final user = ref.watch(currentUserStreamProvider).value;
     final allEntries = ref.watch(myMoodsStreamProvider).value ?? const [];
-    // The cheer-up controller owns the banner's session-scoped dismissal
-    // and the onShown idempotency guard. We watch the bool field so the
-    // banner re-renders when "Not now" is tapped.
     final cheerUp = ref.watch(cheerUpControllerProvider);
-    // Read the user's per-species selected skins so the live home garden
-    // renders the chosen alternate-skin tints. Past archived gardens never
-    // receive this (the harvest archive surface passes `null`).
-    final skinState =
-        ref.watch(skinStateStreamProvider).value ?? SkinState.empty();
-    final speciesAccent = _speciesAccentFrom(skinState);
 
     final mb = Theme.of(context).extension<MbColors>()!;
 
-    // When the user has crossed a 7-day boundary on an unarchived week AND
-    // we have a precomputed summary to show, route them to the
-    // WeeklySummaryScreen via a post-frame callback so the route stack
-    // stays clean. The flag prevents double-pushing across identical
-    // rebuilds.
     final pendingSummary = ref.watch(pendingWeeklySummaryProvider);
     final isAlreadyDismissed =
         pendingSummary != null &&
@@ -98,49 +86,22 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
       final pushedWeekStart = pendingSummary.weekStart;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        // Reset the StateNotifier scoped state before each new push so
-        // a previous week's success/error from this app session does
-        // not carry into a fresh pending harvest. `reset()` (not
-        // `resetError`) is required: a lingering `HarvestArchiveSuccess`
-        // from the prior harvest would make the next `acknowledge` tap
-        // a no-op (the controller short-circuits on terminal success),
-        // and the screen's `ref.listen` does not fire on initial state —
-        // so without this reset the Continue button would do nothing.
         ref.read(weeklySummaryControllerProvider.notifier).reset();
-        Navigator.of(context)
-            .push(
-              MaterialPageRoute<void>(
-                builder: (_) => WeeklySummaryScreen(
-                  summary: pendingSummary.summary,
-                  entries: pendingSummary.entries,
-                ),
-              ),
-            )
-            .then((_) {
-              if (mounted) {
-                setState(() {
-                  _harvestRouteScheduled = false;
-                  // Mark this weekStart as dismissed regardless of the
-                  // outcome (acked, swiped back, cross-device race).
-                  // The Firestore listener will normally pull the
-                  // canonical archive in within a frame or two, at
-                  // which point `pendingWeeklySummaryProvider` returns
-                  // null for this weekStart and the gate is redundant
-                  // - but in the race window where the listener is
-                  // slow, this flag prevents an immediate re-push of
-                  // the same week.
-                  _lastDismissedWeekStart = pushedWeekStart;
-                });
-              }
+        WeeklySummarySheet.show(
+          context,
+          summary: pendingSummary.summary,
+          entries: pendingSummary.entries,
+        ).then((_) {
+          if (mounted) {
+            setState(() {
+              _harvestRouteScheduled = false;
+              _lastDismissedWeekStart = pushedWeekStart;
             });
+          }
+        });
       });
     }
 
-    // Whenever the detector flips to `triggered: true`, dispatch
-    // `onShown` exactly once per app launch. The controller itself
-    // no-ops on repeat calls via its `onShownDispatched` flag, but we
-    // still scope the listen to triggered-true transitions to avoid
-    // unnecessary controller hits during steady-state.
     ref.listen<AsyncValue<InterventionState>>(interventionStateProvider, (
       previous,
       next,
@@ -174,60 +135,12 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
           state: garden,
           allEntries: allEntries,
           intervention: intervention.value,
-          greetingName: _firstName(user?.displayName, user?.email),
           bannerDismissed: cheerUp.bannerDismissed,
           onDismissBanner: () =>
               ref.read(cheerUpControllerProvider.notifier).onDismissed(),
-          // Tapping a flower opens the per-entry preview sheet. Routed
-          // via the SkyHeader → GardenBed callback chain so this wiring
-          // stays inside the home screen's presentation layer.
-          onFlowerTap: (entry) => PerFlowerDetailModal.show(context, entry),
-          // Garden top-bar affordance for the skin modal. Placed next to
-          // the token chip so the user reads "I have N tokens → tap to
-          // spend them" without hunting in Settings.
-          onCustomizeSkins: () => SkinModalSheet.show(context),
-          speciesAccent: speciesAccent,
         ),
       ),
     );
-  }
-
-  static String _firstName(String? displayName, String? email) {
-    if (displayName != null && displayName.trim().isNotEmpty) {
-      return displayName.split(' ').first;
-    }
-    if (email != null && email.contains('@')) {
-      return email.split('@').first;
-    }
-    return 'friend';
-  }
-
-  /// Builds the per-species accent map for the GardenBed painter from
-  /// the user's [SkinState]. Only includes species where (a) the user
-  /// has selected a skin AND (b) that skin is an alternate (not the
-  /// species default). Default-selected species fall back to the
-  /// built-in look — the painter sees them as absent keys.
-  ///
-  /// Pure function — separated so the unit-test surface for TC-6 can
-  /// verify it directly without spinning up a full widget tree.
-  static Map<FlowerSpecies, Color> _speciesAccentFrom(SkinState state) {
-    const accents = <int, Color>{
-      0: Color(0xFFD96E5C),
-      1: Color(0xFFE8A23B),
-      2: Color(0xFF7CA8D6),
-      3: Color(0xFFA493C8),
-      4: Color(0xFF5C9A78),
-      5: Color(0xFFE6A4B4),
-    };
-    final out = <FlowerSpecies, Color>{};
-    for (final species in FlowerSpecies.values) {
-      final selectedId = state.selectedFor(species);
-      if (selectedId == null) continue;
-      final skin = SkinCatalog.byId(selectedId);
-      if (skin == null || skin.isDefault) continue;
-      out[species] = accents[skin.paletteSeed % accents.length]!;
-    }
-    return out;
   }
 }
 
@@ -236,415 +149,290 @@ class _GardenView extends StatelessWidget {
     required this.state,
     required this.allEntries,
     required this.intervention,
-    required this.greetingName,
     required this.bannerDismissed,
     required this.onDismissBanner,
-    required this.onFlowerTap,
-    required this.onCustomizeSkins,
-    required this.speciesAccent,
   });
 
   final GardenState state;
 
-  /// Full history (used for the Recent moods preview list). Comes from
-  /// the `myMoodsStreamProvider`, which already de-dups offline +
-  /// Firestore.
+  /// Full history (used for the Recent moods preview list). Comes
+  /// from the `myMoodsStreamProvider`, which already de-dups offline
+  /// + Firestore.
   final List<MoodEntry> allEntries;
   final InterventionState? intervention;
-  final String greetingName;
   final bool bannerDismissed;
   final VoidCallback onDismissBanner;
 
-  /// Opens the per-flower detail modal. Forwarded to the SkyHeader →
-  /// GardenBed callback chain. Stateless so the wiring is trivial; the
-  /// modal itself owns its dismiss + route side effects.
-  final void Function(MoodEntry entry) onFlowerTap;
-
-  /// Opens the skin customization modal. Wired to the top-bar
-  /// "Customize" icon next to the token chip.
-  final VoidCallback onCustomizeSkins;
-
-  /// Per-species accent override forwarded to the SkyHeader's inner
-  /// [GardenBed]. Empty map when the user has no alternate skin
-  /// selected (default rendering).
-  final Map<FlowerSpecies, Color> speciesAccent;
-
-  /// Tablet breakpoint: the canvas + score strip shift into a 60% left
-  /// column with the recent-moods list on a 40% right column. Phones
-  /// stay single-column.
-  static const double _tabletBreakpoint = 720;
-
-  /// Desktop breakpoint: same two-column split as tablet, but clamped
-  /// inside a 1100 dp `ConstrainedBox` so the form doesn't sprawl on
-  /// 1440 / 1920 dp windows. Page padding bumps from 18 dp to 32 dp.
-  static const double _desktopBreakpoint = 1080;
+  /// Max recent moods rendered in the preview card.
+  static const int _maxRecentRows = 4;
 
   @override
   Widget build(BuildContext context) {
-    final triggered = intervention?.triggered ?? false;
-    final escalated = intervention?.escalated ?? false;
-    final reason = intervention?.reason ?? 'none';
-
-    // Last 5 entries newest-first for the "Recent moods" preview. Empty
-    // list collapses the section so first-time users don't see a stub.
-    final recentForPreview = [...allEntries]
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final preview = recentForPreview.take(5).toList(growable: false);
-
-    // This week's entries (today through 6 days ago) feed the
-    // SkyHeader's [GardenBed]. Negative entries (sad/anxious/angry)
-    // surface as their species silhouette on the canvas, not just in
-    // list tiles.
-    final weekCutoff = DateTime.now().subtract(const Duration(days: 7));
-    final weekEntries = allEntries
-        .where((e) => e.createdAt.isAfter(weekCutoff))
-        .toList(growable: false);
-
     return SafeArea(
       bottom: false,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
-          final isTablet =
-              !isDesktop && constraints.maxWidth >= _tabletBreakpoint;
-          if (isDesktop || isTablet) {
-            return _buildWide(
-              context,
-              isDesktop: isDesktop,
-              triggered: triggered,
-              escalated: escalated,
-              reason: reason,
-              preview: preview,
-              weekEntries: weekEntries,
-            );
+          final w = constraints.maxWidth;
+          final isDesktop = w >= MbBreakpoints.homeDesktop;
+          final isWide = w >= MbBreakpoints.homeWide;
+          if (isWide) {
+            return _buildWide(context, isDesktop: isDesktop);
           }
-          return _buildNarrow(
-            context,
-            triggered: triggered,
-            escalated: escalated,
-            reason: reason,
-            preview: preview,
-            weekEntries: weekEntries,
-          );
+          return _buildNarrow(context);
         },
       ),
     );
   }
 
-  /// Phone-class layout (< 720 dp). Single-column scrolling list. The
-  /// token chip is wired into the SkyHeader's top-right slot, stacked
-  /// directly under the entries-this-week pill.
-  Widget _buildNarrow(
-    BuildContext context, {
-    required bool triggered,
-    required bool escalated,
-    required String reason,
-    required List<MoodEntry> preview,
-    required List<MoodEntry> weekEntries,
-  }) {
+  Widget _buildNarrow(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final blocks = _composeBlocks(context, mb: mb, isWide: false);
+
     return SingleChildScrollView(
       // Extra bottom padding clears both the bottom nav AND the FAB.
       padding: const EdgeInsets.only(bottom: 140),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SkyHeader(
-            state: state,
-            greetingName: greetingName,
-            recentEntries: weekEntries,
-            onFlowerTap: onFlowerTap,
-            speciesAccent: speciesAccent.isEmpty ? null : speciesAccent,
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(18, 16, 18, 0),
-            child: TakeABreathButton(expand: true),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
-            child: GardenSummaryRow(
-              state: state,
-              tokenChip: _GardenTokenChip(onCustomize: onCustomizeSkins),
-            ),
-          ),
-          if (triggered && !bannerDismissed)
+        children: <Widget>[
+          // Full-bleed SkyHeader at the top - the atmospheric hero
+          // reads edge-to-edge.
+          _buildSkyHeader(height: 320),
+          for (final w in blocks)
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
-              child: CheerUpBanner(reason: reason, onDismiss: onDismissBanner),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
-            child: MbCard(
-              child: DailyScoreStrip(
-                last7Days: state.last7Days,
-                onDayTap: (day) => DayEntriesSheet.show(context, day),
+              padding: const EdgeInsets.fromLTRB(
+                MoodBloomSpacing.pagePadding,
+                14,
+                MoodBloomSpacing.pagePadding,
+                0,
               ),
-            ),
-          ),
-          if (preview.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(18, 0, 18, 0),
-              child: MbSectionLabel('RECENT MOODS'),
-            ),
-            const SizedBox(height: 8),
-            for (final e in preview)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
-                child: MoodEntryTile(
-                  entry: e,
-                  onTap: () => context.go('/history/${e.id}'),
-                ),
-              ),
-          ],
-          if (escalated)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(18, 16, 18, 0),
-              child: HotlineFooter(),
+              child: w,
             ),
         ],
       ),
     );
   }
 
-  /// Tablet- / desktop-class layout (≥ 720 dp). Two-column split: the
-  /// SkyHeader + DailyScoreStrip + cheer-up banner sit on the left
-  /// (60%); recent-moods + hotline footer sit on the right (40%). On
-  /// desktop (≥ 1080 dp) the whole block is wrapped in a 1200 dp
-  /// `Center`+`ConstrainedBox` and the page padding bumps to 32 dp.
-  Widget _buildWide(
-    BuildContext context, {
-    required bool isDesktop,
-    required bool triggered,
-    required bool escalated,
-    required String reason,
-    required List<MoodEntry> preview,
-    required List<MoodEntry> weekEntries,
-  }) {
-    final hPad = isDesktop ? 32.0 : 18.0;
+  Widget _buildWide(BuildContext context, {required bool isDesktop}) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final hPad = isDesktop ? 32.0 : MoodBloomSpacing.pagePadding;
     final maxWidth = isDesktop ? 1100.0 : double.infinity;
-    final theme = Theme.of(context);
+    final topPad = isDesktop ? 48.0 : 20.0;
 
     final left = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
+      children: <Widget>[
         ClipRRect(
           borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusSky),
-          child: SkyHeader(
-            state: state,
-            greetingName: greetingName,
-            recentEntries: weekEntries,
-            // Wider canvas on tablet/desktop reads as a hero strip
-            // instead of a band — the user reported the right column
-            // out-running the left visually because the SkyHeader
-            // was anchored at 320dp. 420dp gives the bed more vertical
-            // room without crowding out the DailyScoreStrip below.
-            height: isDesktop ? 420 : 360,
-            onFlowerTap: onFlowerTap,
-            speciesAccent: speciesAccent.isEmpty ? null : speciesAccent,
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(top: 16),
-          child: GardenSummaryRow(
-            state: state,
-            tokenChip: _GardenTokenChip(onCustomize: onCustomizeSkins),
-          ),
-        ),
-        if (triggered && !bannerDismissed)
-          Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: CheerUpBanner(reason: reason, onDismiss: onDismissBanner),
-          ),
-        if (escalated)
-          const Padding(
-            padding: EdgeInsets.only(top: 16),
-            child: HotlineFooter(),
-          ),
-      ],
-    );
-
-    // Right column on desktop: this week's mood strip on top, then
-    // recent moods below. The layout reads as "garden art on the left,
-    // week-at-a-glance + recent entries on the right" instead of stacking
-    // three blocks under the SkyHeader.
-    final right = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Take-a-breath above the score strip on desktop, so the
-        // affordance stays visible in the initial viewport without
-        // scrolling past Recent Moods.
-        const Padding(
-          padding: EdgeInsets.only(top: 4),
-          child: TakeABreathButton(expand: true),
-        ),
-        const SizedBox(height: 12),
-        MbCard(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: MoodBloomSpacing.sm,
-              vertical: MoodBloomSpacing.sm,
-            ),
-            child: DailyScoreStrip(
-              last7Days: state.last7Days,
-              onDayTap: (day) => DayEntriesSheet.show(context, day),
-              compact: false,
-            ),
-          ),
+          child: _buildSkyHeader(height: isDesktop ? 420 : 360),
         ),
         const SizedBox(height: 16),
-        if (preview.isEmpty)
-          MbCard(
-            child: Padding(
-              padding: const EdgeInsets.all(MoodBloomSpacing.lg),
-              child: Text(
-                'Your most recent moods will appear here once you log '
-                'a few entries.',
-                style: theme.textTheme.bodyMedium,
-              ),
-            ),
-          )
-        else ...[
-          const MbSectionLabel('RECENT MOODS'),
-          const SizedBox(height: 8),
-          for (final e in preview)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: MoodEntryTile(
-                entry: e,
-                onTap: () => context.go('/history/${e.id}'),
-              ),
-            ),
-        ],
+        const TakeABreathButton(expand: true),
+        const SizedBox(height: 12),
+        ThisWeeksTierCard(tier: state.plantTier),
+        const SizedBox(height: 12),
+        WeeklyScoreCard(weekEntries: _weekEntries(), weekStart: _weekStart()),
       ],
     );
 
-    // Top padding scales with breakpoint so the SkyHeader doesn't hug
-    // the top of the viewport on desktop. Bottom padding stays generous
-    // so the FAB doesn't overlap content.
-    final topPad = isDesktop ? 48.0 : 16.0;
-    return LayoutBuilder(
-      builder: (context, viewport) {
-        // Floor the content height to the viewport so the bed +
-        // recent moods sit centred when the bottom of the page would
-        // otherwise be empty whitespace. We MUST guard against
-        // unbounded height (the SCV that wraps us provides infinite
-        // maxHeight to its child during intrinsic measurement) —
-        // setting `minHeight: infinity` on a BoxConstraints throws
-        // and renders a RenderErrorBox, which then explodes on the
-        // next hit test.
-        final viewportH = viewport.hasBoundedHeight ? viewport.maxHeight : 0.0;
-        final minH = viewport.hasBoundedHeight
-            ? (viewportH - topPad - 140).clamp(0.0, viewportH)
-            : 0.0;
-        return SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(hPad, topPad, hPad, 140),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: minH),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxWidth),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 6, child: left),
-                    const SizedBox(width: 24),
-                    Expanded(flex: 4, child: right),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+    final right = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: _composeBlocks(context, mb: mb, isWide: true),
     );
-  }
-}
 
-/// Watches `tokenVisibilityProvider` + `tokenBalanceStreamProvider` and
-/// renders a `TokenBalanceChip` only when the user has the toggle on
-/// AND a balance is available. Hidden state collapses to a zero-sized
-/// box so the SkyHeader's existing top-bar layout is undisturbed.
-///
-/// When a non-null [onCustomize] callback is supplied, pairs the chip
-/// with a labelled "Customize" pill button so the user can open the
-/// [SkinModalSheet] without diving into Settings. The pill is collapsed
-/// when the chip is hidden (so the visibility toggle still suppresses
-/// the entire token surface on the home page).
-class _GardenTokenChip extends ConsumerWidget {
-  const _GardenTokenChip({this.onCustomize});
-
-  /// When non-null, renders an "open skin modal" button next to the
-  /// chip. Null preserves the chip-only rendering for any non-home
-  /// callers.
-  final VoidCallback? onCustomize;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final visible = ref.watch(tokenVisibilityProvider);
-    if (!visible) return const SizedBox.shrink();
-    final balance = ref.watch(tokenBalanceStreamProvider).value;
-    if (balance == null) return const SizedBox.shrink();
-    final chip = TokenBalanceChip(balance: balance.balance);
-    final customize = onCustomize;
-    if (customize == null) return chip;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        chip,
-        const SizedBox(width: 8),
-        _CustomizePill(onTap: customize),
-      ],
-    );
-  }
-}
-
-/// Labelled outlined pill button — opens the skin customization modal.
-/// Mirrors the visual idiom of `_ViewPatternsButton` (subtle filled-tonal
-/// pill with brand-hue border) so the new affordance reads as a peer of
-/// the existing Patterns CTA, not a new surface.
-class _CustomizePill extends StatelessWidget {
-  const _CustomizePill({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final fg = isDark ? const Color(0xFFCDE8DA) : theme.colorScheme.primary;
-    final bg = isDark
-        ? theme.colorScheme.primary.withValues(alpha: 0.32)
-        : theme.colorScheme.primary.withValues(alpha: 0.08);
-    final border = isDark
-        ? const Color(0xFFCDE8DA).withValues(alpha: 0.45)
-        : theme.colorScheme.primary.withValues(alpha: 0.25);
-
-    return Semantics(
-      button: true,
-      label: 'Customize flower skins',
-      child: TextButton.icon(
-        onPressed: onTap,
-        style: TextButton.styleFrom(
-          foregroundColor: fg,
-          backgroundColor: bg,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          minimumSize: const Size(0, 36),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
-            side: BorderSide(color: border),
-          ),
-        ),
-        icon: Icon(Icons.brush_outlined, size: 16, color: fg),
-        label: Text(
-          'Customize',
-          style: MbFonts.nunito(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: fg,
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(hPad, topPad, hPad, 140),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(flex: 6, child: left),
+              const SizedBox(width: 24),
+              Expanded(flex: 4, child: right),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  /// Builds the SkyHeader for either layout. Single source of truth
+  /// for the per-week entries + weekStart so wide + narrow stay in sync.
+  Widget _buildSkyHeader({required double height}) {
+    return SkyHeader(
+      state: state,
+      weekEntries: _weekEntries(),
+      weekStart: _weekStart(),
+      height: height,
+    );
+  }
+
+  /// Composes the page blocks BELOW the SkyHeader. On the narrow
+  /// layout these stack directly under the SkyHeader; on the wide
+  /// layout they live in the right column (the left column hosts the
+  /// SkyHeader + TakeABreath + ThisWeeksTierCard + WeeklyScoreCard).
+  List<Widget> _composeBlocks(
+    BuildContext context, {
+    required MbColors mb,
+    required bool isWide,
+  }) {
+    final triggered = intervention?.triggered ?? false;
+    final escalated = intervention?.escalated ?? false;
+    final reason = intervention?.reason ?? 'none';
+    final weekEntries = _weekEntries();
+    final weekStart = _weekStart();
+    final today = _todayLocal();
+    final todayEntries = _entriesOn(today);
+
+    final recentForPreview = [...allEntries]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final preview = recentForPreview
+        .take(_maxRecentRows)
+        .toList(growable: false);
+
+    final out = <Widget>[];
+
+    // Narrow layout includes TakeABreath + ThisWeeksTierCard +
+    // WeeklyScoreCard here (in the wide layout they live in the
+    // left column).
+    if (!isWide) {
+      out.add(const TakeABreathButton(expand: true));
+      out.add(const SizedBox(height: 12));
+      out.add(ThisWeeksTierCard(tier: state.plantTier));
+      out.add(const SizedBox(height: 12));
+      out.add(WeeklyScoreCard(weekEntries: weekEntries, weekStart: weekStart));
+      out.add(const SizedBox(height: 12));
+    }
+
+    if (triggered && !bannerDismissed) {
+      out.add(CheerUpBanner(reason: reason, onDismiss: onDismissBanner));
+      out.add(const SizedBox(height: 12));
+    }
+
+    out.add(TodayMoodsCard(todayEntries: todayEntries, today: today));
+    out.add(const SizedBox(height: 12));
+
+    out.add(DominantEmotionsCard(weekEntries: weekEntries));
+    out.add(const SizedBox(height: 12));
+
+    out.add(GentleNudgeCard(confidence: _nudgeConfidence(weekEntries.length)));
+    out.add(const SizedBox(height: 16));
+
+    out.add(_buildRecentMoodsCard(context, preview, mb));
+
+    if (escalated) {
+      out.add(const SizedBox(height: 16));
+      out.add(const HotlineFooter());
+    }
+    return out;
+  }
+
+  Widget _buildRecentMoodsCard(
+    BuildContext context,
+    List<MoodEntry> preview,
+    MbColors mb,
+  ) {
+    final theme = Theme.of(context);
+    return MbCard(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const MbSectionLabel('RECENT MOODS'),
+              const Spacer(),
+              TextButton(
+                onPressed: () => context.go('/history'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  minimumSize: const Size(0, 28),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'See all',
+                  style: MbFonts.nunito(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (preview.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Your most recent moods will appear here.',
+                style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
+              ),
+            )
+          else
+            for (var i = 0; i < preview.length; i++) ...[
+              if (i > 0) Divider(height: 1, color: mb.line),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: MoodEntryTile(
+                  entry: preview[i],
+                  onTap: () => EntryDetailSheet.show(context, preview[i].id),
+                ),
+              ),
+            ],
+        ],
+      ),
+    );
+  }
+
+  /// Today's week's mood entries (today through 6 days ago). Feeds
+  /// both the SkyHeader's plot strip and the WeeklyScoreCard +
+  /// DominantEmotionsCard.
+  List<MoodEntry> _weekEntries() {
+    final start = _weekStart();
+    final end = start.add(const Duration(days: 7));
+    return allEntries
+        .where((e) {
+          final local = e.createdAt.toLocal();
+          final dayKey = DateTime(local.year, local.month, local.day);
+          return !dayKey.isBefore(start) && dayKey.isBefore(end);
+        })
+        .toList(growable: false);
+  }
+
+  /// Entries logged on the given local-midnight day. Used by the
+  /// `TodayMoodsCard` body list.
+  List<MoodEntry> _entriesOn(DateTime day) {
+    return allEntries.where((e) {
+      final local = e.createdAt.toLocal();
+      return local.year == day.year &&
+          local.month == day.month &&
+          local.day == day.day;
+    }).toList(growable: false);
+  }
+
+  /// Local-midnight of today.
+  DateTime _todayLocal() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  /// Monday-aligned local-midnight of the current week.
+  DateTime _weekStart() => WeeklyScoreCard.mondayOf(DateTime.now());
+
+  /// Confidence shown on the Gentle Nudge card, derived from how much
+  /// data the week holds: a nudge over a near-empty week is a low-
+  /// confidence guess; a well-logged week earns higher confidence. This
+  /// keeps the badge honest instead of a hardcoded value.
+  ///   * 0-1 entries -> low
+  ///   * 2-4 entries -> medium
+  ///   * 5+  entries -> high
+  static MbConfidenceLevel _nudgeConfidence(int weekEntryCount) {
+    if (weekEntryCount >= 5) return MbConfidenceLevel.high;
+    if (weekEntryCount >= 2) return MbConfidenceLevel.medium;
+    return MbConfidenceLevel.low;
   }
 }

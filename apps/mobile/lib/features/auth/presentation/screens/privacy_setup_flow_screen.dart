@@ -119,8 +119,10 @@ class _BiometricStep extends StatelessWidget {
     return Scaffold(
       backgroundColor: mb.bg,
       appBar: AppBar(
-        title: const Text('Privacy lock'),
+        title: const MbSectionLabel('PRIVACY LOCK'),
         backgroundColor: mb.bg,
+        elevation: 0,
+        centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: onCancel,
@@ -139,7 +141,7 @@ class _BiometricStep extends StatelessWidget {
               Text(
                 'Verify your fingerprint',
                 style: MbFonts.fraunces(
-                  fontSize: 22,
+                  fontSize: 24,
                   fontWeight: FontWeight.w600,
                   color: mb.text,
                 ),
@@ -201,8 +203,10 @@ class _DoneStep extends StatelessWidget {
     return Scaffold(
       backgroundColor: mb.bg,
       appBar: AppBar(
-        title: const Text('Privacy lock'),
+        title: const MbSectionLabel('PRIVACY LOCK'),
         backgroundColor: mb.bg,
+        elevation: 0,
+        centerTitle: true,
         automaticallyImplyLeading: false,
       ),
       body: SafeArea(
@@ -217,7 +221,7 @@ class _DoneStep extends StatelessWidget {
               Text(
                 'Privacy lock is on',
                 style: MbFonts.fraunces(
-                  fontSize: 22,
+                  fontSize: 24,
                   fontWeight: FontWeight.w600,
                   color: mb.text,
                 ),

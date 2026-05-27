@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'controllers/sign_up_controller.dart';
-import 'widgets/brand_mark.dart';
 import 'widgets/google_sign_in_button.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
@@ -72,7 +71,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     Center(
                       child: Column(
                         children: [
-                          const BrandMark(),
+                          const MbBrandSvg(
+                            size: 48,
+                            color: MoodBloomColors.seed,
+                          ),
                           const SizedBox(height: 14),
                           Text(
                             'MoodBloom',
@@ -145,24 +147,25 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       onPressed: state.isSubmitting ? null : controller.submit,
                       loading: state.isSubmitting,
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 16),
                     _OrDivider(mb: mb),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 16),
                     GoogleSignInButton(
                       onPressed: controller.submitGoogle,
                       isLoading: state.isSubmitting,
                     ),
                     const SizedBox(height: 16),
                     Center(
-                      child: TextButton(
-                        onPressed: () => context.go('/sign-in'),
-                        child: const Text('Already have an account? Sign in'),
+                      child: _AuthFooterLink(
+                        prompt: 'Already have an account? ',
+                        action: 'Sign in',
+                        onTap: () => context.go('/sign-in'),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Center(
                       child: Text(
-                        'By continuing you agree to our gentle terms.',
+                        'By continuing you agree to our gentle terms',
                         style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
                       ),
                     ),
@@ -190,11 +193,66 @@ class _OrDivider extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Text(
             'or',
-            style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
+            style: MbFonts.nunito(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: mb.textDim,
+              letterSpacing: 1,
+            ),
           ),
         ),
         Expanded(child: Container(height: 1, color: mb.line)),
       ],
+    );
+  }
+}
+
+/// Two-tone footer link — see `sign_in_screen.dart` for the rationale.
+/// Duplicated here intentionally so each screen file stays
+/// self-contained; the visual treatment is small enough that lifting
+/// it to a shared widget would obscure more than it would share.
+class _AuthFooterLink extends StatelessWidget {
+  const _AuthFooterLink({
+    required this.prompt,
+    required this.action,
+    required this.onTap,
+  });
+
+  final String prompt;
+  final String action;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Semantics(
+      button: true,
+      label: action,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: prompt,
+                  style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
+                ),
+                TextSpan(
+                  text: action,
+                  style: MbFonts.nunito(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: MoodBloomColors.seed,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,42 +1,33 @@
 import 'package:flutter/material.dart';
 
-/// Modal confirmation dialog for the spend flow.
+import '../../domain/entities/garden_skin.dart';
+
+/// Modal confirmation dialog for the spend flow. Used by the legacy
+/// skin-modal redirect path - the new Phase 12 flow prefers
+/// [SkinPurchaseConfirmSheet] which has the full preview + cost
+/// breakdown.
 ///
-/// Wording per the brief: `"Spend N tokens to unlock {displayName}?"`,
+/// Wording: `"Spend N tokens to unlock {displayName}?"`,
 /// `[Cancel]` / `[Confirm]`. Cancel returns `false`; Confirm returns
 /// `true`; tapping the scrim is treated as cancel.
 ///
-/// Resolves to a boolean indicating whether the user confirmed. Stateful
-/// caller (the [SkinModalSheet]) reads the result and, on `true`, runs
-/// the [UnlockFlowerSkinUseCase] then closes the dialog by way of the
-/// snackbar success path; on `false` the modal stays open with the
-/// balance unchanged.
-///
 /// CLAUDE.md copy rules upheld: no fix-your-mood verbs, no
-/// streak-shaming, compassionate-imperative phrasing ("Spend N tokens
-/// to unlock?" is offered, not commanded).
+/// streak-shaming, compassionate-imperative phrasing.
 class SpendConfirmationDialog extends StatelessWidget {
-  const SpendConfirmationDialog({
-    super.key,
-    required this.cost,
-    required this.skinName,
-  });
+  const SpendConfirmationDialog({super.key, required this.skin});
 
-  final int cost;
-  final String skinName;
+  final GardenSkin skin;
 
   /// Convenience launcher mirroring `showDialog<bool>` so callers can
-  /// `final ok = await SpendConfirmationDialog.show(context, …)`
+  /// `final ok = await SpendConfirmationDialog.show(context, skin: ...)`
   /// without re-typing the dialog wiring.
   static Future<bool> show(
     BuildContext context, {
-    required int cost,
-    required String skinName,
+    required GardenSkin skin,
   }) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) =>
-          SpendConfirmationDialog(cost: cost, skinName: skinName),
+      builder: (dialogContext) => SpendConfirmationDialog(skin: skin),
     );
     return result ?? false;
   }
@@ -47,7 +38,7 @@ class SpendConfirmationDialog extends StatelessWidget {
     return AlertDialog(
       title: const Text('Unlock this skin?'),
       content: Text(
-        'Spend $cost tokens to unlock $skinName?',
+        'Spend ${skin.cost} tokens to unlock ${skin.displayName}?',
         style: theme.textTheme.bodyMedium,
       ),
       actions: [

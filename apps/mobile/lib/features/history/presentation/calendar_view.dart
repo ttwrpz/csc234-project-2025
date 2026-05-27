@@ -11,10 +11,11 @@ import '../domain/entities/calendar_state.dart';
 import 'controllers/calendar_controller.dart';
 
 /// Width breakpoint at which the calendar switches from a single-column
-/// "tap → bottom sheet" layout to a two-column "calendar + side panel"
+/// "tap to bottom sheet" layout to a two-column "calendar + side panel"
 /// layout. Below this we keep the phone-style flow; above this the user
-/// gets a persistent panel listing the selected day's entries.
-const double _kSidePanelBreakpoint = 720;
+/// gets a persistent panel listing the selected day's entries. Pulled
+/// from the shared `MbBreakpoints.historySidePanel` constant.
+const double _kSidePanelBreakpoint = MbBreakpoints.historySidePanel;
 
 /// Month-grid calendar of mood history. On phone widths, tapping a day cell
 /// opens a bottom sheet listing every entry on that day. On tablet/desktop
@@ -84,33 +85,30 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
           onPrev: _goPrevMonth,
           onNext: _isCurrentMonth ? null : _goNextMonth,
           // Hide the Today affordance once the user is already on the
-          // current month — it'd be a no-op there.
+          // current month - it'd be a no-op there.
           onToday: _isCurrentMonth ? null : _goToday,
           onDayTap: wide ? (day) => setState(() => _selectedDay = day) : null,
         );
-        if (!wide) return calendar;
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(flex: 5, child: calendar),
-            const SizedBox(width: 16),
-            Expanded(
-              flex: 4,
-              // Wrap the side panel in a SingleChildScrollView so a day
-              // with many entries scrolls inside the panel rather than
-              // overflowing the History screen's vertical bounds. The
-              // panel's own Column uses MainAxisSize.min, which would
-              // otherwise push past the parent's allowed height —
-              // surfacing as a `RenderFlex overflowed by …` warning on
-              // desktop where the side panel is enabled.
-              child: _selectedDay == null
-                  ? const SizedBox.shrink()
-                  : SingleChildScrollView(
-                      key: ValueKey(_selectedDay),
-                      child: DayEntriesPanel(dayKey: _selectedDay!),
-                    ),
-            ),
-          ],
+        if (!wide) {
+          return SingleChildScrollView(child: calendar);
+        }
+        return SingleChildScrollView(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(flex: 5, child: calendar),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 4,
+                child: _selectedDay == null
+                    ? const SizedBox.shrink()
+                    : DayEntriesPanel(
+                        key: ValueKey(_selectedDay),
+                        dayKey: _selectedDay!,
+                      ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -310,8 +308,18 @@ class DayEntriesSheet extends StatelessWidget {
 
 /// The list of entries for a given day. Reused by both the bottom sheet
 /// (phone) and the side panel (desktop). When [popOnTap] is true, tapping
-/// an entry pops the enclosing route before navigating — the bottom-sheet
+/// an entry pops the enclosing route before navigating - the bottom-sheet
 /// flow needs that; the side panel does not.
+///
+/// Layout per the v1.6 prototype's `HistoryCalendarScreen > dayPanel`:
+///   * MbCard wrapper, padding 18 dp.
+///   * Section label "SUN · APR 28" (uppercase weekday + month + day).
+///   * Most-recent entry highlighted: full MbMoodChip + the note text
+///     in a body paragraph beneath, plus the entry's time.
+///   * Divider line.
+///   * "BEFORE THAT" section label.
+///   * Compact rows for the remaining entries: small MbMoodChip + note
+///     ellipsis + time. Tap routes to that entry's detail screen.
 class DayEntriesPanel extends ConsumerWidget {
   const DayEntriesPanel({
     super.key,
@@ -325,10 +333,7 @@ class DayEntriesPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    final palette = Theme.of(context).extension<MbMoodPalette>()!;
     final entriesAsync = ref.watch(myMoodsStreamProvider);
-    final dayLabel =
-        '${_monthName(dayKey.month)} ${dayKey.day}, ${dayKey.year}';
 
     final dayEntries = entriesAsync.maybeWhen(
       data: (all) => [
@@ -338,98 +343,167 @@ class DayEntriesPanel extends ConsumerWidget {
       orElse: () => const <MoodEntry>[],
     );
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          dayLabel,
-          style: MbFonts.fraunces(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: mb.text,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          dayEntries.isEmpty
-              ? 'No entries'
-              : '${dayEntries.length} ${dayEntries.length == 1 ? "entry" : "entries"}',
-          style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
-        ),
-        const SizedBox(height: 12),
-        if (dayEntries.isEmpty)
-          MbCard(
-            padding: const EdgeInsets.all(16),
-            child: Text(
+    return MbCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          MbSectionLabel(_panelLabel(dayKey)),
+          const SizedBox(height: 10),
+          if (dayEntries.isEmpty)
+            Text(
               "Nothing logged here yet - tap Log mood when you're ready.",
               style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
-              textAlign: TextAlign.center,
+            )
+          else
+            _PrimaryEntryBlock(
+              entry: dayEntries.first,
+              onTap: () => _navigate(context, dayEntries.first.id),
             ),
-          )
-        else
-          for (final e in dayEntries)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () {
-                  if (popOnTap) Navigator.of(context).pop();
-                  context.go('/history/${e.id}');
-                },
-                child: MbCard(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: palette.colorOf(e.mood.mbKind).withAlpha(0x33),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          palette.emojiOf(e.mood.mbKind),
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              e.mood.name,
-                              style: MbFonts.nunito(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: mb.text,
-                              ),
-                            ),
-                            if (e.text.isNotEmpty)
-                              Text(
-                                e.text,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: MbFonts.nunito(
-                                  fontSize: 12,
-                                  color: mb.textDim,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        _formatTime(e.createdAt),
-                        style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
-                      ),
-                    ],
-                  ),
+          if (dayEntries.length > 1) ...<Widget>[
+            const SizedBox(height: 14),
+            Container(height: 1, color: mb.line),
+            const SizedBox(height: 14),
+            const MbSectionLabel('BEFORE THAT'),
+            const SizedBox(height: 8),
+            for (final e in dayEntries.skip(1))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _BeforeThatRow(
+                  entry: e,
+                  onTap: () => _navigate(context, e.id),
                 ),
               ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _navigate(BuildContext context, String id) {
+    if (popOnTap) Navigator.of(context).pop();
+    context.go('/history/$id');
+  }
+
+  /// Uppercase "SUN · APR 28" label per the prototype.
+  static String _panelLabel(DateTime day) {
+    const weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    const months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+    return '${weekdays[day.weekday - 1]} · ${months[day.month - 1]} ${day.day}';
+  }
+}
+
+/// Most-recent entry block at the top of the day panel: full MbMoodChip
+/// (with intensity inline) + a body paragraph of the note + the entry's
+/// time of day. Tappable - routes to the entry's detail screen.
+class _PrimaryEntryBlock extends StatelessWidget {
+  const _PrimaryEntryBlock({required this.entry, required this.onTap});
+
+  final MoodEntry entry;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final note = entry.text.trim();
+    return InkWell(
+      borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusMd),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                MbMoodChip(
+                  mood: entry.mood.mbKind,
+                  intensity: entry.intensity,
+                ),
+                const Spacer(),
+                Text(
+                  _formatTime(entry.createdAt),
+                  style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
+                ),
+              ],
             ),
-      ],
+            if (note.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 12),
+              Text(
+                note,
+                style: MbFonts.nunito(
+                  fontSize: 13,
+                  color: mb.text,
+                  height: 1.55,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One compact "BEFORE THAT" row: small MbMoodChip + note ellipsis +
+/// time of day. Tappable - routes to the entry's detail screen.
+class _BeforeThatRow extends StatelessWidget {
+  const _BeforeThatRow({required this.entry, required this.onTap});
+
+  final MoodEntry entry;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final note = entry.text.trim();
+    return InkWell(
+      borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusMd),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: <Widget>[
+            MbMoodChip(
+              mood: entry.mood.mbKind,
+              size: MbChipSize.sm,
+              intensity: entry.intensity,
+            ),
+            if (note.isNotEmpty) ...<Widget>[
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  note,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
+                ),
+              ),
+            ] else
+              const Spacer(),
+            const SizedBox(width: 8),
+            Text(
+              _formatTime(entry.createdAt),
+              style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -461,7 +535,14 @@ class _MonthHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
     final theme = Theme.of(context);
-    final label = '${_monthName(month.month)} ${month.year}';
+    // v1.6 prototype shows the bare month name (e.g. "April"). The year
+    // is dropped because the chevrons already scope context to the
+    // current view; the year reappears in the Semantics label.
+    final label = _monthName(month.month);
+    final now = DateTime.now();
+    final semanticsLabel = now.year == month.year
+        ? label
+        : '$label ${month.year}';
     return Row(
       children: [
         MbIconButton(
@@ -474,12 +555,15 @@ class _MonthHeader extends StatelessWidget {
           child: Center(
             child: Semantics(
               header: true,
-              child: Text(
-                label,
-                style: MbFonts.nunito(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: mb.text,
+              label: semanticsLabel,
+              child: ExcludeSemantics(
+                child: Text(
+                  label,
+                  style: MbFonts.fraunces(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: mb.text,
+                  ),
                 ),
               ),
             ),
@@ -520,7 +604,8 @@ class _MonthHeader extends StatelessWidget {
 class _WeekdayHeaderRow extends StatelessWidget {
   const _WeekdayHeaderRow();
 
-  static const _labels = <String>['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  // Monday-first per the v1.6 prototype's `HistoryCalendarScreen`.
+  static const _labels = <String>['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   @override
   Widget build(BuildContext context) {
@@ -535,7 +620,7 @@ class _WeekdayHeaderRow extends StatelessWidget {
                   l,
                   style: MbFonts.nunito(
                     fontSize: 10,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                     color: mb.textDim,
                   ),
                 ),
@@ -561,7 +646,9 @@ class _MonthGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firstOfMonth = state.month;
-    final leadingBlanks = firstOfMonth.weekday % 7;
+    // Monday-first leading-blanks: DateTime.weekday is 1..7 (Mon..Sun);
+    // we want Mon = 0 leading, Sun = 6 leading.
+    final leadingBlanks = firstOfMonth.weekday - DateTime.monday;
     final daysInMonth = DateTime(
       firstOfMonth.year,
       firstOfMonth.month + 1,
@@ -639,55 +726,64 @@ class _DayCell extends StatelessWidget {
     final theme = Theme.of(context);
     final mb = theme.extension<MbColors>()!;
     final hasEntry = dot != null;
-    final dotColor = hasEntry ? _categoryColor(dot!.dominantCategory) : null;
+    final categoryColor = hasEntry
+        ? _categoryColor(dot!.dominantCategory)
+        : null;
+    final categoryMood = hasEntry ? _categoryMood(dot!.dominantCategory) : null;
     final count = dot?.totalEntries ?? 0;
     final semanticsLabel = hasEntry
         ? 'Day $dayNumber, ${dot!.totalEntries} '
               '${dot!.totalEntries == 1 ? "entry" : "entries"}'
         : 'Day $dayNumber, no entries';
 
+    // Cell tint per the v1.6 prototype: ~12% mood color over the card
+    // surface (so dark/light themes both read), surface-dim wash when
+    // there's no entry (matches the prototype's `var(--mb-surface-dim)`
+    // empty cells, which read as "open" rather than the same value as
+    // the page background). Today gets a 1.5 dp seed-colored outline.
+    // The selected day (wide layout) gets a 2 dp seed outline.
+    final isDark = theme.brightness == Brightness.dark;
+    final emptyCellBg = isDark
+        ? MoodBloomColors.surfaceDimDark
+        : MoodBloomColors.surfaceDim;
+    final cellBg = hasEntry ? categoryColor!.withAlpha(0x21) : emptyCellBg;
     final borderColor = isSelected
         ? theme.colorScheme.primary
-        : (isToday ? theme.colorScheme.primary : mb.line);
-    final borderWidth = isSelected ? 2.0 : 1.0;
+        : (isToday ? theme.colorScheme.primary : Colors.transparent);
+    final borderWidth = isSelected ? 2.0 : (isToday ? 1.5 : 0.0);
 
     final cell = Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: isToday || isSelected
-            ? MoodBloomColors.softGreen
-            : Colors.transparent,
-        border: Border.all(color: borderColor, width: borderWidth),
-        borderRadius: BorderRadius.circular(8),
+        color: cellBg,
+        border: borderWidth > 0
+            ? Border.all(color: borderColor, width: borderWidth)
+            : null,
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Stack(
         children: [
-          Align(
-            alignment: Alignment.topLeft,
-            child: Text(
-              '$dayNumber',
-              style: MbFonts.nunito(
-                fontSize: 10,
-                fontWeight: isToday || isSelected
-                    ? FontWeight.w700
-                    : FontWeight.w500,
-                color: mb.textDim,
-              ),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (categoryMood != null)
+                  MbMoodSvg(mood: categoryMood, size: 10, color: categoryColor),
+                if (categoryMood != null) const SizedBox(height: 2),
+                Text(
+                  '$dayNumber',
+                  style: MbFonts.nunito(
+                    fontSize: 12,
+                    fontWeight: hasEntry || isToday
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                    color: mb.text,
+                  ),
+                ),
+              ],
             ),
           ),
-          if (hasEntry)
-            Positioned(
-              left: 0,
-              bottom: 0,
-              child: Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: dotColor,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
           if (count > 1)
             Positioned(
               top: 2,
@@ -719,7 +815,7 @@ class _DayCell extends StatelessWidget {
         button: true,
         label: semanticsLabel,
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           onTap: () => onDayTap!(dayKey),
           child: cell,
         ),
@@ -734,7 +830,7 @@ class _DayCell extends StatelessWidget {
       button: true,
       label: semanticsLabel,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         onTap: () {
           if (count > 1) {
             DayEntriesSheet.show(context, dayKey);
@@ -774,6 +870,15 @@ Color _categoryColor(MoodCategory category) => switch (category) {
   MoodCategory.positive => MoodBloomColors.moodHappy,
   MoodCategory.negativeMild => MoodBloomColors.moodSad,
   MoodCategory.negativeStrong => MoodBloomColors.moodAngry,
+};
+
+/// Representative `MbMoodKind` for each 3-bucket `MoodCategory` — used by
+/// the calendar day cells to pick a small glyph that matches the color
+/// tint. The mapping mirrors `_categoryColor` exactly.
+MbMoodKind _categoryMood(MoodCategory category) => switch (category) {
+  MoodCategory.positive => MbMoodKind.happy,
+  MoodCategory.negativeMild => MbMoodKind.sad,
+  MoodCategory.negativeStrong => MbMoodKind.angry,
 };
 
 const _monthNames = <String>[

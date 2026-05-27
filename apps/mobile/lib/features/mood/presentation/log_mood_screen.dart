@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../disclaimer/domain/disclaimer_copy.dart';
 import '../data/providers.dart';
 import '../domain/entities/mood_draft.dart';
 import '../domain/entities/mood_entry.dart';
@@ -25,6 +24,15 @@ import 'widgets/mood_type_grid.dart';
 /// Mood logging screen — intensity 1..5 entry plus the AI mood detection
 /// entry point.
 ///
+/// Visual treatment refreshed in v1.6 to match `LogMoodScreen` in
+/// `prototype/screens-extra.jsx`:
+/// - title "How are you feeling?" Fraunces 26 w600
+/// - 3x2 mood grid (`MoodTypeGrid` w/ `MbMoodSvg` glyphs)
+/// - 1..5 intensity slider with "barely" / "quite a bit" scale labels
+/// - `MbInputField`-style "NOTE (OPTIONAL)" surface for the body text
+/// - "Save to your garden" `MbPrimaryButton` with leading check icon
+/// - footer disclaimer "Tokens are earned for showing up. Empty days are fine."
+///
 /// This is a ConsumerStatefulWidget specifically so we can reset the draft
 /// + AI suggestion + submission state on every screen-enter. Without that,
 /// the controllers persist across bottom-nav swaps and the user comes
@@ -38,17 +46,11 @@ import 'widgets/mood_type_grid.dart';
 /// Layout: a single-column ListView on phones (<720dp wide) and a
 /// two-column form on desktop / large tablets (>=720dp). The wide layout
 /// puts the mood + intensity controls on the left and the note + media
-/// + save on the right so a 1280–1440dp window doesn't waste real estate.
+/// + save on the right so a 1280-1440dp window doesn't waste real estate.
 class LogMoodScreen extends ConsumerStatefulWidget {
   const LogMoodScreen({super.key, this.editEntryId});
 
   final String? editEntryId;
-
-  /// Width threshold above which the screen switches to the two-column
-  /// desktop layout. Chosen at 720dp because that's the typical handoff
-  /// point between phone landscape and tablet/portrait — and it matches
-  /// the breakpoint already used by the History DayEntriesSheet dialog.
-  static const double wideBreakpoint = 720;
 
   /// Hard cap on the form's content width on extra-wide windows so the
   /// two columns don't stretch across a 1920dp monitor.
@@ -132,8 +134,7 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
     final draft = ref.watch(logMoodControllerProvider);
     final submission = ref.watch(logMoodSubmissionControllerProvider);
     final controller = ref.read(logMoodControllerProvider.notifier);
-    final theme = Theme.of(context);
-    final mb = theme.extension<MbColors>()!;
+    final mb = Theme.of(context).extension<MbColors>()!;
 
     final hasMood = draft.mood != null;
     final canSave = hasMood && !submission.isSubmitting;
@@ -167,40 +168,65 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
     return Scaffold(
       backgroundColor: mb.bg,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= LogMoodScreen.wideBreakpoint;
-            if (isWide) {
-              return _WideLayout(
-                draft: draft,
-                submission: submission,
-                controller: controller,
-                isEditMode: isEditMode,
-                editing: _editing,
-                hasMood: hasMood,
-                canSave: canSave,
-                onSave: () => _onSave(context, ref),
-                onPickMedia: (source) => _onPickMedia(context, ref, source),
-                onCancelEdit: _editing == null
-                    ? null
-                    : () => context.go('/history/${_editing!.id}'),
-              );
-            }
-            return _NarrowLayout(
-              draft: draft,
-              submission: submission,
-              controller: controller,
-              isEditMode: isEditMode,
-              editing: _editing,
-              hasMood: hasMood,
-              canSave: canSave,
-              onSave: () => _onSave(context, ref),
-              onPickMedia: (source) => _onPickMedia(context, ref, source),
-              onCancelEdit: _editing == null
-                  ? null
-                  : () => context.go('/history/${_editing!.id}'),
-            );
-          },
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: LogMoodScreen.maxFormWidth,
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide =
+                    constraints.maxWidth >= MbBreakpoints.logMoodWide;
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(
+                    MoodBloomSpacing.pagePadding,
+                    MoodBloomSpacing.pagePadding,
+                    MoodBloomSpacing.pagePadding,
+                    MoodBloomSpacing.xl,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _Header(isEditMode: isEditMode),
+                      if (isEditMode && _editing != null) ...[
+                        const SizedBox(height: MoodBloomSpacing.md),
+                        _EditModeBanner(
+                          entry: _editing!,
+                          onCancel: () =>
+                              context.go('/history/${_editing!.id}'),
+                        ),
+                      ],
+                      const SizedBox(height: MoodBloomSpacing.lg),
+                      if (isWide)
+                        _WideBody(
+                          draft: draft,
+                          submission: submission,
+                          controller: controller,
+                          hasMood: hasMood,
+                          canSave: canSave,
+                          isEditMode: isEditMode,
+                          onSave: () => _onSave(context, ref),
+                          onPickMedia: (source) =>
+                              _onPickMedia(context, ref, source),
+                        )
+                      else
+                        _NarrowBody(
+                          draft: draft,
+                          submission: submission,
+                          controller: controller,
+                          hasMood: hasMood,
+                          canSave: canSave,
+                          isEditMode: isEditMode,
+                          onSave: () => _onSave(context, ref),
+                          onPickMedia: (source) =>
+                              _onPickMedia(context, ref, source),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -247,278 +273,48 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
   }
 }
 
-/// Phone layout — single-column ListView with the sticky-bottom Save bar.
-class _NarrowLayout extends ConsumerWidget {
-  const _NarrowLayout({
+/// Phone layout — single column. Order per the prototype:
+/// header (above) -> mood grid -> intensity slider -> AI suggestion ->
+/// note field -> media row -> save -> disclaimer.
+class _NarrowBody extends ConsumerWidget {
+  const _NarrowBody({
     required this.draft,
     required this.submission,
     required this.controller,
-    required this.isEditMode,
-    required this.editing,
     required this.hasMood,
     required this.canSave,
+    required this.isEditMode,
     required this.onSave,
     required this.onPickMedia,
-    required this.onCancelEdit,
   });
 
   final MoodDraft draft;
   final LogMoodSubmissionState submission;
   final LogMoodController controller;
-  final bool isEditMode;
-  final MoodEntry? editing;
   final bool hasMood;
   final bool canSave;
+  final bool isEditMode;
   final VoidCallback onSave;
   final ValueChanged<MoodMediaSource> onPickMedia;
-  final VoidCallback? onCancelEdit;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+    final mb = Theme.of(context).extension<MbColors>()!;
     return Column(
       key: const ValueKey('log-mood-narrow'),
-      children: [
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              MoodBloomSpacing.pagePadding,
-              MoodBloomSpacing.pagePadding,
-              MoodBloomSpacing.pagePadding,
-              MoodBloomSpacing.lg,
-            ),
-            children: [
-              _Header(isEditMode: isEditMode),
-              if (isEditMode && editing != null) ...[
-                const SizedBox(height: MoodBloomSpacing.md),
-                _EditModeBanner(
-                  entry: editing!,
-                  onCancel: onCancelEdit ?? () {},
-                ),
-              ],
-              const SizedBox(height: MoodBloomSpacing.lg),
-              const MbSectionLabel('Choose a feeling'),
-              const SizedBox(height: MoodBloomSpacing.sm),
-              MoodTypeGrid(selected: draft.mood, onSelect: controller.pickMood),
-              const SizedBox(height: MoodBloomSpacing.xl),
-              _IntensitySection(
-                intensity: draft.intensity,
-                mood: draft.mood,
-                onChanged: controller.setIntensity,
-              ),
-              const SizedBox(height: MoodBloomSpacing.xl),
-              const MbSectionLabel("What's on your mind?"),
-              const SizedBox(height: MoodBloomSpacing.sm),
-              _NoteCard(
-                text: draft.text,
-                onTextChanged: (text) {
-                  controller.setText(text);
-                  ref
-                      .read(aiSuggestionControllerProvider.notifier)
-                      .onTextChanged(text);
-                },
-                onPickMedia: onPickMedia,
-                wideLayout: false,
-              ),
-              if (draft.mediaRefs.isNotEmpty) ...[
-                const SizedBox(height: MoodBloomSpacing.md),
-                ExistingMediaStrip(
-                  gsUris: draft.mediaRefs,
-                  onRemove: controller.removeMediaRef,
-                ),
-              ],
-              if (draft.pickedMedia.isNotEmpty) ...[
-                const SizedBox(height: MoodBloomSpacing.md),
-                MediaThumbnailStrip(
-                  media: draft.pickedMedia,
-                  onRemove: controller.removeMedia,
-                ),
-              ],
-              const SizedBox(height: MoodBloomSpacing.md),
-              const AISuggestionPill(),
-              if (submission.errorMessage != null) ...[
-                const SizedBox(height: MoodBloomSpacing.sm),
-                Text(
-                  submission.errorMessage!,
-                  style: MbFonts.nunito(
-                    fontSize: 12,
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ],
-              const SizedBox(height: MoodBloomSpacing.lg),
-              const _LogMoodDisclaimerFootnote(),
-            ],
-          ),
-        ),
-        _SaveBar(
-          hasMood: hasMood,
-          loading: submission.isSubmitting,
-          isEditMode: isEditMode,
-          onPressed: canSave ? onSave : null,
-        ),
-      ],
-    );
-  }
-}
-
-/// Two-column desktop layout. Left column hosts the "what you're feeling"
-/// inputs (mood grid + intensity); right column hosts the "tell us about
-/// it" inputs (note, media, AI pill, save). Constrained to
-/// [LogMoodScreen.maxFormWidth] and centered so the form doesn't stretch
-/// across an ultra-wide monitor.
-class _WideLayout extends StatelessWidget {
-  const _WideLayout({
-    required this.draft,
-    required this.submission,
-    required this.controller,
-    required this.isEditMode,
-    required this.editing,
-    required this.hasMood,
-    required this.canSave,
-    required this.onSave,
-    required this.onPickMedia,
-    required this.onCancelEdit,
-  });
-
-  final MoodDraft draft;
-  final LogMoodSubmissionState submission;
-  final LogMoodController controller;
-  final bool isEditMode;
-  final MoodEntry? editing;
-  final bool hasMood;
-  final bool canSave;
-  final VoidCallback onSave;
-  final ValueChanged<MoodMediaSource> onPickMedia;
-  final VoidCallback? onCancelEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      key: const ValueKey('log-mood-wide'),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: LogMoodScreen.maxFormWidth),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            MoodBloomSpacing.xl,
-            MoodBloomSpacing.pagePadding,
-            MoodBloomSpacing.xl,
-            MoodBloomSpacing.xl,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _Header(isEditMode: isEditMode),
-              if (isEditMode && editing != null) ...[
-                const SizedBox(height: MoodBloomSpacing.md),
-                _EditModeBanner(
-                  entry: editing!,
-                  onCancel: onCancelEdit ?? () {},
-                ),
-              ],
-              const SizedBox(height: MoodBloomSpacing.lg),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 55,
-                    child: _LeftColumn(
-                      key: const ValueKey('log-mood-wide-left'),
-                      draft: draft,
-                      controller: controller,
-                    ),
-                  ),
-                  // 48dp gap between columns — twice the `xl` value (24dp).
-                  // The 24dp gap left the two halves visually adjacent on a
-                  // 1280dp window; 48dp makes the form feel like two
-                  // distinct zones.
-                  const SizedBox(width: 48),
-                  Expanded(
-                    flex: 45,
-                    child: _RightColumn(
-                      key: const ValueKey('log-mood-wide-right'),
-                      draft: draft,
-                      submission: submission,
-                      controller: controller,
-                      hasMood: hasMood,
-                      canSave: canSave,
-                      isEditMode: isEditMode,
-                      onSave: onSave,
-                      onPickMedia: onPickMedia,
-                      errorTextStyle: MbFonts.nunito(
-                        fontSize: 12,
-                        color: theme.colorScheme.error,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LeftColumn extends StatelessWidget {
-  const _LeftColumn({super.key, required this.draft, required this.controller});
-
-  final MoodDraft draft;
-  final LogMoodController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const MbSectionLabel('Choose a feeling'),
-        const SizedBox(height: MoodBloomSpacing.sm),
-        MoodTypeGrid(selected: draft.mood, onSelect: controller.pickMood),
-        const SizedBox(height: MoodBloomSpacing.xl),
+        _MoodGridSection(draft: draft, controller: controller),
+        const SizedBox(height: MoodBloomSpacing.lg),
         _IntensitySection(
           intensity: draft.intensity,
           mood: draft.mood,
           onChanged: controller.setIntensity,
         ),
-      ],
-    );
-  }
-}
-
-class _RightColumn extends ConsumerWidget {
-  const _RightColumn({
-    super.key,
-    required this.draft,
-    required this.submission,
-    required this.controller,
-    required this.hasMood,
-    required this.canSave,
-    required this.isEditMode,
-    required this.onSave,
-    required this.onPickMedia,
-    required this.errorTextStyle,
-  });
-
-  final MoodDraft draft;
-  final LogMoodSubmissionState submission;
-  final LogMoodController controller;
-  final bool hasMood;
-  final bool canSave;
-  final bool isEditMode;
-  final VoidCallback onSave;
-  final ValueChanged<MoodMediaSource> onPickMedia;
-  final TextStyle errorTextStyle;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const MbSectionLabel("What's on your mind?"),
-        const SizedBox(height: MoodBloomSpacing.sm),
-        _NoteCard(
+        const SizedBox(height: MoodBloomSpacing.lg),
+        // Note first; the AI suggestion sits BELOW it because the
+        // suggestion is a reaction to what the user wrote.
+        _NoteField(
           text: draft.text,
           onTextChanged: (text) {
             controller.setText(text);
@@ -526,31 +322,26 @@ class _RightColumn extends ConsumerWidget {
                 .read(aiSuggestionControllerProvider.notifier)
                 .onTextChanged(text);
           },
-          onPickMedia: onPickMedia,
-          wideLayout: true,
         ),
-        if (draft.mediaRefs.isNotEmpty) ...[
-          const SizedBox(height: MoodBloomSpacing.md),
-          ExistingMediaStrip(
-            gsUris: draft.mediaRefs,
-            onRemove: controller.removeMediaRef,
-          ),
-        ],
-        if (draft.pickedMedia.isNotEmpty) ...[
-          const SizedBox(height: MoodBloomSpacing.md),
-          MediaThumbnailStrip(
-            media: draft.pickedMedia,
-            onRemove: controller.removeMedia,
-          ),
-        ],
         const SizedBox(height: MoodBloomSpacing.md),
         const AISuggestionPill(),
+        const SizedBox(height: MoodBloomSpacing.md),
+        _MediaSection(
+          draft: draft,
+          controller: controller,
+          onPickMedia: onPickMedia,
+          wideLayout: false,
+        ),
         if (submission.errorMessage != null) ...[
           const SizedBox(height: MoodBloomSpacing.sm),
-          Text(submission.errorMessage!, style: errorTextStyle),
+          Text(
+            submission.errorMessage!,
+            style: MbFonts.nunito(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ),
         ],
-        const SizedBox(height: MoodBloomSpacing.lg),
-        const _LogMoodDisclaimerFootnote(),
         const SizedBox(height: MoodBloomSpacing.lg),
         _SaveButton(
           hasMood: hasMood,
@@ -558,14 +349,111 @@ class _RightColumn extends ConsumerWidget {
           isEditMode: isEditMode,
           onPressed: canSave ? onSave : null,
         ),
+        const SizedBox(height: MoodBloomSpacing.md),
+        _DisclaimerFootnote(color: mb.textDim),
       ],
     );
   }
 }
 
-/// Header row — Fraunces 20/600 title only. Title flips to "Edit entry"
-/// when the screen is opened with `?edit=<id>` so the user knows they
-/// are mutating an existing record, not creating a new one.
+/// Tablet+/desktop layout — two columns. Left column hosts the mood
+/// grid + intensity slider; right column hosts the AI pill + note field
+/// + media + save + disclaimer.
+class _WideBody extends ConsumerWidget {
+  const _WideBody({
+    required this.draft,
+    required this.submission,
+    required this.controller,
+    required this.hasMood,
+    required this.canSave,
+    required this.isEditMode,
+    required this.onSave,
+    required this.onPickMedia,
+  });
+
+  final MoodDraft draft;
+  final LogMoodSubmissionState submission;
+  final LogMoodController controller;
+  final bool hasMood;
+  final bool canSave;
+  final bool isEditMode;
+  final VoidCallback onSave;
+  final ValueChanged<MoodMediaSource> onPickMedia;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Row(
+      key: const ValueKey('log-mood-wide'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _MoodGridSection(draft: draft, controller: controller),
+              const SizedBox(height: MoodBloomSpacing.lg),
+              _IntensitySection(
+                intensity: draft.intensity,
+                mood: draft.mood,
+                onChanged: controller.setIntensity,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: MoodBloomSpacing.xl),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Note first; the AI suggestion sits below it because the
+              // suggestion reacts to what the user wrote.
+              _NoteField(
+                text: draft.text,
+                onTextChanged: (text) {
+                  controller.setText(text);
+                  ref
+                      .read(aiSuggestionControllerProvider.notifier)
+                      .onTextChanged(text);
+                },
+              ),
+              const SizedBox(height: MoodBloomSpacing.md),
+              const AISuggestionPill(),
+              const SizedBox(height: MoodBloomSpacing.md),
+              _MediaSection(
+                draft: draft,
+                controller: controller,
+                onPickMedia: onPickMedia,
+                wideLayout: true,
+              ),
+              if (submission.errorMessage != null) ...[
+                const SizedBox(height: MoodBloomSpacing.sm),
+                Text(
+                  submission.errorMessage!,
+                  style: MbFonts.nunito(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
+              const SizedBox(height: MoodBloomSpacing.lg),
+              _SaveButton(
+                hasMood: hasMood,
+                loading: submission.isSubmitting,
+                isEditMode: isEditMode,
+                onPressed: canSave ? onSave : null,
+              ),
+              const SizedBox(height: MoodBloomSpacing.md),
+              _DisclaimerFootnote(color: mb.textDim),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Header — "How are you feeling?" (or "Edit entry" in edit mode).
 class _Header extends StatelessWidget {
   const _Header({required this.isEditMode});
 
@@ -575,9 +463,9 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
     return Text(
-      isEditMode ? 'Edit entry' : 'How are you?',
+      isEditMode ? 'Edit entry' : 'How are you feeling?',
       style: MbFonts.fraunces(
-        fontSize: 20,
+        fontSize: 26,
         fontWeight: FontWeight.w600,
         color: mb.text,
       ),
@@ -585,9 +473,28 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// "Intensity" section — section label + "n / 5" right, then a card with
-/// the slider and `soft / vivid` end-caps. The slider pulls its tint from
-/// the currently-picked mood.
+/// "How are you?" section eyebrow + 3x2 mood grid.
+class _MoodGridSection extends StatelessWidget {
+  const _MoodGridSection({required this.draft, required this.controller});
+
+  final MoodDraft draft;
+  final LogMoodController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const MbSectionLabel('HOW ARE YOU?'),
+        const SizedBox(height: MoodBloomSpacing.sm),
+        MoodTypeGrid(selected: draft.mood, onSelect: controller.pickMood),
+      ],
+    );
+  }
+}
+
+/// Intensity slider section — eyebrow + slider in a card + "barely" /
+/// "quite a bit" end-cap labels.
 class _IntensitySection extends StatelessWidget {
   const _IntensitySection({
     required this.intensity,
@@ -605,28 +512,10 @@ class _IntensitySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const MbSectionLabel('Intensity'),
-            Text(
-              '$intensity / 5',
-              style: MbFonts.nunito(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: mb.text,
-              ),
-            ),
-          ],
-        ),
+        const MbSectionLabel('INTENSITY'),
         const SizedBox(height: MoodBloomSpacing.sm),
         MbCard(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: mb.card,
-            border: Border.all(color: mb.line),
-            borderRadius: BorderRadius.circular(16),
-          ),
+          padding: const EdgeInsets.fromLTRB(12, 14, 12, 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -635,16 +524,25 @@ class _IntensitySection extends StatelessWidget {
                 mood: mood,
                 onChanged: onChanged,
               ),
+              const SizedBox(height: 4),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'soft',
-                    style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
+                    'barely',
+                    style: MbFonts.nunito(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: mb.textDim,
+                    ),
                   ),
                   Text(
-                    'vivid',
-                    style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
+                    'quite a bit',
+                    style: MbFonts.nunito(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: mb.textDim,
+                    ),
                   ),
                 ],
               ),
@@ -656,103 +554,94 @@ class _IntensitySection extends StatelessWidget {
   }
 }
 
-/// Note card — 4-row text field, attach buttons row, and "n/500" counter
-/// in the same card so the counter sits inside the same chrome as the
-/// field.
-///
-/// In wide layouts the attach affordance becomes a single full-width
-/// "Attach a photo" outlined button that sits BELOW the counter row, so
-/// both rows stay readable instead of competing for horizontal space
-/// with the icon-only buttons.
-class _NoteCard extends StatelessWidget {
-  const _NoteCard({
-    required this.text,
-    required this.onTextChanged,
+/// Note field — "NOTE (OPTIONAL)" eyebrow over an `MbCard` that hosts the
+/// 4-row text input plus a "n/500" counter. The placeholder matches the
+/// prototype: "What's on your mind? (you can skip this)".
+class _NoteField extends StatelessWidget {
+  const _NoteField({required this.text, required this.onTextChanged});
+
+  final String text;
+  final ValueChanged<String> onTextChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const MbSectionLabel('NOTE (OPTIONAL)'),
+        const SizedBox(height: MoodBloomSpacing.sm),
+        MbCard(
+          padding: const EdgeInsets.all(12),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 138),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                MoodTextField(value: text, onChanged: onTextChanged),
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '${text.length}/${MoodTextField.maxChars}',
+                    style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Media section — eyebrow + `MediaPickerButton` + existing thumbnails.
+class _MediaSection extends StatelessWidget {
+  const _MediaSection({
+    required this.draft,
+    required this.controller,
     required this.onPickMedia,
     required this.wideLayout,
   });
 
-  final String text;
-  final ValueChanged<String> onTextChanged;
+  final MoodDraft draft;
+  final LogMoodController controller;
   final ValueChanged<MoodMediaSource> onPickMedia;
   final bool wideLayout;
 
   @override
   Widget build(BuildContext context) {
-    final mb = Theme.of(context).extension<MbColors>()!;
-    final counter = Text(
-      '${text.length}/${MoodTextField.maxChars}',
-      style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
-    );
-    final picker = MediaPickerButton(
-      onPick: onPickMedia,
-      wideLayout: wideLayout,
-    );
-
-    return MbCard(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: mb.card,
-        border: Border.all(color: mb.line),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          MoodTextField(value: text, onChanged: onTextChanged),
-          const SizedBox(height: 6),
-          if (wideLayout) ...[
-            Align(alignment: Alignment.centerRight, child: counter),
-            const SizedBox(height: 8),
-            picker,
-          ] else
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [picker, counter],
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const MbSectionLabel('ATTACH'),
+        const SizedBox(height: MoodBloomSpacing.sm),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: MediaPickerButton(onPick: onPickMedia, wideLayout: wideLayout),
+        ),
+        if (draft.mediaRefs.isNotEmpty) ...[
+          const SizedBox(height: MoodBloomSpacing.md),
+          ExistingMediaStrip(
+            gsUris: draft.mediaRefs,
+            onRemove: controller.removeMediaRef,
+          ),
         ],
-      ),
+        if (draft.pickedMedia.isNotEmpty) ...[
+          const SizedBox(height: MoodBloomSpacing.md),
+          MediaThumbnailStrip(
+            media: draft.pickedMedia,
+            onRemove: controller.removeMedia,
+          ),
+        ],
+      ],
     );
   }
 }
 
-/// Sticky-bottom Save bar used by the narrow phone layout. Padded so the
-/// button breathes above the system gesture inset.
-class _SaveBar extends StatelessWidget {
-  const _SaveBar({
-    required this.hasMood,
-    required this.loading,
-    required this.isEditMode,
-    required this.onPressed,
-  });
-
-  final bool hasMood;
-  final bool loading;
-  final bool isEditMode;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        MoodBloomSpacing.pagePadding,
-        MoodBloomSpacing.sm,
-        MoodBloomSpacing.pagePadding,
-        MoodBloomSpacing.lg,
-      ),
-      child: _SaveButton(
-        hasMood: hasMood,
-        loading: loading,
-        isEditMode: isEditMode,
-        onPressed: onPressed,
-      ),
-    );
-  }
-}
-
-/// Inner Save button — extracted from `_SaveBar` so the wide layout can
-/// embed it at the bottom of the right column without the bar's outer
-/// padding.
+/// Save button — "Save to your garden" / "Save changes" with a leading
+/// check icon, per the prototype's primary CTA.
 class _SaveButton extends StatelessWidget {
   const _SaveButton({
     required this.hasMood,
@@ -770,42 +659,35 @@ class _SaveButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = !hasMood
         ? 'Pick a feeling to continue'
-        : (isEditMode ? 'Save changes' : 'Save entry');
+        : (isEditMode ? 'Save changes' : 'Save to your garden');
     return MbPrimaryButton(
       label: label,
       onPressed: onPressed,
       loading: loading,
+      leading: hasMood
+          ? const Icon(Icons.check, size: 18, color: Colors.white)
+          : null,
     );
   }
 }
 
-/// Compact disclaimer footnote shown above the Save bar on the Add Mood
-/// page. Surfaces the short "not a medical device" line ([DisclaimerCopy
-/// .notificationFooter]) so the framing is visible on every entry — the
-/// surface where users spend the most time and where AI mood
-/// interpretation is offered.
-class _LogMoodDisclaimerFootnote extends StatelessWidget {
-  const _LogMoodDisclaimerFootnote();
+/// Footer disclaimer line — "Tokens are earned for showing up. Empty days
+/// are fine." Italic Nunito 12 / `textDim`, centered.
+class _DisclaimerFootnote extends StatelessWidget {
+  const _DisclaimerFootnote({required this.color});
+
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final mb = Theme.of(context).extension<MbColors>()!;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(Icons.medical_information_outlined, size: 14, color: mb.textDim),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            DisclaimerCopy.notificationFooter,
-            style: MbFonts.nunito(
-              fontSize: 11,
-              height: 1.45,
-              color: mb.textDim,
-            ),
-          ),
-        ),
-      ],
+    return Text(
+      'Tokens are earned for showing up. Empty days are fine.',
+      style: MbFonts.nunito(
+        fontSize: 12,
+        fontStyle: FontStyle.italic,
+        color: color,
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }

@@ -80,7 +80,14 @@ Widget _makeApp({
         routes: [
           GoRoute(
             path: 'breathing',
-            builder: (context, state) => BreathingScreen(dispatch: dispatch),
+            builder: (context, state) => Scaffold(
+              body: SafeArea(
+                child: BreathingView(
+                  dispatch: dispatch,
+                  onClose: () => context.pop(),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -251,11 +258,11 @@ void main() {
       );
       await _pushBreathing(tester);
 
-      // The previous "Done for now" + "I'm okay" two-button row was
-      // merged into a single "I'm done" CTA. Opt-out wiring is now
-      // covered deterministically in intervention_banner_test.dart.
+      // The "I'm done" CTA is a ghost (OutlinedButton) per the v1.6
+      // prototype's breathing modal. Opt-out wiring is covered
+      // deterministically in intervention_banner_test.dart.
       final done = tester.getSemantics(
-        find.widgetWithText(FilledButton, "I'm done"),
+        find.widgetWithText(OutlinedButton, "I'm done"),
       );
       expect(done.label, equals("I'm done"));
       expect(done.flagsCollection.isButton, isTrue);

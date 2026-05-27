@@ -243,11 +243,10 @@ class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
 
     return Scaffold(
       backgroundColor: mb.bg,
-      appBar: AppBar(
-        title: const Text('Privacy lock'),
-        backgroundColor: mb.bg,
-        automaticallyImplyLeading: false,
-      ),
+      // v1.6: no native AppBar — the prototype's PrivacyLockScreen
+      // leads with a centered hero. The "Privacy lock" title moves
+      // into the body as a small uppercase eyebrow above the warmer
+      // "Welcome back" headline.
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -264,17 +263,19 @@ class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
                     w >= _tabletMin ? 32 : 24,
-                    8,
+                    24,
                     w >= _tabletMin ? 32 : 24,
                     24,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      const Center(child: MbSectionLabel('PRIVACY LOCK')),
+                      const SizedBox(height: 8),
                       Text(
-                        'Unlock MoodBloom',
+                        'Welcome back',
                         style: MbFonts.fraunces(
-                          fontSize: w >= _desktopMin ? 28 : 22,
+                          fontSize: w >= _desktopMin ? 28 : 24,
                           fontWeight: FontWeight.w600,
                           color: mb.text,
                         ),

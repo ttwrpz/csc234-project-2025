@@ -115,18 +115,16 @@ Future<void> _pumpSettings(
 
 void main() {
   group('SettingsScreen', () {
-    testWidgets('renders Preferences section + Theme row', (tester) async {
+    testWidgets('renders THEME section + radio group', (tester) async {
       await _pumpSettings(
         tester,
         initialPreference: ThemeModePreference.system,
       );
 
-      // The section was renamed from "Appearance" to "PREFERENCES" when
-      // the screen was re-grouped into zoned MbCard clusters.
-      expect(find.text('PREFERENCES'), findsOneWidget);
-      expect(find.text('Theme'), findsOneWidget);
-      // The summary line under "Theme" reflects the persisted preference.
-      expect(find.text('Match the device theme'), findsOneWidget);
+      // v1.6 redesign: the screen is now grouped into uppercase
+      // single-card sections per the prototype - "PREFERENCES" was
+      // replaced by a dedicated "THEME" section.
+      expect(find.text('THEME'), findsOneWidget);
     });
 
     testWidgets('renders all four theme radio options', (tester) async {
@@ -135,15 +133,13 @@ void main() {
         initialPreference: ThemeModePreference.system,
       );
 
+      // v1.6 redesign: radio labels are now bare ("Light" / "Dark")
+      // not the older "Always light" / "Always dark" verbiage. The
+      // "Follow device theme" + "Follow device time" labels are unchanged.
       expect(find.text('Follow device theme'), findsOneWidget);
       expect(find.text('Follow device time'), findsOneWidget);
-      expect(find.text('Always light'), findsOneWidget);
-      expect(find.text('Always dark'), findsOneWidget);
-    });
-
-    testWidgets('summary line reflects the current preference', (tester) async {
-      await _pumpSettings(tester, initialPreference: ThemeModePreference.dark);
-      expect(find.text('Always dark'), findsWidgets);
+      expect(find.text('Light'), findsOneWidget);
+      expect(find.text('Dark'), findsOneWidget);
     });
 
     testWidgets(
@@ -203,6 +199,12 @@ void main() {
     testWidgets(
       'tapping each radio updates the controller (4-state coverage)',
       (tester) async {
+        // v1.6 redesign: the settings page is taller and the THEME card
+        // sits below the fold at the default 800x600 viewport. Use a
+        // taller surface so every radio tile is hit-testable.
+        await tester.binding.setSurfaceSize(const Size(600, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
         final storage = ThemeModeStorage(prefs);
@@ -237,8 +239,8 @@ void main() {
         );
 
         const cases = <(String, ThemeModePreference)>[
-          ('Always light', ThemeModePreference.light),
-          ('Always dark', ThemeModePreference.dark),
+          ('Light', ThemeModePreference.light),
+          ('Dark', ThemeModePreference.dark),
           ('Follow device time', ThemeModePreference.followDeviceTime),
           ('Follow device theme', ThemeModePreference.system),
         ];
@@ -274,13 +276,13 @@ void main() {
       // Profile tile is at the top of the list so it renders without
       // scrolling.
       expect(find.text('tester@example.com'), findsOneWidget);
-      // The 4-radio theme group made the screen tall enough that
-      // Sign out lives below the default 600-pixel test viewport;
-      // the widget framework skips off-screen ListView children, so
-      // we have to scroll the tile into view before asserting.
+      // v1.6 redesign: the screen now uses a SingleChildScrollView
+      // (not a ListView) and the multi-card layout is taller than the
+      // default 600-pixel test viewport. Scroll the Sign out tile
+      // into view before asserting.
       await tester.dragUntilVisible(
         find.text('Sign out'),
-        find.byType(ListView),
+        find.byType(SingleChildScrollView),
         const Offset(0, -120),
       );
       await tester.pumpAndSettle();

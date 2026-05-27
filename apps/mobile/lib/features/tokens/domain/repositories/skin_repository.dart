@@ -1,62 +1,47 @@
 import 'package:core/core.dart';
+import 'package:design_system/design_system.dart' show GardenSkinId;
 
-import '../../../garden/domain/entities/flower_species.dart';
-import '../entities/flower_skin.dart';
+import '../entities/garden_skin.dart';
 import '../entities/skin_state.dart';
 import '../skin_failure.dart';
 
-/// Contract for any backing store that persists the user's flower-skin
-/// pool + selection.
+/// Contract for any backing store that persists the user's global skin
+/// pool + current selection.
 ///
 /// Implementations live in `data/` and may use Firestore or a fake.
-/// The concrete implementation maps to two top-level fields on
-/// `users/{uid}`:
-///   * `unlockedSkins: map<emotion, [skinId]>` — per-species set of
-///     owned non-default skinIds.
-///   * `selectedSkins: map<emotion, skinId>` — per-species active
-///     selection. Absent species fall back to the built-in default at
-///     render time.
+/// The concrete impl writes two top-level fields on `users/{uid}`:
+///   * `unlockedSkinIds` - `List<String>`: the user's owned skin ids
+///     (always includes "meadow"; defaults are listed too so the doc
+///     is self-describing for migrations).
+///   * `equippedSkinId` - `String`: the currently active skin id.
 ///
-/// [unlockAndSelect] runs as a SINGLE Firestore transaction that:
-///   1. Reads `tokenBalance` + `unlockedSkins[species]`.
-///   2. Asserts the balance is ≥ cost and the skinId is not already
-///      unlocked.
-///   3. Writes `tokenBalance -= cost`, appends skinId to
-///      `unlockedSkins[species]`, AND sets `selectedSkins[species] =
-///      skinId` — all in one atomic update so a partial write can never
-///      leave a debited balance with no skin to show for it.
+/// [unlockAndEquip] runs as a SINGLE Firestore transaction that:
+///   1. Reads `tokenBalance` + `unlockedSkinIds`.
+///   2. Asserts balance >= cost AND the skin is not already unlocked.
+///   3. Writes `tokenBalance -= cost`, appends the new id to
+///      `unlockedSkinIds`, AND sets `equippedSkinId` to the new id -
+///      all in one atomic update.
 ///
-/// Pure-Dart contract — imports only `package:core/core.dart` and
-/// sibling domain types. Domain-purity rule per CLAUDE.md.
+/// Pure-Dart contract. Imports only `package:core/core.dart`, the
+/// design system enum, and sibling domain types.
 abstract class SkinRepository {
-  /// Streams the user's current skin pool + selection map. Emits a
-  /// fresh [SkinState] every time the user-doc changes (unlock, select,
-  /// or token award racing the spend).
+  /// Streams the user's current pool + selection. Emits a fresh
+  /// [SkinState] every time the user-doc changes (unlock, equip, or a
+  /// token award racing the spend).
   Stream<SkinState> watchSkinState({required String userId});
 
-  /// Atomically debits the user's token balance by `skin.cost`,
-  /// appends `skin.skinId` to `unlockedSkins[skin.species]`, AND sets
-  /// `selectedSkins[skin.species] = skin.skinId` so the freshly-bought
-  /// skin becomes active on the next render.
-  ///
-  /// Returns [SkinFailure.insufficientTokens] when the live balance is
-  /// below `skin.cost`, [SkinFailure.alreadyUnlocked] when the skinId
-  /// is already in the pool (idempotency guard), and the usual
-  /// network/permissionDenied/unknown shapes from CLAUDE.md.
-  Future<Result<SkinState, SkinFailure>> unlockAndSelect({
+  /// Atomically debits `skin.cost`, adds `skin.id` to the unlocked set,
+  /// AND sets `equippedSkinId = skin.id`.
+  Future<Result<SkinState, SkinFailure>> unlockAndEquip({
     required String userId,
-    required FlowerSkin skin,
+    required GardenSkin skin,
   });
 
-  /// Sets `selectedSkins[species] = skinId` without touching the
-  /// unlocked pool or the token balance. Caller asserts the skin is
-  /// already in the pool (or is the species default); the impl trusts
-  /// the caller — defense-in-depth lives in the modal's affordance
-  /// state, not in this repository (a malicious actor would just write
-  /// the field directly via Firestore SDK).
-  Future<Result<SkinState, SkinFailure>> select({
+  /// Sets `equippedSkinId = id` without touching the unlocked pool or
+  /// the token balance. Caller asserts the skin is already in the pool;
+  /// the modal's affordance state is the canonical guard.
+  Future<Result<SkinState, SkinFailure>> equip({
     required String userId,
-    required FlowerSpecies species,
-    required String skinId,
+    required GardenSkinId id,
   });
 }

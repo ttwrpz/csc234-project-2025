@@ -7,6 +7,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Fraunces (display) + Nunito (body) are the prototype's locked
+  # families. google_fonts fetches at runtime + caches; cold-start cost
+  # is one async HTTP per family on the first launch, then served from
+  # the device cache. See v1.6 redesign plan.
+  google_fonts: ^6.2.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

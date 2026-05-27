@@ -33,36 +33,57 @@ class DisclaimerAckDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final mb = Theme.of(context).extension<MbColors>()!;
     return AlertDialog(
-      // The disclaimer body is ~250 chars; at 200% type on a small phone
-      // the AlertDialog clips by default. Setting `scrollable: true`
-      // wraps the content + actions in a SingleChildScrollView so the
-      // dialog stays readable on every dynamic-type setting. The dialog
-      // remains barrier-non-dismissible — only the "I understand"
-      // button can pop it.
+      // `scrollable: true` keeps the body + actions readable at 200%
+      // dynamic type on a small phone. Barrier-non-dismissible is set
+      // by the launcher in [show] — only the "I understand" button can
+      // pop the dialog.
       scrollable: true,
+      backgroundColor: mb.bg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusCardLg),
+      ),
       icon: Icon(
         Icons.medical_information_outlined,
         color: mb.textDim,
-        size: 28,
+        size: 32,
+      ),
+      title: Text(
+        'A note about MoodBloom',
+        style: MbFonts.fraunces(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: mb.text,
+        ),
+        textAlign: TextAlign.center,
       ),
       content: Text(
         DisclaimerCopy.full,
-        style: MbFonts.nunito(fontSize: 14, height: 1.5, color: mb.text),
+        style: MbFonts.nunito(fontSize: 14, height: 1.55, color: mb.text),
+      ),
+      actionsPadding: const EdgeInsets.fromLTRB(
+        MoodBloomSpacing.lg,
+        0,
+        MoodBloomSpacing.lg,
+        MoodBloomSpacing.md,
       ),
       actions: [
-        FilledButton(
-          onPressed: () async {
-            // Fire-and-forget: the rule is one-way, the stream provider
-            // surfaces the resulting `true` to whoever observes it, and
-            // the dialog has no "what happens on failure" affordance —
-            // it would re-open the next time the user visits Insights,
-            // which is the correct retry semantics. Failure logging
-            // happens in the repo impl (PII-free `code` only).
-            await ref.read(disclaimerRepositoryProvider).ack(userId: userId);
-            if (!context.mounted) return;
-            Navigator.of(context).pop();
-          },
-          child: const Text(DisclaimerCopy.ackButton),
+        SizedBox(
+          width: double.infinity,
+          child: MbPrimaryButton(
+            label: DisclaimerCopy.ackButton,
+            onPressed: () async {
+              // Fire-and-forget: the rule is one-way, the stream
+              // provider surfaces the resulting `true` to whoever
+              // observes it, and the dialog has no "what happens on
+              // failure" affordance — it would re-open the next time
+              // the user visits Insights, which is the correct retry
+              // semantics. Failure logging happens in the repo impl
+              // (PII-free `code` only).
+              await ref.read(disclaimerRepositoryProvider).ack(userId: userId);
+              if (!context.mounted) return;
+              Navigator.of(context).pop();
+            },
+          ),
         ),
       ],
     );

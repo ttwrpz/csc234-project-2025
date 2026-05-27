@@ -102,8 +102,10 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
     return Scaffold(
       backgroundColor: mb.bg,
       appBar: AppBar(
-        title: const Text('Privacy lock'),
+        title: const MbSectionLabel('PRIVACY LOCK'),
         backgroundColor: mb.bg,
+        elevation: 0,
+        centerTitle: true,
         leading: widget.onCancel == null
             ? null
             : IconButton(
@@ -113,42 +115,47 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
               ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                title,
-                style: MbFonts.fraunces(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                  color: mb.text,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                subtitle,
-                style: MbFonts.nunito(
-                  fontSize: 14,
-                  height: 1.5,
-                  color: mb.textDim,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              Expanded(
-                child: Center(
-                  child: PinKeypad(
-                    controller: _keypadController,
-                    enabled: !_busy,
-                    onComplete: _onPinEntered,
-                    errorText: _error,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    title,
+                    style: MbFonts.fraunces(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: mb.text,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    subtitle,
+                    style: MbFonts.nunito(
+                      fontSize: 14,
+                      height: 1.5,
+                      color: mb.textDim,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  Expanded(
+                    child: Center(
+                      child: PinKeypad(
+                        controller: _keypadController,
+                        enabled: !_busy,
+                        onComplete: _onPinEntered,
+                        errorText: _error,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

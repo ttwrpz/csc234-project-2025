@@ -6,7 +6,7 @@ import '../domain/entities/skin_state.dart';
 import '../domain/entities/token_balance.dart';
 import '../domain/repositories/skin_repository.dart';
 import '../domain/repositories/token_repository.dart';
-import '../domain/usecases/unlock_flower_skin.dart';
+import '../domain/usecases/unlock_garden_skin.dart';
 import 'datasources/skin_firestore_datasource.dart';
 import 'datasources/token_balance_firestore_datasource.dart';
 import 'repositories/skin_repository_impl.dart';
@@ -54,10 +54,10 @@ final tokenBalanceStreamProvider = StreamProvider<TokenBalance>((ref) {
 
 // ───── Skin economy ─────
 
-/// Firestore datasource for the two skin-economy map fields
-/// (`unlockedSkins`, `selectedSkins`) on the `users/{uid}` profile doc.
-/// Tests override via `overrideWithValue` to avoid spinning up a real
-/// `FirebaseFirestore`.
+/// Firestore datasource for the two global-skin fields
+/// (`unlockedSkinIds`, `equippedSkinId`) on the `users/{uid}` profile
+/// doc. Tests override via `overrideWithValue` to avoid spinning up a
+/// real `FirebaseFirestore`.
 final skinFirestoreDatasourceProvider = Provider<SkinFirestoreDatasource>(
   (ref) => SkinFirestoreDatasource(ref.watch(firestoreProvider)),
 );
@@ -70,23 +70,23 @@ final skinRepositoryProvider = Provider<SkinRepository>(
   ),
 );
 
-/// Use case that validates the unlock invariants (in-catalog skin,
-/// not default, not already owned) before delegating to the repo's
-/// atomic transaction. Controllers (modal confirm tap) invoke this,
-/// never the repository directly.
-final unlockFlowerSkinUseCaseProvider = Provider<UnlockFlowerSkinUseCase>(
-  (ref) => UnlockFlowerSkinUseCase(ref.watch(skinRepositoryProvider)),
+/// Use case that validates the unlock invariants (not the default,
+/// not already owned, balance is enough) before delegating to the
+/// repo's atomic transaction. Controllers (Skin Shop confirm tap)
+/// invoke this, never the repository directly.
+final unlockGardenSkinUseCaseProvider = Provider<UnlockGardenSkinUseCase>(
+  (ref) => UnlockGardenSkinUseCase(ref.watch(skinRepositoryProvider)),
 );
 
-/// Live skin-state stream (pool + selection) for the signed-in user.
+/// Live skin-state stream (pool + equipped id) for the signed-in user.
 /// Emits a fresh [SkinState] every time the user-doc changes. Returns
-/// an empty pool stream when no user is signed in — the modal is only
-/// reachable for signed-in users so the empty branch is a presentation
-/// no-op.
+/// the fresh-user state when no user is signed in - the Skin Shop is
+/// only reachable for signed-in users so the empty branch is a
+/// presentation no-op.
 final skinStateStreamProvider = StreamProvider<SkinState>((ref) {
   final user = ref.watch(currentUserStreamProvider).value;
   if (user == null) {
-    return Stream<SkinState>.value(SkinState.empty());
+    return Stream<SkinState>.value(SkinState.initial());
   }
   return ref.watch(skinRepositoryProvider).watchSkinState(userId: user.uid);
 });

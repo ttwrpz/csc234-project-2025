@@ -63,7 +63,11 @@ class AISuggestionPill extends ConsumerWidget {
   }
 }
 
-/// Tinted [MbCard] shell with the prototype's leading sparkle avatar.
+/// Tinted [MbCard] shell matching the home Gentle Nudge idiom: an
+/// `auto_awesome` glyph + "AI SUGGESTS" section label on the header row,
+/// over the slide-specific [child]. The leading gradient sparkle avatar
+/// was dropped so the two AI surfaces (home nudge + add-mood suggestion)
+/// read as the same design-system component.
 class _AiCard extends StatelessWidget {
   const _AiCard({required this.child});
   final Widget child;
@@ -71,46 +75,32 @@ class _AiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    return MbCard(
-      padding: const EdgeInsets.all(12),
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: mb.aiBg,
         border: Border.all(color: mb.aiBd),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusCardLg),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const _SparkleAvatar(),
-          const SizedBox(width: 10),
-          Expanded(child: child),
+          Row(
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                size: 16,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              const MbSectionLabel('AI SUGGESTS'),
+            ],
+          ),
+          const SizedBox(height: 10),
+          child,
         ],
-      ),
-    );
-  }
-}
-
-/// 28×28 r8 gradient avatar with a small white sparkle icon. Same visual as
-/// the Insights header on Analytics — kept private here so changing the
-/// gradient stays a one-line edit.
-class _SparkleAvatar extends StatelessWidget {
-  const _SparkleAvatar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 28,
-      height: 28,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF6FA587), Color(0xFFE8A23B)],
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: const Center(
-        child: Icon(Icons.auto_awesome, color: Colors.white, size: 14),
       ),
     );
   }
@@ -179,7 +169,6 @@ class _SuggestionBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mb = Theme.of(context).extension<MbColors>()!;
     final theme = Theme.of(context);
     final mbKind = suggestion.mood.mbKind;
     final percent = (suggestion.confidence * 100).round();
@@ -191,11 +180,6 @@ class _SuggestionBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'AI suggests',
-            style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
-          ),
-          const SizedBox(height: 4),
           Wrap(
             spacing: 8,
             runSpacing: 4,

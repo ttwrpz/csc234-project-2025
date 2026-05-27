@@ -1,3 +1,4 @@
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -67,37 +68,45 @@ class InterventionBanner extends ConsumerWidget {
               child: Material(
                 color: cardColor,
                 elevation: 6,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(
+                  MoodBloomSpacing.radiusCardLg,
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(MoodBloomSpacing.md),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         dispatch.body,
+                        // maxLines:3 + ellipsis keeps the Tier 1/2 quote
+                        // wrap natural without truncating to a single
+                        // sentence. DO NOT revert.
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(
+                        style: MbFonts.nunito(
+                          fontSize: 14,
+                          height: 1.55,
                           color: fgColor,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: MoodBloomSpacing.md),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           InterventionOptOutButton(),
                           const SizedBox(width: 8),
-                          FilledButton(
-                            // pushNamed (not goNamed) so the intervention
-                            // route sits on top of the shell rather than
-                            // replacing it; otherwise the redirect chain
-                            // re-evaluates and can bounce us back to /home.
+                          // pushNamed (not goNamed) so the intervention
+                          // route sits on top of the shell rather than
+                          // replacing it; otherwise the redirect chain
+                          // re-evaluates and can bounce us back to /home.
+                          MbPrimaryButton(
+                            label: 'Open',
+                            fullWidth: false,
                             onPressed: () => context.pushNamed(
                               _routeNameFor(dispatch.tier),
                               extra: dispatch,
                             ),
-                            child: const Text('Open'),
                           ),
                         ],
                       ),

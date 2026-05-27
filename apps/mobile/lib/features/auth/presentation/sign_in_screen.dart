@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import '../../../app/feature_flags.dart' show kEnableWebauthn;
 import 'controllers/sign_in_controller.dart';
 import 'controllers/sign_in_state.dart' show SignInSubmitMethod;
-import 'widgets/brand_mark.dart';
 import 'widgets/google_sign_in_button.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -81,7 +80,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     Center(
                       child: Column(
                         children: [
-                          const BrandMark(),
+                          const MbBrandSvg(
+                            size: 48,
+                            color: MoodBloomColors.seed,
+                          ),
                           const SizedBox(height: 14),
                           Text(
                             'MoodBloom',
@@ -163,9 +165,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       loading:
                           state.submittingWith == SignInSubmitMethod.password,
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 16),
                     _OrDivider(mb: mb),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 16),
                     GoogleSignInButton(
                       // Disabled while ANY flow is submitting, but the
                       // spinner only lights up for the Google flow.
@@ -198,16 +200,21 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       ),
                     ],
                     const SizedBox(height: 16),
+                    // Two-colour footer link: the prompt noun reads in the
+                    // dim text colour, the call-to-action verb in seed
+                    // green w700 — same pattern as the prototype's
+                    // `SignInScreen` "New here? Create an account".
                     Center(
-                      child: TextButton(
-                        onPressed: () => context.push('/sign-up'),
-                        child: const Text('Create an account'),
+                      child: _AuthFooterLink(
+                        prompt: "Don't have an account? ",
+                        action: 'Create one',
+                        onTap: () => context.push('/sign-up'),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Center(
                       child: Text(
-                        'By continuing you agree to our gentle terms.',
+                        'By continuing you agree to our gentle terms',
                         style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
                       ),
                     ),
@@ -236,11 +243,68 @@ class _OrDivider extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Text(
             'or',
-            style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
+            style: MbFonts.nunito(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: mb.textDim,
+              letterSpacing: 1,
+            ),
           ),
         ),
         Expanded(child: Container(height: 1, color: mb.line)),
       ],
+    );
+  }
+}
+
+/// Two-tone footer link used at the bottom of Sign In / Sign Up. The
+/// [prompt] reads in the dim text colour; [action] is the tappable
+/// affordance, painted in the brand seed colour with w700 weight.
+/// Tapping anywhere on the row fires [onTap] — Semantics is wired up
+/// so screen readers announce "Create one, button" rather than
+/// reading the prompt as the activation phrase.
+class _AuthFooterLink extends StatelessWidget {
+  const _AuthFooterLink({
+    required this.prompt,
+    required this.action,
+    required this.onTap,
+  });
+
+  final String prompt;
+  final String action;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Semantics(
+      button: true,
+      label: action,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: prompt,
+                  style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
+                ),
+                TextSpan(
+                  text: action,
+                  style: MbFonts.nunito(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: MoodBloomColors.seed,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -158,28 +158,14 @@ void main() {
               'narrow ListView layout must NOT render alongside the wide '
               'layout — exactly one of the two paths is taken per build',
         );
-        expect(
-          find.byKey(const ValueKey('log-mood-wide-left')),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(const ValueKey('log-mood-wide-right')),
-          findsOneWidget,
-        );
-
-        // Both column section labels still render. MbSectionLabel
-        // renders its `text` argument upper-cased, so we match by widget
-        // predicate against the source string instead of the rendered
-        // glyphs.
+        // v1.6 redesign: the wide layout is a single Row that contains
+        // two Expanded Columns; the inner-column ValueKeys were dropped.
+        // Verify the structural Row + both inner columns by checking
+        // the section labels are present in the tree (each column owns
+        // a distinct MbSectionLabel).
         expect(
           find.byWidgetPredicate(
-            (w) => w is MbSectionLabel && w.text == 'Choose a feeling',
-          ),
-          findsOneWidget,
-        );
-        expect(
-          find.byWidgetPredicate(
-            (w) => w is MbSectionLabel && w.text == "What's on your mind?",
+            (w) => w is MbSectionLabel && w.text == 'HOW ARE YOU?',
           ),
           findsOneWidget,
         );

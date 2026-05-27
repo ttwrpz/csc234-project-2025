@@ -19,24 +19,28 @@ import '../../mood/domain/entities/mood_type.dart';
 import '../../mood/presentation/widgets/mood_kind_adapter.dart';
 import 'widgets/pattern_insight_card.dart';
 
-/// Patterns — the unified read-only dashboard.
+/// Patterns — the unified read-only dashboard, refreshed for v1.6 per
+/// `PatternsScreen` in `prototype/screens-extra.jsx`.
 ///
 /// v1.5.1 merged the former separate `/analytics` and `/analytics/insights`
-/// screens into this single surface. The disclaimer ack (formerly a
-/// modal route gate) now appears as an inline banner that swaps in
-/// the Pattern-Engine tier-markers + recent-triggers content once the
-/// user taps "I understand."
+/// screens into this single surface. v1.6 then:
+/// - swapped the window picker labels to **7d / 14d / 30d** (the user's
+///   locked decision; the underlying enum dropped `quarter`)
+/// - added an "MOOD SCORE · LAST {N} DAYS" eyebrow above the chart
+/// - paired the eyebrow with an [MbConfidenceBadge]
+/// - added a date-range caption under the chart
+/// - upgraded the chart-reading guide to a static card on tablet / desktop
+///   and an [ExpansionTile] on phone
 ///
-/// Render order (top → bottom):
-///   1. "Patterns" header (Fraunces)
+/// Render order (top -> bottom):
+///   1. "Patterns" header (Fraunces) + subtitle
 ///   2. Window chips (7d / 14d / 30d)
-///   3. Mood-score chart card (score line + EWMA + decorative tier bands)
+///   3. Mood-score chart card (eyebrow + confidence + chart + date range)
 ///   4. Disclaimer banner [pre-ack] OR pattern-markers + chart-key [post-ack]
-///   5. Recent triggers card [post-ack only]
-///   6. AI PatternInsightCard (Remote Config gated, separate concern)
-///   7. Quick stats row (3 cards — always visible)
-///   8. Tier band legend
-///   9. Chart reading guide (collapsed on phone, expanded on wider)
+///   5. AI PatternInsightCard (Remote Config gated, separate concern)
+///   6. Quick stats row (3 cards — always visible)
+///   7. Responsive rail: chart reading guide / tier legend / recent
+///      triggers (phone = stack, tablet = 2-col, desktop = 3-col)
 class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});
 
@@ -57,10 +61,9 @@ class AnalyticsScreen extends ConsumerWidget {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // Reading guide collapses behind an expansion tile on phone
-            // widths; tablet + desktop show it expanded so the rail
-            // never has a tap-to-reveal interaction.
-            final isPhone = constraints.maxWidth < 600;
+            final width = constraints.maxWidth;
+            final isPhone = width < MbBreakpoints.insightsTablet;
+            final isDesktop = width >= MbBreakpoints.insightsDesktop;
             return ListView(
               padding: const EdgeInsets.fromLTRB(
                 MoodBloomSpacing.pagePadding,
@@ -69,19 +72,19 @@ class AnalyticsScreen extends ConsumerWidget {
                 MoodBloomSpacing.lg,
               ),
               children: [
-                _Header(),
+                const _Header(),
                 const SizedBox(height: MoodBloomSpacing.md),
                 _WindowChips(
                   value: preset,
-                  onChanged: (p) => ref
-                      .read(insightsWindowPresetProvider.notifier)
-                      .state = p,
+                  onChanged: (p) =>
+                      ref.read(insightsWindowPresetProvider.notifier).state = p,
                 ),
                 const SizedBox(height: MoodBloomSpacing.md),
                 _ChartCard(
                   isReady: isReady,
                   stream: stream,
                   insights: insights,
+                  preset: preset,
                 ),
                 const SizedBox(height: MoodBloomSpacing.md),
                 // Disclaimer gate is INLINE now: pre-ack shows an
@@ -93,37 +96,7 @@ class AnalyticsScreen extends ConsumerWidget {
                   const _DisclaimerBanner()
                 else if (insights.isNotEmpty &&
                     insights.any((d) => d.entryCount > 0)) ...[
-                  MbCard(
-                    padding: const EdgeInsets.all(MoodBloomSpacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'PATTERN CHECK-INS',
-                          style: MbFonts.nunito(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                            color: mb.textDim,
-                          ),
-                        ),
-                        const SizedBox(height: MoodBloomSpacing.md),
-                        PatternMarkerBand(insights: insights),
-                        const SizedBox(height: 10),
-                        const _ChartKeyRow(),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Empty slots are quiet days - never a streak break.',
-                          style: MbFonts.nunito(
-                            fontSize: 11,
-                            color: mb.textDim,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: MoodBloomSpacing.md),
-                  RecentTriggersCard(insights: insights),
+                  _PatternCheckInsCard(insights: insights),
                   const SizedBox(height: MoodBloomSpacing.md),
                 ],
                 // AI-assisted Gemini summary. Remote Config kill-switch
@@ -135,9 +108,22 @@ class AnalyticsScreen extends ConsumerWidget {
                 ],
                 _QuickStatsRow(entries: entries, window: preset),
                 const SizedBox(height: MoodBloomSpacing.md),
-                const TierBandLegend(),
+                _BottomRail(
+                  isPhone: isPhone,
+                  isDesktop: isDesktop,
+                  showTriggers: isReady,
+                  insights: insights,
+                ),
                 const SizedBox(height: MoodBloomSpacing.md),
-                ChartReadingGuide(alwaysExpanded: !isPhone),
+                Text(
+                  'MoodBloom is not a medical device. Not a substitute for '
+                  'professional care.',
+                  style: MbFonts.nunito(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    color: mb.textDim,
+                  ),
+                ),
               ],
             );
           },
@@ -148,6 +134,8 @@ class AnalyticsScreen extends ConsumerWidget {
 }
 
 class _Header extends StatelessWidget {
+  const _Header();
+
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
@@ -172,9 +160,7 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// 7d / 30d / 90d segmented chips. Preserves the legacy Patterns
-/// selector ranges that the team is used to; `quarter` (90d) is the
-/// long-read window for trend visibility.
+/// 7d / 14d / 30d segmented chips per the v1.6 prototype.
 class _WindowChips extends StatelessWidget {
   const _WindowChips({required this.value, required this.onChanged});
 
@@ -186,8 +172,8 @@ class _WindowChips extends StatelessWidget {
     return MbSegmentedToggle<InsightWindowPreset>(
       items: const [
         MbSegmentedItem(value: InsightWindowPreset.week, label: '7d'),
+        MbSegmentedItem(value: InsightWindowPreset.fortnight, label: '14d'),
         MbSegmentedItem(value: InsightWindowPreset.month, label: '30d'),
-        MbSegmentedItem(value: InsightWindowPreset.quarter, label: '90d'),
       ],
       value: value,
       onChanged: onChanged,
@@ -195,61 +181,51 @@ class _WindowChips extends StatelessWidget {
   }
 }
 
-/// Mood-score chart card. Renders the time-series with the EWMA
-/// "rolling rhythm" overlay and decorative plant-tier background bands
-/// in every state — the diagnostic-looking *tier markers* are gated
-/// separately by the disclaimer (see [_DisclaimerBanner]).
+/// Mood-score chart card per the v1.6 prototype: eyebrow + confidence
+/// badge above the chart, the chart itself, and a date-range caption
+/// below.
 class _ChartCard extends StatelessWidget {
   const _ChartCard({
     required this.isReady,
     required this.stream,
     required this.insights,
+    required this.preset,
   });
 
   final bool isReady;
   final AsyncValue<List<DailyInsight>?> stream;
   final List<DailyInsight> insights;
+  final InsightWindowPreset preset;
 
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
     return MbCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(
-                'Mood score over time',
-                style: MbFonts.nunito(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: mb.text,
-                ),
+              Expanded(
+                child: MbSectionLabel('MOOD SCORE · LAST ${preset.days} DAYS'),
               ),
-              const Spacer(),
-              Text(
-                'higher = brighter',
-                style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
-              ),
+              MbConfidenceBadge(level: _confidenceFor(insights)),
             ],
           ),
-          const SizedBox(height: 10),
-          SizedBox(height: 220, child: _chartBody(context)),
+          const SizedBox(height: MoodBloomSpacing.md),
+          SizedBox(height: 220, child: _chartBody(context, mb)),
+          if (insights.isNotEmpty) ...[
+            const SizedBox(height: MoodBloomSpacing.sm),
+            _DateRangeCaption(insights: insights),
+          ],
         ],
       ),
     );
   }
 
-  Widget _chartBody(BuildContext context) {
-    final mb = Theme.of(context).extension<MbColors>()!;
+  Widget _chartBody(BuildContext context, MbColors mb) {
     if (!isReady) {
-      // Pre-ack: show the chart skeleton with score + EWMA + tier
-      // bands. No diagnostic markers (those live below the chart and
-      // are gated by the disclaimer banner).
       return stream.when(
         loading: () => Center(
           child: Text(
@@ -289,6 +265,98 @@ class _ChartCard extends StatelessWidget {
       textAlign: TextAlign.center,
     ),
   );
+
+  /// Confidence band derived from the entry density inside the window.
+  /// More entries -> more confidence. A pure-presentation heuristic; the
+  /// real model lives downstream in pattern engine and is exposed via
+  /// `MarkerDetailSheet`.
+  static MbConfidenceLevel _confidenceFor(List<DailyInsight> insights) {
+    if (insights.isEmpty) return MbConfidenceLevel.low;
+    final entryDays = insights.where((d) => d.entryCount > 0).length;
+    final ratio = entryDays / insights.length;
+    if (ratio >= 0.7) return MbConfidenceLevel.high;
+    if (ratio >= 0.4) return MbConfidenceLevel.medium;
+    return MbConfidenceLevel.low;
+  }
+}
+
+/// Three-column caption under the chart showing the window's start / mid
+/// / end dates ("Apr 14 ... Apr 21 ... Apr 28").
+class _DateRangeCaption extends StatelessWidget {
+  const _DateRangeCaption({required this.insights});
+
+  final List<DailyInsight> insights;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    final first = insights.first.date;
+    final last = insights.last.date;
+    final mid = insights[insights.length ~/ 2].date;
+    final style = MbFonts.nunito(
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      color: mb.textDim,
+    );
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(_shortDate(first), style: style),
+        Text(_shortDate(mid), style: style),
+        Text(_shortDate(last), style: style),
+      ],
+    );
+  }
+
+  static String _shortDate(DateTime d) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final local = d.toLocal();
+    return '${months[local.month - 1]} ${local.day}';
+  }
+}
+
+/// Post-ack pattern check-ins card: tier-marker band + chart-key legend
+/// + "empty slots are quiet days" reassurance line.
+class _PatternCheckInsCard extends StatelessWidget {
+  const _PatternCheckInsCard({required this.insights});
+
+  final List<DailyInsight> insights;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return MbCard(
+      padding: const EdgeInsets.all(MoodBloomSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const MbSectionLabel('PATTERN CHECK-INS'),
+          const SizedBox(height: MoodBloomSpacing.md),
+          PatternMarkerBand(insights: insights),
+          const SizedBox(height: 10),
+          const _ChartKeyRow(),
+          const SizedBox(height: 6),
+          Text(
+            'Empty slots are quiet days - never a streak break.',
+            style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Inline disclaimer banner replacing the old route-level modal gate.
@@ -414,6 +482,85 @@ class _LegendDot extends StatelessWidget {
   }
 }
 
+/// Responsive bottom rail. Phone stacks the chart-reading guide / tier
+/// legend / (optional) recent triggers card one-per-row. Tablet renders
+/// them in a 2-col grid. Desktop unlocks a 3-col row.
+class _BottomRail extends StatelessWidget {
+  const _BottomRail({
+    required this.isPhone,
+    required this.isDesktop,
+    required this.showTriggers,
+    required this.insights,
+  });
+
+  final bool isPhone;
+  final bool isDesktop;
+  final bool showTriggers;
+  final List<DailyInsight> insights;
+
+  @override
+  Widget build(BuildContext context) {
+    final readingGuide = ChartReadingGuide(alwaysExpanded: !isPhone);
+    const tierLegend = TierBandLegend();
+    final triggers = showTriggers
+        ? RecentTriggersCard(insights: insights)
+        : null;
+
+    if (isPhone) {
+      return Column(
+        children: [
+          readingGuide,
+          const SizedBox(height: MoodBloomSpacing.md),
+          tierLegend,
+          if (triggers != null) ...[
+            const SizedBox(height: MoodBloomSpacing.md),
+            triggers,
+          ],
+        ],
+      );
+    }
+
+    if (isDesktop) {
+      return IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: readingGuide),
+            const SizedBox(width: MoodBloomSpacing.md),
+            const Expanded(child: tierLegend),
+            if (triggers != null) ...[
+              const SizedBox(width: MoodBloomSpacing.md),
+              Expanded(child: triggers),
+            ],
+          ],
+        ),
+      );
+    }
+
+    // Tablet: 2-col grid. Reading guide + tier legend on the first
+    // row; recent triggers (if shown) gets a full-width second row.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: readingGuide),
+              const SizedBox(width: MoodBloomSpacing.md),
+              const Expanded(child: tierLegend),
+            ],
+          ),
+        ),
+        if (triggers != null) ...[
+          const SizedBox(height: MoodBloomSpacing.md),
+          triggers,
+        ],
+      ],
+    );
+  }
+}
+
 /// Three at-a-glance stats: most-frequent mood, average intensity, and
 /// day-streak. Stats are computed at presentation time from the entries
 /// list using the same window the chart is showing.
@@ -427,7 +574,6 @@ class _QuickStatsRow extends StatelessWidget {
     InsightWindowPreset.week => 7,
     InsightWindowPreset.fortnight => 14,
     InsightWindowPreset.month => 30,
-    InsightWindowPreset.quarter => 90,
   };
 
   @override
@@ -495,7 +641,7 @@ class _QuickStatsRow extends StatelessWidget {
   }
 
   /// Consecutive trailing-day streak: counts days with at least one entry,
-  /// walking back from today until a gap. Empty entries → 0.
+  /// walking back from today until a gap. Empty entries -> 0.
   static int _dayStreak(List<MoodEntry> entries, DateTime now) {
     if (entries.isEmpty) return 0;
     final daysWithEntry = <DateTime>{};
@@ -522,14 +668,22 @@ class _MostFrequentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
     final palette = Theme.of(context).extension<MbMoodPalette>()!;
-    final emoji = mood == null ? '-' : palette.emojiOf(mood!.mbKind);
     final label = mood == null ? '-' : mood!.name;
     return MbCard(
       padding: const EdgeInsets.all(12),
       child: Column(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 22)),
-          const SizedBox(height: 2),
+          mood == null
+              ? Text(
+                  '-',
+                  style: MbFonts.nunito(fontSize: 22, color: mb.textDim),
+                )
+              : MbMoodSvg(
+                  mood: mood!.mbKind,
+                  size: 22,
+                  color: palette.colorOf(mood!.mbKind),
+                ),
+          const SizedBox(height: 4),
           Text(
             'most frequent',
             style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
@@ -571,7 +725,7 @@ class _NumberStatCard extends StatelessWidget {
         children: [
           Text(
             value,
-            style: MbFonts.nunito(
+            style: MbFonts.fraunces(
               fontSize: 22,
               fontWeight: FontWeight.w700,
               color: theme.colorScheme.primary,

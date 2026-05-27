@@ -133,6 +133,8 @@ class _CrisisResourcesScreenState extends ConsumerState<CrisisResourcesScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final mb = theme.extension<MbColors>();
+    final textColor = mb?.text ?? theme.colorScheme.onSurface;
     return PopScope<Object?>(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
@@ -141,110 +143,120 @@ class _CrisisResourcesScreenState extends ConsumerState<CrisisResourcesScreen> {
         if (shouldPop && context.mounted) context.pop();
       },
       child: Scaffold(
-        // Body-level back button (MbIconButton) routes through
-        // `_confirmExit` so the safety gate stays — same visual
-        // pattern as Entry Detail but with the confirmation dialog
-        // preserved.
+        // Tier 3 paints the errorContainer background for compassionate
+        // prominence (existing behaviour preserved). Cap content width
+        // on tablet/desktop so the prominent hotline tile and resource
+        // stack stay legible on wide layouts.
+        backgroundColor: theme.colorScheme.errorContainer,
         body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Row(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: ListView(
+                padding: const EdgeInsets.all(20),
                 children: [
-                  MbIconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    semanticLabel: 'Close',
-                    onPressed: () async {
-                      final shouldPop = await _confirmExit();
-                      if (shouldPop && context.mounted) context.pop();
-                    },
+                  Row(
+                    children: [
+                      MbIconButton(
+                        icon: const Icon(Icons.arrow_back),
+                        semanticLabel: 'Close',
+                        onPressed: () async {
+                          final shouldPop = await _confirmExit();
+                          if (shouldPop && context.mounted) context.pop();
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(height: 8),
                   Text(
                     "We're here",
                     style: MbFonts.fraunces(
-                      fontSize: 16,
+                      fontSize: 24,
                       fontWeight: FontWeight.w600,
-                      color:
-                          theme.extension<MbColors>()?.text ??
-                          theme.colorScheme.onSurface,
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _bodyText,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _HotlineTile(
+                    onTap: () => _callNumber('1323', displayNumber: '1323'),
+                  ),
+                  const SizedBox(height: 16),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.search),
+                      title: const Text('Find a professional near you'),
+                      subtitle: const Text(
+                        'Department of Mental Health · dmh.go.th',
+                      ),
+                      onTap: () => _openLink('https://www.dmh.go.th'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: ExpansionTile(
+                      leading: const Icon(Icons.info_outline),
+                      title: const Text('What to expect when you call'),
+                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      children: const [
+                        Text(
+                          "You'll hear a friendly hello. A trained listener will "
+                          "ask how you're doing. You can share as much or as "
+                          "little as feels right. There's no checklist, no "
+                          "judgment.",
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: ExpansionTile(
+                      leading: const Icon(Icons.list_alt),
+                      title: const Text('Other resources'),
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.phone),
+                          title: const Text('Thai Suicide Helpline'),
+                          subtitle: const Text('02-713-6793'),
+                          onTap: () => _callNumber(
+                            '0271336793',
+                            displayNumber: '02-713-6793',
+                          ),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.language),
+                          title: const Text('iCare Foundation'),
+                          subtitle: const Text('icare.in.th'),
+                          onTap: () => _openLink('https://www.icare.in.th'),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.local_hospital_outlined),
+                          title: const Text('Emergency services'),
+                          subtitle: const Text('1669'),
+                          onTap: () =>
+                              _callNumber('1669', displayNumber: '1669'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Center(
+                    child: InterventionOptOutButton(
+                      label: "I'm okay for now",
+                      onTapped: () {
+                        if (context.mounted) context.pop();
+                      },
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Text(_bodyText, style: theme.textTheme.bodyLarge),
-              const SizedBox(height: 24),
-              _HotlineTile(
-                onTap: () => _callNumber('1323', displayNumber: '1323'),
-              ),
-              const SizedBox(height: 16),
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.search),
-                  title: const Text('Find a professional near you'),
-                  subtitle: const Text(
-                    'Department of Mental Health · dmh.go.th',
-                  ),
-                  onTap: () => _openLink('https://www.dmh.go.th'),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Card(
-                child: ExpansionTile(
-                  leading: const Icon(Icons.info_outline),
-                  title: const Text('What to expect when you call'),
-                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  children: const [
-                    Text(
-                      "You'll hear a friendly hello. A trained listener will "
-                      "ask how you're doing. You can share as much or as "
-                      "little as feels right. There's no checklist, no "
-                      "judgment.",
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Card(
-                child: ExpansionTile(
-                  leading: const Icon(Icons.list_alt),
-                  title: const Text('Other resources'),
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.phone),
-                      title: const Text('Thai Suicide Helpline'),
-                      subtitle: const Text('02-713-6793'),
-                      onTap: () => _callNumber(
-                        '0271336793',
-                        displayNumber: '02-713-6793',
-                      ),
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.language),
-                      title: const Text('iCare Foundation'),
-                      subtitle: const Text('icare.in.th'),
-                      onTap: () => _openLink('https://www.icare.in.th'),
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.local_hospital_outlined),
-                      title: const Text('Emergency services'),
-                      subtitle: const Text('1669'),
-                      onTap: () => _callNumber('1669', displayNumber: '1669'),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Center(
-                child: InterventionOptOutButton(
-                  label: "I'm okay for now",
-                  onTapped: () {
-                    if (context.mounted) context.pop();
-                  },
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

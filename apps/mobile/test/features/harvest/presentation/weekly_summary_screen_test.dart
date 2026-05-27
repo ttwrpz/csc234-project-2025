@@ -42,7 +42,12 @@ Future<_FakeWeeklySummaryController> _pumpScreen(
       overrides: [weeklySummaryControllerProvider.overrideWith(() => fake)],
       child: MaterialApp(
         theme: buildLightTheme(),
-        home: WeeklySummaryScreen(summary: summary),
+        // The harvest summary is now a modal body (WeeklySummaryView)
+        // hosted by MbModalScaffold, whose Flexible needs a bounded
+        // height - a Scaffold body supplies that. The launcher
+        // (WeeklySummarySheet.show) is exercised at the integration
+        // level; here we mount the body directly to assert content.
+        home: Scaffold(body: WeeklySummaryView(summary: summary)),
       ),
     ),
   );
@@ -57,7 +62,7 @@ void main() {
 
   testWidgets('renders the locked harvest banner verbatim', (tester) async {
     await _pumpScreen(tester);
-    expect(find.text(WeeklySummaryScreen.harvestBanner), findsOneWidget);
+    expect(find.text(WeeklySummarySheet.harvestBanner), findsOneWidget);
   });
 
   testWidgets('renders the average-mood section + value', (tester) async {
@@ -91,7 +96,7 @@ void main() {
   ) async {
     final fake = await _pumpScreen(tester);
 
-    final cta = find.text(WeeklySummaryScreen.continueLabel);
+    final cta = find.text(WeeklySummarySheet.continueLabel);
     expect(cta, findsOneWidget);
 
     await tester.tap(cta);

@@ -1,52 +1,41 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:design_system/design_system.dart' show GardenSkinId;
 
-import '../../../garden/domain/entities/flower_species.dart';
-import '../../domain/entities/flower_skin.dart';
+import '../../domain/entities/garden_skin.dart';
 import '../../domain/entities/skin_state.dart';
 
-/// Thin Firestore wrapper for the two skin-economy fields on the
+/// Thin Firestore wrapper for the two global-skin fields on the
 /// `users/{userId}` profile document.
 ///
-/// NOT a sub-collection. The fields live alongside `tokenBalance`,
-/// `displayName`, `photoUrl`, etc., so a single `users/{uid}` read
-/// returns the entire profile + skin state in one round-trip.
+/// Field shape (v1.6 global model):
+///   * `unlockedSkinIds` - `List<String>`: the user's owned global skin
+///     ids. Always contains "meadow" (the free default).
+///   * `equippedSkinId` - `String`: currently active skin id. Defaults
+///     to "meadow" if absent.
 ///
-/// Field shape:
-///   * `unlockedSkins` — `map<speciesName, [skinId]>`: per-species list
-///     of owned non-default skinIds. NEVER includes the default
-///     (defaults are always available without purchase, so storing them
-///     would just bloat the doc).
-///   * `selectedSkins` — `map<speciesName, skinId>`: per-species active
-///     selection. Absent species fall back to the built-in default at
-///     render time.
-///
-/// The unlock path runs inside a Firestore transaction so a concurrent
-/// token award from another device never races the spend: we read the
-/// live `tokenBalance` + `unlockedSkins[species]` snapshot, check the
-/// invariants, and commit the debit + pool append + selection write in
-/// a single atomic update. Partial-write is impossible by construction.
-///
-/// Throws an [SkinTransactionFailure] (a private sentinel) when the
-/// invariants fail inside the transaction — the impl translates it
-/// back to a [SkinFailure] without leaking Firestore types to callers.
+/// Migration from the v1.5 per-species model: the old `unlockedSkins`
+/// map field is ignored on read. Users who had per-species unlocks
+/// effectively get a fresh start at Meadow. They keep their token
+/// balance (which lives in a separate field), so the cost of any new
+/// global skin purchase is intentional and visible. This is a locked
+/// user decision - the per-species ids (~$20 worth of unlocks across
+/// 6 species x 3-4 variants) don't map cleanly to the 5 global skins
+/// and a clean cutover beats a partial inheritance heuristic.
 class SkinFirestoreDatasource {
   const SkinFirestoreDatasource(this._firestore);
 
   final FirebaseFirestore _firestore;
 
-  /// Runs the read-check-write transaction. Throws
-  /// [SkinTransactionFailure] when the in-transaction guard fails
-  /// (insufficient tokens / already unlocked); throws [FirebaseException]
-  /// on network / permission errors. The repository impl maps both to
-  /// [SkinFailure].
-  Future<SkinState> unlockAndSelect({
+  /// Reads `tokenBalance` + `unlockedSkinIds`, checks the invariants,
+  /// debits the balance, appends the new id, and equips it - all in a
+  /// single atomic transaction. Throws [SkinTransactionFailure] when
+  /// the in-transaction guard fails; the repository impl maps it back
+  /// to a [SkinFailure].
+  Future<SkinState> unlockAndEquip({
     required String userId,
-    required FlowerSkin skin,
+    required GardenSkin skin,
   }) async {
-    if (skin.isDefault) {
-      // Defensive: the use case rejects this path, but a second-line
-      // guard ensures a buggy controller can't quietly call us with a
-      // free skin and still rack up a Firestore write.
+    if (skin.cost == 0) {
       throw const SkinTransactionFailure.alreadyUnlocked();
     }
 
@@ -63,139 +52,85 @@ class SkinFirestoreDatasource {
         );
       }
 
-      final unlocked = _readUnlockedMap(data);
-      final existingForSpecies = unlocked[skin.species] ?? <String>{};
-      if (existingForSpecies.contains(skin.skinId)) {
+      final unlocked = _readUnlockedIds(data);
+      if (unlocked.contains(skin.id)) {
         throw const SkinTransactionFailure.alreadyUnlocked();
       }
 
-      final newUnlocked = <FlowerSpecies, Set<String>>{
-        ...unlocked,
-        skin.species: {...existingForSpecies, skin.skinId},
-      };
-      final newSelected = <FlowerSpecies, String>{
-        ..._readSelectedMap(data),
-        skin.species: skin.skinId,
-      };
+      final newUnlocked = <GardenSkinId>{...unlocked, skin.id};
 
       tx.update(ref, <String, Object?>{
         'tokenBalance': currentBalance - skin.cost,
-        'unlockedSkins': _writeUnlockedMap(newUnlocked),
-        'selectedSkins': _writeSelectedMap(newSelected),
+        'unlockedSkinIds': newUnlocked.map((s) => s.name).toList(),
+        'equippedSkinId': skin.id.name,
       });
 
-      return SkinState(
-        unlockedBySpecies: newUnlocked,
-        selectedBySpecies: newSelected,
-      );
+      return SkinState(equippedSkinId: skin.id, unlockedSkinIds: newUnlocked);
     });
   }
 
-  /// Sets `selectedSkins[species] = skinId` without reading or writing
-  /// the token balance. The caller (a UseCase) asserts the skin is
-  /// owned (or is the species default) before invoking. We still run
-  /// the write inside `update` rather than `set(merge)` so a stale uid
-  /// can never accidentally create a new doc.
-  Future<SkinState> select({
+  /// Sets `equippedSkinId = id` without reading or writing the balance.
+  /// The caller asserts the skin is owned (or is the default Meadow).
+  Future<SkinState> equip({
     required String userId,
-    required FlowerSpecies species,
-    required String skinId,
+    required GardenSkinId id,
   }) async {
     final ref = _firestore.collection('users').doc(userId);
     return _firestore.runTransaction<SkinState>((tx) async {
       final snap = await tx.get(ref);
       final data = snap.data() ?? <String, Object?>{};
-      final unlocked = _readUnlockedMap(data);
-      final newSelected = <FlowerSpecies, String>{
-        ..._readSelectedMap(data),
-        species: skinId,
-      };
-      tx.update(ref, <String, Object?>{
-        'selectedSkins': _writeSelectedMap(newSelected),
-      });
-      return SkinState(
-        unlockedBySpecies: unlocked,
-        selectedBySpecies: newSelected,
-      );
+      final unlocked = _readUnlockedIds(data);
+      // Defensive: if the caller passes an id the user does NOT own,
+      // treat it as no-op for the unlocked set but still write
+      // equippedSkinId. The Firestore rules can also reject this.
+      tx.update(ref, <String, Object?>{'equippedSkinId': id.name});
+      return SkinState(equippedSkinId: id, unlockedSkinIds: unlocked);
     });
   }
 
   /// Streams the live skin-state snapshot. Empty / missing fields
-  /// resolve to [SkinState.empty] so the modal renders sensibly during
-  /// the short window between sign-up and the first user-doc write.
+  /// resolve to [SkinState.initial] (meadow equipped, meadow unlocked).
   Stream<SkinState> watchSkinState({required String userId}) {
     return _firestore.collection('users').doc(userId).snapshots().map((s) {
       final data = s.data() ?? <String, Object?>{};
-      return SkinState(
-        unlockedBySpecies: _readUnlockedMap(data),
-        selectedBySpecies: _readSelectedMap(data),
-      );
+      final unlocked = _readUnlockedIds(data);
+      final equipped = _readEquippedId(data);
+      return SkinState(equippedSkinId: equipped, unlockedSkinIds: unlocked);
     });
   }
 
-  // ───── (de)serialization helpers ─────
+  // ----- (de)serialization helpers -----
 
-  static Map<FlowerSpecies, Set<String>> _readUnlockedMap(
-    Map<String, Object?> data,
-  ) {
-    final raw = data['unlockedSkins'];
-    if (raw is! Map) return <FlowerSpecies, Set<String>>{};
-    final out = <FlowerSpecies, Set<String>>{};
-    for (final entry in raw.entries) {
-      final speciesName = entry.key;
-      if (speciesName is! String) continue;
-      final species = _speciesByName(speciesName);
-      if (species == null) continue;
-      final list = entry.value;
-      if (list is! List) continue;
-      final ids = <String>{};
-      for (final item in list) {
-        if (item is String && item.isNotEmpty) ids.add(item);
-      }
-      out[species] = ids;
+  /// Reads `unlockedSkinIds: List<String>`. Always includes Meadow as a
+  /// floor (every user owns the default). Old `unlockedSkins` map docs
+  /// from the v1.5 per-species model are intentionally ignored - see
+  /// the class-level migration note.
+  static Set<GardenSkinId> _readUnlockedIds(Map<String, Object?> data) {
+    final raw = data['unlockedSkinIds'];
+    final out = <GardenSkinId>{GardenSkinId.meadow};
+    if (raw is! List) return out;
+    for (final item in raw) {
+      if (item is! String) continue;
+      final id = _idByName(item);
+      if (id != null) out.add(id);
     }
     return out;
   }
 
-  static Map<FlowerSpecies, String> _readSelectedMap(
-    Map<String, Object?> data,
-  ) {
-    final raw = data['selectedSkins'];
-    if (raw is! Map) return <FlowerSpecies, String>{};
-    final out = <FlowerSpecies, String>{};
-    for (final entry in raw.entries) {
-      final speciesName = entry.key;
-      if (speciesName is! String) continue;
-      final species = _speciesByName(speciesName);
-      if (species == null) continue;
-      final id = entry.value;
-      if (id is String && id.isNotEmpty) out[species] = id;
+  /// Reads `equippedSkinId: String`. Falls back to Meadow when absent or
+  /// when the value doesn't match any known id (forward-compat hedge).
+  static GardenSkinId _readEquippedId(Map<String, Object?> data) {
+    final raw = data['equippedSkinId'];
+    if (raw is String) {
+      final id = _idByName(raw);
+      if (id != null) return id;
     }
-    return out;
+    return GardenSkinId.meadow;
   }
 
-  static Map<String, List<String>> _writeUnlockedMap(
-    Map<FlowerSpecies, Set<String>> in_,
-  ) {
-    final out = <String, List<String>>{};
-    for (final entry in in_.entries) {
-      if (entry.value.isEmpty) continue;
-      out[entry.key.name] = entry.value.toList(growable: false);
-    }
-    return out;
-  }
-
-  static Map<String, String> _writeSelectedMap(Map<FlowerSpecies, String> in_) {
-    final out = <String, String>{};
-    for (final entry in in_.entries) {
-      out[entry.key.name] = entry.value;
-    }
-    return out;
-  }
-
-  static FlowerSpecies? _speciesByName(String name) {
-    for (final s in FlowerSpecies.values) {
-      if (s.name == name) return s;
+  static GardenSkinId? _idByName(String name) {
+    for (final v in GardenSkinId.values) {
+      if (v.name == name) return v;
     }
     return null;
   }
@@ -203,12 +138,7 @@ class SkinFirestoreDatasource {
 
 /// Sentinel exception thrown inside the transaction body when the
 /// pre-write invariants fail. Caught + translated by the repository
-/// impl — never surfaces to callers.
-///
-/// The public unnamed constructor is intentional so tests can spin
-/// the sentinel up directly without reaching into private API. The
-/// production paths inside this file use the two named factories below
-/// for clarity.
+/// impl - never surfaces to callers.
 class SkinTransactionFailure implements Exception {
   const SkinTransactionFailure({
     required this.kind,

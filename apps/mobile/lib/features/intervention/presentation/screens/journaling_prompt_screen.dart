@@ -124,113 +124,162 @@ class _JournalingPromptScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mb = theme.extension<MbColors>();
+    final textColor = mb?.text ?? theme.colorScheme.onSurface;
     return Scaffold(
       backgroundColor: mb?.bg,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  MbIconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: _onMaybeLater,
-                    semanticLabel: 'Close',
+                  Row(
+                    children: [
+                      MbIconButton(
+                        icon: const Icon(Icons.arrow_back),
+                        onPressed: _onMaybeLater,
+                        semanticLabel: 'Close',
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(height: 8),
                   Text(
                     'A few quiet words',
                     style: MbFonts.fraunces(
-                      fontSize: 16,
+                      fontSize: 24,
                       fontWeight: FontWeight.w600,
-                      color: mb?.text ?? theme.colorScheme.onSurface,
+                      color: textColor,
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(_bodyText, style: theme.textTheme.bodyLarge),
-                      const SizedBox(height: 20),
-                      Text(
-                        _prompt,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          for (final m in MoodType.values)
-                            ChoiceChip(
-                              label: Text(_labelFor(m)),
-                              selected: _selectedMood == m,
-                              onSelected: (selected) {
-                                if (!selected) return;
-                                setState(() => _selectedMood = m);
-                              },
+                          Text(
+                            _bodyText,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: textColor,
                             ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            _prompt,
+                            style: MbFonts.fraunces(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [
+                              for (final m in MoodType.values)
+                                ChoiceChip(
+                                  label: Text(_labelFor(m)),
+                                  selected: _selectedMood == m,
+                                  onSelected: (selected) {
+                                    if (!selected) return;
+                                    setState(() => _selectedMood = m);
+                                  },
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // The shared `MbInputField` is single-line by
+                          // contract — the journaling surface needs a
+                          // taller multi-line input so we render a
+                          // `TextField` styled to match the design-system
+                          // input shell (mb.card surface, mb.line
+                          // border, r14 radius).
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: mb?.card ?? theme.colorScheme.surface,
+                              border: Border.all(
+                                color:
+                                    mb?.line ??
+                                    theme.colorScheme.outlineVariant,
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: TextField(
+                              controller: _textController,
+                              keyboardType: TextInputType.multiline,
+                              textCapitalization: TextCapitalization.sentences,
+                              maxLines: null,
+                              minLines: 4,
+                              style: MbFonts.nunito(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: textColor,
+                              ),
+                              decoration: InputDecoration(
+                                hintText:
+                                    'Write a few lines, only if it helps…',
+                                hintStyle: MbFonts.nunito(
+                                  fontSize: 14,
+                                  color:
+                                      mb?.textDim ??
+                                      theme.colorScheme.onSurfaceVariant,
+                                ),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _textController,
-                        keyboardType: TextInputType.multiline,
-                        textCapitalization: TextCapitalization.sentences,
-                        maxLines: null,
-                        minLines: 4,
-                        decoration: const InputDecoration(
-                          hintText: 'Write a few lines, only if it helps…',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: _isSaving ? null : _onMaybeLater,
-                    child: const Text('Maybe later'),
-                  ),
+                  const SizedBox(height: 12),
+                  // Bottom CTA row mirrors the prototype's Save/Maybe
+                  // later/I'm okay pattern: save uses the design-system
+                  // primary button, the opt-out keeps its compassionate
+                  // ghost treatment, and "Maybe later" stays a text
+                  // button so the user has a low-cost out.
                   Row(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      InterventionOptOutButton(
-                        onTapped: () {
-                          if (context.mounted) context.pop();
-                        },
+                      TextButton(
+                        onPressed: _isSaving ? null : _onMaybeLater,
+                        child: const Text('Maybe later'),
                       ),
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        onPressed: _isSaving ? null : _onSave,
-                        child: _isSaving
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text('Save'),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          InterventionOptOutButton(
+                            onTapped: () {
+                              if (context.mounted) context.pop();
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          MbPrimaryButton(
+                            label: 'Save',
+                            fullWidth: false,
+                            loading: _isSaving,
+                            onPressed: _isSaving ? null : _onSave,
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),

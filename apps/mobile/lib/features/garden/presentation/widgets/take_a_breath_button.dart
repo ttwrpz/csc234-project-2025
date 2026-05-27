@@ -1,11 +1,12 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
-/// Self-initiated entry point to the 2-minute breathing screen. Standalone
+import '../../../intervention/presentation/screens/breathing_screen.dart';
+
+/// Self-initiated entry point to the 2-minute breathing modal. Standalone
 /// pill so the home page can place it where it fits — between the
-/// SkyHeader and the DailyScoreStrip on phone, and at the foot of the
-/// right column on tablet / desktop.
+/// SkyHeader and the ThisWeeksTierCard on phone, and inside the left
+/// column on tablet / desktop.
 class TakeABreathButton extends StatelessWidget {
   const TakeABreathButton({super.key, this.expand = false});
 
@@ -15,39 +16,33 @@ class TakeABreathButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final fg = isDark ? const Color(0xFFFFE7BD) : const Color(0xFF8A5A1F);
-    final bg = isDark
-        ? const Color(0xFFFFE7BD).withValues(alpha: 0.18)
-        : const Color(0xFFFFE7BD).withValues(alpha: 0.55);
-    final border = isDark
-        ? const Color(0xFFFFE7BD).withValues(alpha: 0.45)
-        : const Color(0xFF8A5A1F).withValues(alpha: 0.25);
+    final mb = Theme.of(context).extension<MbColors>()!;
 
+    // Prototype `PillBtn`: card background, 1px line border, text-colour
+    // foreground, fully-rounded pill, air icon + "Take a breath".
     final button = Semantics(
       button: true,
       label: 'Take a 2-minute breath',
       child: TextButton.icon(
-        onPressed: () => context.pushNamed('intervention.breathing'),
+        onPressed: () => BreathingSheet.show(context),
         style: TextButton.styleFrom(
-          foregroundColor: fg,
-          backgroundColor: bg,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          foregroundColor: mb.text,
+          backgroundColor: mb.card,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
           minimumSize: const Size(0, 44),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
-            side: BorderSide(color: border),
+            side: BorderSide(color: mb.line),
           ),
         ),
-        icon: Icon(Icons.air_outlined, size: 18, color: fg),
+        icon: Icon(Icons.air, size: 16, color: mb.text),
         label: Text(
           'Take a breath',
           style: MbFonts.nunito(
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: fg,
+            color: mb.text,
           ),
         ),
       ),

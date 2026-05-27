@@ -149,13 +149,13 @@ void main() {
     },
   );
 
-  testWidgets('window chips are 7d / 30d / 90d', (tester) async {
+  testWidgets('window chips are 7d / 14d / 30d', (tester) async {
     await _pumpScreen(tester, acked: false);
+    // v1.6 locked the picker to 7d / 14d / 30d (the prototype's middle
+    // tab is 14d / fortnight). The 90d / quarter preset was dropped.
     expect(find.text('7d'), findsOneWidget);
+    expect(find.text('14d'), findsOneWidget);
     expect(find.text('30d'), findsOneWidget);
-    expect(find.text('90d'), findsOneWidget);
-    // 14d (fortnight) is intentionally hidden from the picker but the
-    // enum value is preserved for non-user-facing callers.
-    expect(find.text('14d'), findsNothing);
+    expect(find.text('90d'), findsNothing);
   });
 }

@@ -4,79 +4,71 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../domain/entities/intervention_dispatch.dart';
 import '../controllers/intervention_controller.dart';
 import '../widgets/dispatch_safe_defaults.dart';
 
-/// Tier 1 surface — a 2-minute paced-breathing therapeutic deliverable.
+/// Tier 1 surface — a 2-minute paced-breathing therapeutic deliverable,
+/// presented as a modal (bottom sheet on phone, dialog on tablet+) per
+/// the v1.6 prototype's `ModalFrame`.
 ///
-/// This screen is **NOT** a placeholder. Per the engineer brief and
-/// CLAUDE.md "Compassionate imperatives", the breathing exercise is the
-/// whole Tier 1 dose. It contains:
+/// Use [BreathingSheet.show] to present it. The body content lives in
+/// [BreathingView]; the launcher supplies the modal chrome.
+class BreathingSheet {
+  const BreathingSheet._();
+
+  /// Opens the breathing modal. [dispatch] carries the curated quote +
+  /// disclaimer footer when the surface was reached from an
+  /// intervention banner / notification; null falls back to
+  /// [DispatchSafeDefaults.tier1] for the self-initiated "Take a
+  /// breath" path.
+  static Future<void> show(
+    BuildContext context, {
+    InterventionDispatch? dispatch,
+  }) {
+    return MbModalSheet.show<void>(
+      context,
+      builder: (ctx) => BreathingView(
+        dispatch: dispatch,
+        onClose: () => Navigator.of(ctx).pop(),
+      ),
+    );
+  }
+}
+
+/// The breathing exercise body. Contains:
 ///
-///  * The dispatched body verbatim — already includes the curated quote
-///    and `DisclaimerCopy.notificationFooter` (composed by the
-///    dispatcher). Falls back to [DispatchSafeDefaults.tier1] when the
-///    screen is opened without a dispatch (deep link).
+///  * The dispatched body verbatim (curated quote + disclaimer footer),
+///    falling back to [DispatchSafeDefaults.tier1] when self-initiated.
 ///  * A visible mm:ss countdown (`_totalSeconds = 120`).
-///  * A pulsing circle paced at 4-second inhale / 6-second exhale —
-///    parasympathetic activation (Brown & Gerbarg 2005). The animation
-///    is driven by a `TweenSequence` so the radius grows for the inhale
-///    window (40%) and shrinks for the exhale window (60%), keeping the
-///    visual cue and the text label in lockstep. The same controller
-///    value picks the cue text ("Breathe in…" / "Breathe out…") at the
-///    40% threshold.
-///  * Two foot CTAs:
-///      - "Done for now"  → `controller.complete()` + `context.pop()`
-///        (the user engaged — no opt-out).
-///      - "I'm okay"      → `controller.optOut()` + `context.pop()` via
-///        the shared [InterventionOptOutButton].
+///  * A pulsing circle paced 5s inhale / 5s hold / 8s exhale.
+///  * An "I'm done" CTA. All exit paths run [InterventionController.complete]
+///    then [onClose].
 ///
 /// On natural timer completion: light haptic, snackbar acknowledgement,
-/// `controller.complete()`, auto-pop.
-///
-/// **Responsive layout:** phone (< 600 dp) keeps the stacked single
-/// column. Tablet/desktop (>= 600 dp) splits into a two-column layout
-/// — text + countdown + CTAs on the left, larger animated circle on
-/// the right — capped at 960 dp so ultrawide doesn't stretch the line
-/// length of the body copy.
-///
-/// **Accessibility:** the animated circle is wrapped in a `Semantics`
-/// node with a single canonical label so a screen reader does not chase
-/// every frame. The mm:ss countdown is announced as a live region but
-/// throttled to the minute boundary — every-second updates would
-/// overwhelm the AT focus stream.
-class BreathingScreen extends ConsumerStatefulWidget {
-  const BreathingScreen({this.dispatch, super.key});
+/// `controller.complete()`, then [onClose].
+class BreathingView extends ConsumerStatefulWidget {
+  const BreathingView({this.dispatch, required this.onClose, super.key});
 
   final InterventionDispatch? dispatch;
 
+  /// Invoked to dismiss the surface. The modal launcher passes
+  /// `() => Navigator.of(context).pop()`.
+  final VoidCallback onClose;
+
   @override
-  ConsumerState<BreathingScreen> createState() => _BreathingScreenState();
+  ConsumerState<BreathingView> createState() => _BreathingViewState();
 }
 
-class _BreathingScreenState extends ConsumerState<BreathingScreen>
+class _BreathingViewState extends ConsumerState<BreathingView>
     with SingleTickerProviderStateMixin {
   static const int _totalSeconds = 120;
 
-  /// 5s inhale + 5s hold + 8s exhale → 18s full cycle. Slower than the
-  /// previous 14s pace after user feedback that the cue text changed
-  /// too quickly to settle into; this lands close to the classic 4-7-8
-  /// rhythm (Weil 2015) while keeping equal inhale/hold for the
-  /// box-breathing feel.
+  /// 5s inhale + 5s hold + 8s exhale → 18s full cycle.
   static const Duration _breathCycle = Duration(seconds: 18);
-
-  /// Phase thresholds expressed as fractions of the cycle: inhale 0..5/18,
-  /// hold 5/18..10/18, exhale 10/18..1.
   static const double _inhaleEnd = 5 / 18;
   static const double _holdEnd = 10 / 18;
-
-  /// Phone/tablet breakpoint — mirrored from `_AppShell._tabletMin` in
-  /// `app/router.dart` so the responsive behaviour is consistent
-  /// app-wide.
-  static const double _tabletMin = 600;
 
   late final AnimationController _breathController;
   late final Animation<double> _radius;
@@ -89,11 +81,6 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen>
     super.initState();
     _breathController = AnimationController(duration: _breathCycle, vsync: this)
       ..repeat();
-    // Three-phase: grow 5s → hold 5s (flat) → shrink 8s. The flat hold
-    // phase uses identical begin/end so the circle pauses at full size,
-    // matching the "Hold" cue text. Weights match the seconds in
-    // _breathCycle so the visual phase boundaries line up with the
-    // _inhaleEnd / _holdEnd fractions exactly.
     _radius = TweenSequence<double>(<TweenSequenceItem<double>>[
       TweenSequenceItem<double>(
         tween: Tween<double>(
@@ -140,7 +127,7 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen>
       ),
     );
     ref.read(interventionControllerProvider.notifier).complete();
-    if (mounted) context.pop();
+    widget.onClose();
   }
 
   @override
@@ -152,213 +139,77 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen>
 
   String get _bodyText => widget.dispatch?.body ?? DispatchSafeDefaults.tier1;
 
-  /// mm:ss formatted countdown. Used for both the visible label and the
-  /// semantics label below — same source of truth.
   String _formattedClock(int seconds) {
     final mm = (seconds ~/ 60).toString().padLeft(1, '0');
     final ss = (seconds % 60).toString().padLeft(2, '0');
     return '$mm:$ss';
   }
 
-  /// Semantics text — refreshed every second but the `liveRegion` flag
-  /// is gated to fire only on minute boundaries so screen readers do not
-  /// stutter once per second.
   String _semanticsClock(int seconds) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
     return '$m minutes $s seconds remaining';
   }
 
-  /// Single done/close handler — used by the back button, the body
-  /// "Done" CTA, and the natural timer completion. All three paths
-  /// converge through the same controller call so opt-out and
-  /// completion semantics stay consistent.
+  /// Single done/close handler — used by the header close icon, the
+  /// body "I'm done" CTA, and natural timer completion. All converge
+  /// through the same controller `complete()` call.
   void _onDone() {
     ref.read(interventionControllerProvider.notifier).complete();
-    if (context.mounted) context.pop();
+    widget.onClose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final mb = theme.extension<MbColors>();
-    final bg = mb?.bg ?? theme.scaffoldBackgroundColor;
-    final textColor = mb?.text ?? theme.colorScheme.onSurface;
-    return Scaffold(
-      backgroundColor: bg,
-      // Body-level back button (MbIconButton in a Row) matches the
-      // Entry Detail screen pattern — no native AppBar. The "A breath
-      // together" title moves into the responsive body variants below
-      // so the H1 leads the content directly rather than sitting in
-      // chrome above it.
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= _tabletMin;
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 960),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          MbIconButton(
-                            icon: const Icon(Icons.arrow_back),
-                            onPressed: _onDone,
-                            semanticLabel: 'Close',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: isWide
-                            ? _buildWide(theme, textColor)
-                            : _buildNarrow(theme, textColor),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
+    final mb = Theme.of(context).extension<MbColors>()!;
 
-  Widget _buildNarrow(ThemeData theme, Color textColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'A breath together',
-          style: MbFonts.fraunces(
-            fontSize: 26,
-            fontWeight: FontWeight.w600,
-            color: textColor,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Text(
+    return MbModalScaffold(
+      title: 'Take a breath',
+      onClose: _onDone,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: MoodBloomSpacing.sm),
+          Text(
             _bodyText,
-            style: theme.textTheme.bodyLarge?.copyWith(color: textColor),
+            textAlign: TextAlign.center,
+            style: MbFonts.nunito(fontSize: 13, height: 1.5, color: mb.textDim),
           ),
-        ),
-        const SizedBox(height: 24),
-        Center(
-          child: _CountdownLabel(
+          const SizedBox(height: 24),
+          _BreathingCircle(
+            controller: _breathController,
+            scale: _radius,
+            inhaleEnd: _inhaleEnd,
+            holdEnd: _holdEnd,
+          ),
+          const SizedBox(height: 24),
+          _CountdownLabel(
             seconds: _secondsRemaining,
-            color: textColor,
+            color: mb.text,
             semanticsLabel: _semanticsClock(_secondsRemaining),
             formatted: _formattedClock(_secondsRemaining),
           ),
-        ),
-        const SizedBox(height: 32),
-        Expanded(child: _BreathingCircle(animation: _radius, big: false)),
-        const SizedBox(height: 12),
-        _CueLabel(
-          controller: _breathController,
-          color: textColor,
-          inhaleEnd: _inhaleEnd,
-          holdEnd: _holdEnd,
-        ),
-        const SizedBox(height: 16),
-        _DoneButton(onPressed: _onDone),
-      ],
-    );
-  }
-
-  /// Tablet/desktop layout — two-column. Left: body + countdown + cue
-  /// + CTAs. Right: enlarged breathing circle (280 dp inside a 320 dp
-  /// box).
-  Widget _buildWide(ThemeData theme, Color textColor) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'A breath together',
-                style: MbFonts.fraunces(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: Text(
-                  _bodyText,
-                  style: theme.textTheme.bodyLarge?.copyWith(color: textColor),
-                ),
-              ),
-              const SizedBox(height: 28),
-              _CountdownLabel(
-                seconds: _secondsRemaining,
-                color: textColor,
-                semanticsLabel: _semanticsClock(_secondsRemaining),
-                formatted: _formattedClock(_secondsRemaining),
-              ),
-              const SizedBox(height: 24),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: _CueLabel(
-                  controller: _breathController,
-                  color: textColor,
-                  inhaleEnd: _inhaleEnd,
-                  holdEnd: _holdEnd,
-                ),
-              ),
-              const SizedBox(height: 32),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: _DoneButton(onPressed: _onDone),
-              ),
-            ],
+          const SizedBox(height: 4),
+          Text(
+            'remaining',
+            style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
           ),
-        ),
-        const SizedBox(width: 32),
-        Expanded(child: _BreathingCircle(animation: _radius, big: true)),
-      ],
-    );
-  }
-}
-
-/// Single bottom CTA. Tapping closes the screen with `complete()`
-/// semantics — same as the back chevron and the natural timer
-/// completion. The previous two-button row ("Done for now" + "I'm
-/// okay") routed through different controller paths and felt
-/// redundant; merging them keeps the user's intent simple.
-class _DoneButton extends StatelessWidget {
-  const _DoneButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton(
-      onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(0, 44),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          const SizedBox(height: 24),
+          MbGhostButton(
+            label: "I'm done",
+            fullWidth: false,
+            onPressed: _onDone,
+          ),
+        ],
       ),
-      child: const Text("I'm done"),
     );
   }
 }
 
-/// mm:ss countdown — pulled out so both responsive variants compose the
-/// same `Semantics(liveRegion: ...)` wrapper. The clock text is rendered
-/// inside `ExcludeSemantics` so AT only sees the parent label.
+/// mm:ss countdown in serif. The clock text is rendered inside
+/// `ExcludeSemantics` so AT only sees the parent `liveRegion` label
+/// (throttled to the minute boundary).
 class _CountdownLabel extends StatelessWidget {
   const _CountdownLabel({
     required this.seconds,
@@ -374,16 +225,16 @@ class _CountdownLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Semantics(
       liveRegion: seconds % 60 == 0,
       label: semanticsLabel,
       child: ExcludeSemantics(
         child: Text(
           formatted,
-          style: theme.textTheme.displayMedium?.copyWith(
+          style: MbFonts.fraunces(
+            fontSize: 28,
+            fontWeight: FontWeight.w600,
             color: color,
-            fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
       ),
@@ -391,88 +242,86 @@ class _CountdownLabel extends StatelessWidget {
   }
 }
 
-/// Animated breathing circle — square 220 / 320 box with the inner
-/// disc scaled from 0.5 → 1.0 → 0.5 over the parent controller's cycle.
-/// Extracted into a private widget so both responsive variants compose
-/// the same `Semantics(label: 'Breathing rhythm guide')` node.
+/// Breathing rhythm guide — a 200 dp radial-gradient disc (soft-green
+/// fading to the page background) with a seed-coloured ring that scales
+/// with the breath cycle, and the current phase word ("Inhale" / "Hold"
+/// / "Exhale") centred in serif. Ports the prototype's breathing circle;
+/// the ring scale is driven by the live animation so the visual paces
+/// the user's breath rather than sitting static.
 class _BreathingCircle extends StatelessWidget {
-  const _BreathingCircle({required this.animation, required this.big});
-
-  final Animation<double> animation;
-  final bool big;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final outer = big ? 320.0 : 220.0;
-    final inner = big ? 280.0 : 180.0;
-    return Semantics(
-      label: 'Breathing rhythm guide',
-      container: true,
-      excludeSemantics: true,
-      child: Center(
-        child: SizedBox(
-          width: outer,
-          height: outer,
-          child: Center(
-            child: AnimatedBuilder(
-              animation: animation,
-              builder: (context, _) {
-                return Transform.scale(
-                  scale: animation.value,
-                  child: Container(
-                    width: inner,
-                    height: inner,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: theme.colorScheme.primaryContainer,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// "Breathe in…" / "Hold…" / "Breathe out…" cue text — picks the phase
-/// from `controller.value` using the inhale/hold/exhale thresholds. The
-/// cue is wrapped in `ExcludeSemantics` so AT sees the canonical
-/// "Breathing rhythm guide" anchor (one node up) instead of the
-/// per-frame cue.
-class _CueLabel extends StatelessWidget {
-  const _CueLabel({
+  const _BreathingCircle({
     required this.controller,
-    required this.color,
+    required this.scale,
     required this.inhaleEnd,
     required this.holdEnd,
   });
 
   final AnimationController controller;
-  final Color color;
+  final Animation<double> scale;
   final double inhaleEnd;
   final double holdEnd;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ExcludeSemantics(
-      child: AnimatedBuilder(
-        animation: controller,
-        builder: (context, _) {
-          final v = controller.value;
-          final label = v < inhaleEnd
-              ? 'Breathe in…'
-              : (v < holdEnd ? 'Hold…' : 'Breathe out…');
-          return Text(
-            label,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleMedium?.copyWith(color: color),
-          );
-        },
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return Semantics(
+      label: 'Breathing rhythm guide',
+      container: true,
+      excludeSemantics: true,
+      child: SizedBox(
+        width: 200,
+        height: 200,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Static radial-gradient backdrop: soft-green core fading to
+            // the page background by ~70%.
+            DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [MoodBloomColors.softGreen, mb.bg],
+                  stops: const [0.0, 0.7],
+                ),
+              ),
+              child: const SizedBox(width: 200, height: 200),
+            ),
+            // Seed ring that scales with the breath (inhale grows it,
+            // exhale shrinks it).
+            AnimatedBuilder(
+              animation: scale,
+              builder: (context, _) {
+                final d = 100 + scale.value * 60; // 130 .. 160 dp
+                return Container(
+                  width: d,
+                  height: d,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: MoodBloomColors.seed, width: 2),
+                  ),
+                );
+              },
+            ),
+            // Phase word, centred.
+            AnimatedBuilder(
+              animation: controller,
+              builder: (context, _) {
+                final v = controller.value;
+                final label = v < inhaleEnd
+                    ? 'Inhale'
+                    : (v < holdEnd ? 'Hold' : 'Exhale');
+                return Text(
+                  label,
+                  style: MbFonts.fraunces(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: MoodBloomColors.seedDark,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
