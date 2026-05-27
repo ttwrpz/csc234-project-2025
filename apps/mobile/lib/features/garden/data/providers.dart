@@ -9,6 +9,7 @@
 import 'dart:ui' show Color;
 
 import 'package:core/core.dart';
+import 'package:design_system/design_system.dart' show GardenSkinId;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
@@ -256,3 +257,23 @@ final liveSpeciesAccentProvider = Provider<Map<FlowerSpecies, Color>>((ref) {
     for (final entry in argb.entries) entry.key: Color(entry.value),
   };
 });
+
+/// Resolves the live render config (shape style + optional accent) for a
+/// single [FlowerSpecies], combining the per-species and global skin
+/// state. Garden plant surfaces watch this per species and render the
+/// resolved [GardenSkinId] style via `MbSkinPlant`, so the equipped skin
+/// (global OR per-species) shows everywhere plants are drawn.
+final resolvedPlantSkinProvider =
+    Provider.family<ResolvedPlantSkin, FlowerSpecies>((ref, species) {
+      final perSpecies =
+          ref.watch(perSpeciesSkinStateStreamProvider).value ??
+          PerSpeciesSkinState.initial();
+      final globalEquipped =
+          ref.watch(skinStateStreamProvider).value?.equippedSkinId ??
+          GardenSkinId.meadow;
+      return ResolveSpeciesAccent.resolveFor(
+        species: species,
+        perSpecies: perSpecies,
+        globalEquipped: globalEquipped,
+      );
+    });

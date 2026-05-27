@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../auth/data/providers.dart';
-import '../../../garden/presentation/widgets/flower_sprite.dart';
+import '../../../garden/domain/entities/flower_species.dart';
 import '../../data/providers.dart';
 import '../../domain/entities/per_species_skin.dart';
 import '../../domain/entities/per_species_skin_state.dart';
@@ -264,10 +264,12 @@ class _PreviewWindow extends StatelessWidget {
             right: 0,
             bottom: 10,
             child: Center(
-              child: FlowerSprite(
-                species: skin.species,
-                speciesAccent: Color(skin.accentArgb),
-                size: 72,
+              child: MbSkinPlant(
+                skinId: skin.style,
+                mood: _moodOfSpecies(skin.species),
+                intensity: 4,
+                color: Color(skin.accentArgb),
+                size: const Size(46, 96),
               ),
             ),
           ),
@@ -276,6 +278,17 @@ class _PreviewWindow extends StatelessWidget {
     );
   }
 }
+
+/// Species -> the mood it represents, so the confirm preview renders the
+/// right `MbSkinPlant` bloom in the skin's shape style.
+MbMoodKind _moodOfSpecies(FlowerSpecies species) => switch (species) {
+  FlowerSpecies.sunflower => MbMoodKind.happy,
+  FlowerSpecies.lavender => MbMoodKind.calm,
+  FlowerSpecies.daisy => MbMoodKind.okay,
+  FlowerSpecies.poppy => MbMoodKind.angry,
+  FlowerSpecies.fern => MbMoodKind.anxious,
+  FlowerSpecies.forgetMeNot => MbMoodKind.sad,
+};
 
 class _CostRow extends StatelessWidget {
   const _CostRow({required this.label, required this.value, this.bold = false});

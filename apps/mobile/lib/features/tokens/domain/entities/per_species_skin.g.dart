@@ -13,6 +13,7 @@ _PerSpeciesSkin _$PerSpeciesSkinFromJson(Map<String, dynamic> json) =>
       displayName: json['displayName'] as String,
       tagline: json['tagline'] as String,
       cost: (json['cost'] as num).toInt(),
+      style: $enumDecode(_$GardenSkinIdEnumMap, json['style']),
       accentArgb: (json['accentArgb'] as num).toInt(),
     );
 
@@ -23,6 +24,7 @@ Map<String, dynamic> _$PerSpeciesSkinToJson(_PerSpeciesSkin instance) =>
       'displayName': instance.displayName,
       'tagline': instance.tagline,
       'cost': instance.cost,
+      'style': _$GardenSkinIdEnumMap[instance.style]!,
       'accentArgb': instance.accentArgb,
     };
 
@@ -33,4 +35,12 @@ const _$FlowerSpeciesEnumMap = {
   FlowerSpecies.poppy: 'poppy',
   FlowerSpecies.fern: 'fern',
   FlowerSpecies.lavender: 'lavender',
+};
+
+const _$GardenSkinIdEnumMap = {
+  GardenSkinId.meadow: 'meadow',
+  GardenSkinId.origami: 'origami',
+  GardenSkinId.lantern: 'lantern',
+  GardenSkinId.constellation: 'constellation',
+  GardenSkinId.crystal: 'crystal',
 };

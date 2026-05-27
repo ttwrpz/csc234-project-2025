@@ -1077,10 +1077,12 @@ class _PerSpeciesPreview extends StatelessWidget {
             right: 0,
             bottom: 8,
             child: Center(
-              child: FlowerSprite(
-                species: skin.species,
-                speciesAccent: Color(skin.accentArgb),
-                size: 46,
+              child: MbSkinPlant(
+                skinId: skin.style,
+                mood: _moodOfSpecies(skin.species),
+                intensity: 4,
+                color: Color(skin.accentArgb),
+                size: const Size(34, 64),
               ),
             ),
           ),
@@ -1089,3 +1091,14 @@ class _PerSpeciesPreview extends StatelessWidget {
     );
   }
 }
+
+/// Species -> the mood it represents, so the per-species preview can
+/// render the right `MbSkinPlant` bloom.
+MbMoodKind _moodOfSpecies(FlowerSpecies species) => switch (species) {
+  FlowerSpecies.sunflower => MbMoodKind.happy,
+  FlowerSpecies.lavender => MbMoodKind.calm,
+  FlowerSpecies.daisy => MbMoodKind.okay,
+  FlowerSpecies.poppy => MbMoodKind.angry,
+  FlowerSpecies.fern => MbMoodKind.anxious,
+  FlowerSpecies.forgetMeNot => MbMoodKind.sad,
+};

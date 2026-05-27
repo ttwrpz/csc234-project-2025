@@ -16,8 +16,10 @@ T _$identity<T>(T value) => value;
 mixin _$PerSpeciesSkin {
 
 /// Stable slug, unique across all species. Format `<species>_<name>`,
-/// e.g. `sunflower_goldenHour`. Persisted verbatim to Firestore.
- String get id; FlowerSpecies get species; String get displayName; String get tagline; int get cost;/// Petal/bud accent colour as a 32-bit ARGB int (e.g. `0xFFF2A93B`).
+/// e.g. `sunflower_crystal`. Persisted verbatim to Firestore.
+ String get id; FlowerSpecies get species; String get displayName; String get tagline; int get cost;/// Shape language this skin paints the species in - one of the five
+/// `MbSkinPlant` styles. `meadow` is the classic silhouette.
+ GardenSkinId get style;/// Petal/bud accent colour as a 32-bit ARGB int (e.g. `0xFFF2A93B`).
 /// The garden painter applies this in place of the species' built-in
 /// petal colour when this skin is equipped.
  int get accentArgb;
@@ -33,16 +35,16 @@ $PerSpeciesSkinCopyWith<PerSpeciesSkin> get copyWith => _$PerSpeciesSkinCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PerSpeciesSkin&&(identical(other.id, id) || other.id == id)&&(identical(other.species, species) || other.species == species)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.tagline, tagline) || other.tagline == tagline)&&(identical(other.cost, cost) || other.cost == cost)&&(identical(other.accentArgb, accentArgb) || other.accentArgb == accentArgb));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PerSpeciesSkin&&(identical(other.id, id) || other.id == id)&&(identical(other.species, species) || other.species == species)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.tagline, tagline) || other.tagline == tagline)&&(identical(other.cost, cost) || other.cost == cost)&&(identical(other.style, style) || other.style == style)&&(identical(other.accentArgb, accentArgb) || other.accentArgb == accentArgb));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,species,displayName,tagline,cost,accentArgb);
+int get hashCode => Object.hash(runtimeType,id,species,displayName,tagline,cost,style,accentArgb);
 
 @override
 String toString() {
-  return 'PerSpeciesSkin(id: $id, species: $species, displayName: $displayName, tagline: $tagline, cost: $cost, accentArgb: $accentArgb)';
+  return 'PerSpeciesSkin(id: $id, species: $species, displayName: $displayName, tagline: $tagline, cost: $cost, style: $style, accentArgb: $accentArgb)';
 }
 
 
@@ -53,7 +55,7 @@ abstract mixin class $PerSpeciesSkinCopyWith<$Res>  {
   factory $PerSpeciesSkinCopyWith(PerSpeciesSkin value, $Res Function(PerSpeciesSkin) _then) = _$PerSpeciesSkinCopyWithImpl;
 @useResult
 $Res call({
- String id, FlowerSpecies species, String displayName, String tagline, int cost, int accentArgb
+ String id, FlowerSpecies species, String displayName, String tagline, int cost, GardenSkinId style, int accentArgb
 });
 
 
@@ -70,14 +72,15 @@ class _$PerSpeciesSkinCopyWithImpl<$Res>
 
 /// Create a copy of PerSpeciesSkin
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? species = null,Object? displayName = null,Object? tagline = null,Object? cost = null,Object? accentArgb = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? species = null,Object? displayName = null,Object? tagline = null,Object? cost = null,Object? style = null,Object? accentArgb = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,species: null == species ? _self.species : species // ignore: cast_nullable_to_non_nullable
 as FlowerSpecies,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
 as String,tagline: null == tagline ? _self.tagline : tagline // ignore: cast_nullable_to_non_nullable
 as String,cost: null == cost ? _self.cost : cost // ignore: cast_nullable_to_non_nullable
-as int,accentArgb: null == accentArgb ? _self.accentArgb : accentArgb // ignore: cast_nullable_to_non_nullable
+as int,style: null == style ? _self.style : style // ignore: cast_nullable_to_non_nullable
+as GardenSkinId,accentArgb: null == accentArgb ? _self.accentArgb : accentArgb // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }
@@ -163,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  FlowerSpecies species,  String displayName,  String tagline,  int cost,  int accentArgb)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  FlowerSpecies species,  String displayName,  String tagline,  int cost,  GardenSkinId style,  int accentArgb)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PerSpeciesSkin() when $default != null:
-return $default(_that.id,_that.species,_that.displayName,_that.tagline,_that.cost,_that.accentArgb);case _:
+return $default(_that.id,_that.species,_that.displayName,_that.tagline,_that.cost,_that.style,_that.accentArgb);case _:
   return orElse();
 
 }
@@ -184,10 +187,10 @@ return $default(_that.id,_that.species,_that.displayName,_that.tagline,_that.cos
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  FlowerSpecies species,  String displayName,  String tagline,  int cost,  int accentArgb)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  FlowerSpecies species,  String displayName,  String tagline,  int cost,  GardenSkinId style,  int accentArgb)  $default,) {final _that = this;
 switch (_that) {
 case _PerSpeciesSkin():
-return $default(_that.id,_that.species,_that.displayName,_that.tagline,_that.cost,_that.accentArgb);case _:
+return $default(_that.id,_that.species,_that.displayName,_that.tagline,_that.cost,_that.style,_that.accentArgb);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +207,10 @@ return $default(_that.id,_that.species,_that.displayName,_that.tagline,_that.cos
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  FlowerSpecies species,  String displayName,  String tagline,  int cost,  int accentArgb)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  FlowerSpecies species,  String displayName,  String tagline,  int cost,  GardenSkinId style,  int accentArgb)?  $default,) {final _that = this;
 switch (_that) {
 case _PerSpeciesSkin() when $default != null:
-return $default(_that.id,_that.species,_that.displayName,_that.tagline,_that.cost,_that.accentArgb);case _:
+return $default(_that.id,_that.species,_that.displayName,_that.tagline,_that.cost,_that.style,_that.accentArgb);case _:
   return null;
 
 }
@@ -219,16 +222,19 @@ return $default(_that.id,_that.species,_that.displayName,_that.tagline,_that.cos
 @JsonSerializable()
 
 class _PerSpeciesSkin implements PerSpeciesSkin {
-  const _PerSpeciesSkin({required this.id, required this.species, required this.displayName, required this.tagline, required this.cost, required this.accentArgb});
+  const _PerSpeciesSkin({required this.id, required this.species, required this.displayName, required this.tagline, required this.cost, required this.style, required this.accentArgb});
   factory _PerSpeciesSkin.fromJson(Map<String, dynamic> json) => _$PerSpeciesSkinFromJson(json);
 
 /// Stable slug, unique across all species. Format `<species>_<name>`,
-/// e.g. `sunflower_goldenHour`. Persisted verbatim to Firestore.
+/// e.g. `sunflower_crystal`. Persisted verbatim to Firestore.
 @override final  String id;
 @override final  FlowerSpecies species;
 @override final  String displayName;
 @override final  String tagline;
 @override final  int cost;
+/// Shape language this skin paints the species in - one of the five
+/// `MbSkinPlant` styles. `meadow` is the classic silhouette.
+@override final  GardenSkinId style;
 /// Petal/bud accent colour as a 32-bit ARGB int (e.g. `0xFFF2A93B`).
 /// The garden painter applies this in place of the species' built-in
 /// petal colour when this skin is equipped.
@@ -247,16 +253,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PerSpeciesSkin&&(identical(other.id, id) || other.id == id)&&(identical(other.species, species) || other.species == species)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.tagline, tagline) || other.tagline == tagline)&&(identical(other.cost, cost) || other.cost == cost)&&(identical(other.accentArgb, accentArgb) || other.accentArgb == accentArgb));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PerSpeciesSkin&&(identical(other.id, id) || other.id == id)&&(identical(other.species, species) || other.species == species)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.tagline, tagline) || other.tagline == tagline)&&(identical(other.cost, cost) || other.cost == cost)&&(identical(other.style, style) || other.style == style)&&(identical(other.accentArgb, accentArgb) || other.accentArgb == accentArgb));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,species,displayName,tagline,cost,accentArgb);
+int get hashCode => Object.hash(runtimeType,id,species,displayName,tagline,cost,style,accentArgb);
 
 @override
 String toString() {
-  return 'PerSpeciesSkin(id: $id, species: $species, displayName: $displayName, tagline: $tagline, cost: $cost, accentArgb: $accentArgb)';
+  return 'PerSpeciesSkin(id: $id, species: $species, displayName: $displayName, tagline: $tagline, cost: $cost, style: $style, accentArgb: $accentArgb)';
 }
 
 
@@ -267,7 +273,7 @@ abstract mixin class _$PerSpeciesSkinCopyWith<$Res> implements $PerSpeciesSkinCo
   factory _$PerSpeciesSkinCopyWith(_PerSpeciesSkin value, $Res Function(_PerSpeciesSkin) _then) = __$PerSpeciesSkinCopyWithImpl;
 @override @useResult
 $Res call({
- String id, FlowerSpecies species, String displayName, String tagline, int cost, int accentArgb
+ String id, FlowerSpecies species, String displayName, String tagline, int cost, GardenSkinId style, int accentArgb
 });
 
 
@@ -284,14 +290,15 @@ class __$PerSpeciesSkinCopyWithImpl<$Res>
 
 /// Create a copy of PerSpeciesSkin
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? species = null,Object? displayName = null,Object? tagline = null,Object? cost = null,Object? accentArgb = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? species = null,Object? displayName = null,Object? tagline = null,Object? cost = null,Object? style = null,Object? accentArgb = null,}) {
   return _then(_PerSpeciesSkin(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,species: null == species ? _self.species : species // ignore: cast_nullable_to_non_nullable
 as FlowerSpecies,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
 as String,tagline: null == tagline ? _self.tagline : tagline // ignore: cast_nullable_to_non_nullable
 as String,cost: null == cost ? _self.cost : cost // ignore: cast_nullable_to_non_nullable
-as int,accentArgb: null == accentArgb ? _self.accentArgb : accentArgb // ignore: cast_nullable_to_non_nullable
+as int,style: null == style ? _self.style : style // ignore: cast_nullable_to_non_nullable
+as GardenSkinId,accentArgb: null == accentArgb ? _self.accentArgb : accentArgb // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }

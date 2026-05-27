@@ -26,8 +26,33 @@ import 'per_species_skin_catalog.dart';
 /// ADD a colour override on top, and only for the species the user
 /// explicitly bought an alternate for. Every other species follows the
 /// global skin exactly as before.
+/// Resolved render config for one species' plant: which shape [style]
+/// to paint it in, and an optional [accentArgb] tint (non-null only when
+/// a per-species skin is equipped for that species).
+typedef ResolvedPlantSkin = ({GardenSkinId style, int? accentArgb});
+
 class ResolveSpeciesAccent {
   const ResolveSpeciesAccent._();
+
+  /// Resolves the shape style + accent for [species] under both skin
+  /// models. Precedence:
+  ///   1. PER-SPECIES skin equipped -> that skin's `style` + `accentArgb`.
+  ///   2. else -> the GLOBAL equipped style (may be `meadow`), no accent
+  ///      (the caller tints with the mood's palette colour).
+  static ResolvedPlantSkin resolveFor({
+    required FlowerSpecies species,
+    required PerSpeciesSkinState perSpecies,
+    required GardenSkinId globalEquipped,
+  }) {
+    final equippedId = perSpecies.equippedFor(species);
+    if (equippedId != null) {
+      final skin = PerSpeciesSkinCatalog.byId(equippedId);
+      if (skin != null) {
+        return (style: skin.style, accentArgb: skin.accentArgb);
+      }
+    }
+    return (style: globalEquipped, accentArgb: null);
+  }
 
   /// Returns the per-species accent ARGB for [species], or `null` when no
   /// per-species override applies (rules 2 and 3 above). [globalEquipped]
