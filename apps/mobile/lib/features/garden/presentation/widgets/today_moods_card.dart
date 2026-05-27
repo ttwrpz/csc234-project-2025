@@ -110,20 +110,43 @@ class _EntryRow extends StatelessWidget {
         child: Row(
           children: <Widget>[
             MbMoodChip(mood: entry.mood.mbKind, size: MbChipSize.sm),
-            if (note.isNotEmpty) ...<Widget>[
-              const SizedBox(width: 10),
+            // The note (when present) takes the middle; otherwise a
+            // Spacer pushes the time to the right so a no-note row
+            // doesn't leave a blank gap.
+            if (note.isNotEmpty)
               Expanded(
-                child: Text(
-                  note,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: MbFonts.nunito(fontSize: 12, color: textDim),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 10),
+                  child: Text(
+                    note,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: MbFonts.nunito(fontSize: 12, color: textDim),
+                  ),
                 ),
-              ),
-            ],
+              )
+            else
+              const Spacer(),
+            const SizedBox(width: 8),
+            // Time logged, right-aligned - matches the calendar side
+            // panel idiom and fills the row for note-less entries.
+            Text(
+              _formatTime(entry.createdAt),
+              style: MbFonts.nunito(fontSize: 11, color: textDim),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  static String _formatTime(DateTime t) {
+    final local = t.toLocal();
+    final hour = local.hour == 0
+        ? 12
+        : (local.hour > 12 ? local.hour - 12 : local.hour);
+    final mm = local.minute.toString().padLeft(2, '0');
+    final ap = local.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$mm $ap';
   }
 }

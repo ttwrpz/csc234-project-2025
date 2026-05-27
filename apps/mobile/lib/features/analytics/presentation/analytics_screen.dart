@@ -213,6 +213,13 @@ class _ChartCard extends StatelessWidget {
               MbConfidenceBadge(level: _confidenceFor(insights)),
             ],
           ),
+          const SizedBox(height: 6),
+          Text(
+            'Each dot is a day\'s average feeling - higher is a brighter '
+            'day, lower is a heavier one. The line follows the gentle '
+            'trend, not a grade.',
+            style: MbFonts.nunito(fontSize: 12, height: 1.4, color: mb.textDim),
+          ),
           const SizedBox(height: MoodBloomSpacing.md),
           SizedBox(height: 220, child: _chartBody(context, mb)),
           if (insights.isNotEmpty) ...[
@@ -344,6 +351,13 @@ class _PatternCheckInsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const MbSectionLabel('PATTERN CHECK-INS'),
+          const SizedBox(height: 6),
+          Text(
+            'Coloured days are when your garden offered a gentle check-in. '
+            'The colour shows how soft the weather felt - never a score, '
+            'never a judgement.',
+            style: MbFonts.nunito(fontSize: 12, height: 1.4, color: mb.textDim),
+          ),
           const SizedBox(height: MoodBloomSpacing.md),
           PatternMarkerBand(insights: insights),
           const SizedBox(height: 10),

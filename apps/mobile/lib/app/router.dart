@@ -23,6 +23,8 @@ import '../features/intervention/presentation/screens/breathing_screen.dart';
 import '../features/intervention/presentation/screens/crisis_resources_screen.dart';
 import '../features/intervention/presentation/screens/journaling_prompt_screen.dart';
 import '../features/mood/data/providers.dart' as mood_providers;
+import '../features/mood/presentation/controllers/log_mood_controller.dart'
+    show logMoodControllerProvider;
 import '../features/mood/presentation/log_mood_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
@@ -458,6 +460,12 @@ class _AppShellState extends ConsumerState<_AppShell> {
   void _goBranch(int i) {
     final isSameBranch = navigationShell.currentIndex == i;
     navigationShell.goBranch(i, initialLocation: true);
+    // Tapping a nav item starts that branch fresh: clear any
+    // in-progress mood draft (mood selection, intensity, note, AI
+    // suggestion) so returning to "Add" never resurfaces a stale
+    // half-filled form. Cheap + idempotent when the draft is already
+    // empty.
+    ref.read(logMoodControllerProvider.notifier).reset();
     // Re-tap or cross-branch tap both reset scroll position to top.
     // Each branch owns its own ScrollController (via
     // `branchScrollControllerProvider`) bound to its own page wrapper,

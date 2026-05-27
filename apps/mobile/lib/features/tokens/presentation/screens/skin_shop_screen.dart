@@ -97,7 +97,18 @@ class SkinShopScreen extends ConsumerWidget {
                   _EquippedCard(equippedId: state.equippedSkinId, mb: mb),
                   const SizedBox(height: 18),
                   const MbSectionLabel('SKIN LIBRARY'),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Garden skins re-theme every plant at once - one look for '
+                    'your whole garden. Pick one to equip; tokens are earned '
+                    'just by showing up.',
+                    style: MbFonts.nunito(
+                      fontSize: 12,
+                      color: mb.textDim,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   _SkinLibraryGrid(
                     cols: cols,
                     state: state,

@@ -115,9 +115,8 @@ class TierToggleTile extends ConsumerWidget {
       icon: Icons.volunteer_activism_outlined,
       title: 'Support reminders',
       subtitle:
-          'If a stretch of heavy days adds up, we\'ll send one caring note '
-          'with places to find a kind voice - including Hotline 1323. '
-          'Never an alarm. Turn it off anytime.',
+          'After heavy stretches, a kind voice and Hotline 1323. '
+          'Off anytime.',
     ),
   };
 }

@@ -138,9 +138,16 @@ void main() {
     testWidgets('wide layout (>=720dp) mounts the two-column flow with the '
         'recent-moods preview on the right', (tester) async {
       final today = DateTime.now();
+      // Recent moods shows EARLIER days only (today lives in the Today
+      // card), so seed entries from the previous days to populate it.
       final entries = [
         for (var i = 0; i < 3; i += 1)
-          _entry(MoodType.happy, today, id: 'w$i', intensity: 4),
+          _entry(
+            MoodType.happy,
+            today.subtract(Duration(days: i + 1)),
+            id: 'w$i',
+            intensity: 4,
+          ),
       ];
       final repo = FakeMoodRepository()..streamedEntries = [entries];
 

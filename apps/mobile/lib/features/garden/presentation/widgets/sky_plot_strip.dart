@@ -28,7 +28,26 @@ class SkyPlotStrip extends StatelessWidget {
     this.labelColor,
     this.labelOpacity = 0.7,
     this.darkOverlay = false,
+    this.showDayLabels = true,
+    this.onPlantTap,
+    this.onOverflowTap,
   });
+
+  /// When `false`, the per-day weekday letters are hidden. The home
+  /// SkyHeader keeps them; the harvest history mini-garden hides them
+  /// (it's a snapshot, not a calendar).
+  final bool showDayLabels;
+
+  /// Tapping a plant dispatches its [MoodEntry] - the home strip wires
+  /// this to open the entry-detail sheet so the user can see which
+  /// flower maps to which entry. Null leaves plants non-interactive
+  /// (harvest snapshots).
+  final void Function(MoodEntry entry)? onPlantTap;
+
+  /// Tapping a day's `+N` overflow pill dispatches that day + its full
+  /// entry list - the home strip wires this to the day-entries sheet.
+  /// Null leaves the pill non-interactive.
+  final void Function(DateTime day, List<MoodEntry> entries)? onOverflowTap;
 
   /// All entries falling within the active week. Need not be sorted;
   /// the strip buckets by `createdAt.toLocal()` local-midnight.
@@ -103,6 +122,9 @@ class SkyPlotStrip extends StatelessWidget {
               labelColor: labelTint,
               labelOpacity: labelOpacity,
               darkOverlay: darkOverlay,
+              showLabel: showDayLabels,
+              onPlantTap: onPlantTap,
+              onOverflowTap: onOverflowTap,
             ),
           ),
       ],
@@ -141,6 +163,9 @@ class _DayPlot extends StatelessWidget {
     required this.labelColor,
     required this.labelOpacity,
     required this.darkOverlay,
+    required this.showLabel,
+    this.onPlantTap,
+    this.onOverflowTap,
   });
 
   final DateTime date;
@@ -151,6 +176,9 @@ class _DayPlot extends StatelessWidget {
   final Color labelColor;
   final double labelOpacity;
   final bool darkOverlay;
+  final bool showLabel;
+  final void Function(MoodEntry entry)? onPlantTap;
+  final void Function(DateTime day, List<MoodEntry> entries)? onOverflowTap;
 
   static const List<String> _dayLetters = <String>[
     'MON',
@@ -199,12 +227,22 @@ class _DayPlot extends StatelessWidget {
         : specs.map((s) => s.height).fold<double>(0, math.max);
 
     final overflowPillHeight = compact ? 14.0 : 16.0;
-    final pillSlot = SizedBox(
-      height: overflowPillHeight,
-      child: overflow > 0
-          ? _OverflowPill(count: overflow, compact: compact, dark: darkOverlay)
-          : const SizedBox.shrink(),
-    );
+    final overflowTap = onOverflowTap;
+    Widget pill = overflow > 0
+        ? _OverflowPill(count: overflow, compact: compact, dark: darkOverlay)
+        : const SizedBox.shrink();
+    if (overflow > 0 && overflowTap != null) {
+      pill = Semantics(
+        button: true,
+        label: '$overflow more entries this day',
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => overflowTap(date, entries),
+          child: pill,
+        ),
+      );
+    }
+    final pillSlot = SizedBox(height: overflowPillHeight, child: pill);
 
     final cluster = SizedBox(
       height: maxH,
@@ -229,6 +267,7 @@ class _DayPlot extends StatelessWidget {
               back: back,
               palette: palette,
               compact: compact,
+              onPlantTap: onPlantTap,
             ),
     );
 
@@ -239,16 +278,18 @@ class _DayPlot extends StatelessWidget {
       children: <Widget>[
         pillSlot,
         cluster,
-        const SizedBox(height: 4),
-        Text(
-          _dayLetters[(date.weekday - 1).clamp(0, 6)],
-          style: MbFonts.nunito(
-            fontSize: compact ? 9 : 10,
-            fontWeight: FontWeight.w700,
-            color: labelColor.withValues(alpha: labelOpacity),
-            letterSpacing: 0.4,
+        if (showLabel) ...<Widget>[
+          const SizedBox(height: 4),
+          Text(
+            _dayLetters[(date.weekday - 1).clamp(0, 6)],
+            style: MbFonts.nunito(
+              fontSize: compact ? 9 : 10,
+              fontWeight: FontWeight.w700,
+              color: labelColor.withValues(alpha: labelOpacity),
+              letterSpacing: 0.4,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -288,12 +329,14 @@ class _PlantCluster extends StatelessWidget {
     required this.back,
     required this.palette,
     required this.compact,
+    this.onPlantTap,
   });
 
   final List<_PlantSpec> front;
   final List<_PlantSpec> back;
   final MbMoodPalette palette;
   final bool compact;
+  final void Function(MoodEntry entry)? onPlantTap;
 
   @override
   Widget build(BuildContext context) {
@@ -313,7 +356,12 @@ class _PlantCluster extends StatelessWidget {
               opacity: 0.65,
               child: Transform.translate(
                 offset: Offset(compact ? -6 : -8, 0),
-                child: _Row(specs: back, width: backWidth, palette: palette),
+                child: _Row(
+                  specs: back,
+                  width: backWidth,
+                  palette: palette,
+                  onPlantTap: onPlantTap,
+                ),
               ),
             ),
           ),
@@ -321,7 +369,12 @@ class _PlantCluster extends StatelessWidget {
           left: 0,
           right: 0,
           bottom: 0,
-          child: _Row(specs: front, width: frontWidth, palette: palette),
+          child: _Row(
+            specs: front,
+            width: frontWidth,
+            palette: palette,
+            onPlantTap: onPlantTap,
+          ),
         ),
       ],
     );
@@ -329,11 +382,17 @@ class _PlantCluster extends StatelessWidget {
 }
 
 class _Row extends StatelessWidget {
-  const _Row({required this.specs, required this.width, required this.palette});
+  const _Row({
+    required this.specs,
+    required this.width,
+    required this.palette,
+    this.onPlantTap,
+  });
 
   final List<_PlantSpec> specs;
   final double width;
   final MbMoodPalette palette;
+  final void Function(MoodEntry entry)? onPlantTap;
 
   @override
   Widget build(BuildContext context) {
@@ -350,20 +409,36 @@ class _Row extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          for (final spec in specs)
-            SizedBox(
-              width: width,
-              height: spec.height,
-              child: CustomPaint(
-                painter: _MiniPlantPainter(
-                  mood: spec.entry.mood,
-                  intensity: spec.entry.intensity,
-                  color: palette.colorOf(spec.entry.mood.mbKind),
-                  grass: palette.colorOf(MbMoodKind.calm),
-                ),
-              ),
-            ),
+          for (final spec in specs) _plant(spec),
         ],
+      ),
+    );
+  }
+
+  Widget _plant(_PlantSpec spec) {
+    final tap = onPlantTap;
+    final painted = SizedBox(
+      width: width,
+      height: spec.height,
+      child: CustomPaint(
+        painter: _MiniPlantPainter(
+          mood: spec.entry.mood,
+          intensity: spec.entry.intensity,
+          color: palette.colorOf(spec.entry.mood.mbKind),
+          grass: palette.colorOf(MbMoodKind.calm),
+        ),
+      ),
+    );
+    if (tap == null) return painted;
+    // Tappable plant - opaque hit-test over the plant's box so the
+    // user can tap a flower to open the entry it represents.
+    return Semantics(
+      button: true,
+      label: '${spec.entry.mood.name} entry, open',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => tap(spec.entry),
+        child: painted,
       ),
     );
   }

@@ -35,7 +35,18 @@ class SkyHeader extends StatelessWidget {
     required this.weekEntries,
     required this.weekStart,
     this.height = 320,
+    this.onPlantTap,
+    this.onOverflowTap,
   });
+
+  /// Forwarded to the inner [SkyPlotStrip]. Tapping a plant dispatches
+  /// its [MoodEntry] so the home screen can open the entry it maps to.
+  final void Function(MoodEntry entry)? onPlantTap;
+
+  /// Forwarded to the inner [SkyPlotStrip]. Tapping a day's `+N` pill
+  /// dispatches that day + its entries so the home screen can open the
+  /// day-entries sheet.
+  final void Function(DateTime day, List<MoodEntry> entries)? onOverflowTap;
 
   /// Computed garden snapshot - drives both the plant tier and the
   /// atmosphere overlay.
@@ -188,6 +199,8 @@ class SkyHeader extends StatelessWidget {
                   labelColor: labelColor,
                   labelOpacity: labelOpacity,
                   darkOverlay: darkOverlay,
+                  onPlantTap: onPlantTap,
+                  onOverflowTap: onOverflowTap,
                 ),
               ),
             ],

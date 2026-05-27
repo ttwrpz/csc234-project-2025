@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../harvest/presentation/controllers/weekly_summary_controller.dart';
 import '../../harvest/presentation/weekly_summary_screen.dart';
+import '../../history/presentation/calendar_view.dart' show DayEntriesSheet;
 import '../../history/presentation/entry_detail_screen.dart';
 import '../../history/presentation/widgets/mood_entry_tile.dart';
 import '../../mood/data/providers.dart';
@@ -196,7 +197,7 @@ class _GardenView extends StatelessWidget {
         children: <Widget>[
           // Full-bleed SkyHeader at the top - the atmospheric hero
           // reads edge-to-edge.
-          _buildSkyHeader(height: 320),
+          _buildSkyHeader(context, height: 320),
           for (final w in blocks)
             Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -223,7 +224,7 @@ class _GardenView extends StatelessWidget {
       children: <Widget>[
         ClipRRect(
           borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusSky),
-          child: _buildSkyHeader(height: isDesktop ? 420 : 360),
+          child: _buildSkyHeader(context, height: isDesktop ? 420 : 360),
         ),
         const SizedBox(height: 16),
         const TakeABreathButton(expand: true),
@@ -259,12 +260,16 @@ class _GardenView extends StatelessWidget {
 
   /// Builds the SkyHeader for either layout. Single source of truth
   /// for the per-week entries + weekStart so wide + narrow stay in sync.
-  Widget _buildSkyHeader({required double height}) {
+  /// Wires the plot-strip taps: a plant opens its entry; a `+N` pill
+  /// opens that day's entries sheet.
+  Widget _buildSkyHeader(BuildContext context, {required double height}) {
     return SkyHeader(
       state: state,
       weekEntries: _weekEntries(),
       weekStart: _weekStart(),
       height: height,
+      onPlantTap: (entry) => EntryDetailSheet.show(context, entry.id),
+      onOverflowTap: (day, _) => DayEntriesSheet.show(context, day),
     );
   }
 
@@ -285,8 +290,15 @@ class _GardenView extends StatelessWidget {
     final today = _todayLocal();
     final todayEntries = _entriesOn(today);
 
-    final recentForPreview = [...allEntries]
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    // Recent moods shows EARLIER days only - today's entries already
+    // live in the Today card above, so excluding them here keeps the
+    // two cards from duplicating each other.
+    final recentForPreview =
+        allEntries.where((e) {
+          final local = e.createdAt.toLocal();
+          final day = DateTime(local.year, local.month, local.day);
+          return day != today;
+        }).toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     final preview = recentForPreview
         .take(_maxRecentRows)
         .toList(growable: false);
@@ -316,7 +328,7 @@ class _GardenView extends StatelessWidget {
     out.add(DominantEmotionsCard(weekEntries: weekEntries));
     out.add(const SizedBox(height: 12));
 
-    out.add(GentleNudgeCard(confidence: _nudgeConfidence(weekEntries.length)));
+    out.add(GentleNudgeCard(confidence: _nudgeConfidence(state.last7Days)));
     out.add(const SizedBox(height: 16));
 
     out.add(_buildRecentMoodsCard(context, preview, mb));
@@ -368,7 +380,7 @@ class _GardenView extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                'Your most recent moods will appear here.',
+                'Moods from earlier days will appear here.',
                 style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
               ),
             )
@@ -425,16 +437,22 @@ class _GardenView extends StatelessWidget {
   /// Monday-aligned local-midnight of the current week.
   DateTime _weekStart() => WeeklyScoreCard.mondayOf(DateTime.now());
 
-  /// Confidence shown on the Gentle Nudge card, derived from how much
-  /// data the week holds: a nudge over a near-empty week is a low-
-  /// confidence guess; a well-logged week earns higher confidence. This
-  /// keeps the badge honest instead of a hardcoded value.
-  ///   * 0-1 entries -> low
-  ///   * 2-4 entries -> medium
-  ///   * 5+  entries -> high
-  static MbConfidenceLevel _nudgeConfidence(int weekEntryCount) {
-    if (weekEntryCount >= 5) return MbConfidenceLevel.high;
-    if (weekEntryCount >= 2) return MbConfidenceLevel.medium;
+  /// Confidence shown on the Gentle Nudge card, derived from the
+  /// mood-score data density over the last 7 days - how many of those
+  /// days actually carry a logged mood score. A nudge read off a
+  /// sparsely-logged week is a low-confidence guess; a week with most
+  /// days scored earns higher confidence. Mirrors the analytics screen's
+  /// day-fill ratio (>=0.7 high, >=0.4 medium) so the badge reads
+  /// consistently across surfaces instead of being stuck at "low".
+  ///   * 5+ of 7 days scored -> high
+  ///   * 3-4 of 7 days scored -> medium
+  ///   * 0-2 days scored      -> low
+  static MbConfidenceLevel _nudgeConfidence(List<DayScore> last7Days) {
+    final scoredDays = last7Days
+        .where((d) => d.entryCount > 0 && d.avgScore != null)
+        .length;
+    if (scoredDays >= 5) return MbConfidenceLevel.high;
+    if (scoredDays >= 3) return MbConfidenceLevel.medium;
     return MbConfidenceLevel.low;
   }
 }

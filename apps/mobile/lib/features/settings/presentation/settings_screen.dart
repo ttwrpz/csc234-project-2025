@@ -445,36 +445,61 @@ class _SyncSection extends StatelessWidget {
 /// Web sync status. On web the app talks to Firestore directly and its
 /// real-time listeners keep every device current automatically, so
 /// there's no manual push step to surface - just a reassuring status.
-class _WebSyncCluster extends StatelessWidget {
+class _WebSyncCluster extends ConsumerWidget {
   const _WebSyncCluster();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    return ListTile(
-      leading: Icon(Icons.cloud_done_outlined, color: mb.text),
-      title: const Text('Cloud sync'),
-      subtitle: Text(
-        'Your garden syncs automatically to the cloud while you\'re '
-        'signed in. Changes appear on your other devices in real time.',
-        style: MbFonts.nunito(fontSize: 12, height: 1.4, color: mb.textDim),
-      ),
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: MoodBloomColors.softGreen,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          'AUTOMATIC',
-          style: MbFonts.nunito(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-            color: MoodBloomColors.seedDark,
+    return Column(
+      children: [
+        ListTile(
+          leading: Icon(Icons.cloud_done_outlined, color: mb.text),
+          title: const Text('Cloud sync'),
+          subtitle: Text(
+            'Your garden syncs automatically to the cloud while you\'re '
+            'signed in. Changes appear on your other devices in real time.',
+            style: MbFonts.nunito(fontSize: 12, height: 1.4, color: mb.textDim),
+          ),
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: MoodBloomColors.softGreen,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              'AUTOMATIC',
+              style: MbFonts.nunito(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+                color: MoodBloomColors.seedDark,
+              ),
+            ),
           ),
         ),
-      ),
+        const Divider(height: 1),
+        // Web has no offline push queue, but users still expect a manual
+        // "Sync now". On web this re-pulls the latest from Firestore by
+        // invalidating the mood stream so a fresh snapshot is fetched.
+        ListTile(
+          leading: Icon(Icons.sync, color: mb.text),
+          title: const Text('Sync now'),
+          subtitle: Text(
+            'Refresh the latest from the cloud.',
+            style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
+          ),
+          onTap: () {
+            ref.invalidate(myMoodsStreamProvider);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Refreshing from the cloud…'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }
