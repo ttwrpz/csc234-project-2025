@@ -370,7 +370,9 @@ class _GardenView extends StatelessWidget {
                   style: MbFonts.nunito(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.primary,
+                    color: MoodBloomColors.brandText(
+                      theme.brightness == Brightness.dark,
+                    ),
                   ),
                 ),
               ),

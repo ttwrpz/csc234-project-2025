@@ -57,7 +57,14 @@ class MbBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
 
-    return ClipRect(
+    final highlightedIndex = items.indexWhere((it) => it.highlighted);
+
+    // The blurred bar. The highlighted "Add" slot renders an empty
+    // spacer in-row (it reserves its column width); the actual lifted
+    // FAB is drawn in the Stack overlay below so it can poke ABOVE the
+    // bar without the bar's ClipRect (which bounds the BackdropFilter
+    // blur) cropping it.
+    final bar = ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: DecoratedBox(
@@ -74,13 +81,17 @@ class MbBottomNav extends StatelessWidget {
                 children: [
                   for (var i = 0; i < items.length; i++)
                     Expanded(
-                      child: _MbBottomNavTab(
-                        item: items[i],
-                        active: i == currentIndex,
-                        primary: MoodBloomColors.seed,
-                        textDim: mb.textDim,
-                        onTap: () => onTap(i),
-                      ),
+                      child: items[i].highlighted
+                          // Reserve the FAB column; the visible button
+                          // is the non-clipped overlay.
+                          ? const SizedBox.shrink()
+                          : _MbBottomNavTab(
+                              item: items[i],
+                              active: i == currentIndex,
+                              primary: MoodBloomColors.seed,
+                              textDim: mb.textDim,
+                              onTap: () => onTap(i),
+                            ),
                     ),
                 ],
               ),
@@ -88,6 +99,32 @@ class MbBottomNav extends StatelessWidget {
           ),
         ),
       ),
+    );
+
+    if (highlightedIndex < 0) return bar;
+
+    // Stack with clipBehavior.none lets the FAB overflow above the bar.
+    // The bar is the non-positioned (sizing) child; the FAB is centred
+    // horizontally and lifted 14 dp above the top edge.
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.topCenter,
+      children: [
+        bar,
+        Positioned(
+          top: -14,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: _HighlightedFab(
+              item: items[highlightedIndex],
+              active: highlightedIndex == currentIndex,
+              primary: MoodBloomColors.seed,
+              onTap: () => onTap(highlightedIndex),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -109,14 +146,6 @@ class _MbBottomNavTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (item.highlighted) {
-      return _HighlightedTab(
-        item: item,
-        active: active,
-        primary: primary,
-        onTap: onTap,
-      );
-    }
     final color = active ? primary : textDim;
     return Semantics(
       button: true,
@@ -149,15 +178,16 @@ class _MbBottomNavTab extends StatelessWidget {
   }
 }
 
-/// Primary-tinted circular bottom-nav item used for the centred Log slot.
-/// Visually distinct so first-time users notice "this is the main action".
+/// Primary-tinted circular FAB used for the centred Log slot. Rendered
+/// as a non-clipped Stack overlay above the bar (the parent positions it
+/// so it pokes above the nav baseline), so first-time users notice "this
+/// is the main action".
 ///
-/// Per the v1.6 prototype: 52×52 circle, vertical offset −12 dp (lifts
-/// the FAB above the nav baseline), `MoodBloomColors.seed` fill, white
-/// `Icons.add` 24 dp glyph, soft drop-shadow tinted with the seed colour
-/// at 30 % alpha so the lift reads as elevation rather than a flat disc.
-class _HighlightedTab extends StatelessWidget {
-  const _HighlightedTab({
+/// Per the v1.6 prototype: 56×56 circle, `MoodBloomColors.seed` fill,
+/// white `Icons.add` 26 dp glyph, soft seed-tinted drop-shadow so the
+/// lift reads as elevation. `Material` + `InkWell` give a circular ripple.
+class _HighlightedFab extends StatelessWidget {
+  const _HighlightedFab({
     required this.item,
     required this.active,
     required this.primary,
@@ -175,28 +205,27 @@ class _HighlightedTab extends StatelessWidget {
       button: true,
       selected: active,
       label: item.label,
-      child: Center(
-        child: Transform.translate(
-          offset: const Offset(0, -12),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: primary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: primary.withValues(alpha: 0.30),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Icon(item.icon, size: 24, color: Colors.white),
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: primary,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: primary.withValues(alpha: 0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Icon(item.icon, size: 26, color: Colors.white),
           ),
         ),
       ),

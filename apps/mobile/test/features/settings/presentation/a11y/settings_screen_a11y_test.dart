@@ -126,33 +126,15 @@ Future<void> _pumpSettings(
 void main() {
   group('SettingsScreen — semantics', () {
     testWidgets(
-      'decorative avatar initial does NOT announce as text to screen readers',
+      'account tile surfaces the email (display-name editing removed)',
       (tester) async {
         await _pumpSettings(tester);
 
-        // The avatar holds the single letter "T" (from "Tester"). With
-        // the inline ExcludeSemantics wrap, the letter must not appear
-        // as its own semantic label — the adjacent display name "Tester"
-        // is the only thing screen readers should hear.
-        //
-        // We collect every Semantics-tree label under the row that
-        // contains the display name. None of them should be the bare
-        // initial letter.
-        final semanticsNodes = tester
-            .widgetList<Semantics>(find.byType(Semantics))
-            .map((s) => s.properties.label ?? '')
-            .toList();
-
-        expect(
-          semanticsNodes.any((label) => label == 'T'),
-          isFalse,
-          reason:
-              'Avatar initial letter must be decorative — wrapping the '
-              'gradient Container in ExcludeSemantics is the inline fix.',
-        );
-        // The display name + email DO need to remain reachable.
-        expect(find.text('Tester'), findsOneWidget);
+        // The account row now identifies the user by email only - the
+        // editable display-name affordance was removed (it was unused).
+        // The email must stay reachable; the display name is gone.
         expect(find.text('tester@example.com'), findsOneWidget);
+        expect(find.text('Tester'), findsNothing);
       },
     );
 

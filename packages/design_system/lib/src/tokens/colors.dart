@@ -7,7 +7,18 @@ abstract final class MoodBloomColors {
   // Brand
   static const Color seed = Color(0xFF2E7D5B); // primary deep-green
   static const Color seedDark = Color(0xFF1F5A41); // primary deep
+
+  /// Brand green that stays legible as TEXT on the dark navy surface -
+  /// the deep [seed] reads too dim there. Use via [brandText]. ~5:1 on
+  /// the dark scaffold.
+  static const Color seedBright = Color(0xFF6FC9A0);
   static const Color softGreen = Color(0xFFE8F3ED);
+
+  /// Brand-green text colour that adapts to theme brightness: the deep
+  /// [seed] on light surfaces, the brighter [seedBright] on dark. Use
+  /// for coloured stat numbers / links that would otherwise sit at
+  /// low contrast on the navy background.
+  static Color brandText(bool isDark) => isDark ? seedBright : seed;
   static const Color amber = Color(0xFFE8A23B);
   static const Color coral = Color(0xFFF4A78C);
 

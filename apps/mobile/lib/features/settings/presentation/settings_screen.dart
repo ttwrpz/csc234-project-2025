@@ -254,16 +254,7 @@ class _AccountSection extends ConsumerWidget {
           if (user != null)
             ListTile(
               leading: Icon(Icons.mail_outline, color: mb.text),
-              title: Text(user.displayName ?? 'Your account'),
-              subtitle: user.email != null
-                  ? Text(
-                      user.email!,
-                      style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
-                    )
-                  : null,
-              onTap: () =>
-                  _editDisplayName(context, ref, currentName: user.displayName),
-              trailing: Icon(Icons.edit_outlined, color: mb.textDim, size: 18),
+              title: Text(user.email ?? 'Your account'),
             ),
           if (user != null) const Divider(height: 1),
           ListTile(
@@ -279,40 +270,6 @@ class _AccountSection extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Future<void> _editDisplayName(
-    BuildContext context,
-    WidgetRef ref, {
-    required String? currentName,
-  }) async {
-    final newName = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) =>
-          _EditDisplayNameDialog(initialName: currentName),
-    );
-    if (newName == null) return;
-    final trimmed = newName.trim();
-    if (trimmed.isEmpty) return;
-    if (trimmed == (currentName ?? '').trim()) return;
-
-    final result = await ref
-        .read(authRepositoryProvider)
-        .updateDisplayName(trimmed);
-    if (!context.mounted) return;
-    result.fold(
-      ok: (_) {
-        ref.invalidate(currentUserStreamProvider);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Hello, $trimmed.')));
-      },
-      err: (failure) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(failure.message)));
-      },
     );
   }
 
@@ -441,6 +398,41 @@ class _SyncSection extends StatelessWidget {
   }
 }
 
+/// Soft-green status chip ("AUTOMATIC" / "UP TO DATE"). Dark-aware: a
+/// pale soft-green pill glares on the dark settings card and washes its
+/// text out, so in dark mode it uses a translucent seed tint + light
+/// mint text instead.
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark
+        ? MoodBloomColors.seed.withValues(alpha: 0.22)
+        : MoodBloomColors.softGreen;
+    final fg = isDark ? const Color(0xFFCDE8DA) : MoodBloomColors.seedDark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: MbFonts.nunito(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+          color: fg,
+        ),
+      ),
+    );
+  }
+}
+
 /// Web sync status. On web the app talks to Firestore directly and its
 /// real-time listeners keep every device current automatically, so
 /// there's no manual push step to surface - just a reassuring status.
@@ -504,22 +496,7 @@ class _WebSyncClusterState extends ConsumerState<_WebSyncCluster> {
             'signed in. Changes appear on your other devices in real time.',
             style: MbFonts.nunito(fontSize: 12, height: 1.4, color: mb.textDim),
           ),
-          trailing: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: MoodBloomColors.softGreen,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              'AUTOMATIC',
-              style: MbFonts.nunito(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
-                color: MoodBloomColors.seedDark,
-              ),
-            ),
-          ),
+          trailing: const _StatusPill(label: 'AUTOMATIC'),
         ),
         const Divider(height: 1),
         // Web has no offline push queue, but users still expect a manual
@@ -719,69 +696,6 @@ class _DebugSection extends StatelessWidget {
   }
 }
 
-/// Dialog body for the "Edit display name" flow. Owns its own
-/// `TextEditingController` lifecycle so the controller is disposed
-/// during the State's dispose (after `TextField` has detached) rather
-/// than racing with `TextField`'s State.dispose if the caller manages
-/// it from the outside.
-class _EditDisplayNameDialog extends StatefulWidget {
-  const _EditDisplayNameDialog({required this.initialName});
-
-  final String? initialName;
-
-  @override
-  State<_EditDisplayNameDialog> createState() => _EditDisplayNameDialogState();
-}
-
-class _EditDisplayNameDialogState extends State<_EditDisplayNameDialog> {
-  late final TextEditingController _controller;
-  late final FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialName ?? '');
-    _focusNode = FocusNode();
-    Future<void>.delayed(const Duration(milliseconds: 260), () {
-      if (mounted) _focusNode.requestFocus();
-    });
-  }
-
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _submit() => Navigator.of(context).pop(_controller.text.trim());
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Your name'),
-      content: TextField(
-        controller: _controller,
-        focusNode: _focusNode,
-        textCapitalization: TextCapitalization.words,
-        maxLength: 60,
-        decoration: const InputDecoration(
-          labelText: 'Display name',
-          hintText: 'How would you like to be called?',
-        ),
-        onSubmitted: (_) => _submit(),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(onPressed: _submit, child: const Text('Save')),
-      ],
-    );
-  }
-}
-
 /// Single radio tile in the theme picker. Uses the post-3.32
 /// RadioListTile API — `groupValue` / `onChanged` come from a
 /// [RadioGroup] ancestor in `_ThemeSection`, not from per-tile
@@ -876,25 +790,7 @@ class _SyncCluster extends ConsumerWidget {
               ),
               trailing: lastSync == null
                   ? null
-                  : Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: MoodBloomColors.softGreen,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        'UP TO DATE',
-                        style: MbFonts.nunito(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                          color: MoodBloomColors.seedDark,
-                        ),
-                      ),
-                    ),
+                  : const _StatusPill(label: 'UP TO DATE'),
             ),
             const Divider(height: 1),
             ListTile(
@@ -955,8 +851,9 @@ class _SyncCluster extends ConsumerWidget {
 
 /// Debug zone, only rendered in debug builds. Bundles existing tools
 /// (Crashlytics test crash, force-harvest, plant-tier cycler, etc).
-/// Wrapped in an `ExpansionTile` (collapsed by default) so the
-/// power-user tiles don't dominate the Settings scroll.
+/// Wrapped in an `ExpansionTile` that starts EXPANDED so the dev tools
+/// are visible immediately in a debug build (it's never shipped to
+/// release, so it can't clutter a user's Settings).
 class _DebugCluster extends ConsumerWidget {
   const _DebugCluster();
 
@@ -971,7 +868,11 @@ class _DebugCluster extends ConsumerWidget {
       child: ExpansionTile(
         leading: const Icon(Icons.build_outlined),
         title: const Text('Debug tools'),
-        subtitle: const Text('Power-user only - tap to expand'),
+        subtitle: const Text(
+          'Dev-build only - force states, cycle tiers, test crashes. '
+          'Never shipped to release.',
+        ),
+        initiallyExpanded: true,
         tilePadding: const EdgeInsets.symmetric(horizontal: 16),
         childrenPadding: EdgeInsets.zero,
         children: [

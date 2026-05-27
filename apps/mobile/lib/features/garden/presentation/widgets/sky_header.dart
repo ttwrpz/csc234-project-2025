@@ -479,14 +479,24 @@ class _TierAtmospherePainter extends CustomPainter {
   final Color sun1;
   final Color sun2;
 
+  /// Reference viewBox width the atmosphere shapes are authored against.
+  /// (The design height was 200, but the painter now scales uniformly by
+  /// width so celestial bodies stay round - see [paint].)
   static const double _vw = 400;
-  static const double _vh = 200;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
-    canvas.scale(size.width / _vw, size.height / _vh);
-    canvas.clipRect(const Rect.fromLTWH(0, 0, _vw, _vh));
+    // UNIFORM scale (by width) - NOT size.height/_vh. A non-uniform
+    // scale stretched the 400x200 viewBox to the taller SkyHeader and
+    // turned every `drawCircle` (sun, moon, glow) into a vertical oval.
+    // The atmosphere art is top-anchored (sky band), so scaling by the
+    // width factor keeps celestial bodies perfectly round and preserves
+    // the cloud/star layout; the lower canvas is covered by the gradient
+    // + ground + plant layers below this painter.
+    final s = size.width / _vw;
+    canvas.scale(s, s);
+    canvas.clipRect(Rect.fromLTWH(0, 0, _vw, size.height / s));
     switch (tier) {
       case PlantTier.flourishing:
         isDark ? _flourishingDark(canvas) : _flourishingLight(canvas);

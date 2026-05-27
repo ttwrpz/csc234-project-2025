@@ -478,6 +478,7 @@ class _StatRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final avgLabel = '${vm.avg >= 0 ? "+" : ""}${vm.avg.toStringAsFixed(2)}';
     return Container(
       padding: const EdgeInsets.only(top: MoodBloomSpacing.sm),
@@ -489,7 +490,9 @@ class _StatRow extends StatelessWidget {
           _Stat(
             label: 'AVG',
             value: avgLabel,
-            accent: vm.avg >= 0 ? MoodBloomColors.seed : MoodBloomColors.moodSad,
+            accent: vm.avg >= 0
+                ? MoodBloomColors.brandText(isDark)
+                : mb.destructiveText,
           ),
           const SizedBox(width: MoodBloomSpacing.lg),
           _Stat(label: 'ENTRIES', value: '${vm.entryCount}'),

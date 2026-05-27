@@ -40,36 +40,69 @@ class HarvestMiniGarden extends StatelessWidget {
   /// larger value for a taller hero.
   final double height;
 
-  /// Per-tier sky gradient stops, ported from the prototype's
-  /// `MiniHarvestGarden > TIER_BG`. Storm reads as a muted slate, never
-  /// an alarming charcoal (CLAUDE.md "sheltered, never threatened").
-  static List<Color> _skyFor(PlantTier tier) => switch (tier) {
-    PlantTier.flourishing => const [
-      Color(0xFFFFE0BA),
-      Color(0xFFFFEAD0),
-      Color(0xFFDDEFD8),
-    ],
-    PlantTier.thriving => const [
-      Color(0xFFFFE4D1),
-      Color(0xFFF5E9DA),
-      Color(0xFFE8F3ED),
-    ],
-    PlantTier.resting => const [
-      Color(0xFFF4DCC4),
-      Color(0xFFECDFD0),
-      Color(0xFFDAE2CE),
-    ],
-    PlantTier.weathering => const [
-      Color(0xFFC8C9BC),
-      Color(0xFFC2C7BA),
-      Color(0xFFB8C5B0),
-    ],
-    PlantTier.stormSeason => const [
-      Color(0xFF6E7C8B),
-      Color(0xFF61707F),
-      Color(0xFF4C606A),
-    ],
-  };
+  /// Per-tier sky gradient stops. Light variants ported from the
+  /// prototype's `MiniHarvestGarden > TIER_BG`; dark variants mirror the
+  /// SkyHeader's per-tier night skies so the harvest snapshot respects
+  /// the app theme instead of always rendering a bright daytime sky.
+  /// Storm reads as a muted slate, never an alarming charcoal.
+  static List<Color> _skyFor(PlantTier tier, bool isDark) {
+    if (isDark) {
+      return switch (tier) {
+        PlantTier.flourishing => const [
+          Color(0xFF2D2147),
+          Color(0xFF3E2D5C),
+          Color(0xFF1F2D3A),
+        ],
+        PlantTier.thriving => const [
+          Color(0xFF1B2942),
+          Color(0xFF1F2E3F),
+          Color(0xFF1A2D2A),
+        ],
+        PlantTier.resting => const [
+          Color(0xFF2A2638),
+          Color(0xFF2D2A3B),
+          Color(0xFF25292E),
+        ],
+        PlantTier.weathering => const [
+          Color(0xFF232830),
+          Color(0xFF252D30),
+          Color(0xFF1F2A24),
+        ],
+        PlantTier.stormSeason => const [
+          Color(0xFF0F1620),
+          Color(0xFF1A2330),
+          Color(0xFF14202A),
+        ],
+      };
+    }
+    return switch (tier) {
+      PlantTier.flourishing => const [
+        Color(0xFFFFE0BA),
+        Color(0xFFFFEAD0),
+        Color(0xFFDDEFD8),
+      ],
+      PlantTier.thriving => const [
+        Color(0xFFFFE4D1),
+        Color(0xFFF5E9DA),
+        Color(0xFFE8F3ED),
+      ],
+      PlantTier.resting => const [
+        Color(0xFFF4DCC4),
+        Color(0xFFECDFD0),
+        Color(0xFFDAE2CE),
+      ],
+      PlantTier.weathering => const [
+        Color(0xFFC8C9BC),
+        Color(0xFFC2C7BA),
+        Color(0xFFB8C5B0),
+      ],
+      PlantTier.stormSeason => const [
+        Color(0xFF6E7C8B),
+        Color(0xFF61707F),
+        Color(0xFF4C606A),
+      ],
+    };
+  }
 
   static DateTime _mondayOf(DateTime now) {
     final local = now.toLocal();
@@ -89,10 +122,20 @@ class HarvestMiniGarden extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isStorm = tier == PlantTier.stormSeason;
-    final groundFront = isStorm ? const Color(0xFF2E4538) : mb.ground2;
-    final groundBack = isStorm ? const Color(0xFF3D5040) : mb.ground;
-    final labelTint = isStorm ? Colors.white : mb.text;
+    // In dark mode the theme ground tones (already dark) read correctly
+    // under the night sky; only the light-mode storm needs its custom
+    // slate ground so it doesn't clash with the grey sky.
+    final groundFront = (isStorm && !isDark)
+        ? const Color(0xFF2E4538)
+        : mb.ground2;
+    final groundBack = (isStorm && !isDark)
+        ? const Color(0xFF3D5040)
+        : mb.ground;
+    // White day labels read on both the light storm sky and any dark
+    // sky; the dark non-storm tiers also want a light label.
+    final labelTint = (isStorm || isDark) ? Colors.white : mb.text;
 
     return SizedBox(
       height: height,
@@ -107,7 +150,7 @@ class HarvestMiniGarden extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     stops: const [0, 0.55, 1],
-                    colors: _skyFor(tier),
+                    colors: _skyFor(tier, isDark),
                   ),
                 ),
               ),

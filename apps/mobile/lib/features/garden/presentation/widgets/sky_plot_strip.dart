@@ -339,10 +339,6 @@ class _PlantCluster extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Front-row plant width. The back row renders at 78% of this so it
-    // visually nestles behind without crowding the front row.
-    final frontWidth = compact ? 22.0 : 28.0;
-    final backWidth = frontWidth * 0.78;
     return Stack(
       alignment: Alignment.bottomCenter,
       children: <Widget>[
@@ -355,11 +351,7 @@ class _PlantCluster extends StatelessWidget {
               opacity: 0.65,
               child: Transform.translate(
                 offset: Offset(compact ? -6 : -8, 0),
-                child: _Row(
-                  specs: back,
-                  width: backWidth,
-                  onPlantTap: onPlantTap,
-                ),
+                child: _Row(specs: back, onPlantTap: onPlantTap),
               ),
             ),
           ),
@@ -367,7 +359,7 @@ class _PlantCluster extends StatelessWidget {
           left: 0,
           right: 0,
           bottom: 0,
-          child: _Row(specs: front, width: frontWidth, onPlantTap: onPlantTap),
+          child: _Row(specs: front, onPlantTap: onPlantTap),
         ),
       ],
     );
@@ -375,10 +367,9 @@ class _PlantCluster extends StatelessWidget {
 }
 
 class _Row extends StatelessWidget {
-  const _Row({required this.specs, required this.width, this.onPlantTap});
+  const _Row({required this.specs, this.onPlantTap});
 
   final List<_PlantSpec> specs;
-  final double width;
   final void Function(MoodEntry entry)? onPlantTap;
 
   @override
@@ -404,11 +395,7 @@ class _Row extends StatelessWidget {
 
   Widget _plant(_PlantSpec spec) {
     final tap = onPlantTap;
-    final plant = _SkinnedPlant(
-      entry: spec.entry,
-      width: width,
-      height: spec.height,
-    );
+    final plant = _SkinnedPlant(entry: spec.entry, height: spec.height);
     if (tap == null) return plant;
     // Tappable plant - opaque hit-test over the plant's box so the
     // user can tap a flower to open the entry it represents.
@@ -428,18 +415,23 @@ class _Row extends StatelessWidget {
 /// [resolvedPlantSkinProvider] for the entry's species and renders the
 /// resolved shape style via [MbSkinPlant] - so the home strip + harvest
 /// snapshots reflect the global OR per-species skin the user equipped
-/// (falling back to the classic meadow shape). The plant is horizontally
-/// centred within its [width] box by the painter's `cx = w/2` anchor.
+/// (falling back to the classic meadow shape).
+///
+/// The box is ASPECT-LOCKED to the painter's 36:60 viewBox: the width is
+/// derived from [height] so `MbSkinPlant` scales uniformly. A non-square
+/// box would scale the design's x and y independently, squashing the
+/// bloom into an oval and shifting the stem base off the ground line.
+/// The enclosing row's `FittedBox(scaleDown)` shrinks the whole cluster
+/// to fit the narrow day column, so locking the aspect here never
+/// overflows.
 class _SkinnedPlant extends ConsumerWidget {
-  const _SkinnedPlant({
-    required this.entry,
-    required this.width,
-    required this.height,
-  });
+  const _SkinnedPlant({required this.entry, required this.height});
 
   final MoodEntry entry;
-  final double width;
   final double height;
+
+  /// Painter viewBox aspect (width / height) from `MbSkinPlant` (36x60).
+  static const double _aspect = 36 / 60;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -454,7 +446,7 @@ class _SkinnedPlant extends ConsumerWidget {
       mood: mood,
       intensity: entry.intensity,
       color: color,
-      size: Size(width, height),
+      size: Size(height * _aspect, height),
     );
   }
 }

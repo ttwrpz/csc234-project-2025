@@ -72,7 +72,8 @@ class WeeklyScoreCard extends StatelessWidget {
     final weeklyAvg = _weeklyAverage(weekEntries);
     final dateRange = _formatDateRange(weekStart);
     final signedAvg = _formatSigned(weeklyAvg);
-    final avgColor = _avgColorFor(weeklyAvg, mb);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final avgColor = _avgColorFor(weeklyAvg, mb, isDark);
 
     return MbCard(
       padding: const EdgeInsets.all(MoodBloomSpacing.lg),
@@ -201,10 +202,12 @@ class WeeklyScoreCard extends StatelessWidget {
   /// Picks the score colour for the large headline number. Strongly
   /// negative weeks lean coral so the user reads the headline at a
   /// glance ("a heavy week"). Positive weeks lean seed-green for the
-  /// same reason. Neutral weeks stay on the body-text colour.
-  static Color _avgColorFor(double avg, MbColors mb) {
-    if (avg <= -0.3) return MoodBloomColors.coralText;
-    if (avg >= 0.1) return MoodBloomColors.seed;
+  /// same reason. Neutral weeks stay on the body-text colour. Both
+  /// accents are theme-aware so they stay legible on the dark scaffold
+  /// (the deep coralText / seed both read too dim on navy).
+  static Color _avgColorFor(double avg, MbColors mb, bool isDark) {
+    if (avg <= -0.3) return mb.destructiveText;
+    if (avg >= 0.1) return MoodBloomColors.brandText(isDark);
     return mb.text;
   }
 

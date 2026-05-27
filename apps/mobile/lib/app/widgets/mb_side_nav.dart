@@ -210,6 +210,7 @@ class _MbSideNavTab extends StatelessWidget {
     // brand seed background + white foreground, regardless of active
     // state. This mirrors the bottom-nav FAB treatment so the action
     // reads as "primary" everywhere it appears.
+    final isDark = theme.brightness == Brightness.dark;
     final isFab = item.highlighted;
     final Color fg;
     final Color bg;
@@ -219,10 +220,18 @@ class _MbSideNavTab extends StatelessWidget {
       bg = MoodBloomColors.seed;
       weight = FontWeight.w600;
     } else if (active) {
-      // Active rows use the brand-tinted soft-green wash from the
-      // prototype (`--mb-soft-green`) with full-strength text colour.
-      fg = mb.text;
-      bg = MoodBloomColors.softGreen;
+      // Active rows use a brand-tinted wash. In light mode that's the
+      // prototype's pale soft-green with full-strength text; in dark
+      // mode a pale wash would glare and wash the text out, so we use a
+      // translucent seed tint + a light-mint foreground that stays
+      // legible on the dark sidebar.
+      if (isDark) {
+        fg = const Color(0xFFCDE8DA);
+        bg = MoodBloomColors.seed.withValues(alpha: 0.22);
+      } else {
+        fg = mb.text;
+        bg = MoodBloomColors.softGreen;
+      }
       weight = FontWeight.w600;
     } else {
       fg = mb.textDim;

@@ -523,6 +523,7 @@ class _BottomRail extends StatelessWidget {
 
     if (isPhone) {
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           readingGuide,
           const SizedBox(height: MoodBloomSpacing.md),
@@ -732,8 +733,9 @@ class _NumberStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mb = Theme.of(context).extension<MbColors>()!;
     final theme = Theme.of(context);
+    final mb = theme.extension<MbColors>()!;
+    final isDark = theme.brightness == Brightness.dark;
     return MbCard(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -743,7 +745,7 @@ class _NumberStatCard extends StatelessWidget {
             style: MbFonts.fraunces(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: theme.colorScheme.primary,
+              color: MoodBloomColors.brandText(isDark),
             ),
           ),
           const SizedBox(height: 2),
