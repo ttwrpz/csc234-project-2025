@@ -439,39 +439,29 @@ class _MeadowPainter extends _SkinPlantPainterBase {
     c.restore();
   }
 
-  // Anxious - pairs of wheat grains ascending the top of the stem +
-  // wispy fork at the apex.
+  // Anxious - a fern frond: pinnae (leaflets) alternate along the upper
+  // rachis, longest near the base and tapering to the tip at the apex.
+  // Reads as an actual fern rather than wheat/grass.
   void _paintAnxious(Canvas c, Color tint) {
-    final paint = Paint()..color = tint.withValues(alpha: 0.92);
-    final top = _topY();
-    for (var i = 0; i < 5; i += 1) {
-      final dy = i * 4.0;
-      _drawRotatedOval(
-        c,
-        cx: _cx - 2.6,
-        cy: top - 2 + dy,
-        rx: 1.4,
-        ry: 2.8,
-        rotateDeg: -22,
-        paint: paint,
-      );
-      _drawRotatedOval(
-        c,
-        cx: _cx + 2.6,
-        cy: top - 2 + dy,
-        rx: 1.4,
-        ry: 2.8,
-        rotateDeg: 22,
-        paint: paint,
-      );
+    final frond = Paint()..color = tint.withValues(alpha: 0.92);
+    final tipY = _topY();
+    final baseY = _h * 0.62;
+    const count = 7;
+    for (var i = 0; i < count; i += 1) {
+      final t = i / (count - 1);
+      final y = tipY + (baseY - tipY) * t;
+      final len = 3.0 + t * 7.0;
+      final side = i.isEven ? -1.0 : 1.0;
+      final tipX = _cx + len * side;
+      final tipPY = y - len * 0.5;
+      final p = Path()
+        ..moveTo(_cx, y)
+        ..quadraticBezierTo(_cx + len * 0.4 * side, y - len * 0.6, tipX, tipPY)
+        ..quadraticBezierTo(_cx + len * 0.45 * side, y + 0.8, _cx, y)
+        ..close();
+      c.drawPath(p, frond);
     }
-    final wisp = Paint()
-      ..color = tint.withValues(alpha: 0.7)
-      ..strokeWidth = 1
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-    c.drawLine(Offset(_cx, top - 4), Offset(_cx - 1.5, top - 10), wisp);
-    c.drawLine(Offset(_cx, top - 4), Offset(_cx + 1.5, top - 10), wisp);
+    c.drawCircle(Offset(_cx, tipY - 1), 1.4, frond);
   }
 
   /// Draws an oval rotated [rotateDeg] degrees around its centre.

@@ -198,13 +198,33 @@ class _FilterChipRow extends StatelessWidget {
   }
 }
 
-class _HistoryListView extends ConsumerWidget {
+class _HistoryListView extends ConsumerStatefulWidget {
   const _HistoryListView({super.key, required this.filter});
 
   final HistoryFilter filter;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_HistoryListView> createState() => _HistoryListViewState();
+}
+
+class _HistoryListViewState extends ConsumerState<_HistoryListView> {
+  /// How many day-sections to render at once. The full history is held
+  /// in memory by the stream, but we only build a window of day-cards so
+  /// a long history doesn't lay out every entry up front. "Load more"
+  /// grows the window by [_pageSize].
+  static const int _pageSize = 14;
+  int _visible = _pageSize;
+
+  @override
+  void didUpdateWidget(_HistoryListView old) {
+    super.didUpdateWidget(old);
+    // Reset the window when the filter changes so switching to a
+    // narrower filter doesn't keep a huge window open.
+    if (old.filter != widget.filter) _visible = _pageSize;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final moods = ref.watch(myMoodsStreamProvider);
     final mb = Theme.of(context).extension<MbColors>()!;
     return moods.when(
@@ -221,7 +241,8 @@ class _HistoryListView extends ConsumerWidget {
       ),
       data: (entries) {
         final now = DateTime.now();
-        final filtered = entries.where((e) => filter.matches(e, now)).toList()
+        final filtered = entries.where((e) => widget.filter.matches(e, now))
+            .toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         if (filtered.isEmpty) {
           return Center(
@@ -235,18 +256,47 @@ class _HistoryListView extends ConsumerWidget {
             ),
           );
         }
-        // Group entries by local-midnight day, then render the day-header
-        // + (empty placeholder OR a stack of `MoodEntryTile` rows) per
-        // the prototype's day-section pattern.
-        final daySections = _groupAndFillDays(filtered, filter, now);
+        // Group entries by local-midnight day, then render only the
+        // first [_visible] day-sections; a "Load more" footer reveals
+        // older ones in pages.
+        final daySections = _groupAndFillDays(filtered, widget.filter, now);
+        final shown = daySections.length <= _visible
+            ? daySections.length
+            : _visible;
+        final hasMore = shown < daySections.length;
         return ListView.builder(
-          itemCount: daySections.length,
+          itemCount: shown + (hasMore ? 1 : 0),
           itemBuilder: (context, i) {
-            final section = daySections[i];
-            return _DaySection(section: section);
+            if (i >= shown) {
+              return _LoadMoreButton(
+                onPressed: () => setState(() => _visible += _pageSize),
+              );
+            }
+            return _DaySection(section: daySections[i]);
           },
         );
       },
+    );
+  }
+}
+
+/// Footer button that reveals the next page of older day-sections.
+class _LoadMoreButton extends StatelessWidget {
+  const _LoadMoreButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: MoodBloomSpacing.lg),
+      child: Center(
+        child: MbGhostButton(
+          label: 'Load more',
+          fullWidth: false,
+          onPressed: onPressed,
+        ),
+      ),
     );
   }
 }

@@ -32,7 +32,6 @@ import '../../intervention/presentation/controllers/intervention_controller.dart
 import '../../mood/data/sync/connectivity_provider.dart';
 import '../../notifications/data/datasources/local_notification_datasource.dart';
 import '../../notifications/presentation/widgets/daily_check_in_tile.dart';
-import '../../notifications/presentation/widgets/notifications_toggle_tile.dart';
 import '../../notifications/presentation/widgets/tier_toggle_tile.dart';
 import '../../disclaimer/domain/disclaimer_copy.dart';
 import '../../pattern_engine/domain/entities/tier.dart' as engine;
@@ -409,17 +408,17 @@ class _NotificationsSection extends StatelessWidget {
       label: 'NOTIFICATIONS',
       child: Column(
         children: [
-          NotificationsToggleTile(),
+          // Self-set local daily nudge - the only reliably-delivered
+          // reminder (a real scheduled OS notification), so it leads
+          // the section.
+          DailyCheckInTile(),
           Divider(height: 1),
+          // The three in-app intervention channels, gated per tier.
           TierToggleTile(tier: InterventionTier.one),
           Divider(height: 1),
           TierToggleTile(tier: InterventionTier.two),
           Divider(height: 1),
           TierToggleTile(tier: InterventionTier.three),
-          Divider(height: 1),
-          // Self-set local daily nudge — distinct from the FCM-driven
-          // support reminders above.
-          DailyCheckInTile(),
         ],
       ),
     );
@@ -445,11 +444,55 @@ class _SyncSection extends StatelessWidget {
 /// Web sync status. On web the app talks to Firestore directly and its
 /// real-time listeners keep every device current automatically, so
 /// there's no manual push step to surface - just a reassuring status.
-class _WebSyncCluster extends ConsumerWidget {
+class _WebSyncCluster extends ConsumerStatefulWidget {
   const _WebSyncCluster();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_WebSyncCluster> createState() => _WebSyncClusterState();
+}
+
+class _WebSyncClusterState extends ConsumerState<_WebSyncCluster> {
+  /// SharedPreferences key for the last manual web refresh. Web has no
+  /// Drift drain loop to stamp `lastSuccessfulSync`, so we track the
+  /// user's manual "Sync now" taps here to surface a "Last refreshed"
+  /// time like the native cluster shows.
+  static const String _prefsKey = 'web_last_refreshed_millis';
+
+  DateTime? _lastRefreshed;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLastRefreshed();
+  }
+
+  Future<void> _loadLastRefreshed() async {
+    final prefs = await SharedPreferences.getInstance();
+    final millis = prefs.getInt(_prefsKey);
+    if (!mounted || millis == null) return;
+    setState(() {
+      _lastRefreshed = DateTime.fromMillisecondsSinceEpoch(millis);
+    });
+  }
+
+  Future<void> _syncNow() async {
+    final messenger = ScaffoldMessenger.of(context);
+    ref.invalidate(myMoodsStreamProvider);
+    final now = DateTime.now();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_prefsKey, now.millisecondsSinceEpoch);
+    if (!mounted) return;
+    setState(() => _lastRefreshed = now);
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Refreshing from the cloud…'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
     return Column(
       children: [
@@ -481,23 +524,18 @@ class _WebSyncCluster extends ConsumerWidget {
         const Divider(height: 1),
         // Web has no offline push queue, but users still expect a manual
         // "Sync now". On web this re-pulls the latest from Firestore by
-        // invalidating the mood stream so a fresh snapshot is fetched.
+        // invalidating the mood stream, and records when so the user can
+        // see a "Last refreshed" time.
         ListTile(
           leading: Icon(Icons.sync, color: mb.text),
           title: const Text('Sync now'),
           subtitle: Text(
-            'Refresh the latest from the cloud.',
+            _lastRefreshed == null
+                ? 'Refresh the latest from the cloud.'
+                : 'Last refreshed ${_SyncCluster._describeLastSync(_lastRefreshed)}',
             style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
           ),
-          onTap: () {
-            ref.invalidate(myMoodsStreamProvider);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Refreshing from the cloud…'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          },
+          onTap: _syncNow,
         ),
       ],
     );

@@ -47,18 +47,23 @@ class MoodEntryTile extends StatelessWidget {
                     size: MbChipSize.md,
                     intensity: entry.intensity,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      note.isEmpty ? '(no note)' : note,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: MbFonts.nunito(
-                        fontSize: 13,
-                        color: note.isEmpty ? mb.textDim : mb.text,
+                  // Note in the middle when present; otherwise an empty
+                  // expander (no "(no note)" placeholder - consistent
+                  // with the Today card and the calendar panel).
+                  if (note.isNotEmpty)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 12),
+                        child: Text(
+                          note,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: MbFonts.nunito(fontSize: 13, color: mb.text),
+                        ),
                       ),
-                    ),
-                  ),
+                    )
+                  else
+                    const Spacer(),
                   if (locked) ...<Widget>[
                     const SizedBox(width: 8),
                     const MbLockBadge(small: true),

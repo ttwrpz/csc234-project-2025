@@ -1,4 +1,5 @@
 import 'mb_fonts.dart';
+import 'mb_svg.dart';
 import 'dart:async';
 import 'dart:ui';
 
@@ -31,7 +32,10 @@ class MbAppToast extends StatelessWidget {
     Widget? leadingIcon,
     Duration duration = const Duration(seconds: 5),
   }) {
-    final overlay = Overlay.of(context);
+    // Root overlay so the toast survives a route change - e.g. saving a
+    // mood shows the toast then navigates to /home; the toast should
+    // float over the destination, not vanish with the source route.
+    final overlay = Overlay.of(context, rootOverlay: true);
     late OverlayEntry entry;
     var dismissed = false;
     void dismiss() {
@@ -61,55 +65,73 @@ class MbAppToast extends StatelessWidget {
       color: Colors.transparent,
       child: GestureDetector(
         onTap: onDismiss,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(245, 34, 48, 63),
-                borderRadius: BorderRadius.circular(14),
+        child: DecoratedBox(
+          // Soft drop shadow per the prototype (0 12px 30px rgba black .3).
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 30,
+                offset: const Offset(0, 12),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        height: 22,
-                        width: 22,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF4A78C),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        alignment: Alignment.center,
-                        child:
-                            leadingIcon ??
-                            const Text('🌸', style: TextStyle(fontSize: 12)),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  // Near-black glass (rgba 20,24,30,0.92) per prototype.
+                  color: const Color.fromARGB(235, 20, 24, 30),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      height: 26,
+                      width: 26,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4A78C),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        title,
-                        style: MbFonts.nunito(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    body,
-                    style: MbFonts.nunito(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white.withAlpha(0xE6), // 90% white
+                      alignment: Alignment.center,
+                      child:
+                          leadingIcon ??
+                          const MbBrandSvg(size: 16, color: Colors.white),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: MbFonts.nunito(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            body,
+                            style: MbFonts.nunito(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.white.withAlpha(0xD9), // 85%
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -160,7 +182,7 @@ class _AnimatedToastState extends State<_AnimatedToast>
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     return Positioned(
-      top: 54 + mediaQuery.padding.top,
+      top: 16 + mediaQuery.padding.top,
       left: 16,
       right: 16,
       child: SlideTransition(
@@ -168,7 +190,16 @@ class _AnimatedToastState extends State<_AnimatedToast>
           begin: const Offset(0, -1),
           end: Offset.zero,
         ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut)),
-        child: FadeTransition(opacity: _controller, child: widget.child),
+        child: FadeTransition(
+          opacity: _controller,
+          // Centered, capped at 360 dp per the prototype's ToastFrame.
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: widget.child,
+            ),
+          ),
+        ),
       ),
     );
   }

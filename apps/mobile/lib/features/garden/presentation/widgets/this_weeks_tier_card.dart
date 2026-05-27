@@ -1,6 +1,7 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../tokens/data/providers.dart';
 import '../../../tokens/presentation/controllers/token_visibility_controller.dart';
@@ -95,28 +96,33 @@ class _GreenTokenPill extends StatelessWidget {
     final fg = isDark ? const Color(0xFFCDE8DA) : MoodBloomColors.seedDark;
     final label = balance == 1 ? '1 token' : '$balance tokens';
     return Semantics(
-      label: label,
+      button: true,
+      label: '$label. Open the skin shop',
       child: ExcludeSemantics(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: bg,
+        child: Material(
+          color: bg,
+          borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
+          child: InkWell(
+            onTap: () => context.go('/garden/skins'),
             borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(Icons.local_florist, size: 14, color: fg),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: MbFonts.nunito(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: fg,
-                ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(Icons.local_florist, size: 14, color: fg),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: MbFonts.nunito(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: fg,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

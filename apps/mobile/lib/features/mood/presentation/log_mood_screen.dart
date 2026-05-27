@@ -250,6 +250,14 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
       if (original != null) {
         context.go('/history/${entry.id}');
       } else {
+        // Confirmation toast over the garden - the prototype's "Saved"
+        // toast. Shown before navigating; it lives in the root overlay
+        // so it floats over /home.
+        MbAppToast.show(
+          context,
+          title: 'Saved',
+          body: "Your mood is now part of this week's garden.",
+        );
         context.go('/home');
       }
     }

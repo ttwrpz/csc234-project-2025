@@ -493,7 +493,7 @@ class _MiniPlantPainter extends CustomPainter {
       case MoodType.angry:
         _paintAngry(canvas, cx, stemTop, h);
       case MoodType.anxious:
-        _paintAnxious(canvas, cx, stemTop);
+        _paintAnxious(canvas, cx, stemTop, h);
     }
   }
 
@@ -703,38 +703,30 @@ class _MiniPlantPainter extends CustomPainter {
     c.restore();
   }
 
-  // Anxious - pairs of wheat grains ascending the top of the stem + a
-  // wispy fork at the apex.
-  void _paintAnxious(Canvas c, double cx, double top) {
-    final paint = Paint()..color = color.withValues(alpha: 0.92);
-    for (var i = 0; i < 5; i += 1) {
-      final dy = i * 4.0;
-      _drawRotatedOval(
-        c,
-        cx: cx - 2.6,
-        cy: top - 2 + dy,
-        rx: 1.4,
-        ry: 2.8,
-        rotateDeg: -22,
-        paint: paint,
-      );
-      _drawRotatedOval(
-        c,
-        cx: cx + 2.6,
-        cy: top - 2 + dy,
-        rx: 1.4,
-        ry: 2.8,
-        rotateDeg: 22,
-        paint: paint,
-      );
+  // Anxious - a fern frond: pinnae (leaflets) alternate along the upper
+  // rachis, longest near the base and tapering to the tip at the apex.
+  // Reads as an actual fern rather than wheat/grass.
+  void _paintAnxious(Canvas c, double cx, double top, double h) {
+    final frond = Paint()..color = color.withValues(alpha: 0.92);
+    const count = 7;
+    final tipY = top; // apex
+    final baseY = h * 0.62; // lowest pinna
+    for (var i = 0; i < count; i += 1) {
+      final t = i / (count - 1); // 0 at tip .. 1 at base
+      final y = tipY + (baseY - tipY) * t;
+      final len = 3.0 + t * 7.0; // 3dp (tip) .. 10dp (base)
+      final side = i.isEven ? -1.0 : 1.0;
+      final tipX = cx + len * side;
+      final tipPY = y - len * 0.5; // angle the leaflet upward
+      final p = Path()
+        ..moveTo(cx, y)
+        ..quadraticBezierTo(cx + len * 0.4 * side, y - len * 0.6, tipX, tipPY)
+        ..quadraticBezierTo(cx + len * 0.45 * side, y + 0.8, cx, y)
+        ..close();
+      c.drawPath(p, frond);
     }
-    final wisp = Paint()
-      ..color = color.withValues(alpha: 0.7)
-      ..strokeWidth = 1
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-    c.drawLine(Offset(cx, top - 4), Offset(cx - 1.5, top - 10), wisp);
-    c.drawLine(Offset(cx, top - 4), Offset(cx + 1.5, top - 10), wisp);
+    // Small coiled tip at the apex.
+    c.drawCircle(Offset(cx, tipY - 1), 1.4, frond);
   }
 
   /// Draws an oval rotated [rotateDeg] degrees around its centre.
