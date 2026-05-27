@@ -19,6 +19,13 @@ dependencies:
   firebase_remote_config: ^6.0.0
   firebase_messaging: ^16.0.2
   flutter_local_notifications: ^19.4.2
+  # Zoned daily scheduling for the self-set "daily check-in" reminder.
+  # `zonedSchedule` with `DateTimeComponents.time` needs a tz database +
+  # the device's local zone name so a 21:30 wall-clock repeat survives
+  # DST shifts. `flutter_timezone` reads the platform zone; `timezone`
+  # provides the IANA database the plugin matches against.
+  timezone: ^0.10.0
+  flutter_timezone: ^4.1.0
   flutter_riverpod: ^3.0.0
   riverpod_annotation: ^4.0.0
   go_router: ^17.0.0

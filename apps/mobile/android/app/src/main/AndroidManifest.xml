@@ -7,6 +7,16 @@
     <!-- FCM (S5 5.5b): Android 13+ requires runtime POST_NOTIFICATIONS
          consent before notifications are delivered. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Daily check-in (self-set local reminder via
+         flutter_local_notifications zonedSchedule). RECEIVE_BOOT_COMPLETED
+         lets the plugin's boot receiver re-arm the scheduled reminder
+         after a reboot. SCHEDULE_EXACT_ALARM / USE_EXACT_ALARM are
+         declared for parity with the plugin's exact-alarm path; the daily
+         check-in itself uses inexactAllowWhileIdle so it does not depend
+         on the (Android 13+ restricted) exact-alarm runtime grant. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <!-- v1.6 — mood entry attachments via image_picker.
          CAMERA: required to launch the system camera intent (camera
          apps refuse the intent without this declaration even though
@@ -65,6 +75,23 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="cheer_up" />
+        <!-- flutter_local_notifications scheduled-notification receivers
+             for the self-set daily check-in (zonedSchedule). The boot
+             receiver re-arms the daily reminder after a reboot / app
+             update; the plain receiver fires the scheduled alarm. -->
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

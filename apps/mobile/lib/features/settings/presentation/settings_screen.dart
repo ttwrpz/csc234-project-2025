@@ -31,6 +31,7 @@ import '../../harvest/presentation/controllers/weekly_summary_controller.dart';
 import '../../intervention/presentation/controllers/intervention_controller.dart';
 import '../../mood/data/sync/connectivity_provider.dart';
 import '../../notifications/data/datasources/local_notification_datasource.dart';
+import '../../notifications/presentation/widgets/daily_check_in_tile.dart';
 import '../../notifications/presentation/widgets/notifications_toggle_tile.dart';
 import '../../notifications/presentation/widgets/tier_toggle_tile.dart';
 import '../../disclaimer/domain/disclaimer_copy.dart';
@@ -415,6 +416,10 @@ class _NotificationsSection extends StatelessWidget {
           TierToggleTile(tier: InterventionTier.two),
           Divider(height: 1),
           TierToggleTile(tier: InterventionTier.three),
+          Divider(height: 1),
+          // Self-set local daily nudge — distinct from the FCM-driven
+          // support reminders above.
+          DailyCheckInTile(),
         ],
       ),
     );
