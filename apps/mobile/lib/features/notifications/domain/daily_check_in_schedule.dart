@@ -1,3 +1,9 @@
+/// Default reminder time when the user has never picked one: 9:30 PM
+/// (21:30 in 24h form), matching the onboarding notification slide's
+/// stated default. Used by the controller to seed cold-start state.
+const int defaultDailyCheckInHour = 21;
+const int defaultDailyCheckInMinute = 30;
+
 /// Pure-Dart value type for the self-set daily check-in reminder.
 ///
 /// Carries the on/off flag plus the wall-clock [hour]/[minute] the user

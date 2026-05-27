@@ -43,9 +43,7 @@ class TodayMoodsCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              Expanded(
-                child: MbSectionLabel('TODAY · ${_dateLabel(today)}'),
-              ),
+              Expanded(child: MbSectionLabel('TODAY · ${_dateLabel(today)}')),
               MbIconButton(
                 icon: const Icon(Icons.add),
                 size: MbIconButtonSize.sm,

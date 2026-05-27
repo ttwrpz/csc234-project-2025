@@ -406,12 +406,14 @@ class _GardenView extends StatelessWidget {
   /// Entries logged on the given local-midnight day. Used by the
   /// `TodayMoodsCard` body list.
   List<MoodEntry> _entriesOn(DateTime day) {
-    return allEntries.where((e) {
-      final local = e.createdAt.toLocal();
-      return local.year == day.year &&
-          local.month == day.month &&
-          local.day == day.day;
-    }).toList(growable: false);
+    return allEntries
+        .where((e) {
+          final local = e.createdAt.toLocal();
+          return local.year == day.year &&
+              local.month == day.month &&
+              local.day == day.day;
+        })
+        .toList(growable: false);
   }
 
   /// Local-midnight of today.

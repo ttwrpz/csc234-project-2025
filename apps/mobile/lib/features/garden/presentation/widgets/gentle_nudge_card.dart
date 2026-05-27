@@ -67,11 +67,7 @@ class GentleNudgeCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             body,
-            style: MbFonts.nunito(
-              fontSize: 14,
-              color: mb.text,
-              height: 1.55,
-            ),
+            style: MbFonts.nunito(fontSize: 14, color: mb.text, height: 1.55),
           ),
           const SizedBox(height: 10),
           Text(

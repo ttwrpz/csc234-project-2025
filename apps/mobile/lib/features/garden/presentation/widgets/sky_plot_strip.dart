@@ -167,7 +167,9 @@ class _DayPlot extends StatelessWidget {
     final baseH = compact ? 48.0 : 64.0;
     final perIntensity = compact ? 6.0 : 8.0;
 
-    final visible = entries.take(SkyPlotStrip._maxTotal).toList(growable: false);
+    final visible = entries
+        .take(SkyPlotStrip._maxTotal)
+        .toList(growable: false);
     final overflow = (entries.length - visible.length).clamp(0, 99);
 
     final specs = <_PlantSpec>[];
@@ -180,7 +182,8 @@ class _DayPlot extends StatelessWidget {
           : i < SkyPlotStrip._maxFront
           ? 0.78
           : 0.62;
-      final h = (baseH + entry.intensity * perIntensity) * heightBoost * sizeScale;
+      final h =
+          (baseH + entry.intensity * perIntensity) * heightBoost * sizeScale;
       specs.add(
         _PlantSpec(
           entry: entry,
@@ -199,11 +202,7 @@ class _DayPlot extends StatelessWidget {
     final pillSlot = SizedBox(
       height: overflowPillHeight,
       child: overflow > 0
-          ? _OverflowPill(
-              count: overflow,
-              compact: compact,
-              dark: darkOverlay,
-            )
+          ? _OverflowPill(count: overflow, compact: compact, dark: darkOverlay)
           : const SizedBox.shrink(),
     );
 
@@ -218,7 +217,9 @@ class _DayPlot extends StatelessWidget {
                 child: CustomPaint(
                   painter: _EmptySeedlingPainter(
                     line: labelColor.withValues(alpha: 0.55),
-                    grass: palette.colorOf(MbMoodKind.calm).withValues(alpha: 0.7),
+                    grass: palette
+                        .colorOf(MbMoodKind.calm)
+                        .withValues(alpha: 0.7),
                   ),
                 ),
               ),
@@ -312,11 +313,7 @@ class _PlantCluster extends StatelessWidget {
               opacity: 0.65,
               child: Transform.translate(
                 offset: Offset(compact ? -6 : -8, 0),
-                child: _Row(
-                  specs: back,
-                  width: backWidth,
-                  palette: palette,
-                ),
+                child: _Row(specs: back, width: backWidth, palette: palette),
               ),
             ),
           ),
@@ -332,11 +329,7 @@ class _PlantCluster extends StatelessWidget {
 }
 
 class _Row extends StatelessWidget {
-  const _Row({
-    required this.specs,
-    required this.width,
-    required this.palette,
-  });
+  const _Row({required this.specs, required this.width, required this.palette});
 
   final List<_PlantSpec> specs;
   final double width;
@@ -487,7 +480,10 @@ class _MiniPlantPainter extends CustomPainter {
     for (var i = 0; i < 10; i += 1) {
       c.save();
       c.rotate(i * (2 * math.pi / 10));
-      c.drawOval(Rect.fromCenter(center: const Offset(0, -6), width: 4, height: 9), petal);
+      c.drawOval(
+        Rect.fromCenter(center: const Offset(0, -6), width: 4, height: 9),
+        petal,
+      );
       c.restore();
     }
     final diskDark = HSLColor.fromColor(color).withLightness(0.30).toColor();

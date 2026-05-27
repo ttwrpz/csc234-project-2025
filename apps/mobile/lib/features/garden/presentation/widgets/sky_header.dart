@@ -276,7 +276,11 @@ class SkyHeader extends StatelessWidget {
 
   // ---------- canvas text colour picks ----------
 
-  static Color _eyebrowColor(PlantTier tier, Brightness brightness, MbColors mb) {
+  static Color _eyebrowColor(
+    PlantTier tier,
+    Brightness brightness,
+    MbColors mb,
+  ) {
     if (brightness == Brightness.dark) {
       return Colors.white.withValues(alpha: 0.8);
     }
