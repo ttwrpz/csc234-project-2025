@@ -1,4 +1,4 @@
-# v1.0 Polish Test Report
+# Sprint 4 - v1.0 Polish Test Report
 
 **Sprint window:** May 10, 2026 (single-day rapid iteration on top of v1.0)
 **Baseline:** `v1.0` on `main`
