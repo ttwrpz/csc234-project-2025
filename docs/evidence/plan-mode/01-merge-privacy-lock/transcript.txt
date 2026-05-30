@@ -1,0 +1,99 @@
+=== [2026-05-25T14:53:15.136Z] ASSISTANT TEXT ===
+I'll explore the codebase to understand the current state of the Biometric System and Privacy Lock features before planning the merge.
+
+--- [2026-05-25T14:53:24.432Z] ASSISTANT dispatched Agent (subagent_type=Explore) ---
+  description: Explore Privacy Lock feature
+  prompt (first 300 chars): Explore the Privacy Lock feature in the MoodBloom Flutter project at C:\Users\user\Desktop\FlutterProjects\csc234-project-2025.
+
+I need a comprehensive understanding of:
+1. Where Privacy Lock code lives (presentation/domain/data layers, files involved)
+2. How the PIN authentication works — hashing
+
+--- [2026-05-25T14:53:31.109Z] ASSISTANT dispatched Agent (subagent_type=Explore) ---
+  description: Explore Biometric System
+  prompt (first 300 chars): Explore the Biometric authentication feature in the MoodBloom Flutter project at C:\Users\user\Desktop\FlutterProjects\csc234-project-2025.
+
+I need a comprehensive understanding of:
+1. Where Biometric code lives (presentation/domain/data layers, files involved)
+2. How biometric auth is implemented �
+
+--- [2026-05-25T14:53:39.290Z] ASSISTANT dispatched Agent (subagent_type=Explore) ---
+  description: Explore app initialization flow
+  prompt (first 300 chars): Explore the app initialization and routing flow in the MoodBloom Flutter project at C:\Users\user\Desktop\FlutterProjects\csc234-project-2025.
+
+I need a comprehensive understanding of:
+1. main.dart — what runs at startup, ProviderScope setup, Firebase initialization
+2. app/router.dart — GoRouter
+
+=== [2026-05-25T14:59:38.862Z] ASSISTANT TEXT ===
+I have a solid understanding of both features. Before designing the plan, I need to clarify a few decisions because this merge has some forks.
+
+**What I found:**
+- **Biometric system** = cold-boot gate (whole app), biometric-only, no PIN. Lives at `/biometric-gate`, `BiometricSettingsTile` in SECURITY zone.
+- **Privacy Lock** (v1.5) = `/history` gate only, biometric-first + PIN fallback, gated by 
+
+--- [2026-05-25T14:59:56.069Z] ASSISTANT AskUserQuestion ---
+  Q: What scope should the merged Privacy Lock protect?
+    - Whole app on cold boot (Recommended): Privacy Lock fires once on app launch (like today's biometric gate). After unlock, all routes including History are acce
+    - Whole app + re-lock History after idle: Cold-boot lock for everything PLUS a 5-min idle re-lock specifically on /history (current privacy-lock behavior preserve
+    - History only (keep current scope, just unify the toggle/screen): Drop the cold-boot biometric gate entirely. Privacy Lock only protects /history and /history/:id, biometric+PIN unified.
+  Q: When user enables Privacy Lock, is PIN setup mandatory?
+    - Yes — PIN is always required (Recommended): Toggle ON forces PIN setup flow even if biometric is available. PIN is the universal fallback (no biometric hardware, bi
+    - Only required if no biometric available: On Android/iOS with biometric enrolled, PIN is optional. On Web or no-biometric devices, PIN is forced. More flexible bu
+    - PIN is always optional: User can enable Privacy Lock with biometric-only. If biometric fails repeatedly, no fallback (must sign-out).
+  Q: How should we eliminate the init delay (user sees home screen for one frame before the lock fires)?
+    - Block runApp() in main.dart (Recommended): Pre-resolve biometric capability + SharedPreferences before runApp(). Router redirect then reads sync values. Adds ~50-1
+    - Splash screen route until ready: initialLocation='/splash'. Splash widget watches an AsyncProvider; once resolved, redirects to lock or home. Slower visu
+    - Make the redirect callback async-await the FutureProvider: GoRouter redirect awaits biometricCapabilityProvider.future before deciding. Cleanest semantically but every redirect pa
+  Q: Existing users who already enabled biometric (but never had PIN) — what should happen on first launch after upgrade?
+    - Force PIN setup on next launch (Recommended): If biometric was ON pre-merge, on first post-upgrade launch route them to /privacy/setup to add a PIN. Hard block until 
+    - Grandfather biometric-only — prompt later: Keep them unlocked with biometric only; show a non-blocking banner suggesting PIN setup. They can dismiss.
+    - Reset Privacy Lock to OFF and let them re-opt-in: Wipe both biometric opt-in + PIN. Show one-time onboarding card next launch explaining the new unified feature.
+
+=== [2026-05-25T15:01:11.720Z] ASSISTANT TEXT ===
+All recommended options selected. Let me read the critical files to confirm key implementation details before designing the plan.
+
+=== [2026-05-25T15:01:20.909Z] ASSISTANT TEXT ===
+Let me look at the remaining critical files (the lock screens, settings tiles, and integration test harness) to finalize the plan.
+
+=== [2026-05-25T15:01:31.606Z] ASSISTANT TEXT ===
+Let me read the final critical files needed for the plan.
+
+=== [2026-05-25T15:02:35.711Z] ASSISTANT TEXT ===
+I have everything I need. Drafting the plan file now.
+
+=== [2026-05-25T15:04:30.486Z] ASSISTANT TEXT ===
+Plan is written. Calling ExitPlanMode for approval.
+
+--- [2026-05-25T15:04:35.496Z] ASSISTANT ExitPlanMode (plan saved to C:\Users\user\.claude\plans\merge-the-privacy-lock-binary-nebula.md) ---
+  plan first 400 chars:
+  # Merge Privacy Lock into Biometric System → unified "Privacy Lock" feature
+  
+  ## Context
+  
+  Today we ship **two parallel security features** that confuse each other:
+  
+  1. **Biometric gate** (Sprint 2 / WBS 2.2) — fires on cold boot; biometric-only, no PIN; opt-in via `BiometricSettingsTile` in the SECURITY zone of Settings; routes to `/biometric-gate`.
+  2. **History Privacy Lock** (Sprint 5 / v1.5 
+  ... (plan continues � total 19462 chars)
+
+=== [2026-05-25T15:06:11.209Z] ASSISTANT TEXT ===
+Plan approved. This is a substantial cross-cutting refactor — I'll dispatch a flutter-engineer subagent to execute the implementation, since the plan file already contains the complete handoff brief.
+
+--- [2026-05-25T15:07:00.851Z] ASSISTANT dispatched Agent (subagent_type=flutter-engineer) ---
+  description: Execute Privacy Lock unification
+  prompt (first 300 chars): Execute the merge of the Biometric and Privacy Lock features in the MoodBloom Flutter project at C:\Users\user\Desktop\FlutterProjects\csc234-project-2025 (current branch: feat/s5-v1.5-final).
+
+**The plan is at: C:\Users\user\.claude\plans\merge-the-privacy-lock-binary-nebula.md — READ THIS FIRST.
+
+=== [2026-05-25T15:50:42.223Z] ASSISTANT TEXT ===
+Implementation complete via flutter-engineer subagent. The reminder isn't applicable — work is done and reported.
+
+## Summary
+
+**`flutter analyze`: clean** · **`dart format`: clean** · tests I touched all pass
+
+### Code changes (unstaged in working tree)
+- **Created (3)**: `privacy_lock_screen.dart`, `privacy_lock_settings_tile.dart`, `test/app/router_privacy_lock_test.dart`
+- **Deleted (5)**:
+

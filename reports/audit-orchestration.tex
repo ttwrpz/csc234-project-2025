@@ -16,242 +16,746 @@
 \usepackage{fancyhdr}
 \usepackage{caption}
 \usepackage[backend=biber,style=apa]{biblatex}
+\usepackage{microtype}
+\usepackage{array}
+\usepackage[htt]{hyphenat}
 
 \addbibresource{references.bib}
 
 \definecolor{moodgreen}{HTML}{2E7D5B}
+\definecolor{moodred}{HTML}{C62828}
 \hypersetup{colorlinks=true, linkcolor=moodgreen, urlcolor=moodgreen, citecolor=moodgreen}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!10},
+  showstringspaces=false,
+  columns=fullflexible,
+}
 
 \pagestyle{fancy}
 \fancyhf{}
-\rhead{MoodBloom --- Group 2}
-\lhead{\leftmark}
+\rhead{Audit \& Orchestration}
+\lhead{Group 2}
 \rfoot{\thepage}
 
-\title{Enterprise Audit \& Orchestration Report --- MoodBloom v1.5}
+\title{Enterprise Audit \& Orchestration Report}
 \author{
   Kraiwich Jaiton \and
   Teerin Kittichaicharoen \and
-  Theerawat Patthawee (Project Lead) \and
+  Theerawat Patthawee \and
   Jedsarit Fanpimiy \and
-  Napat Chang-ekwong \\[1ex]
-  \small Group 2 \\
-  \small KMUTT Enterprise Term Assignment, Semester 2/2568
+  Napat Chang-ekwong \and
+  \\[1ex]
+  \small Group 2 MoodBloom \\
+  \small CSC231 Agile Software Engineering \& CSC234 User-Centric Mobile App Development \\
+  \small SIT KMUTT, Semester 2/2568
 }
-\date{May 30, 2026}
+\date{Report date: 2026-05-30}
 
 \begin{document}
 \maketitle
-\thispagestyle{empty}
-\newpage
+\thispagestyle{fancy}
 
 \section*{Executive Summary}
-\addcontentsline{toc}{section}{Executive Summary}
 
-MoodBloom shipped 12 features across 5 sprints under a 4-agent multi-agent
-workflow on Claude Code. 1018 automated tests pass at \texttt{v1.5};
-domain-layer line coverage 94.6\%; no HIGH or CRITICAL security findings
-unresolved; Tier 3 determinism (the safety-critical invariant) enforced at
-5+1 independent layers. The Sprint 5 final Security Posture Report says
-\textbf{GO with three conditions}. The team-internal lesson worth surfacing
-is \emph{memory-system compounding}: by Sprint 5 the project's auto-memory
-was operationalised salvage discipline that recovered six dispatch failures
-across the sprint without slipping the tag.
+\paragraph{What we built.} MoodBloom is a cross-platform Flutter mood-tracker
+for Android and Web. The user logs a mood + 1--5 intensity + optional text;
+a client-side Pattern Engine runs five statistical algorithms (Mann-Kendall
+trend \cite{mann1945trend,kendall1975rank}, sliding 5-of-7 negatives,
+3-consecutive intensity, Z-score, CUSUM change-point \cite{page1954cusum})
+and dispatches a tiered intervention (gentle breathing $\to$ journaling
+$\to$ curated crisis resources) when warranted. Plants in the garden are
+never destroyed; every mood is rendered as weather.
 
+\paragraph{How we built it.} Five sprints (S1 planning, S2 walking
+skeleton, S3 AI foundation, S4 ecosystem redesign, S5 safety surface),
+orchestrated through Claude Code with \textbf{four named subagents} that
+enforce role separation (\texttt{architect}, \texttt{flutter-engineer},
+\texttt{qa-engineer}, \texttt{security-reviewer} at
+\texttt{.claude/agents/}). Every sprint started in Plan Mode with explicit
+``do not start implementation until I approve the plan'' gates
+(\texttt{.claude/prompts/sprint-\{2,3,4,5\}-kickoff.md}). Six write-time
+hooks (\texttt{.claude/hooks/settings.json}) enforce format, analyze,
+secret-scan, no-\texttt{print}, layer-purity, and post-commit
+domain-test invariants.
+
+\paragraph{Outcomes.} At \texttt{v1.5}: $\sim$1{,}236 Flutter test cases
+across 156 files, 78 Cloud Function jest tests, 15 Firestore rules
+emulator tests in CI (\texttt{.github/workflows/ci.yml}). 14 ADRs
+accepted (\texttt{docs/adr/0001}--\texttt{0014}) and 9 handoff briefs
+(\texttt{docs/handoffs/HB-001}--\texttt{HB-009}). The bipolar/medical
+disclaimer is enforced at four locked surfaces; Tier 3 interventions
+are guarded by a \textbf{type-level fence} so Gemini cannot be called
+even if a future refactor tried (proved at
+\texttt{tiered\_intervention\_dispatcher\_test.dart} TC-40).
+
+\paragraph{Honest learnings.} Multi-agent dispatch had real friction ---
+most of it documented in \texttt{docs/retros/sprint-\{2,3,4,5\}-retro.md}
+and detailed in \S\,\ref{sec:drift} below. Two artifacts the rubric asks
+about (\texttt{docs/qa/perf-profile.md},
+\texttt{docs/qa/a11y-sweep.md}) were not produced before the report date
+and are flagged in \S\,\ref{sec:perf-a11y} and Appendix~A as outstanding.
+We did \emph{not} run \texttt{flutter test --coverage} to derive a
+percentage for this report; ``coverage not yet committed'' is honest
+where the alternative would be fabrication.
+
+\paragraph{Note on prompt template fidelity.} The D2 prompt contained
+sample code (Firestore rules, regex-based PII stripping, a hypothetical
+EWMA $\alpha$=0.10$\to$0.15 rework) that does not match the shipped
+codebase. This report quotes the actual rules, documents the actual
+PII discipline (length-only logging + a canary test), and cites a real
+S4 architectural tension ($\alpha$=0.20-vs-0.15) from the retro. Where
+the template implied artifacts that don't exist
+(\texttt{docs/security/} directory, snake\_case feature-flag names, the
+logger routing to Crashlytics), the report says so.
+
+\newpage
 \tableofcontents
 \newpage
 
-\section{Project Overview}
+\section{Agent Workflow}
 
-Cross-platform Flutter mood-tracker for Android + Web. Timeline:
-April 21 -- May 19, 2026; nine weeks, five working-week sprints; 274
-total git commits across 14 release branches and 4 tagged releases
-(\texttt{v0.2-walking-skeleton}, \texttt{v0.3-beta}, \texttt{v1.0},
-\texttt{v1.5} local).
+\subsection{Multi-agent team charter}
 
-\section{Multi-Agent Team Charter}
+Four subagent system prompts live under \texttt{.claude/agents/}. Each
+carries a non-negotiable role-separation rule, quoted verbatim:
 
-Four named subagents under Claude Code:
-
-\begin{longtable}{lll}
+{\small
+\renewcommand{\arraystretch}{1.25}
+\begin{longtable}{@{}p{0.16\linewidth} p{0.30\linewidth} p{0.46\linewidth}@{}}
 \toprule
-\textbf{Agent} & \textbf{Authority} & \textbf{Output type} \\
+\textbf{Agent} & \textbf{File / role} & \textbf{Role-separation invariant (verbatim)} \\
 \midrule
-architect & System design, ADR/HB authorship & Decision records + handoff briefs \\
-flutter-engineer & Dart/Flutter + CF TypeScript & Feature branches with code + tests \\
-qa-engineer & Widget/golden/integration tests, sweeps & Test files + sweep reports \\
-security-reviewer & Read-only audit of rules/CFs/auth/secrets/deps/PII & Risk register only \\
+\endhead
+\texttt{architect}        & \texttt{architect.md} --- system design, ADRs, handoff briefs; plans only & ``Reviewer is not the implementer. When you write a handoff brief, flutter-engineer implements; qa-engineer and security-reviewer review. You do not implement.'' (line 139) \\
+\texttt{flutter-engineer} & \texttt{flutter-engineer.md} --- implements features from handoff briefs & ``Never approve your own PR. Hand off to qa-engineer and security-reviewer and wait.'' (line 111) \\
+\texttt{qa-engineer}      & \texttt{qa-engineer.md} --- widget/golden/integration tests + a11y sweep & ``The agent that wrote the feature does not approve it (per CLAUDE.md). You do.'' (line 11) \\
+\texttt{security-reviewer}& \texttt{security-reviewer.md} --- read-only audit of rules, CFs, secrets, PII & ``You are READ-ONLY on source code. You produce risk assessments and remediation recommendations, not patches.'' (line 9) \\
 \bottomrule
 \end{longtable}
+}
 
-\textbf{No self-review:} the agent that wrote the code cannot approve its
-own work. Two Sprint-3 security audits caught CRITICAL findings (cross-user
-queue drain, lost UUIDs) that would have shipped silently otherwise.
+Six write-time hooks at \texttt{.claude/hooks/settings.json} automate
+the discipline (Table~\ref{tab:hooks}).
 
-\textbf{Plan Mode enforces separation:} every sprint kickoff entered Plan
-Mode and produced a written plan file at \texttt{$\sim$/.claude/plans/}.
-Architect or orchestrator approves via \texttt{ExitPlanMode} before any
-code is written.
-
-\section{Workflow Description}
-
-\textbf{Pipeline:} sprint kickoff (Plan Mode) $\to$ architect drafts ADR +
-handoff brief $\to$ flutter-engineer implements + in-PR unit tests $\to$
-qa-engineer adds widget/golden/integration tests + a11y + perf sweep
-$\to$ security-reviewer audits if rules/CFs/auth/secrets touched $\to$
-merge to main / tag.
-
-\textbf{Four CI/hook gates} fire on every commit: \texttt{dart format
---set-exit-if-changed}; \texttt{flutter analyze}; secret scan
-(regex blacklist); domain-purity grep over
-\texttt{apps/mobile/lib/features/*/domain/}. The preWrite hook in
-\texttt{.claude/hooks/settings.json} blocks any \texttt{Write} tool call
-into \texttt{*/domain/*} that contains a forbidden import string. Zero
-violations across the codebase across all 5 sprints.
-
-\section{Sprint Execution Audit (S2--S5)}
-
-\begin{longtable}{lllll}
+\begin{table}[h]
+\caption{Hook inventory.}\label{tab:hooks}
+\small
+\begin{tabular}{@{}lll@{}}
 \toprule
-\textbf{Sprint} & \textbf{PRs} & \textbf{Tests added} & \textbf{Domain cov.} & \textbf{Salvages} \\
+\textbf{Hook} & \textbf{Phase} & \textbf{Effect} \\
 \midrule
-S2 (\texttt{v0.2-walking-skeleton}) & 8 stacked & 77 total & $\geq 80\%$/feature & 2 (collision, rate-limit) \\
-S3 (\texttt{v0.3-beta}) & 13 & 294 total & 94.6\% overall & $\sim 30\%$ of clock to rate-limit recovery \\
-S4 (\texttt{v1.0}) & 12 + polish & 664 + 24 goldens & 94.6\% (garden 96.4\%) & 1 region-rejection (asia-southeast3) \\
-S5 (\texttt{v1.5}) & 14 + skin merge & 1018 total + 73 CF & 94.6\% (no change in trim) & 6 dispatch salvages, all recovered \\
+\texttt{dart-format}            & postEdit   & Auto-formats edited \texttt{.dart} files \\
+\texttt{flutter-analyze-changed}& postEdit   & Runs \texttt{flutter analyze} on touched feature \\
+\texttt{secret-scan}            & preWrite   & \textbf{Blocks} writes matching API-key patterns \\
+\texttt{no-print-in-prod}       & preWrite   & Warns if \texttt{print()} lands outside \texttt{test/} \\
+\texttt{domain-layer-purity}    & preWrite   & \textbf{Blocks} Flutter/Firebase imports in \texttt{domain/} \\
+\texttt{run-domain-tests}       & postCommit & Re-runs domain unit tests on \texttt{domain/} commits \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Plan Mode discipline}
+
+All four sprint kickoff files exist at
+\texttt{.claude/prompts/sprint-\{2,3,4,5\}-kickoff.md} and each ends with
+an explicit gate. Verbatim excerpt from \texttt{sprint-2-kickoff.md} (the
+``Plan Mode output'' block, approximately lines 65--72):
+
+\begin{quote}\itshape
+\#\#\# Plan Mode output\\
+In Plan Mode, produce:\\
+1.\ An ADR proposal (ADR-0001) for the Clean Architecture folder structure\\
+2.\ A handoff brief for Auth that flutter-engineer will execute\\
+3.\ A handoff brief for Mood Logging UI that flutter-engineer will execute\\
+4.\ A day-by-day schedule with which agent runs when\\
+5.\ A list of risks for this sprint and a mitigation for each\\[0.4em]
+\textbf{Do not start implementation until I approve the plan.}
+\end{quote}
+
+The S4 kickoff is particularly notable because it explicitly demands an
+\emph{audit-spike} as the first Plan Mode output rather than
+implementation: ``You (the team) already implemented most of Sprint 4
+with Claude Code before the professor approved this redesign. Your
+day-1 task is therefore: re-audit the existing S4 work against this
+new spec, identify what conforms and what needs revision, and triage
+the delta.'' (\texttt{.claude/prompts/sprint-4-kickoff.md:20--24}).
+
+\subsection{Agent context drift --- challenges encountered}\label{sec:drift}
+
+This section is honest. The retros documented four real friction
+patterns, each with a mitigation actually adopted in the next sprint.
+
+\paragraph{Drift 1: Parallel-agent working-tree collision (S2 Day 5).}
+Two background agents (\texttt{qa-engineer} on
+\texttt{feat/qa-widget-tests} and the orchestrator preparing
+\texttt{feat/5.1-history-scaffold}) shared the same checkout. The second
+agent's \texttt{git checkout -b} silently flipped the first agent's
+branch context mid-dispatch.
+
+\begin{quote}\itshape
+``Parallel agents share the same working tree. When \texttt{qa-engineer}
+ran \texttt{git checkout -b feat/qa-widget-tests} while
+\texttt{feat/5.1-history-scaffold} was still being prepared by the
+orchestrator, the orchestrator's WT silently flipped branches.
+Detected and untangled, but it was a 5-minute scare.''
+(\texttt{docs/retros/sprint-2-retro.md:95})
+\end{quote}
+
+\textit{Mitigation (adopted S3):} route one of any parallel pair through
+\texttt{git worktree add ../<task-name> <branch>}.
+
+\paragraph{Drift 2: File smearing across parallel branches (S3 Day 2).}
+Two \texttt{flutter-engineer} agents working on the image picker (D2.3)
+and the garden canvas (D2.4) hit the same WT, both wrote files, neither
+committed before time-out, and the second agent's branch ended up
+holding a smeared mix from both tasks.
+
+\begin{quote}\itshape
+``Two background agents (D2.3 image picker + D2.4 garden canvas) hit
+the same checkout. Each created its branch but neither committed before
+timing out, leaving a smeared mix of files on the second agent's branch.
+Recovery: snapshot the working tree, partition by inspection, restore
+each file set onto its correct branch.''
+(\texttt{docs/retros/sprint-3-retro.md:98})
+\end{quote}
+
+\textit{Mitigation (rest of S3, mandatory by S5):} serial dispatch on
+file-mutating tasks OR \texttt{isolation:"worktree"} on every dispatch.
+
+\paragraph{Drift 3: Spec-vs-implementation tension on the EWMA $\alpha$
+(S4).} The spec (\S 2.2) fixes Garden Health EWMA at $\alpha=0.15$. During
+implementation, the sprint floated $\alpha=0.20$ for a more responsive
+canvas. The \texttt{architect} ruled in favour of the spec value, citing
+the autocorrelation derivation at lag-1 typical of daily mood time-series
+\cite{smit2022ewma}, because the bounded daily delta
+$|\Delta H| \le 0.15$ is what guarantees one bad day cannot crash the
+canvas.
+
+\begin{quote}\itshape
+``EWMA $\alpha$ choice was contested. Spec \S 2.2 fixes $\alpha=0.15$.
+The sprint floated $\alpha=0.20$ for a more responsive canvas; the
+architect ruled in favour of the spec's $\alpha=0.15$ [\ldots] The
+bounded daily delta $|\Delta H| \le 0.15$ is what guarantees one bad
+day cannot crash the canvas.''
+(\texttt{docs/retros/sprint-4-retro.md:36})
+\end{quote}
+
+\textit{Mitigation (S4 onward):} spec-citation in handoff briefs;
+architect-only sign-off on any deviation from
+\texttt{.claude/specs/sprint-4-5-spec.md} constants.
+
+\paragraph{Drift 4 --- Six recurring dispatch failure modes (S5).} S5
+catalogued six concrete patterns: agent worked in orchestrator cwd;
+agent reported ``done'' with uncommitted changes; agent branched off
+\texttt{main} instead of the integration branch; rate-limit mid-task;
+socket error mid-task; work-in-worktree-but-uncommitted. First salvage
+cost $\sim$30 minutes; the sixth cost five.
+
+\begin{quote}\itshape
+``Six dispatch salvages. Sprint 5 alone produced six agent-dispatch
+failure modes [\ldots] Each recovery procedure is now codified in
+\texttt{[[workflow\_parallel\_agent\_dispatch]]} memory with a specific
+runbook. First salvage cost 30 min; sixth cost 5.''
+(\texttt{docs/retros/sprint-5-retro.md:36})
+\end{quote}
+
+\textit{Mitigation (S5):} per-failure runbooks in project memory;
+\texttt{isolation:"worktree"} default on every file-mutating dispatch
+(\texttt{docs/retros/sprint-5-retro.md:75}).
+
+\subsection{Handoff management}
+
+Architect output flows down the chain via numbered handoff briefs at
+\texttt{docs/handoffs/}: \texttt{HB-001-auth.md} (WBS 2.1),
+\texttt{HB-002-mood-logging-ui.md} (WBS 3.2),
+\texttt{HB-003-cheer-up-fcm.md} (WBS 5.5; \emph{retroactive backfill, see
+the document's footer}), \texttt{HB-004-pattern-engine.md} (WBS 5.3),
+\texttt{HB-005-harvest-tokens-daynight.md} (WBS 6.1/6.2),
+\texttt{HB-006-pattern-engine-day3.md},
+\texttt{HB-007-tiered-intervention-dispatcher.md} (WBS 5.4),
+\texttt{HB-008-quote-library-and-safety-filter.md} (WBS 5.5),
+\texttt{HB-009-patterns-insights-redesign.md}. Each brief follows a stable structure
+(metadata header, Summary, Domain shape, Data shape, Presentation shape,
+per-agent Handoffs, Acceptance Criteria, Open Questions). ADRs sometimes
+double as the input to a handoff (ADR-0003 fed the S3 Gemini handoff).
+Human approval is required at Plan Mode exit and at the security-reviewer
+audit gate for anything touching \texttt{firebase/firestore.rules} or
+\texttt{functions/src/*.ts}.
+
+\section{Architecture \& Data}
+
+\subsection{Domain modeling}
+
+Strict Clean Architecture, three layers per feature, decided in
+\textbf{ADR-0001}. The non-negotiable invariant --- ``the
+\texttt{domain/} folder has ZERO imports of \texttt{package:flutter/*}
+or \texttt{package:firebase\_*/*} or
+\texttt{package:cloud\_firestore/*}'' --- is enforced both in CLAUDE.md
+(lines 61--62) and by a \textbf{blocking} preWrite hook at
+\texttt{.claude/hooks/settings.json:40--46}:
+
+\begin{lstlisting}[language=Java]
+{
+  "name": "domain-layer-purity",
+  "description": "Block Flutter or Firebase imports in domain/ folders",
+  "matcher": "apps/mobile/lib/features/**/domain/**/*.dart",
+  "command": "echo \"$CLAUDE_WRITE_CONTENT\" | grep -qE \"^import 'package:(flutter|firebase_|cloud_firestore|firebase_auth|firebase_storage)\" && { echo 'BLOCKED: domain layer cannot import Flutter or Firebase packages (see CLAUDE.md)'; exit 1; } || exit 0",
+  "blocking": true,
+  "timeout": 5
+}
+\end{lstlisting}
+
+\paragraph{Domain entities (Freezed).} \texttt{MoodEntry}
+(\texttt{mood/\allowbreak{}domain/\allowbreak{}entities/\allowbreak{}mood\_entry.dart}); \texttt{MoodScore}
+(value type at \texttt{mood\_score.dart:\allowbreak{}10--17} + pure
+\texttt{computeMoodScore()} at lines 23--34); \texttt{Atmosphere}
+(\texttt{garden/\allowbreak{}domain/\allowbreak{}entities/\allowbreak{}atmosphere.dart}); \texttt{PatternResult}
+(\texttt{pattern\_engine/\allowbreak{}domain/\allowbreak{}entities/\allowbreak{}pattern\_result.dart});
+\texttt{InterventionDispatch}
+(\texttt{intervention/\allowbreak{}domain/\allowbreak{}entities/\allowbreak{}intervention\_dispatch.dart});
+\texttt{TokenBalance}
+(\texttt{tokens/\allowbreak{}domain/\allowbreak{}entities/\allowbreak{}token\_balance.dart});
+\texttt{WeeklyGarden}
+(\texttt{harvest/\allowbreak{}domain/\allowbreak{}entities/\allowbreak{}weekly\_garden.dart}).
+\texttt{GardenHealth} is \emph{not} an entity --- it is a pure-Dart
+function pair (\texttt{foldGardenHealthEwma},
+\texttt{stepGardenHealthEwma}) in
+\texttt{garden/\allowbreak{}domain/\allowbreak{}services/\allowbreak{}garden\_health\_ewma.dart}.
+\paragraph{Domain services.} \texttt{computeMoodScore},
+\texttt{foldGardenHealthEwma}, \texttt{stepGardenHealthEwma},
+\texttt{computeAtmosphere}, \texttt{RunPatternEngineUseCase},
+\texttt{TieredInterventionDispatcher}, \texttt{CooldownGuard}. The
+\texttt{QuoteSafetyFilter} implementation lives in the \emph{data}
+layer at
+\texttt{intervention/data/quote\_safety\_filter\_impl.dart} because
+the filter consults a curated phrase list authored as data; we
+document this honestly rather than claim it sits in domain.
+
+\subsection{Sub-collection hierarchy}
+
+The actual Firestore tree (extracted from \texttt{firebase/firestore.rules},
+478 lines, 16 match blocks). The rubric template only listed six paths;
+the shipped tree has more (Table~\ref{tab:firestore}).
+{\small
+\renewcommand{\arraystretch}{1.20}
+\begin{longtable}{@{} >{\raggedright\arraybackslash}p{0.36\linewidth} p{0.07\linewidth} >{\raggedright\arraybackslash}p{0.27\linewidth} >{\raggedright\arraybackslash}p{0.24\linewidth} @{}}
+\caption{Firestore sub-collection hierarchy (actual, from \texttt{firebase/\allowbreak{}firestore.rules}).}\label{tab:firestore}\\
+\toprule
+\textbf{Path} & \textbf{Lines} & \textbf{Purpose} & \textbf{Mutation policy} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Path} & \textbf{Lines} & \textbf{Purpose} & \textbf{Mutation policy} \\
+\midrule
+\endhead
+\texttt{users/\allowbreak{}\{uid\}}                                      & 9--35    & Profile + one-way disclaimer ack & Owner CRUD; field-gated update \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}moods/\allowbreak{}\{moodId\}}                     & 37--74   & Mood entries                     & Owner CRUD; same-day edit/delete (24h) \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}insights/\allowbreak{}\{insightId\}}               & 77--80   & Pattern insights (CF-written)    & Owner read; client write denied \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}cheerUpEvents/\allowbreak{}\{evtId\}}              & 90--106  & Cheer-up trigger audit log       & Append-only; id format gated \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}interventionState/\allowbreak{}\{docId\}}          & 113--141 & Cooldown anchor (\texttt{current})& Owner R/C/U; \texttt{schemaV} immutable \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}settings/\allowbreak{}\{settingId\}}               & 157--190 & Notification preferences         & Owner R/C/U; field allowlist \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}patterns/\allowbreak{}\{dateId\}}                  & 198--249 & Pattern Engine daily output      & Idempotent same-day overwrite \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}interventions/\allowbreak{}\{id\}}                 & 263--289 & Intervention dispatch audit      & Append-only; update only \texttt{optedOut}: false$\to$true \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}cooldowns/\allowbreak{}\{type\}}                   & 297--317 & Per-tier / global cooldown       & Owner R/C/U \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}security/\allowbreak{}\{docId\}}                   & 340--381 & PIN hash                         & Read gated by \texttt{lockedUntil} \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}webauthn/\allowbreak{}\{credentialId\}}            & 396--402 & Credential metadata              & Owner read; admin-SDK writes \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}webauthnChallenges/\allowbreak{}\{challengeId\}}   & 409--411 & In-flight per-user challenges    & Admin-SDK only \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}weeklyGardens/\allowbreak{}\{weekId\}}             & 432--451 & Harvest archive                  & \textbf{Write-once; update/delete denied} \\
+\texttt{rateLimits/\allowbreak{}\{uid\}}                                 & 454--456 & Per-uid rate limit bucket        & Admin-SDK only \\
+\texttt{webauthnLoginChallenges/\allowbreak{}\{challengeId\}}            & 466--468 & Cold-boot login challenges       & Admin-SDK only \\
+\texttt{rateLimits.webauthnLogin/\allowbreak{}\{ipKey\}}                 & 474--476 & IP-keyed login rate limit        & Admin-SDK only \\
 \bottomrule
 \end{longtable}
+}
+All user data sits under \texttt{users/\{uid\}/**} so a single
+\texttt{isOwner(uid)} predicate gates everything. \texttt{weeklyGardens}
+is write-once because history is a record, not a redo. \texttt{cooldowns}
+is separate from \texttt{interventions} so a check is O(1) without
+scanning audit history. \texttt{patterns/\{dateId\}} is keyed by
+local-midnight date so the Pattern Engine's per-save re-run idempotently
+overwrites today's doc.
 
-Human-team interventions in S3 caught two CRITICAL findings before merge
-(cross-user queue drain, lost UUIDs). In S4 a user-testing pass after
-v1.0 produced $\sim$30 high-signal issues all closed same-day. In S5 the
-user-testing pass surfaced 4 real gaps the agents missed (skin widget
-tests, WebAuthn settings tile, debug-trigger one-shot, flower hitbox
-too small + offset) --- all shipped same-week.
+\subsection{State management justification}
 
-\section{Risk Register + Security Posture}
+The project uses \textbf{Riverpod 2.x} with \texttt{@riverpod} codegen,
+mandated by CLAUDE.md lines 36--37. There is no dedicated ADR for the
+state-management choice --- the rubric prompt referenced ``ADR-0002''
+but ADR-0002 actually documents a different decision (Android package
+id retention; see \texttt{docs/adr/0002-android-package-id-retention.md}),
+and the Riverpod choice lives only in CLAUDE.md. We flag this honestly
+rather than retro-fit an ADR around an already-made call. Evidence of
+Riverpod's testability via \texttt{ProviderScope} overrides at
+\texttt{test/features/garden/presentation/garden\_screen\_test.dart:38--47}:
 
-\begin{longtable}{lllll}
+\begin{lstlisting}[language=Java]
+await tester.pumpWidget(
+  ProviderScope(
+    overrides: [
+      moodRepositoryProvider.overrideWithValue(repo),
+      currentUserStreamProvider.overrideWith(
+        (_) => _userStream(const AppUser(uid: 'u-1', ...)),
+      ),
+    ],
+    child: MaterialApp(...),
+  ),
+);
+\end{lstlisting}
+
+\section{Security Matrix}
+
+\subsection{RBAC matrix}
+
+Four roles $\times$ eleven resources (Table~\ref{tab:rbac}). There is no
+\texttt{Admin} role for end-users by design --- administrative operations
+(account deletion, weekly-garden cleanup) run as the Firebase Admin SDK
+inside a Cloud Function, never as a user-facing role.
+{\scriptsize
+\renewcommand{\arraystretch}{1.20}
+\begin{longtable}{@{} >{\raggedright\arraybackslash}p{0.31\linewidth} p{0.10\linewidth} >{\raggedright\arraybackslash}p{0.31\linewidth} p{0.09\linewidth} >{\raggedright\arraybackslash}p{0.13\linewidth} @{}}
+\caption{Role-Based Access Control matrix.}\label{tab:rbac}\\
 \toprule
-\textbf{Severity} & \textbf{Production} & \textbf{Transitive deps} & \textbf{Open} & \textbf{Notes} \\
+\textbf{Resource} & \textbf{Anon.} & \textbf{User (own data)} & \textbf{User (others)} & \textbf{System (CF)} \\
 \midrule
-CRITICAL & 0 & 0 & 0 & --- \\
-HIGH & 0 & 3 (R-M04) & 0 & Non-exploitable in deployed paths; filed as v1.6 chore \\
-MEDIUM & 0 unresolved & 0 & 0 & All Day-2 interim findings PASS in \texttt{c1ca5021} \\
-LOW & 3 & 0 & 0 & R-L05 dead field; R-L06 housekeeping; R-L01 App Check posture \\
+\endfirsthead
+\toprule
+\textbf{Resource} & \textbf{Anon.} & \textbf{User (own data)} & \textbf{User (others)} & \textbf{System (CF)} \\
+\midrule
+\endhead
+\texttt{users/\allowbreak{}\{uid\}} (profile)                & None & Read; Create; Update self-only; Delete & None & Full (deletion CF) \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}moods/**}                 & None & Create; Read; Update / Delete same-UTC-day, allowlisted & None & None \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}insights/**}              & None & Read & None & Write (CF-only) \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}cheerUpEvents/**}         & None & Read; Append-only Create & None & Read \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}interventionState/**}     & None & R/C/U on anchor fields only & None & Write \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}settings/**}              & None & R/C/U with allowlist & None & Write \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}patterns/**}              & None & Read; Write (client engine output) & None & None \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}interventions/**}         & None & Read; Create; Update \texttt{optedOut} only & None & Read \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}cooldowns/**}             & None & R/C/U & None & Write \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}security/\allowbreak{}pin}             & None & Read (gated by \texttt{lockedUntil}); C/U & None & None \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}webauthn/**}              & None & Read (rate-limit-gated) & None & Full \\
+\texttt{users/\allowbreak{}\{uid\}/\allowbreak{}weeklyGardens/**}         & None & Read; Create (once/week) & None & None \\
+\texttt{rateLimits/**} (and login challenges)  & None & None & None & Full \\
+CF \texttt{analyzeMoodText}                    & None & Invoke (auth required) & n/a & Self-invoked \\
+CF \texttt{suggestQuote} (Tier 1/2 only)       & None & Invoke & n/a & Self-invoked \\
+CF \texttt{wipeUserData}                       & None & Invoke (own) & n/a & Self-invoked \\
+Storage \texttt{users/\allowbreak{}\{uid\}/\allowbreak{}moods/**}          & None & R/W own & None & R (CF); Delete (wipe CF) \\
 \bottomrule
 \end{longtable}
+}
 
-\textbf{Tier 3 fence at 5+1 layers} (the architectural invariant
-anchoring the entire safety posture): (1) type system; (2) dispatcher
-hard branch; (3) unit test; (4) controller test; (5) integration test;
-(6) server schema.
+\subsection{Firestore Security Rules --- actual, verbatim}
 
-\textbf{Firestore rules:} field-level \texttt{diff().affectedKeys()}
-validation on every collection; per-user isolation; immutability fences
-on \texttt{createdAt}, \texttt{weeklyGardens} (write-once),
-\texttt{tokenBalance} (monotonic-up), \texttt{insightsDisclaimerAcked}
-(one-way \texttt{false}$\to$\texttt{true}). No HIGH/CRITICAL findings.
+The rules use one helper, \texttt{isOwner(uid)} (line 5--7). The rubric
+template referenced \texttt{isCreatingNow()}, \texttt{isImmutableField()},
+\texttt{withinImmutability()} helpers --- these do \textbf{not} exist in
+the shipped rules. The equivalent checks are inlined per-rule using
+\texttt{request.time}, \texttt{diff().affectedKeys().hasOnly(...)}, and
+\texttt{resource.data.createdAt} comparisons.
 
-\textbf{Cloud Functions:} all four production CFs (\texttt{analyzeMoodText},
-\texttt{sendCheerUpPush}, \texttt{suggestQuote}, \texttt{wipeUserData})
-in \texttt{asia-southeast1} with rate limits, no PII in logs, no PII in
-Gemini payloads (verified by PII canary tests). WebAuthn CF
-\texttt{webauthnRegisterStart} ships dark with a provisioning guard.
+\paragraph{Moods: 24-hour edit/delete window + field allowlist}
+(\texttt{firestore.rules:55--74}):
 
-\section{Evidence Package Index}
+\begin{lstlisting}[language=Java]
+allow update: if isOwner(uid)
+  && request.time.year() == resource.data.createdAt.year()
+  && request.time.month() == resource.data.createdAt.month()
+  && request.time.day() == resource.data.createdAt.day()
+  && request.resource.data.createdAt == resource.data.createdAt
+  && request.resource.data.updatedAt is timestamp
+  && request.resource.data.updatedAt == request.time
+  && request.resource.data.diff(resource.data).affectedKeys()
+     .hasOnly(['mood','intensity','text','mediaRefs','updatedAt'])
+  && request.resource.data.intensity is int
+  && request.resource.data.intensity >= 1
+  && request.resource.data.intensity <= 5
+  && request.resource.data.text is string
+  && request.resource.data.text.size() <= 500
+  && request.resource.data.mood in
+       ['happy','calm','okay','sad','angry','anxious'];
+\end{lstlisting}
+
+\paragraph{Interventions: one-way opt-out toggle}
+(\texttt{firestore.rules:282--286}):
+
+\begin{lstlisting}[language=Java]
+allow update: if isOwner(uid)
+  && request.resource.data.diff(resource.data).affectedKeys()
+     .hasOnly(['optedOut'])
+  && resource.data.get('optedOut', false) == false
+  && request.resource.data.optedOut == true;
+\end{lstlisting}
+
+\paragraph{Weekly gardens: write-once on archive}
+(\texttt{firestore.rules:441--450}):
+
+\begin{lstlisting}[language=Java]
+allow create: if isOwner(uid)
+  && weekId.matches('^\\d{4}-W\\d{2}$')
+  && request.resource.data.weekId == weekId
+  && request.resource.data.archivedAt is string;
+allow update, delete: if false;
+\end{lstlisting}
+
+\texttt{diff().affectedKeys().hasOnly([...])} is used at lines 62, 133,
+182, 230, 283 and 310 to enforce field allowlists on every collection
+that permits update. Rules are exercised in CI via the Firestore
+emulator: \texttt{.github/workflows/ci.yml:232--274} runs
+\texttt{firebase emulators:exec --only firestore "pnpm test"} against
+15 rule unit cases (WBS 2.3).
+
+\subsection{Cloud Function \& secrets}
+
+Seventeen Cloud Functions at \texttt{functions/src/*.ts}. Security
+posture highlights:
 
 \begin{itemize}[leftmargin=*]
-\item Repo URL (set by team before submission); branch \texttt{feat/s5-v1.5-final} @ \texttt{977b86d3} tagged locally as \texttt{v1.5}.
-\item 14 ADRs: \texttt{docs/adr/0001..0014}.
-\item 9 handoff briefs: \texttt{docs/handoffs/HB-001..HB-009}.
-\item 4 retros: \texttt{docs/retros/sprint-2-retro.md}, \texttt{sprint-3-retro.md}, \texttt{v1.0-polish-retro.md}, plus this set's \texttt{reports/sprint-4-demo.md} + \texttt{sprint-5-demo.md}.
-\item 2 architecture diagrams: \texttt{docs/architecture/conceptual.md} + \texttt{implementation.md} (PNG export pending).
-\item 5 security audits: 2 foundation+auth (Apr 28), v1.0 redesign (May 12), Sprint 5 final posture (May 18).
-\item 5 test reports: S3 + v1.0 polish + S5 a11y + S5 dark-mode contrast + S5 perf static.
-\item 1 cross-platform runbook: \texttt{docs/test-reports/sprint-5-cross-platform-runbook.md} (execution pending).
-\item 1018 test files at \texttt{v1.5} (Flutter) + 73 (CF Jest).
-\item Golden tests intentionally deleted in v1.5 trim (commit \texttt{a23480b8}); rationale documented.
+  \item \textbf{Gemini API key} via
+    \texttt{firebase-functions/params defineSecret('GEMINI\_API\_KEY')}
+    at \texttt{geminiClient.ts:33}, \emph{not} in \texttt{.env}. The
+    \texttt{.env} holds non-secret WebAuthn config only. The secret is
+    lazily resolved via \texttt{.value()} at call time, never bundled
+    in the client.
+  \item \textbf{Rate-limit} (\texttt{rateLimit.ts:13--14}):
+    \texttt{analyzeMoodText} $\le$ 10 calls / 60\,s;
+    \texttt{analyzePatterns} $\le$ 1 call / 30\,s
+    (\texttt{rateLimit.ts:34}). Backed by a Firestore transaction on
+    \texttt{rateLimits/\{uid\}}.
+  \item \textbf{PII discipline.} Not regex-based redaction --- the
+    actual approach is length-only logging (``never log raw text, full
+    prompt, or model rationale'', \texttt{analyzeMoodText.ts:256--257})
+    plus a canary test at
+    \texttt{functions/src/\_\_tests\_\_/analyzeMoodText.test.ts:453}
+    that feeds the literal \texttt{"PII-CANARY-12345"} and asserts it
+    never appears in any logger payload.
+  \item \textbf{Secret-scan hook} (\texttt{.claude/hooks/settings.json:24--29})
+    blocks commits matching
+    \texttt{(AIza...|sk-...|xox...|ghp\_...|AKIA...)}.
 \end{itemize}
 
-\section{Compliance Matrix (Enterprise R1--R5)}
+The rubric prompt referenced \texttt{docs/security/} --- that directory
+does \textbf{not} exist in this repo. Security-impacting decisions live
+in ADRs 0008 (cooldown persistence), 0012 (Tier-3 determinism), 0013
+(biometric gating), 0014 (WebAuthn fallback). Sprint-5 review findings
+are summarised in \texttt{docs/retros/sprint-5-retro.md}.
 
-\subsection{R1 --- Authentication \& Security}
-Firebase Auth (email/Google); biometric reauth via \texttt{local\_auth}
-with Keystore-backed credentials (ADR-0008 + ADR-0013); PIN fallback
-(PBKDF2-SHA-256, $10^5$ iterations) per ADR-0013; WebAuthn foundation
-ships dark per ADR-0014; Firestore rules with field-level diff
-validation; CF PII filter verified by PII canary tests; secret scan
-clean.
+\section{Observability \& Rollback}
 
-\subsection{R2 --- Clean Architecture}
-Three-layer rule per feature; domain layer has zero
-\texttt{package:flutter} / \texttt{package:firebase\_*} /
-\texttt{package:cloud\_firestore} imports; enforced three ways (CI
-grep, preWrite hook, code review); Freezed entities; Riverpod 2.x with
-\texttt{@riverpod} codegen; repository abstractions.
+\subsection{Crashlytics placement}
 
-\subsection{R3 --- Multi-Agent Workflow}
-Four named subagents; Plan Mode at every sprint kickoff (5 plan files);
-9 handoff briefs; 14 ADRs; no-self-review rule; memory system records
-workflow lessons across sessions.
+Crashlytics is initialised inside \texttt{runZonedGuarded} in
+\texttt{apps/mobile/lib/main.dart} (lines $\sim$69--79):
 
-\subsection{R4 --- Observability}
-Crashlytics wired in \texttt{main.dart}; structured logger at
-\texttt{packages/core/lib/src/logger.dart} (PII-free by convention);
-Remote Config flags (\texttt{ai\_pattern\_analysis\_enabled} +
-\texttt{history\_privacy\_lock\_enabled}); sprint metrics tracked in
-retros.
+\begin{lstlisting}[language=Java]
+if (!kIsWeb) {
+  FlutterError.onError =
+      FirebaseCrashlytics.instance.recordFlutterFatalError;
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
+  await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+}
+\end{lstlisting}
 
-\subsection{R5 --- Quality Gates}
-\textbf{Correctness:} 1018 \texttt{flutter test} + 73 \texttt{npm test}
-all pass; domain coverage $\geq 80\%$/feature, 94.6\% overall.
-\textbf{Security:} \texttt{flutter pub deps} clean; \texttt{pnpm audit}
-3 transitive HIGH filed v1.6; secret scan clean; Firestore rules pass
-emulator tests. \textbf{Accessibility:} Semantics labels everywhere;
-WCAG 2.2 AA verified on both themes (32 measurements); 200\% type
-checked on every dialog. \textbf{Performance:} static review confirms
-no unbounded \texttt{ListView}; chart caps at 30 points; device-side
-cold-start measurement pending the cross-platform runbook.
+The zone-guard at line $\sim$246 catches async errors not handled by
+\texttt{FlutterError.onError}. Web is intentionally a no-op because the
+Crashlytics web plugin is not registered.
 
-\section{Lessons Learned}
+\paragraph{Correction.} The rubric prompt implied that the structured
+logger routes errors to Crashlytics. It does \textbf{not}. The logger
+at \texttt{packages/core/lib/src/logger.dart} delegates only to
+\texttt{dart:developer.log}, and a comment at line 5--6 explicitly puts
+PII redaction on the call site. Errors reach Crashlytics through
+\texttt{FlutterError.onError} and \texttt{runZonedGuarded}, not through
+the logger. We could \emph{not} find a test asserting ``mood text never
+reaches Crashlytics''; adding one is recommended.
 
-\textbf{Plan Mode + handoff briefs front-load design.} ADR-0010,
-ADR-0011, ADR-0012, HB-007 were the load-bearing examples;
-implementation agents had no architectural questions mid-sprint.
+\subsection{Structured logging}
 
-\textbf{Multi-layer fences for safety-critical invariants.} The Tier 3
-fence at 5+1 layers is more paranoid than typical industry practice; the
-cost was modest, the protection is structural.
+\texttt{packages/core/lib/src/logger.dart} defines
+\texttt{class Logger(String name)} with \texttt{debug}/\texttt{info}/
+\texttt{warn}/\texttt{error} methods that emit via
+\texttt{dart:developer.log()} with the instance name as the
+filter tag. The ``tags-per-feature'' pattern in the rubric template is
+\emph{convention}, not enforcement --- the Logger accepts any name; no
+CI lint rejects an off-taxonomy tag.
 
-\textbf{Parallel agents need worktree isolation by default.} Six
-salvages in S5 alone; memory now documents 6 failure modes with
-recovery procedures.
+\subsection{Feature flag rollback plan}
 
-\textbf{User testing surfaced more than security audits did.} Four
-highest-leverage S5 fixes came from a single user opening the app.
+Flags are a Freezed struct at \texttt{apps/mobile/lib/app/feature\_flags.dart:40--61}.
+Names (camelCase Dart fields; snake\_case Remote Config keys at
+\texttt{main.dart:91--98}) in Table~\ref{tab:flags}.
 
-\textbf{Golden tests too brittle for a small team on Windows-vs-CI.}
-Deleted in v1.5 trim; widget-tree assertions + manual demo coverage
-replaced them.
+\begin{table}[h]
+\caption{Feature flags (actual names).}\label{tab:flags}
+\small
+\begin{tabular}{@{}p{0.32\linewidth} p{0.32\linewidth} p{0.07\linewidth} p{0.21\linewidth}@{}}
+\toprule
+\textbf{Dart field} & \textbf{Remote Config key} & \textbf{Default} & \textbf{Gates} \\
+\midrule
+\texttt{aiPatternAnalysisEnabled}  & \texttt{ai\_pattern\_analysis\_enabled} & \texttt{true}  & Tier 1/2 Gemini quote-hybrid \\
+\texttt{geminiDetectionEnabled}    & \texttt{gemini\_detection\_enabled}    & \texttt{true}  & Mood-text AI suggestion pill \\
+\texttt{interventionDispatchEnabled}& \texttt{intervention\_dispatch\_enabled}& \textbf{\texttt{false}} & Cheer-up dispatcher (FCM) \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\textbf{Memory compounds.} First salvage cost 30 minutes; sixth cost
-five. Codifying recovery procedures in long-lived memory is the
-highest-ROI workflow investment a team using AI-assisted enterprise
-dev can make.
+Firebase Remote Config is wired in \texttt{main.dart} with a
+60-minute minimum fetch interval and an \texttt{unawaited(rc.fetchAndActivate())}
+at launch; propagation is bounded to one minute on the next fetch.
 
-\section*{Sign-off}
-\addcontentsline{toc}{section}{Sign-off}
+\paragraph{Scenario 1: Gemini misbehaves on quote generation.}
+Disable \texttt{ai\_pattern\_analysis\_enabled}. Tier 1/2 dispatches still
+fire but quote sources fall back to the curated pool (same path Tier 3
+uses). Pattern detection and Tier 3 unaffected.
 
-\textbf{Audit head:} \texttt{977b86d3} (local tag \texttt{v1.5} on
-\texttt{feat/s5-v1.5-final}).
-\textbf{Date:} May 30, 2026.
-\textbf{Recommendation:} \textbf{GO} for the \texttt{v1.5} tag push
-pending three conditions: (1) file D-M01 as a v1.6 ticket; (2)
-skin-system branch merge state confirmed (done in \texttt{ed2cd755});
-(3) cross-platform runbook done-criteria checklist passes on Android
-emulator + Chrome web before the push.
+\paragraph{Scenario 2: Dispatcher critical bug.} Disable
+\texttt{intervention\_dispatch\_enabled}. No notifications fire; pattern
+detection still surfaces in Insights; disclaimer + Insights work normally.
 
-\printbibliography
+\paragraph{Scenario 3: Bad Gemini mood-text suggestions.} Disable
+\texttt{gemini\_detection\_enabled}. The AI-suggestion pill disappears
+from \texttt{LogMoodScreen}; manual mood + slider remains.
+
+\paragraph{Tier 3 cannot be rolled back via flag.} Tier 3 never uses
+Gemini --- the type system forbids it (\texttt{AiAllowedTier \{ one, two
+\}}, \texttt{ai\_allowed\_tier\_test.dart:15--24}) and the runtime branch
+at \texttt{tiered\_intervention\_dispatcher.dart:69--73} returns the
+curated body before any AI repo call is reachable
+(\texttt{tiered\_intervention\_dispatcher\_test.dart:106--161} asserts
+\texttt{expect(ai.calls, isEmpty)}). The only rollback path for a Tier-3
+issue is a client app update.
+
+\subsection{Performance \& a11y observability}\label{sec:perf-a11y}
+
+Honest gap section. \texttt{docs/qa/perf-profile.md} does \textbf{not}
+exist; cold-start, frame-rate, and memory baselines are not yet
+captured. \texttt{docs/qa/a11y-sweep.md} does \textbf{not} exist;
+accessibility is exercised by 11 widget test files matching
+\texttt{*a11y\_test.dart} (e.g.\ \texttt{settings\_screen\_a11y\_test.dart},
+\texttt{a11y\_contrast\_report\_test.dart}), but no consolidated sweep
+document. Both gaps surface in Appendix~A.
+
+\section*{Appendix A: Compliance Matrix}\addcontentsline{toc}{section}{Appendix A: Compliance Matrix}
+
+{\scriptsize
+\renewcommand{\arraystretch}{1.20}
+\begin{longtable}{@{}p{0.05\linewidth} p{0.18\linewidth} p{0.32\linewidth} p{0.30\linewidth} p{0.09\linewidth}@{}}
+\toprule
+\textbf{Req} & \textbf{Description} & \textbf{Primary evidence} & \textbf{Secondary evidence} & \textbf{Status} \\
+\midrule
+\endhead
+R1 & Authentication \& Security &
+  Firebase Auth (email + Google + biometric) at \texttt{apps/mobile/lib/features/auth/}; PIN + WebAuthn fallback (ADR-0013, ADR-0014) &
+  \texttt{firebase/firestore.rules}; \texttt{secret-scan} hook at \texttt{.claude/hooks/settings.json:24--29}; rate-limit \texttt{functions/src/rateLimit.ts:13--14} &
+  Met \\
+R2 & Clean Architecture &
+  Three-layer per feature (ADR-0001); Freezed entities; Riverpod state &
+  Blocking \texttt{domain-layer-purity} hook; domain test dir \texttt{apps/mobile/test/features/*/domain/} &
+  Met \\
+R3 & Multi-Agent Workflow &
+  4 subagents at \texttt{.claude/agents/}; Plan Mode kickoffs at \texttt{.claude/prompts/sprint-\{2..5\}-kickoff.md} &
+  8 handoff briefs \texttt{HB-001..HB-009}; drift retros in \S\,\ref{sec:drift} &
+  Met \\
+R4 & Observability &
+  Crashlytics in \texttt{main.dart} + \texttt{runZonedGuarded}; structured logger at \texttt{packages/core/lib/src/logger.dart} &
+  3 Remote Config flags at \texttt{feature\_flags.dart:40--61}; CI matrix \texttt{ci.yml} &
+  Partial \\
+R5 & Quality Gates &
+  CI runs \texttt{flutter test}, \texttt{flutter analyze}, Firestore emulator, \texttt{pnpm test} (\texttt{ci.yml:27--313}); 14 ADRs &
+  $\sim$1{,}236 Flutter cases; 11 \texttt{*a11y\_test.dart} files; 78 jest CF tests &
+  Partial \\
+\bottomrule
+\end{longtable}
+}
+
+\section*{Appendix B: Evidence Package Index}\addcontentsline{toc}{section}{Appendix B: Evidence Package Index}
+
+\paragraph{Repo metadata.} Branch \texttt{main} $\cdot$ Latest tag \texttt{v1.5} $\cdot$
+Report date 2026-05-30.
+
+\paragraph{ADRs (14 accepted):} ADR-0001 Repo structure + Clean
+Architecture $\cdot$ ADR-0002 Android package id retention (\emph{retroactive
+backfill}) $\cdot$ ADR-0003 \texttt{analyzeMoodText} CF contract $\cdot$
+ADR-0004 Drift offline-first schema $\cdot$ ADR-0005 LWW conflict
+resolution $\cdot$ ADR-0006 Compassionate reframing (superseded by 0010)
+$\cdot$ ADR-0007 Pattern analysis fallback (superseded by 0011) $\cdot$
+ADR-0008 Intervention cooldown persistence $\cdot$ ADR-0009 Account
+deletion topology $\cdot$ ADR-0010 Ecosystem-model plants-never-die
+$\cdot$ ADR-0011 Client-side Pattern Engine $\cdot$ ADR-0012 Tier-3
+determinism + Gemini mock test $\cdot$ ADR-0013 Biometric gating for
+History $\cdot$ ADR-0014 WebAuthn fallback for privacy gate.
+
+\paragraph{Sprint kickoffs:}
+\texttt{.claude/prompts/sprint-\{2,3,4,5\}-kickoff.md}.
+
+\paragraph{Retros:}
+\texttt{docs/retros/sprint-\{2,3,4,5\}-retro.md} +
+\texttt{v1.0-polish-retro.md}.
+
+\paragraph{Handoff briefs:} 9 files at
+\texttt{docs/handoffs/HB-001-auth.md} through
+\texttt{HB-009-patterns-insights-redesign.md}, including the
+retroactive HB-003 (\texttt{HB-003-cheer-up-fcm.md}) that ratifies the
+Sprint-5 cheer-up FCM brief already cited by ADR-0008 and
+\texttt{cheer\_up\_banner\_test.dart:33}.
+
+\paragraph{Plan Mode transcript excerpt:} verbatim block in \S\,1.2.
+
+\paragraph{CI workflow:} \texttt{.github/workflows/ci.yml} (314 lines).
+
+\paragraph{Test locations:} \texttt{apps/mobile/test/} (156 files,
+$\sim$1{,}236 cases); \texttt{functions/src/\_\_tests\_\_/} (78 jest
+cases); rules emulator tests via
+\texttt{firebase emulators:exec}.
+
+\paragraph{Golden-test evidence package:}
+\texttt{docs/evidence/goldens/} --- 35 PNG baselines (1.2~MB) recovered
+from commit \texttt{a23480b8\textasciitilde{}1} (the parent of the v1.5
+final-trim commit that retired the goldens from CI). A
+\texttt{README.md} in the directory describes what each image proves.
+Use these to verify the visual contracts cited in \S\,1 (cheer-up
+banner locked copy, plant-tier mosaics, atmosphere overlays,
+intervention surfaces, settings screen light / dark).
+
+\paragraph{Cross-platform execution evidence:}
+\texttt{docs/evidence/platform-execution/} --- screenshots \textbf{and}
+logs of the app running on \textbf{both} platforms, captured 2026-05-31.
+Android: two screenshots of the \textbf{release} build running +
+interactive on a physical Samsung Galaxy S23 (Android 16), plus build
+logs (debug APK 168~MB, release APK 30~MB) and an on-device
+integration-test run. Web: a Chrome screenshot of the running app + a
+successful \texttt{flutter build web --release} log (4.0~MB
+\texttt{main.dart.js}). Plus the 1045/1045 host-VM suite and 94/94
+Cloud Function logs. The directory \texttt{README.md} documents every
+artifact and three honest caveats (on-device test timing, web
+unit-suite Drift exclusion, headless-canvas screenshot limitation).
+Satisfies R5 cross-platform parity.
+
+\paragraph{Plan-Mode execution evidence:}
+\texttt{docs/evidence/plan-mode/} --- \textbf{portfolio of six approved
+Plan-Mode artefacts} (2{,}496 lines total, 204~KB) spanning the project
+lifecycle: a feature merge, two full sprint orchestrations (S4 v1.0
++ S5 v1.5), the self-referential plan that produced this very audit
+report, and the v1.6 UI redesign. One plan (the Privacy-Lock merge)
+also carries the redacted session transcript showing the full
+lifecycle (three parallel \texttt{Explore} agents $\to$
+\texttt{AskUserQuestion} for design decisions $\to$ critical-file
+reads $\to$ \texttt{ExitPlanMode} tool call). The submitted plan's
+SHA-256 matches the saved file byte-for-byte. Concrete, multi-instance
+proof of the discipline \S\,1.2 describes.
+
+\paragraph{Outstanding documentation:}
+\texttt{docs/qa/perf-profile.md}, \texttt{docs/qa/a11y-sweep.md},
+\texttt{docs/security/} directory; a dedicated test asserting ``mood
+text never reaches Crashlytics''. ADR-0002 and HB-003 were noted as
+gaps in earlier revisions of this report and have since been
+backfilled (both are flagged with a ``retroactive backfill'' header in
+the new files).
+
+\printbibliography[heading=bibintoc,title={References}]
 
 \end{document}
