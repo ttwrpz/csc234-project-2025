@@ -200,7 +200,9 @@ export const webauthnAssertionStart = onCall(
     memory: '256MiB',
     enforceAppCheck: false,
     secrets: [],
-    cors: false,
+    // CORS open for browser callers; callable already requires
+    // request.auth.uid for the re-auth path.
+    cors: true,
   },
   (req: CallableRequest<unknown>) => {
     void WEBAUTHN_PRODUCTION_ORIGIN.value();

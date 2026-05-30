@@ -454,5 +454,35 @@ service cloud.firestore {
     match /rateLimits/{uid} {
       allow read, write: if false; // admin SDK only
     }
+
+    // Cold-boot WebAuthn sign-in challenge store (ADR-0014; the
+    // usernameless login ceremony). Unlike the per-user
+    // `users/{uid}/webauthnChallenges`, this is TOP-LEVEL because the
+    // ceremony runs before any Firebase session exists, so there is no
+    // uid to scope it under. webauthnLoginStart writes it and
+    // webauthnLoginFinish reads + deletes it, both via the admin SDK.
+    // The client never touches it — it only receives the challenge in
+    // the CF response payload.
+    match /webauthnLoginChallenges/{challengeId} {
+      allow read, write: if false; // admin SDK only
+    }
+
+    // IP-keyed rate-limit anchors for the unauthenticated login-start
+    // ceremony. Admin SDK only — same posture as `rateLimits.webauthn`
+    // (which has no client rule and is default-denied); declared
+    // explicitly here for clarity.
+    match /rateLimits.webauthnLogin/{ipKey} {
+      allow read, write: if false; // admin SDK only
+    }
+
+    // Per-uid 24h rate-limit anchor for the Tiered Intervention push
+    // (`dispatchIntervention` CF). Defense in depth ON TOP OF the
+    // client-side 48h cooldown the dispatcher enforces. Admin SDK only;
+    // declared explicitly to match the WebAuthn-login pattern (the
+    // sibling `rateLimits.cheerUp` works via default-deny but the
+    // explicit rule guards against future rule churn).
+    match /rateLimits.intervention/{uid} {
+      allow read, write: if false; // admin SDK only
+    }
   }
 }

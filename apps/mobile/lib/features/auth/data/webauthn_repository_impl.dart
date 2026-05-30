@@ -180,6 +180,80 @@ class WebauthnRepositoryImpl implements WebauthnRepository {
   }
 
   @override
+  Future<Result<String, WebauthnVerifyFailure>> loginWithSecurityKey() async {
+    final Map<String, Object?> startResp;
+    try {
+      startResp = await _functions.loginStart();
+    } on FirebaseFunctionsException catch (e) {
+      _logger.warn('webauthnLoginStart failed: ${e.code}');
+      return const Err(WebauthnVerifyFailure.network());
+    } catch (e) {
+      _logger.error('webauthnLoginStart unexpected', error: e);
+      return Err(WebauthnVerifyFailure.unknown(e.runtimeType));
+    }
+    if (startResp['ok'] != true) {
+      return _loginErr(startResp['code'], startResp);
+    }
+    final challengeId = startResp['challengeId'];
+    final options = startResp['options'];
+    if (challengeId is! String || options is! Map) {
+      return const Err(WebauthnVerifyFailure.unknown(null));
+    }
+
+    // Usernameless get — the server sent an empty allowCredentials list,
+    // so the browser surfaces the resident passkey and returns its
+    // userHandle (= uid) in the assertion.
+    final WebauthnAssertionResponse browserResp;
+    try {
+      browserResp = await _browser.getAssertion(
+        Map<String, Object?>.from(options),
+      );
+    } on WebauthnUserCanceledException {
+      return const Err(WebauthnVerifyFailure.userCanceled());
+    } on WebauthnUnsupportedException {
+      return const Err(WebauthnVerifyFailure.network());
+    } catch (e) {
+      _logger.warn('webauthn browser login getAssertion failed: ${e.runtimeType}');
+      return Err(WebauthnVerifyFailure.unknown(e.runtimeType));
+    }
+
+    final Map<String, Object?> finishResp;
+    try {
+      finishResp = await _functions.loginFinish(
+        challengeId: challengeId,
+        response: browserResp.toJson(),
+      );
+    } on FirebaseFunctionsException catch (e) {
+      _logger.warn('webauthnLoginFinish failed: ${e.code}');
+      return const Err(WebauthnVerifyFailure.network());
+    } catch (e) {
+      _logger.error('webauthnLoginFinish unexpected', error: e);
+      return Err(WebauthnVerifyFailure.unknown(e.runtimeType));
+    }
+    if (finishResp['ok'] != true) {
+      return _loginErr(finishResp['code'], finishResp);
+    }
+    final token = finishResp['token'];
+    if (token is! String || token.isEmpty) {
+      return const Err(WebauthnVerifyFailure.unknown(null));
+    }
+    return Ok(token);
+  }
+
+  /// Re-wraps the shared [_mapVerifyCode] (typed `Result<void, …>`) into
+  /// the `Result<String, …>` the login path returns. Every branch of
+  /// [_mapVerifyCode] is an `Err`, so the `Ok` arm is unreachable.
+  Result<String, WebauthnVerifyFailure> _loginErr(
+    Object? code,
+    Map<String, Object?> resp,
+  ) {
+    return switch (_mapVerifyCode(code, resp)) {
+      Err(:final failure) => Err(failure),
+      Ok() => const Err(WebauthnVerifyFailure.unknown(null)),
+    };
+  }
+
+  @override
   Stream<WebauthnCredential?> watchCredential({required String uid}) =>
       _firestore.watch(userId: uid);
 

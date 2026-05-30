@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moodbloom/app/feature_flags.dart';
+import 'package:moodbloom/app/providers.dart' show featureFlagsProvider;
 import 'package:moodbloom/features/auth/data/providers.dart';
 import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
+import 'package:moodbloom/features/intervention/data/datasources/dispatch_intervention_functions_datasource.dart';
 import 'package:moodbloom/features/garden/data/providers.dart'
     show interventionStateRepositoryProvider;
 import 'package:moodbloom/features/garden/domain/intervention_state_repository.dart';
@@ -178,6 +181,29 @@ class _FakeSafetyFilter implements QuoteSafetyFilter {
 
 /// Fake FCM token repo so the `NotificationsController.build()` listener
 /// has somewhere to read settings. Returns the per-test [_settings].
+/// Fake FCM-dispatch datasource that records calls and (optionally)
+/// throws to exercise the controller's swallow-on-error path.
+class _FakeDispatchInterventionDatasource
+    implements DispatchInterventionFunctionsDatasource {
+  _FakeDispatchInterventionDatasource({this.throwOnCall = false});
+
+  bool throwOnCall;
+  final List<({Tier tier, String dispatchId})> calls = [];
+
+  @override
+  Future<String?> call({
+    required Tier tier,
+    required String dispatchId,
+    String? requestId,
+  }) async {
+    calls.add((tier: tier, dispatchId: dispatchId));
+    if (throwOnCall) {
+      throw StateError('simulated FCM transport failure');
+    }
+    return 'sent';
+  }
+}
+
 class _FakeFcmTokenRepository implements FcmTokenRepository {
   _FakeFcmTokenRepository(this._settings);
   NotificationsSettings _settings;
@@ -501,6 +527,186 @@ void main() {
       // Initial dispatch wrote 1; opt-out also advances the anchor
       // so the system does not re-nag → expect 2 writes total.
       expect(stateRepo.writeLastCalls, 2);
+    });
+
+    // ──────────────────────────────────────────────────────────────────
+    // FCM bridge — Option B (`dispatchIntervention` CF) tests.
+    // The controller must invoke the CF AFTER the in-app banner is up,
+    // ONLY when `featureFlagsProvider.interventionDispatchEnabled` is
+    // true, and must SWALLOW transport errors so the in-app surface is
+    // never unwound by a push failure.
+    // ──────────────────────────────────────────────────────────────────
+
+    test('TEST 7 — FCM bridge: flag ON → datasource called with the same '
+        'tier + dispatchId carried by the InterventionPending state', () async {
+      final patternRepo = _FakePatternRepository();
+      final interventionRepo = _FakeInterventionRepo();
+      final stateRepo = _FakeStateRepo();
+      final aiRepo = _RecordingAIQuoteRepository();
+      final quoteLib = _FakeQuoteLibrary();
+      final filter = _FakeSafetyFilter();
+      final fcmDs = _FakeDispatchInterventionDatasource();
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final container = ProviderContainer(
+        overrides: [
+          currentUserStreamProvider.overrideWith(
+            (_) => Stream.value(
+              const AppUser(uid: 'u-1', email: 'u@example.com'),
+            ),
+          ),
+          patternRepositoryProvider.overrideWithValue(patternRepo),
+          interventionRepositoryProvider.overrideWithValue(interventionRepo),
+          interventionStateRepositoryProvider.overrideWith((_) async => stateRepo),
+          quoteLibraryProvider.overrideWithValue(quoteLib),
+          aiQuoteRepositoryProvider.overrideWithValue(aiRepo),
+          quoteSafetyFilterProvider.overrideWithValue(filter),
+          dispatchInterventionFunctionsDatasourceProvider.overrideWithValue(
+            fcmDs,
+          ),
+          fcmTokenRepositoryProvider.overrideWithValue(
+            _FakeFcmTokenRepository(_allTiersOn()),
+          ),
+          myMoodsStreamProvider.overrideWith(
+            (_) => Stream.value(const <MoodEntry>[]),
+          ),
+          notificationsPreferenceDatasourceProvider.overrideWithValue(null),
+          featureFlagsProvider.overrideWithValue(
+            const FeatureFlags(
+              aiPatternAnalysisEnabled: true,
+              geminiDetectionEnabled: true,
+              interventionDispatchEnabled: true, // <-- flag ON
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await _primeContainer(container);
+
+      patternRepo.controller.add(_patternFor(Tier.two));
+      await _waitForState(container, (s) => s is InterventionPending);
+      // Allow the unawaited _dispatchFcm microtask to settle.
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(fcmDs.calls, hasLength(1));
+      expect(fcmDs.calls.single.tier, Tier.two);
+      // dispatchId should match what's on the pending state.
+      final pending =
+          container.read(interventionControllerProvider) as InterventionPending;
+      expect(fcmDs.calls.single.dispatchId, pending.dispatch.dispatchId);
+    });
+
+    test('TEST 8 — FCM bridge: flag OFF (default) → datasource NEVER called', () async {
+      final patternRepo = _FakePatternRepository();
+      final interventionRepo = _FakeInterventionRepo();
+      final stateRepo = _FakeStateRepo();
+      final aiRepo = _RecordingAIQuoteRepository();
+      final quoteLib = _FakeQuoteLibrary();
+      final filter = _FakeSafetyFilter();
+      final fcmDs = _FakeDispatchInterventionDatasource();
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final container = ProviderContainer(
+        overrides: [
+          currentUserStreamProvider.overrideWith(
+            (_) => Stream.value(
+              const AppUser(uid: 'u-1', email: 'u@example.com'),
+            ),
+          ),
+          patternRepositoryProvider.overrideWithValue(patternRepo),
+          interventionRepositoryProvider.overrideWithValue(interventionRepo),
+          interventionStateRepositoryProvider.overrideWith((_) async => stateRepo),
+          quoteLibraryProvider.overrideWithValue(quoteLib),
+          aiQuoteRepositoryProvider.overrideWithValue(aiRepo),
+          quoteSafetyFilterProvider.overrideWithValue(filter),
+          dispatchInterventionFunctionsDatasourceProvider.overrideWithValue(
+            fcmDs,
+          ),
+          fcmTokenRepositoryProvider.overrideWithValue(
+            _FakeFcmTokenRepository(_allTiersOn()),
+          ),
+          myMoodsStreamProvider.overrideWith(
+            (_) => Stream.value(const <MoodEntry>[]),
+          ),
+          notificationsPreferenceDatasourceProvider.overrideWithValue(null),
+          // featureFlagsProvider intentionally NOT overridden — falls back
+          // to FeatureFlags.defaults() which has interventionDispatchEnabled
+          // = false. This mirrors production today.
+        ],
+      );
+      addTearDown(container.dispose);
+      await _primeContainer(container);
+
+      patternRepo.controller.add(_patternFor(Tier.one));
+      await _waitForState(container, (s) => s is InterventionPending);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(
+        fcmDs.calls,
+        isEmpty,
+        reason:
+            'CF must not be called when interventionDispatchEnabled is false '
+            '— the in-app banner is the only surface.',
+      );
+    });
+
+    test('TEST 9 — FCM bridge: datasource throws → controller swallows, '
+        'in-app InterventionPending state is preserved', () async {
+      final patternRepo = _FakePatternRepository();
+      final interventionRepo = _FakeInterventionRepo();
+      final stateRepo = _FakeStateRepo();
+      final aiRepo = _RecordingAIQuoteRepository();
+      final quoteLib = _FakeQuoteLibrary();
+      final filter = _FakeSafetyFilter();
+      final fcmDs = _FakeDispatchInterventionDatasource(throwOnCall: true);
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final container = ProviderContainer(
+        overrides: [
+          currentUserStreamProvider.overrideWith(
+            (_) => Stream.value(
+              const AppUser(uid: 'u-1', email: 'u@example.com'),
+            ),
+          ),
+          patternRepositoryProvider.overrideWithValue(patternRepo),
+          interventionRepositoryProvider.overrideWithValue(interventionRepo),
+          interventionStateRepositoryProvider.overrideWith((_) async => stateRepo),
+          quoteLibraryProvider.overrideWithValue(quoteLib),
+          aiQuoteRepositoryProvider.overrideWithValue(aiRepo),
+          quoteSafetyFilterProvider.overrideWithValue(filter),
+          dispatchInterventionFunctionsDatasourceProvider.overrideWithValue(
+            fcmDs,
+          ),
+          fcmTokenRepositoryProvider.overrideWithValue(
+            _FakeFcmTokenRepository(_allTiersOn()),
+          ),
+          myMoodsStreamProvider.overrideWith(
+            (_) => Stream.value(const <MoodEntry>[]),
+          ),
+          notificationsPreferenceDatasourceProvider.overrideWithValue(null),
+          featureFlagsProvider.overrideWithValue(
+            const FeatureFlags(
+              aiPatternAnalysisEnabled: true,
+              geminiDetectionEnabled: true,
+              interventionDispatchEnabled: true,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await _primeContainer(container);
+
+      patternRepo.controller.add(_patternFor(Tier.three));
+      await _waitForState(container, (s) => s is InterventionPending);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      // The datasource was reached (and threw); the in-app surface
+      // remains Pending — push failure must not unwind the banner.
+      expect(fcmDs.calls, hasLength(1));
+      expect(
+        container.read(interventionControllerProvider),
+        isA<InterventionPending>(),
+      );
     });
 
     test('TEST 6 — complete() clears the pending state without writing '

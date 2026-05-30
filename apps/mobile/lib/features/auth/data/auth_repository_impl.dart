@@ -83,6 +83,19 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Result<AppUser, AuthFailure>> signInWithCustomToken(
+    String token,
+  ) async {
+    try {
+      final user = await _datasource.signInWithCustomToken(token);
+      return Ok(_mapper.fromFirebaseUser(user));
+    } on AuthDatasourceException catch (e) {
+      _logger.warn('custom-token sign-in failed: ${e.failure.runtimeType}');
+      return Err(e.failure);
+    }
+  }
+
+  @override
   Future<Result<void, AuthFailure>> sendPasswordResetEmail(String email) async {
     try {
       await _datasource.sendPasswordResetEmail(email);

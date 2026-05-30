@@ -48,4 +48,26 @@ class WebauthnFunctionsDatasource {
         .call({'v': 1, 'challengeId': challengeId, 'response': response});
     return Map<String, Object?>.from(result.data as Map);
   }
+
+  /// UNAUTHENTICATED cold-boot sign-in, leg 1. Returns usernameless
+  /// assertion options + a challengeId; the client runs a discoverable-
+  /// credential `navigator.credentials.get()`.
+  Future<Map<String, Object?>> loginStart() async {
+    final result = await _functions.httpsCallable('webauthnLoginStart').call({
+      'v': 1,
+    });
+    return Map<String, Object?>.from(result.data as Map);
+  }
+
+  /// UNAUTHENTICATED cold-boot sign-in, leg 2. On `ok`, the response
+  /// carries a Firebase custom `token` for `signInWithCustomToken`.
+  Future<Map<String, Object?>> loginFinish({
+    required String challengeId,
+    required Map<String, Object?> response,
+  }) async {
+    final result = await _functions
+        .httpsCallable('webauthnLoginFinish')
+        .call({'v': 1, 'challengeId': challengeId, 'response': response});
+    return Map<String, Object?>.from(result.data as Map);
+  }
 }

@@ -80,22 +80,27 @@ export function resolveExpectedRpId(): string | null {
 }
 
 /**
- * True when the production origin is set AND a non-empty RPID exists.
- * Default: false. The CFs short-circuit with
- * `webauthn_not_provisioned` when this is false, regardless of how
- * the caller's origin compares against the staging allow-list.
+ * True when at least one valid origin (production OR a non-empty staging
+ * list) is configured AND a non-empty RPID exists. The CFs short-circuit
+ * with `webauthn_not_provisioned` when this is false.
  *
- * Why the `||`-with-staging check is NOT here: staging origins are
- * legitimately reachable during local development, but registering a
- * credential against `http://localhost:5173` and then trying to assert
- * against the same origin from a different developer's machine would
- * fail anyway (per-origin rules). The dark-flag check happens at the
- * client level via `kEnableWebauthn`; the staging allow-list serves
- * dev iteration, not "production-or-staging-OK".
+ * Why staging origins now count: a dev or staging deploy with a
+ * configured staging allow-list is a legitimate, fully-verifiable
+ * environment — the ceremony's `expectedOrigin` check still pins each
+ * assertion to one of those origins, so the security boundary is
+ * unchanged. Previously the gate refused staging-only setups, which made
+ * WebAuthn impossible to exercise before a production origin existed.
+ * The dark-flag check still happens client-side via `kEnableWebauthn`.
  */
 export function isProvisioned(): boolean {
+  const productionConfigured =
+    WEBAUTHN_PRODUCTION_ORIGIN.value().trim().length > 0;
+  const stagingConfigured = WEBAUTHN_STAGING_ORIGINS.value()
+    .split(',')
+    .map((s) => s.trim())
+    .some((s) => s.length > 0);
   return (
-    WEBAUTHN_PRODUCTION_ORIGIN.value().trim().length > 0 &&
+    (productionConfigured || stagingConfigured) &&
     resolveExpectedRpId() !== null
   );
 }

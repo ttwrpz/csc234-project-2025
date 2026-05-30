@@ -25,6 +25,7 @@ import '../domain/usecases/setup_pin.dart';
 import '../domain/usecases/send_password_reset_email.dart';
 import '../domain/usecases/sign_in_with_email.dart';
 import '../domain/usecases/sign_in_with_google.dart';
+import '../domain/usecases/sign_in_with_webauthn.dart';
 import '../domain/usecases/sign_out.dart';
 import '../domain/usecases/verify_pin.dart';
 import '../domain/usecases/verify_webauthn.dart';
@@ -356,6 +357,16 @@ final registerWebauthnUseCaseProvider = Provider<RegisterWebauthnUseCase>(
 
 final verifyWebauthnUseCaseProvider = Provider<VerifyWebauthnUseCase>(
   (ref) => VerifyWebauthnUseCase(ref.watch(webauthnRepositoryProvider)),
+);
+
+/// Cold-boot security-key sign-in. Composes the WebAuthn ceremony repo
+/// with the auth repo's custom-token exchange (ADR-0014). Consumed by the
+/// sign-in screen's "Use security key" button.
+final signInWithWebauthnUseCaseProvider = Provider<SignInWithWebauthnUseCase>(
+  (ref) => SignInWithWebauthnUseCase(
+    webauthn: ref.watch(webauthnRepositoryProvider),
+    auth: ref.watch(authRepositoryProvider),
+  ),
 );
 
 /// Streams the registered credential (or null when none). When

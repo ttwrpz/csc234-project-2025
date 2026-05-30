@@ -11,6 +11,7 @@ class FakeAuthRepository implements AuthRepository {
     this.signInResult,
     this.registerResult,
     this.googleResult,
+    this.customTokenResult,
     this.signOutResult,
     this.reauthenticateResult,
     this.deleteAccountResult,
@@ -21,6 +22,7 @@ class FakeAuthRepository implements AuthRepository {
   Result<AppUser, AuthFailure>? signInResult;
   Result<AppUser, AuthFailure>? registerResult;
   Result<AppUser, AuthFailure>? googleResult;
+  Result<AppUser, AuthFailure>? customTokenResult;
   Result<void, AuthFailure>? signOutResult;
   Result<void, AuthFailure>? reauthenticateResult;
   Result<void, AuthFailure>? deleteAccountResult;
@@ -67,6 +69,17 @@ class FakeAuthRepository implements AuthRepository {
   Future<Result<AppUser, AuthFailure>> signInWithGoogle() async {
     googleCalls += 1;
     return googleResult ?? const Err(AuthFailure.unknown(null));
+  }
+
+  final List<String> customTokenCalls = [];
+
+  @override
+  Future<Result<AppUser, AuthFailure>> signInWithCustomToken(
+    String token,
+  ) async {
+    customTokenCalls.add(token);
+    return customTokenResult ??
+        const Ok(AppUser(uid: 'u-1', email: 'user@example.com'));
   }
 
   @override

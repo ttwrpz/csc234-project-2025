@@ -83,6 +83,13 @@ class IntegrationAuthRepository implements AuthRepository {
   Future<Result<AppUser, AuthFailure>> signInWithGoogle() async =>
       const Err(AuthFailure.unknown(null));
 
+  /// Added when the WebAuthn cold-boot sign-in landed (v1.5). Integration
+  /// tests don't cover the security-key path — returns an unconditional
+  /// Err so any accidental invocation is observable rather than silent.
+  @override
+  Future<Result<AppUser, AuthFailure>> signInWithCustomToken(String token) async =>
+      const Err(AuthFailure.unknown(null));
+
   @override
   Future<Result<void, AuthFailure>> signOut() async {
     setUser(null);

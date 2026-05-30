@@ -8,6 +8,7 @@ import '../domain/repositories/intervention_repository.dart';
 import '../domain/repositories/quote_library.dart';
 import '../domain/services/quote_safety_filter.dart';
 import 'ai_quote_repository_impl.dart';
+import 'datasources/dispatch_intervention_functions_datasource.dart';
 import 'datasources/interventions_firestore_datasource.dart';
 import 'datasources/suggest_quote_functions_datasource.dart';
 import 'quote_library_impl.dart';
@@ -70,3 +71,14 @@ final interventionRepositoryProvider = Provider<InterventionRepository>(
     uidGetter: () => ref.read(currentUserStreamProvider).value?.uid,
   ),
 );
+
+/// Datasource that wraps `FirebaseFunctions.httpsCallable('dispatchIntervention')`.
+/// Called by `InterventionController` AFTER the audit doc is written; gated
+/// at the call site on `featureFlagsProvider.interventionDispatchEnabled`.
+/// The CF reads the audit doc back and sends a LOCKED per-tier FCM payload.
+final dispatchInterventionFunctionsDatasourceProvider =
+    Provider<DispatchInterventionFunctionsDatasource>(
+      (ref) => DispatchInterventionFunctionsDatasourceImpl(
+        ref.watch(firebaseFunctionsProvider),
+      ),
+    );

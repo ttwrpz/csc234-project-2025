@@ -84,6 +84,28 @@ class FirebaseAuthDatasource {
     }
   }
 
+  /// Completes a cold-boot WebAuthn sign-in by exchanging the
+  /// server-minted custom token for a Firebase session. The token comes
+  /// from `webauthnLoginFinish` after the assertion verified server-side;
+  /// this call is the only thing that turns it into an authenticated
+  /// session. Maps Firebase codes to sealed [AuthFailure] variants.
+  Future<fb.User> signInWithCustomToken(String token) async {
+    try {
+      final credential = await _auth.signInWithCustomToken(token);
+      final user = credential.user;
+      if (user == null) {
+        throw AuthDatasourceException(const AuthFailure.unknown(null));
+      }
+      return user;
+    } on fb.FirebaseAuthException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } on PlatformException catch (e) {
+      throw AuthDatasourceException(_codeToFailure(e.code, e));
+    } catch (e) {
+      throw AuthDatasourceException(AuthFailure.unknown(e));
+    }
+  }
+
   Future<fb.User> signInWithGoogle() async {
     try {
       if (kIsWeb) {

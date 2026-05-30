@@ -16,11 +16,14 @@ import { initializeApp } from 'firebase-admin/app';
 initializeApp();
 
 export { analyzeMoodText } from './analyzeMoodText.js';
+export { dispatchIntervention } from './dispatchIntervention.js';
 export { analyzePatterns } from './analyzePatterns.js';
 export { sendCheerUpPush } from './sendCheerUpPush.js';
 export { suggestQuote } from './suggestQuote.js';
 export { webauthnAssertionFinish } from './webauthnAssertionFinish.js';
 export { webauthnAssertionStart } from './webauthnAssertionStart.js';
+export { webauthnLoginFinish } from './webauthnLoginFinish.js';
+export { webauthnLoginStart } from './webauthnLoginStart.js';
 export { webauthnRegisterFinish } from './webauthnRegisterFinish.js';
 export { webauthnRegisterStart } from './webauthnRegisterStart.js';
 export { wipeUserData } from './wipeUserData.js';

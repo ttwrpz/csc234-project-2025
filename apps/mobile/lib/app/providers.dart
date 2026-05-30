@@ -69,8 +69,13 @@ final featureFlagSourceProvider = Provider<FeatureFlagSource>((ref) {
 /// [FeatureFlags.defaults] when the source is uninitialised or throws so
 /// callers never have to handle a null/loading state for kill-switches.
 final featureFlagsProvider = Provider<FeatureFlags>((ref) {
-  final source = ref.watch(featureFlagSourceProvider);
+  // The try MUST cover the upstream `ref.watch` too — `featureFlagSourceProvider`
+  // depends on `remoteConfigProvider`, which throws synchronously when
+  // Firebase isn't initialised (typical in widget tests that don't override
+  // it). Without this guard, the controller's `ref.read(featureFlagsProvider)`
+  // surfaces a ProviderException instead of the safe defaults.
   try {
+    final source = ref.watch(featureFlagSourceProvider);
     return FeatureFlags(
       aiPatternAnalysisEnabled: source.getBool('ai_pattern_analysis_enabled'),
       geminiDetectionEnabled: source.getBool('gemini_detection_enabled'),
@@ -79,8 +84,8 @@ final featureFlagsProvider = Provider<FeatureFlags>((ref) {
       ),
     );
   } catch (_) {
-    // Source throws if RC hasn't been initialised yet (e.g. before
-    // setDefaults runs in main.dart). Defaults guarantee a usable app.
+    // Source / upstream provider threw (Firebase uninitialised, RC not
+    // yet `setDefaults`'d, etc.). Defaults guarantee a usable app.
     return FeatureFlags.defaults();
   }
 });

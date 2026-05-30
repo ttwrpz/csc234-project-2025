@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/providers.dart' show featureFlagsProvider;
 import '../../../auth/data/providers.dart';
 import '../../../garden/data/providers.dart'
     show interventionStateRepositoryProvider;
@@ -153,8 +154,39 @@ class InterventionController extends Notifier<InterventionControllerState> {
     switch (result) {
       case Ok(:final value):
         state = InterventionPending(value);
+        // Fire the FCM push fire-and-forget — gated on Remote Config so
+        // the in-app banner ships independent of the push surface. The
+        // CF call is best-effort; transport failures are swallowed at
+        // the datasource so they cannot unwind the in-app experience.
+        if (ref.read(featureFlagsProvider).interventionDispatchEnabled) {
+          unawaited(_dispatchFcm(value));
+        }
       case Err(:final failure):
         _logFailure(failure, logger);
+    }
+  }
+
+  /// Fires the per-tier FCM push by invoking `dispatchIntervention` with
+  /// the dispatch id the audit doc already carries. The CF reads the
+  /// audit doc back, validates tier + opt-out, and sends a LOCKED
+  /// per-tier payload — the request never carries body text.
+  ///
+  /// Errors are logged PII-free (runtimeType only) and discarded. The
+  /// in-app banner is the source of truth for the user-visible surface.
+  Future<void> _dispatchFcm(InterventionDispatch dispatch) async {
+    const logger = Logger('intervention.controller.fcm');
+    try {
+      final ds = ref.read(dispatchInterventionFunctionsDatasourceProvider);
+      final outcome = await ds.call(
+        tier: dispatch.tier,
+        dispatchId: dispatch.dispatchId,
+        requestId: dispatch.dispatchId,
+      );
+      if (outcome != null && outcome != 'sent') {
+        logger.info('fcm dispatch non-sent', data: outcome);
+      }
+    } catch (e) {
+      logger.warn('fcm dispatch failed', data: e.runtimeType.toString());
     }
   }
 

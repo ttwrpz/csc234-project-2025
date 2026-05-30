@@ -20,10 +20,12 @@ class FakeWebauthnRepository implements WebauthnRepository {
 
   Result<WebauthnCredential, WebauthnRegisterFailure>? _registerResult;
   Result<void, WebauthnVerifyFailure>? _verifyResult;
+  Result<String, WebauthnVerifyFailure>? _loginResult;
   final WebauthnCredential? _initialCredential;
 
   final List<String> registerCalls = [];
   final List<String> verifyCalls = [];
+  int loginCalls = 0;
 
   set registerResult(
     Result<WebauthnCredential, WebauthnRegisterFailure>? value,
@@ -31,6 +33,9 @@ class FakeWebauthnRepository implements WebauthnRepository {
 
   set verifyResult(Result<void, WebauthnVerifyFailure>? value) =>
       _verifyResult = value;
+
+  set loginResult(Result<String, WebauthnVerifyFailure>? value) =>
+      _loginResult = value;
 
   @override
   Future<Result<WebauthnCredential, WebauthnRegisterFailure>> register({
@@ -47,6 +52,12 @@ class FakeWebauthnRepository implements WebauthnRepository {
   }) async {
     verifyCalls.add(uid);
     return _verifyResult ?? const Ok<void, WebauthnVerifyFailure>(null);
+  }
+
+  @override
+  Future<Result<String, WebauthnVerifyFailure>> loginWithSecurityKey() async {
+    loginCalls += 1;
+    return _loginResult ?? const Ok<String, WebauthnVerifyFailure>('fake-token');
   }
 
   @override

@@ -223,7 +223,10 @@ export const webauthnRegisterFinish = onCall(
     memory: '256MiB',
     enforceAppCheck: false,
     secrets: [],
-    cors: false,
+    // CORS open for browser callers; the callable still requires
+    // request.auth.uid and `expectedOrigin` is enforced in
+    // verifyRegistrationResponse.
+    cors: true,
   },
   (req: CallableRequest<FinishRequest>) => {
     // Touch the defineString params so they're registered with the

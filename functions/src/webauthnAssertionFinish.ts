@@ -329,7 +329,10 @@ export const webauthnAssertionFinish = onCall(
     memory: '256MiB',
     enforceAppCheck: false,
     secrets: [],
-    cors: false,
+    // CORS open for browser callers; the callable already requires
+    // request.auth.uid and the `expectedOrigin` check is enforced inside
+    // verifyAuthenticationResponse.
+    cors: true,
   },
   (req: CallableRequest<FinishRequest>) => {
     void WEBAUTHN_PRODUCTION_ORIGIN.value();

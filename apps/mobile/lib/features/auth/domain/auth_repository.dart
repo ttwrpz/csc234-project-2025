@@ -37,6 +37,12 @@ abstract class AuthRepository {
   /// ID is not configured.
   Future<Result<AppUser, AuthFailure>> signInWithGoogle();
 
+  /// Completes a cold-boot WebAuthn sign-in: exchanges the server-minted
+  /// custom [token] (returned by `webauthnLoginFinish` after the assertion
+  /// verified server-side) for an authenticated Firebase session. On
+  /// success [watchAuthState] emits the new user and the router redirects.
+  Future<Result<AppUser, AuthFailure>> signInWithCustomToken(String token);
+
   /// Signs out of any currently authenticated session.
   Future<Result<void, AuthFailure>> signOut();
 

@@ -177,7 +177,10 @@ export const webauthnRegisterStart = onCall(
     // defineString; declaring them here gives Firebase Functions the
     // wiring it needs to resolve the params at deploy time.
     secrets: [],
-    cors: false,
+    // CORS open for browser callers; callable already requires a valid
+    // Firebase ID token (request.auth.uid), so origin spoofing alone gains
+    // no access. WebAuthn-level origin binding still applies on finish.
+    cors: true,
   },
   // The defineString params have to be in the closure for v2 to bind
   // them; reference each one once so the param is registered.

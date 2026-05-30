@@ -1,3 +1,4 @@
+import 'package:core/core.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/feature_flags.dart' show kEnableWebauthn;
+import '../data/providers.dart' show signInWithWebauthnUseCaseProvider;
 import 'controllers/sign_in_controller.dart';
 import 'controllers/sign_in_state.dart' show SignInSubmitMethod;
 import 'widgets/google_sign_in_button.dart';
@@ -19,6 +21,11 @@ class SignInScreen extends ConsumerStatefulWidget {
 class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  /// True while the cold-boot security-key ceremony is in flight. Local
+  /// to the screen (not the sign-in controller) because the WebAuthn flow
+  /// doesn't go through the email/Google submit path.
+  bool _webauthnBusy = false;
 
   @override
   void initState() {
@@ -39,19 +46,30 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     super.dispose();
   }
 
-  /// WebAuthn login entry point (web only). Ships with `kEnableWebauthn`
-  /// off, so this handler is unreachable in production builds; the
-  /// snackbar is defence-in-depth for a future flag flip without the
-  /// surrounding session-binding work in place.
-  void _onWebauthn(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Security-key sign-in is coming in v1.5.1 once a production '
-          'origin is provisioned. Use email or Google for now.',
-        ),
-      ),
-    );
+  /// Cold-boot security-key sign-in (web only, behind `kEnableWebauthn`).
+  /// Runs the usernameless WebAuthn ceremony and exchanges the resulting
+  /// custom token for a Firebase session; on success the auth-state stream
+  /// emits and the router redirect lands the user on `/home`. The browser
+  /// prompt is the user's visual feedback, so a cancel is silent; other
+  /// failures surface the compassionate failure message. When the server
+  /// origin isn't provisioned yet the CF returns `webauthn_not_provisioned`
+  /// → mapped to a network failure, so the user simply falls back to PIN /
+  /// email without a dead-end.
+  Future<void> _onWebauthn() async {
+    if (_webauthnBusy) return;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _webauthnBusy = true);
+    final result = await ref.read(signInWithWebauthnUseCaseProvider)();
+    if (!mounted) return;
+    setState(() => _webauthnBusy = false);
+    switch (result) {
+      case Ok():
+        // Auth-state stream emits; the router redirect navigates to /home.
+        break;
+      case Err(:final failure):
+        if (failure.isUserCanceled) return; // dismissed prompt — silent.
+        messenger.showSnackBar(SnackBar(content: Text(failure.message)));
+    }
   }
 
   @override
@@ -194,9 +212,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       MbGhostButton(
                         label: 'Use security key',
                         leading: const Icon(Icons.key, size: 18),
-                        onPressed: state.isSubmitting
+                        onPressed: (state.isSubmitting || _webauthnBusy)
                             ? null
-                            : () => _onWebauthn(context),
+                            : _onWebauthn,
                       ),
                     ],
                     const SizedBox(height: 16),

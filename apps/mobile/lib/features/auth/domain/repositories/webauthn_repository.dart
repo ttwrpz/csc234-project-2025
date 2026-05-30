@@ -54,6 +54,23 @@ abstract class WebauthnRepository {
   /// `privacyLockUnlockedThisSessionProvider` set-to-true call).
   Future<Result<void, WebauthnVerifyFailure>> verify({required String uid});
 
+  /// Cold-boot sign-in with a security key — runs BEFORE any Firebase
+  /// session exists, so there is no [uid] to pass.
+  ///
+  /// Orchestrates the usernameless (discoverable-credential) ceremony:
+  ///   1. `webauthnLoginStart` (CF, unauthenticated) — server issues a
+  ///      challenge with an empty allow-list.
+  ///   2. `navigator.credentials.get()` — the authenticator offers its
+  ///      resident passkey and returns the `userHandle` (= the uid).
+  ///   3. `webauthnLoginFinish` (CF, unauthenticated) — server verifies
+  ///      the assertion against the stored public key and mints a Firebase
+  ///      custom token.
+  ///
+  /// On success returns the custom token; the caller exchanges it via
+  /// `AuthRepository.signInWithCustomToken`. Failures reuse the assertion
+  /// failure taxonomy ([WebauthnVerifyFailure]).
+  Future<Result<String, WebauthnVerifyFailure>> loginWithSecurityKey();
+
   /// Reactive stream of the user's registered credential, or null when
   /// no credential is registered.
   ///
