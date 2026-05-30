@@ -17,17 +17,19 @@ class TierBandLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    // Mirror the alpha + colour map in
-    // `mood_score_chart.dart:43..49` so the legend swatches are
-    // byte-for-byte the same hue the chart paints.
+    // Mirror the colour map in `mood_score_chart.dart`'s `tierBandColors`
+    // so the legend swatches are byte-for-byte the hues the chart paints.
+    // Each tier uses a distinct base colour now — adjacent tiers no
+    // longer share a hue at different alphas (which read as
+    // indistinguishable washes in light mode).
     final rows = <_LegendEntry>[
       _LegendEntry(
-        color: MoodBloomColors.softGreen.withValues(alpha: 0.55),
+        color: MoodBloomColors.seed.withValues(alpha: 0.30),
         title: 'Flourishing',
         subtitle: 'full bloom',
       ),
       _LegendEntry(
-        color: MoodBloomColors.softGreen.withValues(alpha: 0.28),
+        color: MoodBloomColors.softGreen.withValues(alpha: 0.55),
         title: 'Thriving',
         subtitle: 'open canopy',
       ),
@@ -37,12 +39,12 @@ class TierBandLegend extends StatelessWidget {
         subtitle: 'a gentle pace',
       ),
       _LegendEntry(
-        color: mb.softCoral.withValues(alpha: 0.45),
+        color: const Color(0xFFD4A56A).withValues(alpha: 0.40),
         title: 'Weathering',
         subtitle: 'rain-fed, growing',
       ),
       _LegendEntry(
-        color: MoodBloomColors.coral.withValues(alpha: 0.30),
+        color: MoodBloomColors.coral.withValues(alpha: 0.55),
         title: 'Storm Season',
         subtitle: 'sheltered, never withered',
       ),

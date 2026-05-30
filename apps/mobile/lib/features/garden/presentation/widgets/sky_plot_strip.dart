@@ -546,11 +546,15 @@ class _OverflowPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    final bg = dark
+    // Use the dark treatment for storm skies (`dark`) OR whenever the app
+    // is in dark mode. The light variant's near-white fill washes out the
+    // light `mb.text` glyph under a dark theme - the "too bright" bug.
+    final isDark = dark || Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark
         ? Colors.white.withValues(alpha: 0.18)
         : Colors.white.withValues(alpha: 0.70);
-    final fg = dark ? Colors.white : mb.text;
-    final border = dark
+    final fg = isDark ? Colors.white : mb.text;
+    final border = isDark
         ? Colors.white.withValues(alpha: 0.30)
         : Colors.black.withValues(alpha: 0.18);
     return Center(

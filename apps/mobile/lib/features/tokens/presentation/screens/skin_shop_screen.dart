@@ -253,11 +253,21 @@ class _EquippedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final skin = GardenSkinCatalog.byId(equippedId);
-    final seedDark = MoodBloomColors.seedDark;
+    // Theme-aware palette: the cream-on-softGreen pairing reads beautifully
+    // in light mode but turns into a bright pastel slab against the dark
+    // theme. In dark mode, blend the deep seed-green into the card surface
+    // for a green-tinted card and switch text to the brighter brand-green.
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark
+        ? Color.lerp(mb.card, MoodBloomColors.seed, 0.28)!
+        : MoodBloomColors.softGreen;
+    final accent = isDark
+        ? MoodBloomColors.seedBright
+        : MoodBloomColors.seedDark;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: MoodBloomColors.softGreen,
+        color: bg,
         borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusCardLg),
       ),
       child: Wrap(
@@ -296,7 +306,7 @@ class _EquippedCard extends StatelessWidget {
                   style: MbFonts.nunito(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: seedDark,
+                    color: accent,
                     letterSpacing: 1,
                   ),
                 ),
@@ -306,7 +316,7 @@ class _EquippedCard extends StatelessWidget {
                   style: MbFonts.fraunces(
                     fontSize: 22,
                     fontWeight: FontWeight.w600,
-                    color: seedDark,
+                    color: accent,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -314,7 +324,7 @@ class _EquippedCard extends StatelessWidget {
                   skin.tagline,
                   style: MbFonts.nunito(
                     fontSize: 13,
-                    color: seedDark.withValues(alpha: 0.78),
+                    color: accent.withValues(alpha: 0.78),
                     height: 1.4,
                   ),
                 ),

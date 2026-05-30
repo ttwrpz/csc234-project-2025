@@ -37,7 +37,13 @@ class SkyHeader extends StatelessWidget {
     this.height = 320,
     this.onPlantTap,
     this.onOverflowTap,
+    @visibleForTesting this.animate = true,
   });
+
+  /// Drives the atmosphere ticker (drifting clouds, fluttering
+  /// butterflies, gliding birds, falling storm rain). Tests pass `false`
+  /// to render a deterministic still frame so `pumpAndSettle` returns.
+  final bool animate;
 
   /// Forwarded to the inner [SkyPlotStrip]. Tapping a plant dispatches
   /// its [MoodEntry] so the home screen can open the entry it maps to.
@@ -114,15 +120,16 @@ class SkyHeader extends StatelessWidget {
               ),
               // Per-tier atmospheric extras (clouds, sun/moon, aurora,
               // fireflies, leaves, rain, lightning). Sits above the
-              // gradient but below the ground + strip.
+              // gradient but below the ground + strip. Wrapped in a
+              // ticker so clouds drift, butterflies flutter, birds glide,
+              // and the storm rain falls.
               Positioned.fill(
-                child: CustomPaint(
-                  painter: _TierAtmospherePainter(
-                    tier: state.plantTier,
-                    isDark: theme.brightness == Brightness.dark,
-                    sun1: mb.sun1,
-                    sun2: mb.sun2,
-                  ),
+                child: _AnimatedTierAtmosphere(
+                  tier: state.plantTier,
+                  isDark: theme.brightness == Brightness.dark,
+                  sun1: mb.sun1,
+                  sun2: mb.sun2,
+                  animate: animate,
                 ),
               ),
               // Legacy sun glow on the Thriving baseline only - the
@@ -456,6 +463,83 @@ class _GroundPainter extends CustomPainter {
       old.ground != ground || old.ground2 != ground2 || old.grass != grass;
 }
 
+/// Hosts the looping ticker that animates the [_TierAtmospherePainter]
+/// (clouds drift, butterflies flutter, birds glide, storm rain falls).
+///
+/// Mirrors the [AtmosphereOverlay] pattern: a single repeating controller
+/// whose 0..1 value is fed to the painter as `t`. A 14-second loop reads
+/// as a calm sky; faster elements (wing-flap, rain) apply integer
+/// multipliers to `t` so every motion returns to its start at t=1 and the
+/// loop is seamless. The `animate` hook lets tests render a still frame.
+class _AnimatedTierAtmosphere extends StatefulWidget {
+  const _AnimatedTierAtmosphere({
+    required this.tier,
+    required this.isDark,
+    required this.sun1,
+    required this.sun2,
+    this.animate = true,
+  });
+
+  final PlantTier tier;
+  final bool isDark;
+  final Color sun1;
+  final Color sun2;
+  final bool animate;
+
+  @override
+  State<_AnimatedTierAtmosphere> createState() =>
+      _AnimatedTierAtmosphereState();
+}
+
+class _AnimatedTierAtmosphereState extends State<_AnimatedTierAtmosphere>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.animate) {
+      _ctrl = AnimationController(
+        vsync: this,
+        duration: const Duration(seconds: 14),
+      )..repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrl = _ctrl;
+    if (ctrl == null) {
+      return CustomPaint(
+        painter: _TierAtmospherePainter(
+          tier: widget.tier,
+          isDark: widget.isDark,
+          sun1: widget.sun1,
+          sun2: widget.sun2,
+        ),
+      );
+    }
+    return AnimatedBuilder(
+      animation: ctrl,
+      builder: (context, _) => CustomPaint(
+        painter: _TierAtmospherePainter(
+          tier: widget.tier,
+          isDark: widget.isDark,
+          sun1: widget.sun1,
+          sun2: widget.sun2,
+          t: ctrl.value,
+        ),
+      ),
+    );
+  }
+}
+
 /// Per-tier atmosphere painter. Ports the prototype's
 /// `FlourishingSky / ThrivingSky / RestingSky / WeatheringSky /
 /// StormSky` SVG groups (light + dark) to `Canvas` ops.
@@ -472,12 +556,18 @@ class _TierAtmospherePainter extends CustomPainter {
     required this.isDark,
     required this.sun1,
     required this.sun2,
+    this.t = 0,
   });
 
   final PlantTier tier;
   final bool isDark;
   final Color sun1;
   final Color sun2;
+
+  /// Looping 0..1 animation phase from [_AnimatedTierAtmosphere]. Drives
+  /// the cloud drift, butterfly flutter, bird glide, and rain fall.
+  /// Defaults to 0 (a still frame) when no ticker is attached.
+  final double t;
 
   /// Reference viewBox width the atmosphere shapes are authored against.
   /// (The design height was 200, but the painter now scales uniformly by
@@ -906,10 +996,14 @@ class _TierAtmospherePainter extends CustomPainter {
   }
 
   void _drawClouds(Canvas c, List<_Cloud> clouds, {required Color color}) {
+    final ph = t * 2 * math.pi;
     for (final cl in clouds) {
+      // Gentle horizontal drift, phase-seeded by cx so clouds in a group
+      // don't sway in lockstep; bigger puffs drift a touch more (parallax).
+      final dx = math.sin(ph + cl.cx * 0.05) * (6 + cl.rx * 0.18);
       c.drawOval(
         Rect.fromCenter(
-          center: Offset(cl.cx, cl.cy),
+          center: Offset(cl.cx + dx, cl.cy),
           width: cl.rx * 2,
           height: cl.ry * 2,
         ),
@@ -926,25 +1020,51 @@ class _TierAtmospherePainter extends CustomPainter {
   }) {
     final paintA = Paint()..color = colorA.withValues(alpha: 0.85);
     final paintB = Paint()..color = colorB.withValues(alpha: 0.85);
+    // Seed by anchor x so the two butterflies flutter out of phase.
+    final seed = at.dx * 0.07;
+    final ph = t * 2 * math.pi;
+    // Drift around the anchor (1x horizontal, 2x vertical → a gentle
+    // looping flit), and flap the wings by squashing them horizontally.
+    final pos = at.translate(
+      math.sin(ph + seed) * 8,
+      math.sin(ph * 2 + seed) * 5,
+    );
+    final flap = 0.5 + 0.5 * math.sin(ph * 12 + seed).abs();
     c.drawOval(
-      Rect.fromCenter(center: at.translate(-4, -2), width: 8, height: 6),
+      Rect.fromCenter(
+        center: pos.translate(-4 * flap, -2),
+        width: 8 * flap,
+        height: 6,
+      ),
       paintA,
     );
     c.drawOval(
-      Rect.fromCenter(center: at.translate(4, -2), width: 8, height: 6),
+      Rect.fromCenter(
+        center: pos.translate(4 * flap, -2),
+        width: 8 * flap,
+        height: 6,
+      ),
       paintA,
     );
     c.drawOval(
-      Rect.fromCenter(center: at.translate(-3, 3), width: 6, height: 5),
+      Rect.fromCenter(
+        center: pos.translate(-3 * flap, 3),
+        width: 6 * flap,
+        height: 5,
+      ),
       paintB,
     );
     c.drawOval(
-      Rect.fromCenter(center: at.translate(3, 3), width: 6, height: 5),
+      Rect.fromCenter(
+        center: pos.translate(3 * flap, 3),
+        width: 6 * flap,
+        height: 5,
+      ),
       paintB,
     );
     c.drawLine(
-      at.translate(0, -3),
-      at.translate(0, 4),
+      pos.translate(0, -3),
+      pos.translate(0, 4),
       Paint()
         ..color = const Color(0xFF1F2937)
         ..strokeWidth = 1.0
@@ -1061,11 +1181,16 @@ class _TierAtmospherePainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
+    // Glide rightward across the sky and wrap (one full pass per loop, so
+    // the wrap is seamless), with a small vertical bob. The wrap span (460)
+    // exceeds the 400 viewBox so the bird slips off the right edge and
+    // re-enters from the left rather than popping in mid-sky.
+    final bx = (at.dx + t * 460) % 460;
+    final by = at.dy + math.sin(t * 2 * math.pi * 2 + at.dx * 0.1) * 2;
     // The prototype's path is two quadratic-bezier humps:
     //   M x y q 4 -3 7 0 q 3 -3 7 0
-    // Translated to absolute coords from the start point [at].
     final path = Path()
-      ..moveTo(at.dx, at.dy)
+      ..moveTo(bx, by)
       ..relativeQuadraticBezierTo(4, -3, 7, 0)
       ..relativeQuadraticBezierTo(3, -3, 7, 0);
     c.drawPath(path, paint);
@@ -1080,15 +1205,21 @@ class _TierAtmospherePainter extends CustomPainter {
       ..color = color.withValues(alpha: opacity)
       ..strokeWidth = 1.2
       ..strokeCap = StrokeCap.round;
+    const top = 50.0;
+    const span = 120.0;
     for (var i = 0; i < 36; i += 1) {
       final x = ((i * 12) % 400).toDouble();
-      final y = (60 + (i * 17) % 100).toDouble();
+      // Each streak falls `span` px; 9 falls per loop (integer → the wrap
+      // is seamless). The per-drop start offset keeps them out of lockstep.
+      final y0 = ((i * 17) % 100).toDouble();
+      final y = top + (y0 + t * span * 9) % span;
       c.drawLine(Offset(x, y), Offset(x - 3, y + 8), rain);
     }
   }
 
   @override
   bool shouldRepaint(covariant _TierAtmospherePainter old) =>
+      old.t != t ||
       old.tier != tier ||
       old.isDark != isDark ||
       old.sun1 != sun1 ||

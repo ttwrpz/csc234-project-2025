@@ -1,8 +1,9 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
+import '../../../../app/router.dart' show routerProvider;
+import '../../../disclaimer/domain/disclaimer_copy.dart';
 import '../../../pattern_engine/domain/entities/tier.dart';
 import '../controllers/intervention_controller.dart';
 import 'intervention_opt_out_button.dart';
@@ -40,13 +41,17 @@ class InterventionBanner extends ConsumerWidget {
         ? theme.colorScheme.onErrorContainer
         : theme.colorScheme.onSurface;
 
-    // Render the full body and let the Text widget's maxLines+ellipsis
-    // handle overflow. The previous "stop at the first sentence-ending
-    // punctuation" heuristic clipped two-sentence Tier 1/2 quotes
-    // (e.g. "A few quiet lines can help the weather pass. Would you
-    // like to write?") down to the lead-in only - the actionable
-    // invitation got lost. maxLines: 2 gives natural word-wrap on
-    // phone widths and reserves the second line for the CTA sentence.
+    // The dispatcher composes `body` as "<quote>\n\n<disclaimer footer>".
+    // Split them so the actionable message reads prominently and the
+    // medical disclaimer drops to a small, dim footnote - kept for
+    // compliance (CLAUDE.md locked rule) but no longer competing with
+    // the CTA for attention ("show it less intrusively").
+    final footerIdx = dispatch.body.indexOf(DisclaimerCopy.notificationFooter);
+    final messageText = footerIdx >= 0
+        ? dispatch.body.substring(0, footerIdx).trim()
+        : dispatch.body;
+    final hasDisclaimer = footerIdx >= 0;
+
     return SafeArea(
       top: false,
       child: Padding(
@@ -78,7 +83,7 @@ class InterventionBanner extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        dispatch.body,
+                        messageText,
                         // maxLines:3 + ellipsis keeps the Tier 1/2 quote
                         // wrap natural without truncating to a single
                         // sentence. DO NOT revert.
@@ -90,23 +95,44 @@ class InterventionBanner extends ConsumerWidget {
                           color: fgColor,
                         ),
                       ),
+                      if (hasDisclaimer) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          DisclaimerCopy.notificationFooter,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: MbFonts.nunito(
+                            fontSize: 10,
+                            height: 1.35,
+                            fontStyle: FontStyle.italic,
+                            color: fgColor.withValues(alpha: 0.62),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: MoodBloomSpacing.md),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           InterventionOptOutButton(),
                           const SizedBox(width: 8),
-                          // pushNamed (not goNamed) so the intervention
-                          // route sits on top of the shell rather than
-                          // replacing it; otherwise the redirect chain
-                          // re-evaluates and can bounce us back to /home.
+                          // Navigate via the GoRouter instance from the
+                          // provider, NOT `context.pushNamed`. This banner
+                          // is hosted in `MaterialApp.router(builder:)` -
+                          // ABOVE the Router's Navigator - so a context
+                          // lookup can't find the InheritedGoRouter and the
+                          // push silently no-ops (the "Open does nothing"
+                          // bug). The provider gives the live router
+                          // directly. pushNamed (not goNamed) keeps the
+                          // tier route on top of the shell.
                           MbPrimaryButton(
                             label: 'Open',
                             fullWidth: false,
-                            onPressed: () => context.pushNamed(
-                              _routeNameFor(dispatch.tier),
-                              extra: dispatch,
-                            ),
+                            onPressed: () => ref
+                                .read(routerProvider)
+                                .pushNamed(
+                                  _routeNameFor(dispatch.tier),
+                                  extra: dispatch,
+                                ),
                           ),
                         ],
                       ),

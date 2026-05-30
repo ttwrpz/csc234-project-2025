@@ -362,8 +362,13 @@ Scope heuristics:
 # Run the app locally (Android)
 cd apps/mobile && flutter run -d android
 
-# Run the app locally (Web)
-cd apps/mobile && flutter run -d chrome
+# Run the app locally (Web) — pinned to port 5173 so the dev origin
+# matches functions/.env's WEBAUTHN_STAGING_ORIGINS (required for the
+# WebAuthn "Use security key" flow to verify). Pick one:
+./scripts/run_web.ps1                                     # Windows
+./scripts/run_web.sh                                      # macOS / Linux
+cd apps/mobile && flutter run -d chrome --web-port=5173   # raw form
+# Or press F5 in VS Code — .vscode/launch.json ships a pinned config.
 
 # Run all tests
 cd apps/mobile && flutter test

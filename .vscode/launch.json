@@ -1,0 +1,46 @@
+{
+  "// note": [
+    "Pin the Flutter web port so the dev origin stays http://localhost:5173",
+    "across every launch. WebAuthn's expectedOrigin check is exact-match,",
+    "and functions/.env's WEBAUTHN_STAGING_ORIGINS allows-lists this port",
+    "(plus the others on the list). Without a pinned port Flutter picks a",
+    "random one, the assertion fails origin verification, and 'Use security",
+    "key' returns verification_failed."
+  ],
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter (web · Chrome · :5173)",
+      "type": "dart",
+      "request": "launch",
+      "program": "apps/mobile/lib/main.dart",
+      "cwd": "apps/mobile",
+      "deviceId": "chrome",
+      "args": [
+        "--web-port=5173",
+        "--web-hostname=localhost"
+      ]
+    },
+    {
+      "name": "Flutter (web · Chrome · :5173, release)",
+      "type": "dart",
+      "request": "launch",
+      "program": "apps/mobile/lib/main.dart",
+      "cwd": "apps/mobile",
+      "deviceId": "chrome",
+      "flutterMode": "release",
+      "args": [
+        "--web-port=5173",
+        "--web-hostname=localhost"
+      ]
+    },
+    {
+      "name": "Flutter (Android)",
+      "type": "dart",
+      "request": "launch",
+      "program": "apps/mobile/lib/main.dart",
+      "cwd": "apps/mobile",
+      "deviceId": "android"
+    }
+  ]
+}

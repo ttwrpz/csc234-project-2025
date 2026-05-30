@@ -352,18 +352,23 @@ class _PatternCheckInsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const MbSectionLabel('PATTERN CHECK-INS'),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             'Coloured days are when your garden offered a gentle check-in. '
             'The colour shows how soft the weather felt - never a score, '
             'never a judgement.',
             style: MbFonts.nunito(fontSize: 12, height: 1.4, color: mb.textDim),
           ),
-          const SizedBox(height: MoodBloomSpacing.md),
-          PatternMarkerBand(insights: insights),
-          const SizedBox(height: 10),
-          const _ChartKeyRow(),
+          // The marker band carries its own 6 dp vertical padding, so a
+          // small 6 dp spacer here is enough to separate the prose from
+          // the visual band without the previous 16 dp empty strip.
           const SizedBox(height: 6),
+          PatternMarkerBand(insights: insights),
+          const SizedBox(height: 6),
+          const _ChartKeyRow(),
+          // Bottom description sits flush under the legend row - the
+          // previous 6 dp gap, combined with Wrap runSpacing + text line
+          // metrics, read as a large empty band on phone widths.
           Text(
             'Empty slots are quiet days - never a streak break.',
             style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
@@ -464,7 +469,9 @@ class _ChartKeyRow extends StatelessWidget {
       runSpacing: 6,
       children: [
         _LegendDot(color: primary, label: 'Mood score'),
-        _LegendDot(color: MoodBloomColors.amber, label: 'Rolling rhythm'),
+        // Rolling rhythm picks up the slate-blue used by the chart's
+        // dashed trend line, so it no longer collides with Tier 1's amber.
+        const _LegendDot(color: Color(0xFF7A96AE), label: 'Rolling rhythm'),
         _LegendDot(color: MoodBloomColors.amber, label: 'Tier 1 gentle'),
         _LegendDot(color: MoodBloomColors.coral, label: 'Tier 2 invitation'),
         _LegendDot(color: mb.destructiveText, label: 'Tier 3 care'),

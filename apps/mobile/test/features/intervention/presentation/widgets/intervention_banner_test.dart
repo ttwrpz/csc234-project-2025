@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:moodbloom/app/router.dart' show routerProvider;
 import 'package:moodbloom/features/intervention/domain/entities/intervention_dispatch.dart';
 import 'package:moodbloom/features/intervention/presentation/controllers/intervention_controller.dart';
 import 'package:moodbloom/features/intervention/presentation/widgets/intervention_banner.dart';
@@ -79,7 +80,14 @@ Widget _makeAppWithRouter({
     ],
   );
   return ProviderScope(
-    overrides: [interventionControllerProvider.overrideWith(() => controller)],
+    overrides: [
+      interventionControllerProvider.overrideWith(() => controller),
+      // The banner navigates via `ref.read(routerProvider)` (it's hosted
+      // above the Router's Navigator, so a context lookup can't find the
+      // GoRouter). Override the provider with this test router so the tap
+      // drives the same instance that builds the MaterialApp.
+      routerProvider.overrideWithValue(router),
+    ],
     child: MaterialApp.router(routerConfig: router),
   );
 }

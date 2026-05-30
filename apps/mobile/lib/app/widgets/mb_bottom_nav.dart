@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:design_system/design_system.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 /// Visual height of the [MbBottomNav] *content* (excluding system safe-area
@@ -59,47 +60,55 @@ class MbBottomNav extends StatelessWidget {
 
     final highlightedIndex = items.indexWhere((it) => it.highlighted);
 
-    // The blurred bar. The highlighted "Add" slot renders an empty
+    // The bar content. The highlighted "Add" slot renders an empty
     // spacer in-row (it reserves its column width); the actual lifted
     // FAB is drawn in the Stack overlay below so it can poke ABOVE the
     // bar without the bar's ClipRect (which bounds the BackdropFilter
     // blur) cropping it.
-    final bar = ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: mb.navBg,
-            border: Border(top: BorderSide(color: mb.line, width: 1)),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 22),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  for (var i = 0; i < items.length; i++)
-                    Expanded(
-                      child: items[i].highlighted
-                          // Reserve the FAB column; the visible button
-                          // is the non-clipped overlay.
-                          ? const SizedBox.shrink()
-                          : _MbBottomNavTab(
-                              item: items[i],
-                              active: i == currentIndex,
-                              primary: MoodBloomColors.seed,
-                              textDim: mb.textDim,
-                              onTap: () => onTap(i),
-                            ),
-                    ),
-                ],
-              ),
-            ),
+    final barContent = DecoratedBox(
+      decoration: BoxDecoration(
+        color: mb.navBg,
+        border: Border(top: BorderSide(color: mb.line, width: 1)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 22),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              for (var i = 0; i < items.length; i++)
+                Expanded(
+                  child: items[i].highlighted
+                      // Reserve the FAB column; the visible button
+                      // is the non-clipped overlay.
+                      ? const SizedBox.shrink()
+                      : _MbBottomNavTab(
+                          item: items[i],
+                          active: i == currentIndex,
+                          primary: MoodBloomColors.seed,
+                          textDim: mb.textDim,
+                          onTap: () => onTap(i),
+                        ),
+                ),
+            ],
           ),
         ),
       ),
     );
+
+    // On web, CanvasKit allocates a live offscreen WebGL surface per
+    // BackdropFilter and leaks them across hot restarts ("Too many active
+    // WebGL contexts"). The nav fill (mb.navBg) is already ~90% opaque, so
+    // the frosted blur adds little — skip it on web, keep it on native.
+    final bar = kIsWeb
+        ? barContent
+        : ClipRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              child: barContent,
+            ),
+          );
 
     if (highlightedIndex < 0) return bar;
 

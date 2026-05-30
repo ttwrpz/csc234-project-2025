@@ -3,6 +3,7 @@ import 'mb_svg.dart';
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 /// Top-anchored dark-glass toast with the MoodBloom brand chip in the
@@ -79,8 +80,12 @@ class MbAppToast extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(14),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            // On web, CanvasKit leaks an offscreen WebGL surface per
+            // BackdropFilter across hot restarts ("Too many active WebGL
+            // contexts"). The glass fill is already 92% opaque, so drop the
+            // blur on web and keep it only on native.
+            child: _MaybeBlur(
+              blur: !kIsWeb,
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -137,6 +142,25 @@ class MbAppToast extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Wraps [child] in a [BackdropFilter] blur only when [blur] is true.
+/// Lets the toast keep its frosted glass on native while skipping the
+/// extra offscreen WebGL surface on web.
+class _MaybeBlur extends StatelessWidget {
+  const _MaybeBlur({required this.blur, required this.child});
+
+  final bool blur;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!blur) return child;
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+      child: child,
     );
   }
 }

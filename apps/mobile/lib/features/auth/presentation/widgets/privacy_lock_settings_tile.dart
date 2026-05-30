@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -48,10 +49,15 @@ class PrivacyLockSettingsTile extends ConsumerWidget {
       orElse: () => false,
     );
 
+    final mb = Theme.of(context).extension<MbColors>()!;
     return Column(
       children: [
         SwitchListTile(
-          secondary: const Icon(Icons.lock_outline),
+          // Match the icon colour of every other settings tile (mb.text).
+          // The default ListTile/SwitchListTile icon colour falls back to
+          // colorScheme.onSurfaceVariant, which doesn't match the rest of
+          // the page.
+          secondary: Icon(Icons.lock_outline, color: mb.text),
           title: const Text('Privacy Lock'),
           subtitle: Text(_subtitleFor(enabled, hasBiometric)),
           value: enabled,
@@ -128,10 +134,11 @@ class _SignedOutTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SwitchListTile(
-      secondary: Icon(Icons.lock_outline),
-      title: Text('Privacy Lock'),
-      subtitle: Text('Sign in first to set up Privacy Lock.'),
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return SwitchListTile(
+      secondary: Icon(Icons.lock_outline, color: mb.text),
+      title: const Text('Privacy Lock'),
+      subtitle: const Text('Sign in first to set up Privacy Lock.'),
       value: false,
       onChanged: null,
     );
@@ -143,11 +150,12 @@ class _ChangePinTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
     return ListTile(
-      leading: const Icon(Icons.password_outlined),
+      leading: Icon(Icons.password_outlined, color: mb.text),
       title: const Text('Change PIN'),
       subtitle: const Text('Replace your existing PIN.'),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: Icon(Icons.chevron_right, color: mb.textDim),
       // The affordance re-uses the setup flow (which overwrites the
       // existing hash); a dedicated current-PIN + new-PIN screen is a
       // future enhancement.

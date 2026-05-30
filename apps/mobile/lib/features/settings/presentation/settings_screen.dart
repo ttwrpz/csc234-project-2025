@@ -63,19 +63,22 @@ class SettingsScreen extends ConsumerWidget {
     final mb = Theme.of(context).extension<MbColors>()!;
     final theme = Theme.of(context);
 
-    // Settings tiles need a strong press effect: the default Material
+    // Settings tiles need a visible press effect: the default Material
     // splash on `MbCard`'s `MaterialType.transparency` surface is washed
-    // out on the cream/navy theme. Bumped both alpha values
-    // aggressively and swapped to `InkRipple.splashFactory` for the
-    // stronger ripple animation.
+    // out on the cream theme. In LIGHT mode `mb.text` is dark, so a strong
+    // alpha reads as a crisp ripple. In DARK mode `mb.text` is near-white,
+    // and the same strong alpha floods the card with a bright overlay that
+    // drowns out the description text - so the dark-mode press uses a much
+    // softer alpha that still gives feedback without the glare.
+    final isDark = theme.brightness == Brightness.dark;
     final pressTint = mb.text;
     return Scaffold(
       backgroundColor: mb.bg,
       body: SafeArea(
         child: Theme(
           data: theme.copyWith(
-            splashColor: pressTint.withValues(alpha: 0.50),
-            highlightColor: pressTint.withValues(alpha: 0.25),
+            splashColor: pressTint.withValues(alpha: isDark ? 0.16 : 0.50),
+            highlightColor: pressTint.withValues(alpha: isDark ? 0.09 : 0.25),
             splashFactory: InkRipple.splashFactory,
           ),
           child: LayoutBuilder(
@@ -104,6 +107,16 @@ class SettingsScreen extends ConsumerWidget {
                       twoColumn: twoColumn,
                       sections: _buildSections(context, ref, user, mb),
                     ),
+                    // Debug section is dev-only and was previously folded
+                    // into the two-column flow (it ended up at the bottom
+                    // of one of the two columns on desktop, leaving the
+                    // other column visibly shorter). Rendering it AFTER
+                    // the layout lets it span full width on tablet/desktop
+                    // and slot to the bottom on phone — its natural place.
+                    if (kDebugMode) ...[
+                      const SizedBox(height: MoodBloomSpacing.lg),
+                      const _DebugSection(),
+                    ],
                     const SizedBox(height: MoodBloomSpacing.lg),
                     Center(
                       child: Text(
@@ -154,9 +167,9 @@ class SettingsScreen extends ConsumerWidget {
       const _DeleteAccountSection(),
     ]);
 
-    if (kDebugMode) {
-      sections.add(const _DebugSection());
-    }
+    // Debug section is rendered outside this list (see build()) so it can
+    // span full width on desktop instead of stacking inside one of the two
+    // columns. Keep _buildSections focused on regular user-facing sections.
 
     return sections;
   }

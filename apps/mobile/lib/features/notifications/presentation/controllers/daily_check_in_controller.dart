@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/datasources/daily_check_in_scheduler_impl.dart';
@@ -41,6 +42,17 @@ class DailyCheckInController extends Notifier<DailyCheckInSchedule> {
       return;
     }
 
+    // Web has no local-notification plugin, so the scheduler can never
+    // "arm" there. Persist the intent and flip the switch anyway: the
+    // preference syncs to the user's Android device, where the scheduler
+    // actually fires the reminder. Gating the toggle on a platform that
+    // can never arm is the bug that made the switch snap back to off.
+    if (kIsWeb) {
+      await pref?.setDailyCheckInEnabled(true);
+      state = state.copyWith(enabled: true);
+      return;
+    }
+
     final armed = await scheduler.schedule(
       hour: state.hour,
       minute: state.minute,
@@ -57,7 +69,9 @@ class DailyCheckInController extends Notifier<DailyCheckInSchedule> {
     await pref?.setDailyCheckInTime(hour: hour, minute: minute);
     state = state.copyWith(hour: hour, minute: minute);
 
-    if (!state.enabled) return;
+    // Nothing to re-arm when off, or on web (no local-notification
+    // plugin - the persisted time still syncs to the mobile device).
+    if (!state.enabled || kIsWeb) return;
 
     final scheduler = ref.read(dailyCheckInSchedulerProvider);
     final armed = await scheduler.schedule(hour: hour, minute: minute);

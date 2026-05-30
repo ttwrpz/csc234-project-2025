@@ -176,11 +176,18 @@ abstract class _SkinPlantPainterBase extends CustomPainter {
   }
 
   /// Returns the bloom anchor (top of the stem) for the given mood.
+  ///
+  /// `okay` deliberately uses a SHORTER stem (its `stemPath` ends 8 units
+  /// lower at `top + 8`), so its bloom must anchor to that lower tip or it
+  /// floats in mid-air above the stem - the bug seen on the "Folded Petal"
+  /// (origami okay) skin. Every other mood anchors at the standard stem
+  /// top and applies its own per-mood offset inside the skin painter.
   Offset bloomAnchor() {
     const cx = viewBoxW / 2;
     final intensityShift = (intensity - 3) * 1.2;
     final top = viewBoxH * 0.28 - intensityShift;
-    return Offset(cx, top);
+    final dy = mood == MbMoodKind.okay ? top + 8 : top;
+    return Offset(cx, dy);
   }
 
   /// Scales the canvas so the painter can work in viewBox coords.
@@ -341,30 +348,52 @@ class _MeadowPainter extends _SkinPlantPainterBase {
     );
   }
 
-  // Okay - tuft of 6 grass blades from the ground line. No flower head.
+  // Okay - a daisy: a pair of leaves on the short stem, then a ring of
+  // rounded petals around a warm yellow eye at the stem tip. Okay is the
+  // daisy species, so the default plant for this mood now reads as an
+  // actual daisy rather than the old grass tuft (which made the
+  // daisy-species skins - "Blush Daisy", "Skyline" - look like grass).
   void _paintOkay(Canvas c, Color tint) {
-    const blades = <double>[-10, -6, -2, 2, 6, 10];
-    for (var i = 0; i < blades.length; i += 1) {
-      final dx = blades[i];
-      final blade = _h * (0.4 + (i % 3) * 0.06);
-      final sway = (i % 2 == 0) ? -3.0 : 3.0;
-      final paint = Paint()
-        ..color = (i % 2 == 0 ? grass : tint).withValues(alpha: 0.85)
-        ..strokeWidth = 1.4
-        ..strokeCap = StrokeCap.round
-        ..style = PaintingStyle.stroke;
-      c.drawPath(
-        Path()
-          ..moveTo(_cx + dx, _h)
-          ..quadraticBezierTo(
-            _cx + dx + sway,
-            _h - blade / 2,
-            _cx + dx + sway * 1.5,
-            _h - blade,
-          ),
-        paint,
+    final leaf = Paint()..color = grass;
+    _drawRotatedOval(
+      c,
+      cx: _cx - 4,
+      cy: _h * 0.72,
+      rx: 4,
+      ry: 1.8,
+      rotateDeg: -28,
+      paint: leaf,
+    );
+    _drawRotatedOval(
+      c,
+      cx: _cx + 4,
+      cy: _h * 0.8,
+      rx: 4,
+      ry: 1.8,
+      rotateDeg: 28,
+      paint: leaf,
+    );
+    // Flower head sits on the stem tip (bloomAnchor handles the okay
+    // short-stem offset).
+    c.save();
+    c.translate(_cx, _topY());
+    final petal = Paint()..color = tint;
+    for (var i = 0; i < 8; i += 1) {
+      c.save();
+      c.rotate(i * (2 * math.pi / 8));
+      c.drawOval(
+        Rect.fromCenter(center: const Offset(0, -5), width: 3.2, height: 7),
+        petal,
       );
+      c.restore();
     }
+    c.drawCircle(Offset.zero, 2.4, Paint()..color = const Color(0xFFF6C744));
+    c.drawCircle(
+      const Offset(-0.6, -0.6),
+      0.9,
+      Paint()..color = const Color(0xFFFFE8A3),
+    );
+    c.restore();
   }
 
   // Sad - drooping bell flower + a small leaf + a falling droplet.
