@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers.dart';
+import '../../../insights/presentation/controllers/insights_controller.dart';
 import '../../../mood/data/providers.dart';
 import '../../../mood/domain/ai_analysis_failure.dart';
 import '../../../mood/domain/entities/mood_entry.dart';
@@ -31,6 +32,10 @@ class PatternInsightCard extends ConsumerWidget {
     final flagOn = ref.watch(featureFlagsProvider).aiPatternAnalysisEnabled;
     if (!flagOn) return const SizedBox.shrink();
 
+    // The selected day-range chip (7d/14d/30d) feeds the AI analysis window,
+    // so changing the range re-runs the insight (the provider is keyed by
+    // windowDays as well as the entries).
+    final windowDays = ref.watch(insightsWindowPresetProvider).days;
     final asyncEntries = ref.watch(myMoodsStreamProvider);
     return asyncEntries.when(
       loading: () => const _LoadingCard(),
@@ -40,17 +45,18 @@ class PatternInsightCard extends ConsumerWidget {
         if (entries.isEmpty) {
           return const _EmptyCard();
         }
-        final insightsAsync = ref.watch(_patternInsightsProvider(entries));
+        final args = (entries: entries, windowDays: windowDays);
+        final insightsAsync = ref.watch(_patternInsightsProvider(args));
         return insightsAsync.when(
           loading: () => const _LoadingCard(),
           error: (_, _) => _ErrorCard(
-            onRetry: () => ref.invalidate(_patternInsightsProvider(entries)),
+            onRetry: () => ref.invalidate(_patternInsightsProvider(args)),
           ),
           data: (result) => switch (result) {
             Ok(value: final list) when list.isEmpty => const _EmptyCard(),
             Ok(value: final list) => _DataCard(insights: list),
             Err() => _ErrorCard(
-              onRetry: () => ref.invalidate(_patternInsightsProvider(entries)),
+              onRetry: () => ref.invalidate(_patternInsightsProvider(args)),
             ),
           },
         );
@@ -59,16 +65,24 @@ class PatternInsightCard extends ConsumerWidget {
   }
 }
 
-/// FutureProvider keyed on the current entries list. The current list is the
-/// natural input - there is no `MoodWindow` parameter here because the card
-/// runs over the full history (the server applies its own window).
+/// Cache key for [_patternInsightsProvider]: the current entries list plus
+/// the selected analysis window. Including windowDays means changing the
+/// day-range chip produces a fresh key and re-runs the analysis.
+typedef _PatternInsightArgs = ({List<MoodEntry> entries, int windowDays});
+
+/// FutureProvider keyed on the entries list AND the selected window. The
+/// window flows through to `analyzePatterns(windowDays:)` so the AI insight
+/// reflects the day range the user picked rather than a fixed default.
 final _patternInsightsProvider =
     FutureProvider.family<
       Result<List<PatternInsight>, AiAnalysisFailure>,
-      List<MoodEntry>
-    >((ref, entries) async {
+      _PatternInsightArgs
+    >((ref, args) async {
       final repo = ref.watch(aiAnalysisRepositoryProvider);
-      return repo.analyzePatterns(history: entries);
+      return repo.analyzePatterns(
+        history: args.entries,
+        windowDays: args.windowDays,
+      );
     });
 
 /// Hero header bar - larger sparkle badge, brand-gradient backdrop, and

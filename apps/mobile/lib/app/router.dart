@@ -33,6 +33,7 @@ import '../features/settings/presentation/settings_screen.dart';
 import '../features/settings/domain/entities/theme_mode_preference.dart';
 import '../features/settings/presentation/controllers/theme_mode_controller.dart';
 import '../features/tokens/presentation/screens/skin_shop_screen.dart';
+import 'not_found_screen.dart';
 import 'widgets/mb_bottom_nav.dart';
 import 'widgets/mb_side_nav.dart';
 
@@ -168,6 +169,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/home',
     refreshListenable: refresh,
+    // Unmatched routes (including typed web URLs / stale deep links) land
+    // on a friendly 404 instead of GoRouter's raw error page.
+    errorBuilder: (context, state) =>
+        NotFoundScreen(location: state.uri.toString()),
     redirect: (context, state) async {
       final prefs = await SharedPreferences.getInstance();
       final onboardingDone = prefs.getBool(_onboardingCompleteKey) ?? false;

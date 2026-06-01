@@ -425,63 +425,72 @@ class _SlideBody extends StatelessWidget {
             _FormFactor.desktop => 36.0,
           };
 
-    return SingleChildScrollView(
-      // Center the content within the PageView viewport so the art +
-      // copy sit nearer the vertical middle, not pinned to the top. The
-      // min-height + Center keeps it centered when content is short while
-      // still scrolling gracefully if it overflows on small screens.
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: MediaQuery.sizeOf(context).height * 0.5,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            OnboardingArt(kind: slide.art),
-            const SizedBox(height: 22),
-            Text(
-              slide.eyebrow,
-              style: MbFonts.nunito(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: mb.textDim,
-                letterSpacing: 1.6,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          // Force the content to be at least the full viewport height so the
+          // Column's center alignment lands it in the true vertical middle
+          // of the PageView slot - while still scrolling if it overflows on
+          // a short screen. (The old 0.5x-screen minHeight only centered
+          // within the top half.) The -32 offsets the vertical:16 padding.
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: (constraints.maxHeight - 32).clamp(
+                0.0,
+                double.infinity,
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              slide.title,
-              textAlign: TextAlign.center,
-              style: MbFonts.fraunces(
-                fontSize: titleSize,
-                fontWeight: FontWeight.w600,
-                color: mb.text,
-                height: 1.15,
-                letterSpacing: -0.4,
-              ),
-            ),
-            const SizedBox(height: 14),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Text(
-                slide.body,
-                textAlign: TextAlign.center,
-                style: MbFonts.nunito(
-                  fontSize: 14,
-                  height: 1.55,
-                  color: mb.textDim,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                OnboardingArt(kind: slide.art),
+                const SizedBox(height: 22),
+                Text(
+                  slide.eyebrow,
+                  style: MbFonts.nunito(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: mb.textDim,
+                    letterSpacing: 1.6,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 12),
+                Text(
+                  slide.title,
+                  textAlign: TextAlign.center,
+                  style: MbFonts.fraunces(
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.w600,
+                    color: mb.text,
+                    height: 1.15,
+                    letterSpacing: -0.4,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: Text(
+                    slide.body,
+                    textAlign: TextAlign.center,
+                    style: MbFonts.nunito(
+                      fontSize: 14,
+                      height: 1.55,
+                      color: mb.textDim,
+                    ),
+                  ),
+                ),
+                if (slide.kind ==
+                    _SlideKind.notificationPermission) ...<Widget>[
+                  const SizedBox(height: 18),
+                  const _DefaultTimeChip(),
+                ],
+              ],
             ),
-            if (slide.kind == _SlideKind.notificationPermission) ...<Widget>[
-              const SizedBox(height: 18),
-              const _DefaultTimeChip(),
-            ],
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

@@ -368,7 +368,7 @@ class _PatternCheckInsCard extends StatelessWidget {
           // the visual band; the previous 6 dp read as a wide empty strip.
           const SizedBox(height: 2),
           PatternMarkerBand(insights: insights),
-          const SizedBox(height: 6),
+          const SizedBox(height: 2),
           Text(
             'What the colours mean',
             style: MbFonts.nunito(

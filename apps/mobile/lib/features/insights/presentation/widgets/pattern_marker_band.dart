@@ -37,7 +37,7 @@ class PatternMarkerBand extends ConsumerWidget {
     final hasAny = insights.any((d) => d.triggeredTier != null);
     final focused = ref.watch(insightsFocusedDayIndexProvider);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
           for (var i = 0; i < insights.length; i++)

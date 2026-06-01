@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,6 +27,9 @@ Future<void> main() async {
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      // Web: clean path-based URLs (e.g. /home instead of /#/home) so deep
+      // links and the address bar read naturally. No-op on native.
+      if (kIsWeb) usePathUrlStrategy();
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
