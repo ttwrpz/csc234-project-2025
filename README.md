@@ -31,7 +31,7 @@ If you're a reviewer or a future student picking this up: the source code is the
 | `v0.3-beta` | May 5 | Gemini AI mood detection, offline-first Drift sync, security rules, fl_chart line chart |
 | `v1.0` | May 12 | Compassionate reframing pass, client-side pattern engine, full test suite |
 | `v1.5` | May 19 | Tiered intervention surfaces (breathing / journaling / crisis), token economy + flower skins, weekly harvest cycle, WebAuthn web fallback, dark-mode contrast sweep |
-| `v1.6` polish (current branch) | - | Edit profile, sync recovery in Settings, per-platform notification + camera permissions, biometric-gate hardening, app rename to "MoodBloom" on Android + iOS |
+| `v1.6` polish (current branch) | - | Edit profile, sync recovery in Settings, per-platform notification + camera permissions, biometric-gate hardening, app rename to "MoodBloom" on Android |
 
 The submission deadline is **30 May 2026**. See [`docs/release-notes/`](./docs/release-notes) for what shipped in each tag and [`docs/retros/`](./docs/retros) for sprint retrospectives.
 
@@ -112,7 +112,7 @@ csc234-project-2025/
 │   ├── lib/features/             ← Clean Architecture per feature (presentation / domain / data)
 │   ├── test/                     ← unit + widget + golden tests
 │   ├── integration_test/         ← end-to-end flows
-│   ├── android/, ios/, web/      ← platform shells
+│   ├── android/, web/            ← platform shells
 │   └── assets/                   ← icon + fonts
 ├── packages/
 │   ├── design_system/            ← MbCard, MbPrimaryButton, MbColors, tokens, theme

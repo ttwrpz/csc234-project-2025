@@ -96,8 +96,8 @@ class TierToggleTile extends ConsumerWidget {
   /// - No "Tier 1/2/3" labels (product-internal).
   /// - No clinical labels ("crisis", "depression", "anxiety").
   /// - Tier 3 subtitle names "Hotline 1323" explicitly so users know
-  ///   what they're disabling, framed as a "kind voice" rather than a
-  ///   medicalised crisis line.
+  ///   what they're disabling, framed as a caring message with helpline
+  ///   details rather than a medicalised crisis line.
   static _TileSpec _specFor(InterventionTier tier) => switch (tier) {
     InterventionTier.one => const _TileSpec(
       icon: Icons.spa_outlined,
@@ -115,8 +115,8 @@ class TierToggleTile extends ConsumerWidget {
       icon: Icons.volunteer_activism_outlined,
       title: 'Support reminders',
       subtitle:
-          'After heavy stretches, a kind voice and Hotline 1323. '
-          'Off anytime.',
+          'After a hard stretch, a caring message with helpline details '
+          '(Hotline 1323). Off anytime.',
     ),
   };
 }

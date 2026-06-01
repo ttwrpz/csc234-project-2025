@@ -156,8 +156,6 @@ class NotificationsSettingsDto {
         return NotificationPlatform.android;
       case 'web':
         return NotificationPlatform.web;
-      case 'ios':
-        return NotificationPlatform.iOS;
       default:
         return NotificationPlatform.android;
     }
@@ -169,8 +167,6 @@ class NotificationsSettingsDto {
         return 'android';
       case NotificationPlatform.web:
         return 'web';
-      case NotificationPlatform.iOS:
-        return 'ios';
     }
   }
 }

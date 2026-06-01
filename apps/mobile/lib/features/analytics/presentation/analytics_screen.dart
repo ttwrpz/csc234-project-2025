@@ -360,10 +360,19 @@ class _PatternCheckInsCard extends StatelessWidget {
             style: MbFonts.nunito(fontSize: 12, height: 1.4, color: mb.textDim),
           ),
           // The marker band carries its own 6 dp vertical padding, so a
-          // small 6 dp spacer here is enough to separate the prose from
-          // the visual band without the previous 16 dp empty strip.
-          const SizedBox(height: 6),
+          // small 2 dp spacer here is enough to separate the prose from
+          // the visual band; the previous 6 dp read as a wide empty strip.
+          const SizedBox(height: 2),
           PatternMarkerBand(insights: insights),
+          const SizedBox(height: 6),
+          Text(
+            'What the colours mean',
+            style: MbFonts.nunito(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: mb.textDim,
+            ),
+          ),
           const SizedBox(height: 6),
           const _ChartKeyRow(),
           // Bottom description sits flush under the legend row - the

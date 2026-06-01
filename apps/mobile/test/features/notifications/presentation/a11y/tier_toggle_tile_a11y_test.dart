@@ -155,8 +155,8 @@ void main() {
         await _pumpThreeTiles(tester);
         expect(find.text('Support reminders'), findsOneWidget);
         // The brief requires Tier 3 to name Hotline 1323 explicitly so
-        // users know what they're disabling, framed as a "kind voice"
-        // rather than a clinical crisis line.
+        // users know what they're disabling, framed as a caring message
+        // with helpline details rather than a clinical crisis line.
         expect(
           find.textContaining('Hotline 1323'),
           findsOneWidget,
@@ -165,11 +165,11 @@ void main() {
               'need to know what they\'re opting out of.',
         );
         expect(
-          find.textContaining('kind voice'),
+          find.textContaining('caring message'),
           findsOneWidget,
           reason:
-              'Tier 3 subtitle uses "kind voice" framing per CLAUDE.md '
-              'compassionate imperatives.',
+              'Tier 3 subtitle uses gentle "caring message" framing per '
+              'CLAUDE.md compassionate imperatives.',
         );
       },
     );

@@ -8,7 +8,7 @@ import '../../domain/repositories/mood_media_repository.dart';
 /// to the host platform AND the surrounding layout zone:
 ///
 /// |                     | narrow (<720dp)              | wide (>=720dp)        |
-/// | mobile (Android/iOS)| 2 icon buttons (cam + gal)   | 2 icon buttons        |
+/// | mobile (Android)    | 2 icon buttons (cam + gal)   | 2 icon buttons        |
 /// | desktop / web       | 1 icon button (gallery only) | full-width "Attach…"  |
 ///
 /// Why: the `image_picker` plugin maps both `ImageSource.camera` and
@@ -32,11 +32,12 @@ class MediaPickerButton extends StatelessWidget {
 
   /// True when the host platform is web or a desktop OS (Windows / macOS /
   /// Linux). On those platforms there's no real "camera" path through
-  /// `image_picker`, so the camera affordance is hidden.
+  /// `image_picker`, so the camera affordance is hidden. Android is the
+  /// only mobile target, so it is the sole platform that gets the camera
+  /// button.
   static bool get _isDesktopLike {
     if (kIsWeb) return true;
-    return defaultTargetPlatform != TargetPlatform.android &&
-        defaultTargetPlatform != TargetPlatform.iOS;
+    return defaultTargetPlatform != TargetPlatform.android;
   }
 
   @override

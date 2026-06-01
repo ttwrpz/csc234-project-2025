@@ -875,20 +875,24 @@ class _DebugCluster extends ConsumerWidget {
     final forced = ref.watch(debugForceOfflineProvider);
     final mb = Theme.of(context).extension<MbColors>()!;
     return Theme(
-      // Strip the divider above/below the expansion children so adjacent
-      // tiles flow visually into the cluster card.
+      // Strip the divider above/below the children so adjacent tiles flow
+      // visually into the cluster card.
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        leading: const Icon(Icons.build_outlined),
-        title: const Text('Debug tools'),
-        subtitle: const Text(
-          'Dev-build only - force states, cycle tiers, test crashes. '
-          'Never shipped to release.',
-        ),
-        initiallyExpanded: true,
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-        childrenPadding: EdgeInsets.zero,
+      // Always-on (no collapse): the debug cluster only exists in a debug
+      // build, so the tools should be visible immediately rather than
+      // hidden behind an expansion tap.
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const ListTile(
+            leading: Icon(Icons.build_outlined),
+            title: Text('Debug tools'),
+            subtitle: Text(
+              'Dev-build only - force states, cycle tiers, test crashes. '
+              'Never shipped to release.',
+            ),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16),
+          ),
           const Divider(height: 1),
           SwitchListTile(
             secondary: const Icon(Icons.wifi_off_outlined),

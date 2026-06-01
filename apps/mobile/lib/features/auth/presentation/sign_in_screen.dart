@@ -1,6 +1,7 @@
 import 'package:core/core.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/gestures.dart' show TapGestureRecognizer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -231,9 +232,42 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     ),
                     const SizedBox(height: 10),
                     Center(
-                      child: Text(
-                        'By continuing you agree to our gentle terms',
-                        style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
+                      child: Text.rich(
+                        TextSpan(
+                          text: 'By continuing you agree to our ',
+                          style: MbFonts.nunito(
+                            fontSize: 11,
+                            color: mb.textDim,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'Terms',
+                              style: MbFonts.nunito(
+                                fontSize: 11,
+                                color: mb.text,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => context.push('/legal/terms'),
+                            ),
+                            const TextSpan(text: ' and '),
+                            TextSpan(
+                              text: 'Privacy Policy',
+                              style: MbFonts.nunito(
+                                fontSize: 11,
+                                color: mb.text,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () =>
+                                    context.push('/legal/privacy-policy'),
+                            ),
+                            const TextSpan(text: '.'),
+                          ],
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ],

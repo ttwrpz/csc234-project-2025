@@ -115,7 +115,16 @@ final branchScrollControllerProvider = Provider.family<ScrollController, int>((
 });
 
 Widget _branchScope(ScrollController controller, Widget child) =>
-    PrimaryScrollController(controller: controller, child: child);
+    PrimaryScrollController(
+      controller: controller,
+      // PrimaryScrollController only auto-attaches to a scroll view on
+      // mobile platforms by default, so on desktop (the sidebar shell) the
+      // branch screens' scroll views never bound to this controller and
+      // `_goBranch`'s jumpTo(0) found no clients - sidebar nav didn't reset
+      // scroll. Inherit on every platform so the reset works on desktop too.
+      automaticallyInheritForPlatforms: TargetPlatform.values.toSet(),
+      child: child,
+    );
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<AppUser?>(null);

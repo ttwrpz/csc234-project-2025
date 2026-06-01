@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
@@ -59,13 +61,19 @@ class PinKeypadController {
   void _detach() => _onClear = null;
 }
 
-class _PinKeypadState extends State<PinKeypad> {
+class _PinKeypadState extends State<PinKeypad>
+    with SingleTickerProviderStateMixin {
   final StringBuffer _buffer = StringBuffer();
+  late final AnimationController _shakeController;
 
   @override
   void initState() {
     super.initState();
     widget.controller?._attach(_clear);
+    _shakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 440),
+    );
   }
 
   @override
@@ -75,11 +83,18 @@ class _PinKeypadState extends State<PinKeypad> {
       oldWidget.controller?._detach();
       widget.controller?._attach(_clear);
     }
+    // A freshly-surfaced error (wrong PIN / mismatch) shakes the dots row
+    // for a quick, calm "that didn't match" cue without a jarring colour
+    // flash.
+    if (widget.errorText != null && widget.errorText != oldWidget.errorText) {
+      _shakeController.forward(from: 0);
+    }
   }
 
   @override
   void dispose() {
     widget.controller?._detach();
+    _shakeController.dispose();
     super.dispose();
   }
 
@@ -115,7 +130,17 @@ class _PinKeypadState extends State<PinKeypad> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _Dots(length: Pin.length, filled: _buffer.length, mb: mb),
+        AnimatedBuilder(
+          animation: _shakeController,
+          builder: (context, child) {
+            final t = _shakeController.value;
+            // Damped horizontal oscillation: a few quick swings that decay
+            // to rest. Zero offset when idle so layout is untouched.
+            final dx = t == 0 ? 0.0 : math.sin(t * math.pi * 4) * 9 * (1 - t);
+            return Transform.translate(offset: Offset(dx, 0), child: child);
+          },
+          child: _Dots(length: Pin.length, filled: _buffer.length, mb: mb),
+        ),
         const SizedBox(height: 12),
         if (widget.errorText != null)
           Padding(
@@ -159,15 +184,42 @@ class _Dots extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         for (var i = 0; i < length; i++)
+          // Fixed-size outer box keeps the row geometry stable while the
+          // inner dot animates its fill / size on each keypress.
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: i < filled ? mb.text : Colors.transparent,
-                border: Border.all(color: mb.textDim.withValues(alpha: 0.5)),
+            padding: const EdgeInsets.symmetric(horizontal: 7),
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  width: i < filled ? 17 : 13,
+                  height: i < filled ? 17 : 13,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: i < filled
+                        ? MoodBloomColors.seed
+                        : Colors.transparent,
+                    border: Border.all(
+                      color: i < filled
+                          ? MoodBloomColors.seed
+                          : mb.textDim.withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
+                    boxShadow: i < filled
+                        ? [
+                            BoxShadow(
+                              color: MoodBloomColors.seed.withValues(
+                                alpha: 0.35,
+                              ),
+                              blurRadius: 8,
+                            ),
+                          ]
+                        : null,
+                  ),
+                ),
               ),
             ),
           ),

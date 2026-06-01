@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../auth/data/providers.dart';
+import '../../disclaimer/domain/disclaimer_copy.dart';
 import '../../notifications/data/datasources/fcm_datasource.dart'
     show FcmPermissionOutcome;
 import '../../notifications/data/providers.dart'
@@ -154,6 +155,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
+  Future<void> _showFullDisclaimer() async {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: mb.card,
+        title: Text(
+          'Before you start',
+          style: MbFonts.fraunces(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: mb.text,
+          ),
+        ),
+        content: Text(
+          DisclaimerCopy.full,
+          style: MbFonts.nunito(fontSize: 14, height: 1.55, color: mb.text),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _requestPermissionAndAdvance() async {
     if (_requestingPermission) return;
     setState(() => _requestingPermission = true);
@@ -247,12 +276,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               // "Skip intro" - jump straight to completion.
                               // ignore: discarded_futures
                               _completeAndRoute();
+                            } else if (slide.kind == _SlideKind.disclaimer) {
+                              // "Read full disclaimer" opens the full text in
+                              // a read-only dialog (the user is not signed in
+                              // yet, so this is informational - the mandatory
+                              // ack lives at the Patterns gate).
+                              // ignore: discarded_futures
+                              _showFullDisclaimer();
                             } else if (slide.kind ==
-                                    _SlideKind.notificationPermission ||
-                                slide.kind == _SlideKind.disclaimer) {
-                              // "Not now" / "Read full disclaimer" both just
-                              // advance the deck - the full disclaimer is
-                              // surfaced again at the Patterns ack gate.
+                                _SlideKind.notificationPermission) {
+                              // "Not now" just advances the deck.
                               _next();
                             } else {
                               _back();
@@ -393,51 +426,61 @@ class _SlideBody extends StatelessWidget {
           };
 
     return SingleChildScrollView(
+      // Center the content within the PageView viewport so the art +
+      // copy sit nearer the vertical middle, not pinned to the top. The
+      // min-height + Center keeps it centered when content is short while
+      // still scrolling gracefully if it overflows on small screens.
       padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          OnboardingArt(kind: slide.art),
-          const SizedBox(height: 22),
-          Text(
-            slide.eyebrow,
-            style: MbFonts.nunito(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: mb.textDim,
-              letterSpacing: 1.6,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            slide.title,
-            textAlign: TextAlign.center,
-            style: MbFonts.fraunces(
-              fontSize: titleSize,
-              fontWeight: FontWeight.w600,
-              color: mb.text,
-              height: 1.15,
-              letterSpacing: -0.4,
-            ),
-          ),
-          const SizedBox(height: 14),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Text(
-              slide.body,
-              textAlign: TextAlign.center,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: MediaQuery.sizeOf(context).height * 0.5,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            OnboardingArt(kind: slide.art),
+            const SizedBox(height: 22),
+            Text(
+              slide.eyebrow,
               style: MbFonts.nunito(
-                fontSize: 14,
-                height: 1.55,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
                 color: mb.textDim,
+                letterSpacing: 1.6,
               ),
             ),
-          ),
-          if (slide.kind == _SlideKind.notificationPermission) ...<Widget>[
-            const SizedBox(height: 18),
-            const _DefaultTimeChip(),
+            const SizedBox(height: 12),
+            Text(
+              slide.title,
+              textAlign: TextAlign.center,
+              style: MbFonts.fraunces(
+                fontSize: titleSize,
+                fontWeight: FontWeight.w600,
+                color: mb.text,
+                height: 1.15,
+                letterSpacing: -0.4,
+              ),
+            ),
+            const SizedBox(height: 14),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Text(
+                slide.body,
+                textAlign: TextAlign.center,
+                style: MbFonts.nunito(
+                  fontSize: 14,
+                  height: 1.55,
+                  color: mb.textDim,
+                ),
+              ),
+            ),
+            if (slide.kind == _SlideKind.notificationPermission) ...<Widget>[
+              const SizedBox(height: 18),
+              const _DefaultTimeChip(),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

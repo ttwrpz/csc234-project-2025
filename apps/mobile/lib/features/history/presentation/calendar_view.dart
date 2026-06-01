@@ -574,10 +574,20 @@ class _MonthHeader extends StatelessWidget {
           TextButton(
             onPressed: onToday,
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               minimumSize: const Size(0, 28),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              foregroundColor: theme.colorScheme.primary,
+              // A soft tinted pill with the standard text color: the bare
+              // primary-green label was hard to read on the dark surface.
+              backgroundColor: theme.colorScheme.primary.withValues(
+                alpha: theme.brightness == Brightness.dark ? 0.22 : 0.12,
+              ),
+              foregroundColor: mb.text,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                  MoodBloomSpacing.radiusFull,
+                ),
+              ),
               textStyle: MbFonts.nunito(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,

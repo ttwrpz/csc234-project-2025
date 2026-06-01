@@ -22,8 +22,6 @@ class DefaultFirebaseOptions {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
-      case TargetPlatform.iOS:
-        return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
@@ -62,16 +60,5 @@ class DefaultFirebaseOptions {
     messagingSenderId: '433750563013',
     projectId: 'csc234-user-centric-mobile-app',
     storageBucket: 'csc234-user-centric-mobile-app.firebasestorage.app',
-  );
-
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDgaNX-sMVA8c0qGr3B_17qpBcLtlJ7VH0',
-    appId: '1:433750563013:ios:5b6b1c1bf0f3fed8a538ac',
-    messagingSenderId: '433750563013',
-    projectId: 'csc234-user-centric-mobile-app',
-    storageBucket: 'csc234-user-centric-mobile-app.firebasestorage.app',
-    iosClientId:
-        '433750563013-scltlfi42ns0tk3q85r1ha929mkedc5n.apps.googleusercontent.com',
-    iosBundleId: 'com.cssit.usercentricapp',
   );
 }

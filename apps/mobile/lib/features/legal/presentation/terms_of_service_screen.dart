@@ -14,9 +14,10 @@ class TermsOfServiceScreen extends StatelessWidget {
       effectiveDate: '1 June 2026',
       intro:
           'These terms govern your use of MoodBloom, a mood-tracking app built '
-          'by KMUTT Group 2. By creating an account or using the app, you '
-          'agree to these terms. Please read them together with our Privacy '
-          'Policy.',
+          'by Group 2 of the School of Information Technology (SIT), King '
+          "Mongkut's University of Technology Thonburi (KMUTT), as a student "
+          'project. By creating an account or using the app, you agree to '
+          'these terms. Please read them together with our Privacy Policy.',
       sections: [
         LegalSection('1. Eligibility', [
           'You must be at least 13 years old to use MoodBloom. By using the '
@@ -76,8 +77,9 @@ class TermsOfServiceScreen extends StatelessWidget {
           'We may update these terms; material changes will be reflected by '
               'the effective date above, and continued use means you accept '
               'the updated terms.',
-          'These terms are governed by the laws of Thailand. Questions can be '
-              'sent to the MoodBloom team at group2.moodbloom@kmutt.ac.th.',
+          'These terms are governed by the laws of Thailand. MoodBloom is a '
+              'student project of Group 2, School of Information Technology '
+              '(SIT), KMUTT.',
         ]),
       ],
     );

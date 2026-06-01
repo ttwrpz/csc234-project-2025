@@ -14,10 +14,12 @@ class PrivacyPolicyScreen extends StatelessWidget {
       effectiveDate: '1 June 2026',
       intro:
           'MoodBloom ("we", "us", the "app") is a mood-tracking app built by '
-          'KMUTT Group 2 as a student project. This policy explains what '
-          'personal information the app collects, why, how it is stored, and '
-          'the choices you have. We collect the minimum needed to run the app '
-          'and we never sell your data.',
+          'Group 2 of the School of Information Technology (SIT), King '
+          "Mongkut's University of Technology Thonburi (KMUTT), as a student "
+          'project. This policy explains what personal information the app '
+          'collects, why, how it is stored, and the choices you have. We '
+          'collect the minimum needed to run the app and we never sell your '
+          'data.',
       sections: [
         LegalSection('1. Information we collect', [
           'Account information: when you sign up we store the email address '
@@ -101,11 +103,11 @@ class PrivacyPolicyScreen extends StatelessWidget {
               'a substitute for professional care. If you are in distress, '
               'please contact a qualified professional or a local helpline.',
         ]),
-        LegalSection('10. Changes and contact', [
+        LegalSection('10. Changes', [
           'We may update this policy as the app evolves; material changes will '
               'be reflected by the effective date above.',
-          'Questions about this policy can be sent to the MoodBloom team at '
-              'group2.moodbloom@kmutt.ac.th.',
+          'MoodBloom is a student project of Group 2, School of Information '
+              'Technology (SIT), KMUTT.',
         ]),
       ],
     );

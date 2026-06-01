@@ -4,7 +4,7 @@ part 'notifications_settings.freezed.dart';
 
 /// Platform a registered FCM token came from. Stored as a string in
 /// Firestore so the rule check stays a simple `in [...]` comparison.
-enum NotificationPlatform { android, web, iOS }
+enum NotificationPlatform { android, web }
 
 /// One device registration. Multiple devices per user supported: a
 /// token is stored once per (token) - re-registering the same token

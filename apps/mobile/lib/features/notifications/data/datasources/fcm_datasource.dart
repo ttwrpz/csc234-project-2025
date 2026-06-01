@@ -118,9 +118,8 @@ class FcmDatasource {
   NotificationPlatform currentPlatform() {
     if (kIsWeb) return NotificationPlatform.web;
     switch (defaultTargetPlatform) {
-      case TargetPlatform.iOS:
-        return NotificationPlatform.iOS;
       case TargetPlatform.android:
+      case TargetPlatform.iOS:
       case TargetPlatform.fuchsia:
       case TargetPlatform.linux:
       case TargetPlatform.macOS:
