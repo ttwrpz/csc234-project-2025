@@ -142,25 +142,31 @@ class _PinKeypadState extends State<PinKeypad>
           child: _Dots(length: Pin.length, filled: _buffer.length, mb: mb),
         ),
         const SizedBox(height: 12),
-        if (widget.errorText != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              widget.errorText!,
-              style: MbFonts.nunito(
-                fontSize: 13,
-                // Theme-aware destructive-text token - `coralText` is
-                // the design-system "destructive text on cream" token
-                // and is not dark-safe, so prefer the MbColors
-                // extension when present.
-                color:
-                    theme.extension<MbColors>()?.destructiveText ??
-                    theme.colorScheme.error,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
+        // Fixed-height error slot: reserving the space means the dots +
+        // keypad never jump when an error appears/changes (e.g. the PIN
+        // setup "Confirm your PIN" / "PINs do not match" transitions).
+        SizedBox(
+          height: 34,
+          child: Center(
+            child: widget.errorText == null
+                ? const SizedBox.shrink()
+                : Text(
+                    widget.errorText!,
+                    style: MbFonts.nunito(
+                      fontSize: 13,
+                      // Theme-aware destructive-text token - `coralText`
+                      // is the design-system "destructive text on cream"
+                      // token and is not dark-safe, so prefer the
+                      // MbColors extension when present.
+                      color:
+                          theme.extension<MbColors>()?.destructiveText ??
+                          theme.colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
           ),
+        ),
         const SizedBox(height: 8),
         _Keys(
           enabled: widget.enabled,

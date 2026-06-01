@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/providers.dart';
+import 'privacy_lock_verify_sheet.dart';
 
 /// Unified Privacy Lock settings tile - replaces the prior
 /// `BiometricSettingsTile` + `PrivacySettingsTile` pair.
@@ -102,7 +103,13 @@ class PrivacyLockSettingsTile extends ConsumerWidget {
       return;
     }
 
-    // Flipping OFF: persist the opt-out, reset biometric opt-in (so
+    // Flipping OFF is sensitive: require the owner to re-verify (biometric
+    // or PIN) first, so an already-unlocked phone in someone else's hands
+    // can't silently strip the lock. Cancel / failed verification aborts.
+    final verified = await PrivacyLockVerifySheet.show(context);
+    if (!context.mounted || !verified) return;
+
+    // Verified: persist the opt-out, reset biometric opt-in (so
     // biometric + Privacy Lock disable together), and invalidate the
     // stored PIN hash so a re-enable goes through a full setup flow
     // rather than silently reusing the prior PIN. The Firestore rule

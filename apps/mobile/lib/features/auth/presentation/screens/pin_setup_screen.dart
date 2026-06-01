@@ -133,14 +133,22 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    subtitle,
-                    style: MbFonts.nunito(
-                      fontSize: 14,
-                      height: 1.5,
-                      color: mb.textDim,
+                  // Fixed-height subtitle slot so swapping the step copy
+                  // ("Set a 6-digit PIN" -> "Confirm your PIN") never
+                  // reflows the keypad below it.
+                  SizedBox(
+                    height: 48,
+                    child: Center(
+                      child: Text(
+                        subtitle,
+                        style: MbFonts.nunito(
+                          fontSize: 14,
+                          height: 1.5,
+                          color: mb.textDim,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
                   Expanded(

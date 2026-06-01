@@ -79,7 +79,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= _kSidePanelBreakpoint;
-        final calendar = _CalendarCard(
+        final card = _CalendarCard(
           viewedMonth: _viewedMonth,
           selectedDay: wide ? _selectedDay : null,
           onPrev: _goPrevMonth,
@@ -92,6 +92,21 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
           // an Expanded slot) instead of shrink-wrapping to a small grid
           // with empty space below. Wide layout keeps its scrollable card.
           fillHeight: !wide,
+        );
+        // Swipe horizontally to page months: right -> previous, left ->
+        // next (blocked at the current month so we never page into the
+        // future). Day-cell taps still win on a no-movement press.
+        final calendar = GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragEnd: (details) {
+            final v = details.primaryVelocity ?? 0;
+            if (v > 250) {
+              _goPrevMonth();
+            } else if (v < -250 && !_isCurrentMonth) {
+              _goNextMonth();
+            }
+          },
+          child: card,
         );
         if (!wide) {
           return calendar;
@@ -558,7 +573,7 @@ class _MonthHeader extends StatelessWidget {
         MbIconButton(
           icon: const Icon(Icons.chevron_left),
           onPressed: onPrev,
-          size: MbIconButtonSize.sm,
+          size: MbIconButtonSize.md,
           semanticLabel: 'Previous month',
         ),
         Expanded(
@@ -587,8 +602,8 @@ class _MonthHeader extends StatelessWidget {
           TextButton(
             onPressed: onToday,
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              minimumSize: const Size(0, 28),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              minimumSize: const Size(0, 36),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               // A soft tinted pill with the standard text color: the bare
               // primary-green label was hard to read on the dark surface.
@@ -602,7 +617,7 @@ class _MonthHeader extends StatelessWidget {
                 ),
               ),
               textStyle: MbFonts.nunito(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -613,7 +628,7 @@ class _MonthHeader extends StatelessWidget {
         MbIconButton(
           icon: const Icon(Icons.chevron_right),
           onPressed: onNext,
-          size: MbIconButtonSize.sm,
+          size: MbIconButtonSize.md,
           semanticLabel: 'Next month',
         ),
       ],

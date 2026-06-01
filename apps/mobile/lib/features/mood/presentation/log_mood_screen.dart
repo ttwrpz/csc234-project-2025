@@ -177,7 +177,7 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
               builder: (context, constraints) {
                 final isWide =
                     constraints.maxWidth >= MbBreakpoints.logMoodWide;
-                return SingleChildScrollView(
+                final scroll = SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(
                     MoodBloomSpacing.pagePadding,
                     MoodBloomSpacing.pagePadding,
@@ -214,15 +214,27 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
                           draft: draft,
                           submission: submission,
                           controller: controller,
-                          hasMood: hasMood,
-                          canSave: canSave,
-                          isEditMode: isEditMode,
-                          onSave: () => _onSave(context, ref),
                           onPickMedia: (source) =>
                               _onPickMedia(context, ref, source),
                         ),
                     ],
                   ),
+                );
+                // Wide layout keeps Save inline in the right column. On
+                // narrow, the form scrolls and Save is pinned to the bottom
+                // so users never have to discover it by scrolling.
+                if (isWide) return scroll;
+                return Column(
+                  children: [
+                    Expanded(child: scroll),
+                    _PinnedSaveBar(
+                      hasMood: hasMood,
+                      canSave: canSave,
+                      isEditMode: isEditMode,
+                      loading: submission.isSubmitting,
+                      onSave: () => _onSave(context, ref),
+                    ),
+                  ],
                 );
               },
             ),
@@ -289,20 +301,12 @@ class _NarrowBody extends ConsumerWidget {
     required this.draft,
     required this.submission,
     required this.controller,
-    required this.hasMood,
-    required this.canSave,
-    required this.isEditMode,
-    required this.onSave,
     required this.onPickMedia,
   });
 
   final MoodDraft draft;
   final LogMoodSubmissionState submission;
   final LogMoodController controller;
-  final bool hasMood;
-  final bool canSave;
-  final bool isEditMode;
-  final VoidCallback onSave;
   final ValueChanged<MoodMediaSource> onPickMedia;
 
   @override
@@ -351,15 +355,56 @@ class _NarrowBody extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: MoodBloomSpacing.lg),
-        _SaveButton(
-          hasMood: hasMood,
-          loading: submission.isSubmitting,
-          isEditMode: isEditMode,
-          onPressed: canSave ? onSave : null,
-        ),
-        const SizedBox(height: MoodBloomSpacing.md),
         _DisclaimerFootnote(color: mb.textDim),
       ],
+    );
+  }
+}
+
+/// Bottom-pinned Save bar for the narrow (phone) layout. Keeps the
+/// primary action permanently visible above the scrolling form so users
+/// don't have to scroll to find it. Mirrors the in-column `_SaveButton`
+/// the wide layout uses.
+class _PinnedSaveBar extends StatelessWidget {
+  const _PinnedSaveBar({
+    required this.hasMood,
+    required this.canSave,
+    required this.isEditMode,
+    required this.loading,
+    required this.onSave,
+  });
+
+  final bool hasMood;
+  final bool canSave;
+  final bool isEditMode;
+  final bool loading;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = Theme.of(context).extension<MbColors>()!;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: mb.bg,
+        border: Border(top: BorderSide(color: mb.line)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            MoodBloomSpacing.pagePadding,
+            MoodBloomSpacing.sm,
+            MoodBloomSpacing.pagePadding,
+            MoodBloomSpacing.sm,
+          ),
+          child: _SaveButton(
+            hasMood: hasMood,
+            loading: loading,
+            isEditMode: isEditMode,
+            onPressed: canSave ? onSave : null,
+          ),
+        ),
+      ),
     );
   }
 }

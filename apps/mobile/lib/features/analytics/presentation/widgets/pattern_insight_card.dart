@@ -45,7 +45,7 @@ class PatternInsightCard extends ConsumerWidget {
         if (entries.isEmpty) {
           return const _EmptyCard();
         }
-        final args = (entries: entries, windowDays: windowDays);
+        final args = _PatternInsightArgs(entries, windowDays);
         final insightsAsync = ref.watch(_patternInsightsProvider(args));
         return insightsAsync.when(
           loading: () => const _LoadingCard(),
@@ -65,14 +65,45 @@ class PatternInsightCard extends ConsumerWidget {
   }
 }
 
-/// Cache key for [_patternInsightsProvider]: the current entries list plus
-/// the selected analysis window. Including windowDays means changing the
-/// day-range chip produces a fresh key and re-runs the analysis.
-typedef _PatternInsightArgs = ({List<MoodEntry> entries, int windowDays});
+/// Cache key for [_patternInsightsProvider]. Carries the entries to analyse
+/// plus the selected window, but its identity is a CONTENT signature
+/// (entry count + newest timestamp + windowDays) - not the list reference.
+///
+/// `myMoodsStreamProvider` emits a brand-new `List` on every Firestore
+/// snapshot even when nothing changed; reference equality therefore re-ran
+/// `analyzePatterns` on every tick and tripped the Cloud Function rate
+/// limiter (the repeated `analyzePatterns server error | _RateLimited`
+/// logs). Keying by content means the analysis re-runs only when the data
+/// or the chosen window actually changes.
+class _PatternInsightArgs {
+  _PatternInsightArgs(this.entries, this.windowDays);
 
-/// FutureProvider keyed on the entries list AND the selected window. The
-/// window flows through to `analyzePatterns(windowDays:)` so the AI insight
-/// reflects the day range the user picked rather than a fixed default.
+  final List<MoodEntry> entries;
+  final int windowDays;
+
+  late final String _sig = _signature();
+
+  String _signature() {
+    var newest = 0;
+    for (final e in entries) {
+      final ms = (e.updatedAt ?? e.createdAt).millisecondsSinceEpoch;
+      if (ms > newest) newest = ms;
+    }
+    return '${entries.length}:$newest:$windowDays';
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is _PatternInsightArgs && other._sig == _sig;
+
+  @override
+  int get hashCode => _sig.hashCode;
+}
+
+/// FutureProvider keyed on the content signature AND the selected window.
+/// The window flows through to `analyzePatterns(windowDays:)` so the AI
+/// insight reflects the day range the user picked rather than a fixed
+/// default.
 final _patternInsightsProvider =
     FutureProvider.family<
       Result<List<PatternInsight>, AiAnalysisFailure>,

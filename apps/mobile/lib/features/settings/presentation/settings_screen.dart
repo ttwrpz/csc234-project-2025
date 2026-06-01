@@ -30,6 +30,7 @@ import '../../harvest/domain/usecases/archive_weekly_garden.dart'
 import '../../harvest/presentation/controllers/weekly_summary_controller.dart';
 import '../../intervention/presentation/controllers/intervention_controller.dart';
 import '../../mood/data/sync/connectivity_provider.dart';
+import '../../notifications/data/datasources/daily_check_in_scheduler_impl.dart';
 import '../../notifications/data/datasources/local_notification_datasource.dart';
 import '../../notifications/presentation/widgets/daily_check_in_tile.dart';
 import '../../notifications/presentation/widgets/tier_toggle_tile.dart';
@@ -964,6 +965,13 @@ class _DebugCluster extends ConsumerWidget {
           ),
           const Divider(height: 1),
           ListTile(
+            leading: const Icon(Icons.alarm_outlined),
+            title: const Text('Test daily check-in'),
+            subtitle: const Text('Schedule the check-in ~1 min from now.'),
+            onTap: () => _fireDebugDailyCheckIn(context, ref),
+          ),
+          const Divider(height: 1),
+          ListTile(
             leading: const Icon(Icons.restart_alt_outlined),
             title: const Text('Replay onboarding'),
             subtitle: const Text('Show the welcome slides again.'),
@@ -1042,6 +1050,34 @@ class _DebugCluster extends ConsumerWidget {
               ? 'Notification fired - check your system tray.'
               : 'Real local notifications fire only on Android. '
                     '(Web uses the browser permission flow.)',
+        ),
+      ),
+    );
+  }
+
+  /// Debug: exercise the real daily check-in scheduling path by arming it
+  /// for ~1 minute from now (the soonest a zoned schedule can verifiably
+  /// fire). Confirms permission + channel + zonedSchedule wiring end to end.
+  Future<void> _fireDebugDailyCheckIn(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final at = DateTime.now().add(const Duration(minutes: 1));
+    final armed = await ref
+        .read(dailyCheckInSchedulerProvider)
+        .schedule(hour: at.hour, minute: at.minute);
+    if (!context.mounted) return;
+    final hh = at.hour.toString().padLeft(2, '0');
+    final mm = at.minute.toString().padLeft(2, '0');
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          armed
+              ? 'Daily check-in scheduled for $hh:$mm - keep the app '
+                    'backgrounded to see it fire.'
+              : 'Could not schedule (notifications off, permission denied, '
+                    'or web).',
         ),
       ),
     );
