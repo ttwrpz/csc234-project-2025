@@ -98,10 +98,18 @@ skills-lock.json
 firebase/test/coverage/
 *.tsbuildinfo
 firebase-debug.log
+firebase-debug.*.log
 firestore-debug.log
 ui-debug.log
 storage-debug.log
 auth-debug.log
+database-debug.log
+pubsub-debug.log
+dataconnect-debug.log
+
+# Firebase CLI deploy cache (hosting upload manifest + cached artifacts).
+# Regenerated on every `firebase deploy`; never source.
+.firebase/
 
 # Cloud Functions (TypeScript build + runtime config secrets)
 functions/lib/

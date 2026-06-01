@@ -88,9 +88,13 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
           // current month - it'd be a no-op there.
           onToday: _isCurrentMonth ? null : _goToday,
           onDayTap: wide ? (day) => setState(() => _selectedDay = day) : null,
+          // Phone: fill the available height (the parent gives the calendar
+          // an Expanded slot) instead of shrink-wrapping to a small grid
+          // with empty space below. Wide layout keeps its scrollable card.
+          fillHeight: !wide,
         );
         if (!wide) {
-          return SingleChildScrollView(child: calendar);
+          return calendar;
         }
         return SingleChildScrollView(
           child: Row(
@@ -126,6 +130,7 @@ class _CalendarCard extends ConsumerWidget {
     required this.onNext,
     required this.onToday,
     required this.onDayTap,
+    this.fillHeight = false,
   });
 
   final DateTime viewedMonth;
@@ -146,10 +151,35 @@ class _CalendarCard extends ConsumerWidget {
   /// side panel without leaving the screen.
   final ValueChanged<DateTime>? onDayTap;
 
+  /// When true the month grid expands to fill the available height (phone
+  /// layout) rather than shrink-wrapping to square cells.
+  final bool fillHeight;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stateAsync = ref.watch(calendarControllerProvider(viewedMonth));
     final mb = Theme.of(context).extension<MbColors>()!;
+
+    final gridSection = stateAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Padding(
+        padding: const EdgeInsets.all(MoodBloomSpacing.xl),
+        child: Text(
+          "We couldn't load your calendar right now.",
+          style: MbFonts.nunito(fontSize: 13, color: mb.text),
+          textAlign: TextAlign.center,
+        ),
+      ),
+      data: (state) => _MonthGrid(
+        state: state,
+        selectedDay: selectedDay,
+        onDayTap: onDayTap,
+        fillHeight: fillHeight,
+      ),
+    );
 
     return Center(
       child: ConstrainedBox(
@@ -157,7 +187,7 @@ class _CalendarCard extends ConsumerWidget {
         child: MbCard(
           padding: const EdgeInsets.all(16),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: fillHeight ? MainAxisSize.max : MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _MonthHeader(
@@ -169,25 +199,8 @@ class _CalendarCard extends ConsumerWidget {
               const SizedBox(height: 12),
               const _WeekdayHeaderRow(),
               const SizedBox(height: 4),
-              stateAsync.when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (e, _) => Padding(
-                  padding: const EdgeInsets.all(MoodBloomSpacing.xl),
-                  child: Text(
-                    "We couldn't load your calendar right now.",
-                    style: MbFonts.nunito(fontSize: 13, color: mb.text),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                data: (state) => _MonthGrid(
-                  state: state,
-                  selectedDay: selectedDay,
-                  onDayTap: onDayTap,
-                ),
-              ),
+              // Phone fills the remaining height; wide shrink-wraps.
+              if (fillHeight) Expanded(child: gridSection) else gridSection,
             ],
           ),
         ),
@@ -644,11 +657,17 @@ class _MonthGrid extends StatelessWidget {
     required this.state,
     required this.selectedDay,
     required this.onDayTap,
+    this.fillHeight = false,
   });
 
   final CalendarState state;
   final DateTime? selectedDay;
   final ValueChanged<DateTime>? onDayTap;
+
+  /// When true the grid fills the bounded height it is given (phone) by
+  /// computing a cell aspect ratio from the available space; otherwise it
+  /// shrink-wraps to square cells (wide / scrollable layout).
+  final bool fillHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -688,7 +707,10 @@ class _MonthGrid extends StatelessWidget {
       );
     }
 
-    final grid = GridView.count(
+    final rowCount = cellCount ~/ 7;
+
+    // Shrink-wrapped square grid (wide / scrollable layout).
+    Widget squareGrid() => GridView.count(
       crossAxisCount: 7,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -698,16 +720,36 @@ class _MonthGrid extends StatelessWidget {
       children: cells,
     );
 
+    // Height-filling grid: derive the cell aspect ratio from the bounded
+    // box the parent Expanded provides so the weeks span the full height.
+    Widget fillGrid() => LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 4.0;
+        final cellW = (constraints.maxWidth - spacing * 6) / 7;
+        final cellH =
+            (constraints.maxHeight - spacing * (rowCount - 1)) / rowCount;
+        final aspect = (cellW <= 0 || cellH <= 0) ? 1.0 : cellW / cellH;
+        return GridView.count(
+          crossAxisCount: 7,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: spacing,
+          crossAxisSpacing: spacing,
+          childAspectRatio: aspect,
+          children: cells,
+        );
+      },
+    );
+
     if (state.isEmpty) {
       return Column(
         children: [
-          grid,
+          if (fillHeight) Expanded(child: fillGrid()) else squareGrid(),
           const SizedBox(height: 16),
           const _EmptyStateOverlay(),
         ],
       );
     }
-    return grid;
+    return fillHeight ? fillGrid() : squareGrid();
   }
 }
 

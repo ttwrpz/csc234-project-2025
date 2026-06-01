@@ -210,7 +210,11 @@ class _ChartCard extends StatelessWidget {
               Expanded(
                 child: MbSectionLabel('MOOD SCORE · LAST ${preset.days} DAYS'),
               ),
-              MbConfidenceBadge(level: _confidenceFor(insights)),
+              // Only show the confidence badge once there is real data to be
+              // confident about. While the chart shows the "need more moods"
+              // / loading state, a confidence level is meaningless.
+              if (insights.any((d) => d.entryCount > 0))
+                MbConfidenceBadge(level: _confidenceFor(insights)),
             ],
           ),
           const SizedBox(height: 6),
@@ -473,42 +477,93 @@ class _ChartKeyRow extends StatelessWidget {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
     final mb = theme.extension<MbColors>()!;
-    return Wrap(
-      spacing: 16,
-      runSpacing: 6,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _LegendDot(color: primary, label: 'Mood score'),
+        _LegendDot(
+          color: primary,
+          label: 'Mood score',
+          description: "Each day's average feeling.",
+        ),
         // Rolling rhythm picks up the slate-blue used by the chart's
         // dashed trend line, so it no longer collides with Tier 1's amber.
-        const _LegendDot(color: Color(0xFF7A96AE), label: 'Rolling rhythm'),
-        _LegendDot(color: MoodBloomColors.amber, label: 'Tier 1 gentle'),
-        _LegendDot(color: MoodBloomColors.coral, label: 'Tier 2 invitation'),
-        _LegendDot(color: mb.destructiveText, label: 'Tier 3 care'),
+        const _LegendDot(
+          color: Color(0xFF7A96AE),
+          label: 'Rolling rhythm',
+          description: 'The smoothed trend across recent days.',
+        ),
+        _LegendDot(
+          color: MoodBloomColors.amber,
+          label: 'Tier 1 gentle',
+          description: 'A day the garden offered a breathing pause.',
+        ),
+        _LegendDot(
+          color: MoodBloomColors.coral,
+          label: 'Tier 2 invitation',
+          description: 'A day it invited you to write things down.',
+        ),
+        _LegendDot(
+          color: mb.destructiveText,
+          label: 'Tier 3 care',
+          description: 'A day it shared caring resources.',
+        ),
       ],
     );
   }
 }
 
 class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label});
+  const _LegendDot({
+    required this.color,
+    required this.label,
+    this.description,
+  });
 
   final Color color;
   final String label;
+  final String? description;
 
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(label, style: MbFonts.nunito(fontSize: 11, color: mb.text)),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            // Nudge the dot down to sit on the label's text baseline.
+            padding: const EdgeInsets.only(top: 4),
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: label,
+                    style: MbFonts.nunito(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: mb.text,
+                    ),
+                  ),
+                  if (description != null)
+                    TextSpan(
+                      text: ' - $description',
+                      style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

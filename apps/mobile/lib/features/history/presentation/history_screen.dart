@@ -27,14 +27,28 @@ extension on HistoryFilter {
   };
 
   bool matches(MoodEntry entry, DateTime now) {
-    switch (this) {
-      case HistoryFilter.thisWeek:
-        return now.difference(entry.createdAt).inDays < 7;
-      case HistoryFilter.thisMonth:
-        return now.difference(entry.createdAt).inDays < 31;
-      case HistoryFilter.allTime:
-        return true;
-    }
+    if (this == HistoryFilter.allTime) return true;
+    // Calendar-period semantics (local time): "This week" = the current
+    // calendar week, "This month" = the current calendar month. The old
+    // rolling 7-/31-day windows made "This month" always contain "This
+    // week", so toggling between them looked like it did nothing.
+    final local = entry.createdAt.toLocal();
+    final day = DateTime(local.year, local.month, local.day);
+    return !day.isBefore(_windowStart(this, now));
+  }
+}
+
+/// First local-midnight day included by [filter] relative to [now].
+/// Week starts on Monday (matches the garden's Mo..Su weekday labels).
+DateTime _windowStart(HistoryFilter filter, DateTime now) {
+  final today = DateTime(now.year, now.month, now.day);
+  switch (filter) {
+    case HistoryFilter.thisWeek:
+      return today.subtract(Duration(days: today.weekday - 1));
+    case HistoryFilter.thisMonth:
+      return DateTime(now.year, now.month);
+    case HistoryFilter.allTime:
+      return DateTime.fromMillisecondsSinceEpoch(0);
   }
 }
 
@@ -499,14 +513,14 @@ List<_DaySectionData> _groupAndFillDays(
   DateTime now,
 ) {
   final today = DateTime(now.year, now.month, now.day);
-  // Decide how many trailing days to fill empties for. "All time" never
-  // forces empty placeholders - that would scroll back through the user's
-  // entire dormant history.
-  final fillSpan = switch (filter) {
-    HistoryFilter.thisWeek => 7,
-    HistoryFilter.thisMonth => 31,
-    HistoryFilter.allTime => 0,
-  };
+  // Fill empty-day placeholders for exactly the active calendar window
+  // (start-of-week or start-of-month through today), so the empties line
+  // up with what the filter actually selects. "All time" never forces
+  // empty placeholders - that would scroll back through the user's entire
+  // dormant history.
+  final fillSpan = filter == HistoryFilter.allTime
+      ? 0
+      : today.difference(_windowStart(filter, now)).inDays + 1;
 
   final buckets = <DateTime, List<MoodEntry>>{};
   for (final e in entries) {
