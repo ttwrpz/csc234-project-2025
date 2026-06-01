@@ -137,9 +137,39 @@ void main() {
         ),
       );
       await _pushScreen(tester);
+      // The exercise waits for an explicit "Begin" tap before the
+      // countdown starts.
+      await tester.tap(find.text('Begin'));
+      await tester.pump();
       expect(find.text('2:00'), findsOneWidget);
       await tester.pump(const Duration(seconds: 1));
       expect(find.text('1:59'), findsOneWidget);
+    });
+
+    testWidgets('waits for "Begin" before the countdown starts', (
+      tester,
+    ) async {
+      final controller = _RecordingController();
+      await tester.pumpWidget(
+        _makeApp(
+          dispatch: _dispatch(Tier.one, 'Tier 1 body'),
+          controller: controller,
+        ),
+      );
+      await _pushScreen(tester);
+      // Pre-start: a "Begin" CTA is shown, and neither the countdown nor
+      // the "I'm done" button has appeared yet.
+      expect(find.text('Begin'), findsOneWidget);
+      expect(find.text('2:00'), findsNothing);
+      expect(find.text("I'm done"), findsNothing);
+
+      await tester.tap(find.text('Begin'));
+      await tester.pump();
+
+      // After Begin: the countdown and the done CTA appear.
+      expect(find.text('2:00'), findsOneWidget);
+      expect(find.text("I'm done"), findsOneWidget);
+      expect(find.text('Begin'), findsNothing);
     });
 
     testWidgets('"I\'m done" calls controller.complete() then pops', (
@@ -153,6 +183,9 @@ void main() {
         ),
       );
       await _pushScreen(tester);
+      // Start the exercise so the "I'm done" CTA is present.
+      await tester.tap(find.text('Begin'));
+      await tester.pump();
       // The previous "Done for now" + "I'm okay" two-button row was
       // merged into a single "I'm done" CTA that routes through
       // `controller.complete()`. Opt-out semantics are still exercised
@@ -193,6 +226,9 @@ void main() {
         ),
       );
       await _pushScreen(tester);
+      // Start the exercise so the countdown timer is running.
+      await tester.tap(find.text('Begin'));
+      await tester.pump();
       // Drive the fake clock forward in 1s steps so the periodic timer
       // can fire on each second boundary.
       for (var i = 0; i < 120; i += 1) {

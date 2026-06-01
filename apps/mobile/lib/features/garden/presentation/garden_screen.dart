@@ -190,21 +190,23 @@ class _GardenView extends StatelessWidget {
     final blocks = _composeBlocks(context, mb: mb, isWide: false);
 
     return SingleChildScrollView(
-      // Extra bottom padding clears both the bottom nav AND the FAB.
-      padding: const EdgeInsets.only(bottom: 140),
+      // Bottom padding clears the bottom nav.
+      padding: const EdgeInsets.only(bottom: 112),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           // Full-bleed SkyHeader at the top - the atmospheric hero
           // reads edge-to-edge.
           _buildSkyHeader(context, height: 320),
+          const SizedBox(height: 16),
+          // Horizontal-only padding: the inter-section vertical gaps come
+          // from the SizedBox separators inside `_composeBlocks`, so the
+          // blocks must NOT also carry a per-block top inset (that stacked
+          // with the separators into oversized gaps).
           for (final w in blocks)
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                MoodBloomSpacing.pagePadding,
-                14,
-                MoodBloomSpacing.pagePadding,
-                0,
+              padding: const EdgeInsets.symmetric(
+                horizontal: MoodBloomSpacing.pagePadding,
               ),
               child: w,
             ),

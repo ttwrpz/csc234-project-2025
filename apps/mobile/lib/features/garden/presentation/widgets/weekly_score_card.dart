@@ -267,8 +267,18 @@ class _MiniChart extends StatelessWidget {
   final Color line;
   final Color textDim;
 
-  /// MTWTFSS - matches the prototype's first-letter labels.
-  static const List<String> _letters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  /// Two-letter weekday labels (Mon-first). Single letters collided on
+  /// Saturday/Sunday (both 'S'), which read as a duplicate day; the
+  /// two-letter form keeps every day distinct.
+  static const List<String> _letters = [
+    'Mo',
+    'Tu',
+    'We',
+    'Th',
+    'Fr',
+    'Sa',
+    'Su',
+  ];
 
   @override
   Widget build(BuildContext context) {

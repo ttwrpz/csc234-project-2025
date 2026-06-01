@@ -22,6 +22,8 @@ import '../features/intervention/domain/entities/intervention_dispatch.dart';
 import '../features/intervention/presentation/screens/breathing_screen.dart';
 import '../features/intervention/presentation/screens/crisis_resources_screen.dart';
 import '../features/intervention/presentation/screens/journaling_prompt_screen.dart';
+import '../features/legal/presentation/privacy_policy_screen.dart';
+import '../features/legal/presentation/terms_of_service_screen.dart';
 import '../features/mood/data/providers.dart' as mood_providers;
 import '../features/mood/presentation/controllers/log_mood_controller.dart'
     show logMoodControllerProvider;
@@ -235,6 +237,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/privacy/setup',
         pageBuilder: (c, s) => _noTransition(const PrivacySetupFlowScreen()),
+      ),
+      // Legal documents, linked from Settings > About. Top-level so they
+      // push as full screens over the shell with their own back button.
+      GoRoute(
+        path: '/legal/privacy-policy',
+        pageBuilder: (c, s) => _noTransition(const PrivacyPolicyScreen()),
+      ),
+      GoRoute(
+        path: '/legal/terms',
+        pageBuilder: (c, s) => _noTransition(const TermsOfServiceScreen()),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -460,12 +472,17 @@ class _AppShellState extends ConsumerState<_AppShell> {
   void _goBranch(int i) {
     final isSameBranch = navigationShell.currentIndex == i;
     navigationShell.goBranch(i, initialLocation: true);
-    // Tapping a nav item starts that branch fresh: clear any
+    // Entering a branch from elsewhere starts it fresh: clear any
     // in-progress mood draft (mood selection, intensity, note, AI
-    // suggestion) so returning to "Add" never resurfaces a stale
-    // half-filled form. Cheap + idempotent when the draft is already
-    // empty.
-    ref.read(logMoodControllerProvider.notifier).reset();
+    // suggestion) so arriving at "Add" never resurfaces a stale
+    // half-filled form. But re-tapping the branch you're ALREADY on must
+    // NOT wipe the draft - users tapped the centre "Add" circle while on
+    // the log screen expecting it to *save*, and silently clearing their
+    // half-filled entry was a data-loss surprise. Re-tap is now a no-op
+    // for the draft (it still resets scroll below).
+    if (!isSameBranch) {
+      ref.read(logMoodControllerProvider.notifier).reset();
+    }
     // Re-tap or cross-branch tap both reset scroll position to top.
     // Each branch owns its own ScrollController (via
     // `branchScrollControllerProvider`) bound to its own page wrapper,

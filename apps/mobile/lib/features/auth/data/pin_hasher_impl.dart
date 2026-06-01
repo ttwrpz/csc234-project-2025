@@ -36,11 +36,14 @@ List<int> _pbkdf2InIsolate(_Pbkdf2Args args) {
   // INT(1) big-endian: 0x00 0x00 0x00 0x01
   saltWithCounter[args.salt.length + 3] = 1;
 
-  var u = Uint8List.fromList(hmac.convert(saltWithCounter).bytes);
+  // Reuse the digest byte list directly between iterations rather than
+  // copying it into a fresh Uint8List each pass - over 100k iterations that
+  // removes 100k short-lived allocations from the hot loop.
+  var u = hmac.convert(saltWithCounter).bytes;
   final t = Uint8List(PinHasher.derivedKeyLengthBytes)
     ..setRange(0, u.length, u);
   for (var i = 1; i < args.iterations; i++) {
-    u = Uint8List.fromList(hmac.convert(u).bytes);
+    u = hmac.convert(u).bytes;
     for (var j = 0; j < t.length; j++) {
       t[j] ^= u[j];
     }
@@ -105,13 +108,14 @@ class PinHasherImpl implements PinHasher {
     saltWithCounter[salt.length + 3] = 1;
 
     // U_1 = HMAC(password, salt || INT(1))
-    var u = Uint8List.fromList(hmac.convert(saltWithCounter).bytes);
+    var u = hmac.convert(saltWithCounter).bytes;
     final t = Uint8List(PinHasher.derivedKeyLengthBytes)
       ..setRange(0, u.length, u);
 
-    // T_1 = U_1 XOR U_2 XOR ... XOR U_iterations.
+    // T_1 = U_1 XOR U_2 XOR ... XOR U_iterations. Reuse the digest byte list
+    // between iterations to avoid a per-iteration allocation in the hot loop.
     for (var i = 1; i < iterations; i++) {
-      u = Uint8List.fromList(hmac.convert(u).bytes);
+      u = hmac.convert(u).bytes;
       for (var j = 0; j < t.length; j++) {
         t[j] ^= u[j];
       }

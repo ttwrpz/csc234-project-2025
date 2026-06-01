@@ -34,8 +34,15 @@ class MbGhostButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mb = theme.extension<MbColors>()!;
-    final fg = danger ? mb.destructiveText : mb.text;
-    final borderColor = danger
+    final disabled = onPressed == null;
+    // A disabled destructive button must not keep the alarming red border /
+    // text - that reads as an active "Delete" affordance. Fall back to the
+    // neutral line + dimmed text so the disabled state is unmistakable in
+    // both light and dark mode.
+    final fg = danger
+        ? (disabled ? mb.textDim : mb.destructiveText)
+        : mb.text;
+    final borderColor = danger && !disabled
         ? theme.colorScheme.error.withValues(alpha: 0.55)
         : mb.line;
     final button = OutlinedButton(

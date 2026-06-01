@@ -74,9 +74,10 @@ void main() {
     });
 
     test('taglines contain no em-dashes (CLAUDE.md copy rule)', () {
+      // '\u2014' is the em-dash (U+2014); the source stays ASCII otherwise.
       for (final skin in PerSpeciesSkinCatalog.all) {
-        expect(skin.tagline.contains('-'), isFalse, reason: skin.id);
-        expect(skin.displayName.contains('-'), isFalse, reason: skin.id);
+        expect(skin.tagline.contains('\u2014'), isFalse, reason: skin.id);
+        expect(skin.displayName.contains('\u2014'), isFalse, reason: skin.id);
       }
     });
   });

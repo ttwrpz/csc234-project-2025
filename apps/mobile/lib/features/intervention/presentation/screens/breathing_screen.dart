@@ -76,11 +76,18 @@ class _BreathingViewState extends ConsumerState<BreathingView>
   int _secondsRemaining = _totalSeconds;
   bool _completed = false;
 
+  /// The paced animation + countdown wait for the user to tap "Begin" so they
+  /// can settle first, rather than the exercise starting the instant the
+  /// modal opens.
+  bool _started = false;
+
   @override
   void initState() {
     super.initState();
-    _breathController = AnimationController(duration: _breathCycle, vsync: this)
-      ..repeat();
+    _breathController = AnimationController(
+      duration: _breathCycle,
+      vsync: this,
+    );
     _radius = TweenSequence<double>(<TweenSequenceItem<double>>[
       TweenSequenceItem<double>(
         tween: Tween<double>(
@@ -101,6 +108,14 @@ class _BreathingViewState extends ConsumerState<BreathingView>
         weight: 8,
       ),
     ]).animate(_breathController);
+  }
+
+  /// Starts the paced breathing animation + the countdown. Invoked when the
+  /// user taps "Begin".
+  void _start() {
+    if (_started) return;
+    setState(() => _started = true);
+    _breathController.repeat();
     _ticker = Timer.periodic(const Duration(seconds: 1), _onTick);
   }
 
@@ -184,23 +199,33 @@ class _BreathingViewState extends ConsumerState<BreathingView>
             holdEnd: _holdEnd,
           ),
           const SizedBox(height: 24),
-          _CountdownLabel(
-            seconds: _secondsRemaining,
-            color: mb.text,
-            semanticsLabel: _semanticsClock(_secondsRemaining),
-            formatted: _formattedClock(_secondsRemaining),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'remaining',
-            style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
-          ),
-          const SizedBox(height: 24),
-          MbGhostButton(
-            label: "I'm done",
-            fullWidth: false,
-            onPressed: _onDone,
-          ),
+          if (_started) ...[
+            _CountdownLabel(
+              seconds: _secondsRemaining,
+              color: mb.text,
+              semanticsLabel: _semanticsClock(_secondsRemaining),
+              formatted: _formattedClock(_secondsRemaining),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'remaining',
+              style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
+            ),
+            const SizedBox(height: 24),
+            MbGhostButton(
+              label: "I'm done",
+              fullWidth: true,
+              onPressed: _onDone,
+            ),
+          ] else ...[
+            Text(
+              "Take a moment to settle. Begin whenever you're ready.",
+              textAlign: TextAlign.center,
+              style: MbFonts.nunito(fontSize: 13, color: mb.textDim),
+            ),
+            const SizedBox(height: 24),
+            MbPrimaryButton(label: 'Begin', onPressed: _start),
+          ],
         ],
       ),
     );
@@ -263,7 +288,14 @@ class _BreathingCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mb = Theme.of(context).extension<MbColors>()!;
+    final theme = Theme.of(context);
+    final mb = theme.extension<MbColors>()!;
+    final isDark = theme.brightness == Brightness.dark;
+    // In dark mode the light soft-green core read as a bright patch on the
+    // navy sheet; use the card surface so the disc blends, and lighten the
+    // phase word so it stays legible on that dark core.
+    final coreColor = isDark ? mb.card : MoodBloomColors.softGreen;
+    final phaseColor = isDark ? mb.text : MoodBloomColors.seedDark;
     return Semantics(
       label: 'Breathing rhythm guide',
       container: true,
@@ -274,13 +306,13 @@ class _BreathingCircle extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Static radial-gradient backdrop: soft-green core fading to
-            // the page background by ~70%.
+            // Static radial-gradient backdrop: themed core fading to the
+            // page background by ~70%.
             DecoratedBox(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [MoodBloomColors.softGreen, mb.bg],
+                  colors: [coreColor, mb.bg],
                   stops: const [0.0, 0.7],
                 ),
               ),
@@ -315,7 +347,7 @@ class _BreathingCircle extends StatelessWidget {
                   style: MbFonts.fraunces(
                     fontSize: 22,
                     fontWeight: FontWeight.w600,
-                    color: MoodBloomColors.seedDark,
+                    color: phaseColor,
                   ),
                 );
               },

@@ -613,7 +613,7 @@ class _AboutSection extends StatelessWidget {
   const _AboutSection();
 
   /// Hand-maintained until package_info_plus lands. Bumped per release.
-  static const String _appVersion = '1.0.0 (build 3)';
+  static const String _appVersion = '1.6.0 (build 4)';
 
   @override
   Widget build(BuildContext context) {
@@ -635,14 +635,14 @@ class _AboutSection extends StatelessWidget {
             leading: Icon(Icons.description_outlined, color: mb.text),
             title: const Text('Privacy policy'),
             trailing: Icon(Icons.chevron_right, color: mb.textDim, size: 22),
-            onTap: () {},
+            onTap: () => context.push('/legal/privacy-policy'),
           ),
           const Divider(height: 1),
           ListTile(
             leading: Icon(Icons.gavel_outlined, color: mb.text),
             title: const Text('Terms of service'),
             trailing: Icon(Icons.chevron_right, color: mb.textDim, size: 22),
-            onTap: () {},
+            onTap: () => context.push('/legal/terms'),
           ),
         ],
       ),

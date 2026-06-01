@@ -58,13 +58,9 @@ class MbBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
 
-    final highlightedIndex = items.indexWhere((it) => it.highlighted);
-
-    // The bar content. The highlighted "Add" slot renders an empty
-    // spacer in-row (it reserves its column width); the actual lifted
-    // FAB is drawn in the Stack overlay below so it can poke ABOVE the
-    // bar without the bar's ClipRect (which bounds the BackdropFilter
-    // blur) cropping it.
+    // The bar content. The highlighted "Add" slot renders its circular
+    // button inline, vertically centred with the other tabs, so it sits at
+    // the same height as the rest of the bar instead of poking above it.
     final barContent = DecoratedBox(
       decoration: BoxDecoration(
         color: mb.navBg,
@@ -73,16 +69,19 @@ class MbBottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 22),
+          padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               for (var i = 0; i < items.length; i++)
                 Expanded(
                   child: items[i].highlighted
-                      // Reserve the FAB column; the visible button
-                      // is the non-clipped overlay.
-                      ? const SizedBox.shrink()
+                      ? _HighlightedFab(
+                          item: items[i],
+                          active: i == currentIndex,
+                          primary: MoodBloomColors.seed,
+                          onTap: () => onTap(i),
+                        )
                       : _MbBottomNavTab(
                           item: items[i],
                           active: i == currentIndex,
@@ -110,31 +109,7 @@ class MbBottomNav extends StatelessWidget {
             ),
           );
 
-    if (highlightedIndex < 0) return bar;
-
-    // Stack with clipBehavior.none lets the FAB overflow above the bar.
-    // The bar is the non-positioned (sizing) child; the FAB is centred
-    // horizontally and lifted 14 dp above the top edge.
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.topCenter,
-      children: [
-        bar,
-        Positioned(
-          top: -14,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: _HighlightedFab(
-              item: items[highlightedIndex],
-              active: highlightedIndex == currentIndex,
-              primary: MoodBloomColors.seed,
-              onTap: () => onTap(highlightedIndex),
-            ),
-          ),
-        ),
-      ],
-    );
+    return bar;
   }
 }
 
@@ -187,14 +162,14 @@ class _MbBottomNavTab extends StatelessWidget {
   }
 }
 
-/// Primary-tinted circular FAB used for the centred Log slot. Rendered
-/// as a non-clipped Stack overlay above the bar (the parent positions it
-/// so it pokes above the nav baseline), so first-time users notice "this
-/// is the main action".
+/// Primary-tinted circular button used for the centred Log slot. Rendered
+/// inline in the nav row, vertically centred with the other tabs so it sits
+/// at the same height as the bar rather than poking above it, while the
+/// circular fill still marks it as the main action.
 ///
-/// Per the v1.6 prototype: 56×56 circle, `MoodBloomColors.seed` fill,
-/// white `Icons.add` 26 dp glyph, soft seed-tinted drop-shadow so the
-/// lift reads as elevation. `Material` + `InkWell` give a circular ripple.
+/// 46×46 circle, `MoodBloomColors.seed` fill, white `Icons.add` 24 dp glyph,
+/// soft seed-tinted drop-shadow for a touch of elevation. `Material` +
+/// `InkWell` give a circular ripple.
 class _HighlightedFab extends StatelessWidget {
   const _HighlightedFab({
     required this.item,
@@ -214,27 +189,29 @@ class _HighlightedFab extends StatelessWidget {
       button: true,
       selected: active,
       label: item.label,
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          color: primary,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: primary.withValues(alpha: 0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
+      child: Center(
+        child: Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: primary,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: primary.withValues(alpha: 0.35),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              child: Icon(item.icon, size: 24, color: Colors.white),
             ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          shape: const CircleBorder(),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
-            child: Icon(item.icon, size: 26, color: Colors.white),
           ),
         ),
       ),

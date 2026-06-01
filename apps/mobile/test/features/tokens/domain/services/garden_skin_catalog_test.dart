@@ -91,7 +91,9 @@ void main() {
       // rich-text source.
       for (final skin in GardenSkinCatalog.all) {
         expect(
-          skin.tagline.contains('-'),
+          // U+2014 is the em-dash; referenced by escape so the source
+          // stays ASCII (the codebase itself carries no em-dash char).
+          skin.tagline.contains('\u2014'),
           isFalse,
           reason:
               '${skin.id} tagline contains an em-dash (U+2014). '

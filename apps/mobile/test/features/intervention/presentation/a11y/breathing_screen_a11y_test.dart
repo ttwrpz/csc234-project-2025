@@ -184,6 +184,9 @@ void main() {
           _makeApp(dispatch: _dispatch(), controller: controller),
         );
         await _pushBreathing(tester);
+        // Start the exercise so the countdown (and its semantics) exist.
+        await tester.tap(find.text('Begin'));
+        await tester.pump();
 
         // Snapshot the canonical "2 minutes 0 seconds remaining" label.
         // The clock text widget itself is wrapped in ExcludeSemantics so
@@ -257,6 +260,9 @@ void main() {
         _makeApp(dispatch: _dispatch(), controller: controller),
       );
       await _pushBreathing(tester);
+      // Start the exercise so the "I'm done" CTA is rendered.
+      await tester.tap(find.text('Begin'));
+      await tester.pump();
 
       // The "I'm done" CTA is a ghost (OutlinedButton) per the v1.6
       // prototype's breathing modal. Opt-out wiring is covered
