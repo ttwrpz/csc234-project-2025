@@ -665,30 +665,45 @@ class _MediaSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const MbSectionLabel('ATTACH'),
-        const SizedBox(height: MoodBloomSpacing.sm),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: MediaPickerButton(onPick: onPickMedia, wideLayout: wideLayout),
-        ),
-        if (draft.mediaRefs.isNotEmpty) ...[
-          const SizedBox(height: MoodBloomSpacing.md),
-          ExistingMediaStrip(
-            gsUris: draft.mediaRefs,
-            onRemove: controller.removeMediaRef,
+    final mb = Theme.of(context).extension<MbColors>()!;
+    // Wrapped in a card with a one-line hint so the attach affordance reads
+    // as a distinct, inviting section - after Save moved to a pinned bar it
+    // was getting overlooked at the foot of the scroll.
+    return MbCard(
+      padding: const EdgeInsets.all(MoodBloomSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const MbSectionLabel('ATTACH A PHOTO'),
+          const SizedBox(height: 4),
+          Text(
+            'Add a photo to remember the moment - optional.',
+            style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
           ),
-        ],
-        if (draft.pickedMedia.isNotEmpty) ...[
-          const SizedBox(height: MoodBloomSpacing.md),
-          MediaThumbnailStrip(
-            media: draft.pickedMedia,
-            onRemove: controller.removeMedia,
+          const SizedBox(height: MoodBloomSpacing.sm),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: MediaPickerButton(
+              onPick: onPickMedia,
+              wideLayout: wideLayout,
+            ),
           ),
+          if (draft.mediaRefs.isNotEmpty) ...[
+            const SizedBox(height: MoodBloomSpacing.md),
+            ExistingMediaStrip(
+              gsUris: draft.mediaRefs,
+              onRemove: controller.removeMediaRef,
+            ),
+          ],
+          if (draft.pickedMedia.isNotEmpty) ...[
+            const SizedBox(height: MoodBloomSpacing.md),
+            MediaThumbnailStrip(
+              media: draft.pickedMedia,
+              onRemove: controller.removeMedia,
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

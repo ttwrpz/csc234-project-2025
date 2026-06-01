@@ -69,6 +69,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
   HistoryView _view = HistoryView.list;
   HistoryFilter _filter = HistoryFilter.thisWeek;
 
+  /// Page between view tabs on a horizontal fling. Left (negative
+  /// velocity) advances to the next tab, right goes back; clamped at the
+  /// ends. Velocity threshold avoids hijacking small horizontal jitter.
+  void _onTabSwipe(DragEndDetails details) {
+    final v = details.primaryVelocity ?? 0;
+    const order = HistoryView.values;
+    final i = order.indexOf(_view);
+    if (v < -250 && i < order.length - 1) {
+      setState(() => _view = order[i + 1]);
+    } else if (v > 250 && i > 0) {
+      setState(() => _view = order[i - 1]);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
@@ -102,24 +116,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 const SizedBox(height: MoodBloomSpacing.md),
               ],
               Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  switchInCurve: Curves.easeOut,
-                  switchOutCurve: Curves.easeIn,
-                  child: switch (_view) {
-                    HistoryView.list => _HistoryListView(
-                      key: const ValueKey('list'),
-                      filter: _filter,
-                    ),
-                    HistoryView.calendar => const KeyedSubtree(
-                      key: ValueKey('calendar'),
-                      child: CalendarView(),
-                    ),
-                    HistoryView.harvests => const KeyedSubtree(
-                      key: ValueKey('harvests'),
-                      child: WeeklyHarvestsTab(),
-                    ),
-                  },
+                // Horizontal swipe pages between the List / Calendar /
+                // Harvest tabs. On the Calendar tab the inner month-swipe
+                // wins the gesture (so swiping there changes month), which
+                // is the natural behaviour.
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onHorizontalDragEnd: _onTabSwipe,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: switch (_view) {
+                      HistoryView.list => _HistoryListView(
+                        key: const ValueKey('list'),
+                        filter: _filter,
+                      ),
+                      HistoryView.calendar => const KeyedSubtree(
+                        key: ValueKey('calendar'),
+                        child: CalendarView(),
+                      ),
+                      HistoryView.harvests => const KeyedSubtree(
+                        key: ValueKey('harvests'),
+                        child: WeeklyHarvestsTab(),
+                      ),
+                    },
+                  ),
                 ),
               ),
             ],

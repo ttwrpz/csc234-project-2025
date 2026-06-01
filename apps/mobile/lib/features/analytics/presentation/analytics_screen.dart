@@ -64,67 +64,87 @@ class AnalyticsScreen extends ConsumerWidget {
             final width = constraints.maxWidth;
             final isPhone = width < MbBreakpoints.insightsTablet;
             final isDesktop = width >= MbBreakpoints.insightsDesktop;
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(
-                MoodBloomSpacing.pagePadding,
-                MoodBloomSpacing.pagePadding,
-                MoodBloomSpacing.pagePadding,
-                MoodBloomSpacing.lg,
-              ),
-              children: [
-                const _Header(),
-                const SizedBox(height: MoodBloomSpacing.md),
-                _WindowChips(
-                  value: preset,
-                  onChanged: (p) =>
-                      ref.read(insightsWindowPresetProvider.notifier).state = p,
+            // Horizontal swipe pages the day-range window (7d/14d/30d) -
+            // the screen's only "tabs". The chart's own touch handling
+            // wins inside the chart area; swipes elsewhere cycle the
+            // window.
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragEnd: (details) {
+                final v = details.primaryVelocity ?? 0;
+                const order = InsightWindowPreset.values;
+                final i = order.indexOf(preset);
+                if (v < -250 && i < order.length - 1) {
+                  ref.read(insightsWindowPresetProvider.notifier).state =
+                      order[i + 1];
+                } else if (v > 250 && i > 0) {
+                  ref.read(insightsWindowPresetProvider.notifier).state =
+                      order[i - 1];
+                }
+              },
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  MoodBloomSpacing.pagePadding,
+                  MoodBloomSpacing.pagePadding,
+                  MoodBloomSpacing.pagePadding,
+                  MoodBloomSpacing.lg,
                 ),
-                const SizedBox(height: MoodBloomSpacing.md),
-                _ChartCard(
-                  isReady: isReady,
-                  stream: stream,
-                  insights: insights,
-                  preset: preset,
-                ),
-                const SizedBox(height: MoodBloomSpacing.md),
-                // Disclaimer gate is INLINE now: pre-ack shows an
-                // explanatory banner inviting the user to read the
-                // small print; tapping opens the ack dialog. Post-ack
-                // the same slot holds the Pattern-Engine tier markers
-                // + the chart-key legend.
-                if (!isReady)
-                  const _DisclaimerBanner()
-                else if (insights.isNotEmpty &&
-                    insights.any((d) => d.entryCount > 0)) ...[
-                  _PatternCheckInsCard(insights: insights),
+                children: [
+                  const _Header(),
                   const SizedBox(height: MoodBloomSpacing.md),
-                ],
-                // AI-assisted Gemini summary. Remote Config kill-switch
-                // hides it without code change if quote generation
-                // misbehaves.
-                if (flags.aiPatternAnalysisEnabled) ...[
-                  const PatternInsightCard(),
-                  const SizedBox(height: MoodBloomSpacing.md),
-                ],
-                _QuickStatsRow(entries: entries, window: preset),
-                const SizedBox(height: MoodBloomSpacing.md),
-                _BottomRail(
-                  isPhone: isPhone,
-                  isDesktop: isDesktop,
-                  showTriggers: isReady,
-                  insights: insights,
-                ),
-                const SizedBox(height: MoodBloomSpacing.md),
-                Text(
-                  'MoodBloom is not a medical device. Not a substitute for '
-                  'professional care.',
-                  style: MbFonts.nunito(
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic,
-                    color: mb.textDim,
+                  _WindowChips(
+                    value: preset,
+                    onChanged: (p) =>
+                        ref.read(insightsWindowPresetProvider.notifier).state =
+                            p,
                   ),
-                ),
-              ],
+                  const SizedBox(height: MoodBloomSpacing.md),
+                  _ChartCard(
+                    isReady: isReady,
+                    stream: stream,
+                    insights: insights,
+                    preset: preset,
+                  ),
+                  const SizedBox(height: MoodBloomSpacing.md),
+                  // Disclaimer gate is INLINE now: pre-ack shows an
+                  // explanatory banner inviting the user to read the
+                  // small print; tapping opens the ack dialog. Post-ack
+                  // the same slot holds the Pattern-Engine tier markers
+                  // + the chart-key legend.
+                  if (!isReady)
+                    const _DisclaimerBanner()
+                  else if (insights.isNotEmpty &&
+                      insights.any((d) => d.entryCount > 0)) ...[
+                    _PatternCheckInsCard(insights: insights),
+                    const SizedBox(height: MoodBloomSpacing.md),
+                  ],
+                  // AI-assisted Gemini summary. Remote Config kill-switch
+                  // hides it without code change if quote generation
+                  // misbehaves.
+                  if (flags.aiPatternAnalysisEnabled) ...[
+                    const PatternInsightCard(),
+                    const SizedBox(height: MoodBloomSpacing.md),
+                  ],
+                  _QuickStatsRow(entries: entries, window: preset),
+                  const SizedBox(height: MoodBloomSpacing.md),
+                  _BottomRail(
+                    isPhone: isPhone,
+                    isDesktop: isDesktop,
+                    showTriggers: isReady,
+                    insights: insights,
+                  ),
+                  const SizedBox(height: MoodBloomSpacing.md),
+                  Text(
+                    'MoodBloom is not a medical device. Not a substitute for '
+                    'professional care.',
+                    style: MbFonts.nunito(
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                      color: mb.textDim,
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         ),

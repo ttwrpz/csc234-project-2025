@@ -37,6 +37,12 @@ class QuoteSafetyFilterImpl implements QuoteSafetyFilter {
   /// Minimum fraction of tokens that must be in the tier's approved set.
   static const double approvedRatioThreshold = 0.80;
 
+  /// Minimum word tokens for a real supportive phrase. Gemini occasionally
+  /// returns a single connector word ("You", "I") which would otherwise
+  /// pass the ratio gate (1/1 approved = 100%) and surface as a one-word
+  /// "message"; require at least a short phrase, else fall back to curated.
+  static const int minWords = 3;
+
   /// Case-insensitive forbidden-word blacklist. Whole-word match only -
   /// "diagnose" matches but "diagnosing" does not. Additions require team
   /// review.
@@ -90,6 +96,15 @@ class QuoteSafetyFilterImpl implements QuoteSafetyFilter {
       // No semantic content - fail closed.
       return Err(
         QuoteFailure.filterReject(snippet: _snippet(text, reason: 'empty')),
+      );
+    }
+    if (tokens.length < minWords) {
+      // Too short to be a real supportive phrase (e.g. a lone "You").
+      // Fail closed so the dispatcher falls back to the curated pool.
+      return Err(
+        QuoteFailure.filterReject(
+          snippet: _snippet(text, reason: 'tooShort:${tokens.length}'),
+        ),
       );
     }
     final approved = QuoteLibraryImpl.approvedWordsFor(tier);

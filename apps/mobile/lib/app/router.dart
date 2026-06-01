@@ -127,6 +127,12 @@ Widget _branchScope(ScrollController controller, Widget child) =>
       child: child,
     );
 
+/// Root navigator key. Routes that set `parentNavigatorKey` to this render
+/// ABOVE the StatefulShellRoute, so they cover the whole screen with the
+/// bottom nav / sidebar hidden - used by the full-screen intervention
+/// surfaces (breathing / journaling / crisis).
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<AppUser?>(null);
   ref.onDispose(refresh.dispose);
@@ -167,6 +173,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   });
 
   return GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: '/home',
     refreshListenable: refresh,
     // Unmatched routes (including typed web URLs / stale deep links) land
@@ -292,21 +299,29 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'intervention/breathing',
                     name: 'intervention.breathing',
+                    // Full screen above the shell (no bottom nav / sidebar)
+                    // so the therapeutic surface uses the whole space.
+                    parentNavigatorKey: _rootNavigatorKey,
                     pageBuilder: (c, s) {
                       final dispatch = s.extra is InterventionDispatch
                           ? s.extra as InterventionDispatch
                           : null;
-                      // Present the breathing exercise as a modal over
-                      // the shell. The launcher pops this route when the
-                      // sheet is dismissed.
-                      return _modalLauncherPage(
-                        (ctx) => BreathingSheet.show(ctx, dispatch: dispatch),
+                      return _noTransition(
+                        Scaffold(
+                          body: SafeArea(
+                            child: BreathingView(
+                              dispatch: dispatch,
+                              onClose: () => c.pop(),
+                            ),
+                          ),
+                        ),
                       );
                     },
                   ),
                   GoRoute(
                     path: 'intervention/journal',
                     name: 'intervention.journal',
+                    parentNavigatorKey: _rootNavigatorKey,
                     pageBuilder: (c, s) {
                       final dispatch = s.extra is InterventionDispatch
                           ? s.extra as InterventionDispatch
@@ -319,6 +334,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'intervention/crisis',
                     name: 'intervention.crisis',
+                    parentNavigatorKey: _rootNavigatorKey,
                     pageBuilder: (c, s) {
                       final dispatch = s.extra is InterventionDispatch
                           ? s.extra as InterventionDispatch
