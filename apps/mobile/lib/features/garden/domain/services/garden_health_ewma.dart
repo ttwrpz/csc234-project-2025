@@ -6,17 +6,17 @@
 /// Recurrence:
 ///   H_t = α × S_day + (1 − α) × H_{t-1}
 ///   α = 0.15 (default)
-///   H_0 = 0 (resets weekly — caller passes only the current week's
+///   H_0 = 0 (resets weekly - caller passes only the current week's
 ///   `dailyScores`)
 ///
-/// Pure Dart — no Flutter/Firebase imports.
+/// Pure Dart - no Flutter/Firebase imports.
 library;
 
 /// Folds [dailyScores] (per-day mean `S_day`, chronological order) into
 /// `H_t` using the EWMA recurrence. Empty list returns `0.0` (`H_0`).
 ///
 /// `dailyScores` should contain one entry per day on which the user
-/// actually logged at least one mood — empty days are *not* zero-folded
+/// actually logged at least one mood - empty days are *not* zero-folded
 /// (a missing day means "no signal", not "neutral"; folding a zero
 /// would bias H toward 0 over time, which is wrong). The use case is
 /// responsible for filtering empty days out before calling this.
@@ -28,7 +28,7 @@ double foldGardenHealthEwma(List<double> dailyScores, {double alpha = 0.15}) {
   return h;
 }
 
-/// Single-step variant of the EWMA recurrence — useful when the caller
+/// Single-step variant of the EWMA recurrence - useful when the caller
 /// already has `H_{t-1}` (e.g. read from a Firestore doc) and wants to
 /// fold today's `S_day` without rebuilding the full sequence.
 ///

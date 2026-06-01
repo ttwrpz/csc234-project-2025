@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 /// Adaptive layout for the Insights screen.
 ///
 /// The screen feeds five named slots into this wrapper:
-///   * [header] — title + subtitle (always full-width at the top).
-///   * [readingGuide] — the "What am I looking at?" affordance.
-///   * [windowChips] — 7d / 14d / 30d segmented selector.
-///   * [chart] — the chart card (mood-score timeline + marker band).
-///   * [tierLegend] — persistent legend of the 5 plant tiers.
-///   * [recentTriggers] — last 5 trigger days.
+///   * [header] - title + subtitle (always full-width at the top).
+///   * [readingGuide] - the "What am I looking at?" affordance.
+///   * [windowChips] - 7d / 14d / 30d segmented selector.
+///   * [chart] - the chart card (mood-score timeline + marker band).
+///   * [tierLegend] - persistent legend of the 5 plant tiers.
+///   * [recentTriggers] - last 5 trigger days.
 ///
 /// The wrapper picks the column arrangement based on the available
 /// width. Below 600 dp everything stacks single-column. From 600..899
@@ -87,12 +87,12 @@ class InsightsLayout extends StatelessWidget {
 
   /// Two columns above the chart, chart spans the width below them. The
   /// outer scroll is a single [SingleChildScrollView] so the right rail
-  /// never gets its own scrollable — nested scrolls are a tablet a11y
+  /// never gets its own scrollable - nested scrolls are a tablet a11y
   /// regression we never want here.
   ///
   /// We avoid [IntrinsicHeight] because Flutter's `LayoutBuilder`
   /// upstream rejects intrinsic-dimension queries. Each rail is a
-  /// `Column` and the [Row] aligns them at the top — the cards size
+  /// `Column` and the [Row] aligns them at the top - the cards size
   /// themselves naturally; the two rails can have different heights
   /// without affecting the chart slot underneath.
   Widget _buildTablet() {

@@ -8,7 +8,7 @@ import '../fakes/fake_auth_repository.dart';
 
 void main() {
   group('DeleteAccountUseCase', () {
-    test('happy path — reauth Ok → deleteAccount Ok → deleteCurrentUser Ok → '
+    test('happy path - reauth Ok → deleteAccount Ok → deleteCurrentUser Ok → '
         'signOut Ok → Ok(null)', () async {
       final repo = FakeAuthRepository();
       final useCase = DeleteAccountUseCase(repo);
@@ -27,7 +27,7 @@ void main() {
       expect(repo.signOutCalls, equals(1));
     });
 
-    test('reauth fails — short-circuits; deleteAccount, deleteCurrentUser and '
+    test('reauth fails - short-circuits; deleteAccount, deleteCurrentUser and '
         'signOut are NOT called', () async {
       final repo = FakeAuthRepository(
         reauthenticateResult: const Err(AuthFailure.wrongPassword()),
@@ -52,7 +52,7 @@ void main() {
       expect(repo.signOutCalls, equals(0));
     });
 
-    test('CF fails — reauth ran, deleteAccount returned Err; deleteCurrentUser '
+    test('CF fails - reauth ran, deleteAccount returned Err; deleteCurrentUser '
         'and signOut are NOT called', () async {
       final repo = FakeAuthRepository(
         deleteAccountResult: const Err(AuthFailure.network()),
@@ -67,14 +67,14 @@ void main() {
       expect(repo.reauthenticateCalls, hasLength(1));
       expect(repo.deleteAccountCalls, equals(1));
       // Server cleanup didn't happen; don't proceed with local
-      // destruction. User stays signed in so they can retry — the CF
+      // destruction. User stays signed in so they can retry - the CF
       // is idempotent per ADR-0009 so a retry on a partial-cascade
       // run cleans the tail without orphaning data.
       expect(repo.deleteCurrentUserCalls, equals(0));
       expect(repo.signOutCalls, equals(0));
     });
 
-    test('deleteCurrentUser returns requiresRecentLogin — use case proceeds to '
+    test('deleteCurrentUser returns requiresRecentLogin - use case proceeds to '
         'signOut and returns Ok(null) (server already wiped)', () async {
       final repo = FakeAuthRepository(
         deleteCurrentUserResult: const Err(AuthFailure.requiresRecentLogin()),
@@ -98,7 +98,7 @@ void main() {
     });
 
     test(
-      'deleteCurrentUser returns unknown — use case still proceeds to signOut '
+      'deleteCurrentUser returns unknown - use case still proceeds to signOut '
       'and returns Ok(null) (best-effort cleanup per ADR-0009)',
       () async {
         final repo = FakeAuthRepository(
@@ -122,7 +122,7 @@ void main() {
       },
     );
 
-    test('signOut fails post-delete — returns the signOut error; data is gone '
+    test('signOut fails post-delete - returns the signOut error; data is gone '
         'server-side regardless', () async {
       final repo = FakeAuthRepository(
         signOutResult: const Err(AuthFailure.unknown('disk full')),
@@ -138,14 +138,14 @@ void main() {
       expect(repo.deleteAccountCalls, equals(1));
       expect(repo.deleteCurrentUserCalls, equals(1));
       expect(repo.signOutCalls, equals(1));
-      // Acceptable degraded state — the data is gone; only the local
+      // Acceptable degraded state - the data is gone; only the local
       // session is stuck. The downstream router's auth-state listener
       // still redirects on the next emission. Documented in HB-004
       // failure-semantics block.
     });
 
     test(
-      'reauth credentials envelope variants — all three reach the repo',
+      'reauth credentials envelope variants - all three reach the repo',
       () async {
         final repo = FakeAuthRepository();
         final useCase = DeleteAccountUseCase(repo);

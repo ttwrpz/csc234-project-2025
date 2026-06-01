@@ -11,7 +11,7 @@ part of 'sign_in_controller.dart';
 /// Controller for [SignInScreen]. Holds form state, drives the use cases,
 /// and surfaces a friendly error message on failure.
 ///
-/// Navigation on success is handled by the router's `refreshListenable` —
+/// Navigation on success is handled by the router's `refreshListenable` -
 /// the controller does NOT call `context.go`. When auth state flips to
 /// non-null, the router redirects from `/sign-in` to `/home` automatically.
 
@@ -21,7 +21,7 @@ final signInControllerProvider = SignInControllerProvider._();
 /// Controller for [SignInScreen]. Holds form state, drives the use cases,
 /// and surfaces a friendly error message on failure.
 ///
-/// Navigation on success is handled by the router's `refreshListenable` —
+/// Navigation on success is handled by the router's `refreshListenable` -
 /// the controller does NOT call `context.go`. When auth state flips to
 /// non-null, the router redirects from `/sign-in` to `/home` automatically.
 final class SignInControllerProvider
@@ -29,7 +29,7 @@ final class SignInControllerProvider
   /// Controller for [SignInScreen]. Holds form state, drives the use cases,
   /// and surfaces a friendly error message on failure.
   ///
-  /// Navigation on success is handled by the router's `refreshListenable` —
+  /// Navigation on success is handled by the router's `refreshListenable` -
   /// the controller does NOT call `context.go`. When auth state flips to
   /// non-null, the router redirects from `/sign-in` to `/home` automatically.
   SignInControllerProvider._()
@@ -64,7 +64,7 @@ String _$signInControllerHash() => r'4f86d6635cdf924bbc51bd3e1275964299aa2a27';
 /// Controller for [SignInScreen]. Holds form state, drives the use cases,
 /// and surfaces a friendly error message on failure.
 ///
-/// Navigation on success is handled by the router's `refreshListenable` —
+/// Navigation on success is handled by the router's `refreshListenable` -
 /// the controller does NOT call `context.go`. When auth state flips to
 /// non-null, the router redirects from `/sign-in` to `/home` automatically.
 

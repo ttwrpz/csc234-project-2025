@@ -14,7 +14,7 @@ Snapshot of branch: `feat/s5-v1.5-final`  ·  HEAD `ef2c96ad`  ·  Last tag `v1.
 
 ### Bottom-nav tabs (left to right)
 
-Source of truth: `apps/mobile/lib/app/router.dart` — `StatefulShellRoute.indexedStack` with five branches (Log at index 2 is the centre, highlighted action).
+Source of truth: `apps/mobile/lib/app/router.dart` - `StatefulShellRoute.indexedStack` with five branches (Log at index 2 is the centre, highlighted action).
 
 | Tab | Route | Screen file |
 |---|---|---|
@@ -43,7 +43,7 @@ Source of truth: `apps/mobile/lib/app/router.dart` — `StatefulShellRoute.index
 - **Auth guard.** Routes exempt: `/onboarding`, `/sign-in`, `/sign-up`, `/forgot-password`. Every other route redirects to `/sign-in` when `currentUserStreamProvider.value == null` (`router.dart:171–172`).
 - **Onboarding guard.** If `onboarding_complete` SharedPreference is false, any route redirects to `/onboarding` (`router.dart:167`). The Slide-5 "I understand" tap writes the pref then navigates to `/sign-in` or `/home` (`onboarding_screen.dart:119–129`).
 - **Privacy Lock guard.** When signed in AND Privacy Lock is enabled AND the session unlock flag is false, route redirects to `/privacy-lock?returnTo=<encoded>` (`router.dart:186–199`). Exempt: `/privacy-lock`, `/privacy/setup`.
-- **Insights disclaimer-ack guard — INLINE, not a route redirect.** This is the most important correction to the Sprint-1 navigation sketch. `AnalyticsScreen` renders a `_DisclaimerBanner` widget pre-ack and the marker band + chart-key legend post-ack (`analytics_screen.dart:95–96`). Tapping the banner opens `DisclaimerAckDialog`. The user can still scroll the screen pre-ack. There is no route-level modal gate.
+- **Insights disclaimer-ack guard - INLINE, not a route redirect.** This is the most important correction to the Sprint-1 navigation sketch. `AnalyticsScreen` renders a `_DisclaimerBanner` widget pre-ack and the marker band + chart-key legend post-ack (`analytics_screen.dart:95–96`). Tapping the banner opens `DisclaimerAckDialog`. The user can still scroll the screen pre-ack. There is no route-level modal gate.
 
 ---
 
@@ -62,7 +62,7 @@ Sixteen real screens shipped to v1.5. Each entry: route → trigger → primary 
   2. `LOG WHAT YOU FEEL` · "Six moods,\nyour intensity." · "Tap a mood, set how strongly you feel it (1 - 5), and add a note if you want. Logging takes seconds." · CTA "Got it" (lines 65–70).
   3. `WATCH YOUR GARDEN` · "Plants never wilt.\nOnly the weather changes." · "Each entry grows a plant. Five tiers - Flourishing to Storm Season - reflect the week without judging it." · CTA "Tell me more" (lines 76–81).
   4. `GENTLE NUDGES` · "A soft reminder,\nonce a day." · "MoodBloom can send one gentle notification per day to invite a check-in. Around evening, your choice when. Change it anytime." · CTA "Allow notifications" + "Not now" (lines 87–94). Tapping "Allow notifications" calls `FcmDatasource.requestPermission()` (line 165).
-  5. `BEFORE YOU START` · "Not a substitute\nfor care." · "MoodBloom is not a medical device. It cannot diagnose conditions like bipolar disorder, depression, or anxiety. Consult a qualified professional." · CTA "I understand" + secondary "Read full disclaimer" (lines 99–107). **No ack is written here** — the binding ack happens in the Patterns screen (see §7).
+  5. `BEFORE YOU START` · "Not a substitute\nfor care." · "MoodBloom is not a medical device. It cannot diagnose conditions like bipolar disorder, depression, or anxiety. Consult a qualified professional." · CTA "I understand" + secondary "Read full disclaimer" (lines 99–107). **No ack is written here** - the binding ack happens in the Patterns screen (see §7).
 
 ### Sign In
 
@@ -101,9 +101,9 @@ Sixteen real screens shipped to v1.5. Each entry: route → trigger → primary 
 
 - **Route:** `/home`. File: `apps/mobile/lib/features/garden/presentation/garden_screen.dart`.
 - **Trigger:** Bottom-nav Home tab; default landing after sign-in.
-- **Primary action:** Browse the week's living garden — SkyHeader with 7-day plant strip, weekly score, recent moods.
+- **Primary action:** Browse the week's living garden - SkyHeader with 7-day plant strip, weekly score, recent moods.
 - **Secondary actions:** Tap "Take a breath" pill → BreathingSheet (intervention route); tap a mood entry tile → `EntryDetailSheet`; tap "Customize" → `/garden/skins`; tap "See all" on recent moods → `/history`; tap intervention banner → tier-specific screen.
-- **Visual state inputs:** `gardenStateStreamProvider` (line 71), `interventionStateProvider` (72), `myMoodsStreamProvider` (73), `cheerUpControllerProvider` (74), `pendingWeeklySummaryProvider` (78 — auto-opens harvest modal at 91–102).
+- **Visual state inputs:** `gardenStateStreamProvider` (line 71), `interventionStateProvider` (72), `myMoodsStreamProvider` (73), `cheerUpControllerProvider` (74), `pendingWeeklySummaryProvider` (78 - auto-opens harvest modal at 91–102).
 - **Copy notes:** "Take a breath" pill; CheerUp banner (Tier 1/2/3 conditional); locked phrase "Mood is weather. The ecosystem holds." in tier card; dominant-emotions card; gentle-nudge card with disclaimer footnote; recent-moods card with "See all"; Hotline footer (Tier 3 only).
 
 ### Log Mood
@@ -142,7 +142,7 @@ Sixteen real screens shipped to v1.5. Each entry: route → trigger → primary 
 - **Primary action:** View mood-score chart with rolling-rhythm line, tier marker band, recent triggers, over 7d / 14d / 30d windows.
 - **Secondary actions:** Window chips (line 77–81); pre-ack tap banner → `DisclaimerAckDialog`; post-ack tap a marker dot → `MarkerDetailSheet`; tap a Recent-Triggers row → focuses the matching marker dot via `insightsFocusedDayIndexProvider`.
 - **Visual state inputs:** `insightsWindowPresetProvider`, `insightsStreamProvider`, `insightsGateProvider` (`InsightsGateState.ready` post-ack), `myMoodsStreamProvider`, `featureFlagsProvider`.
-- **Disclaimer ack dialog — verbatim:**
+- **Disclaimer ack dialog - verbatim:**
   - Title: "A note about MoodBloom" (`disclaimer_ack_dialog.dart:51–57`).
   - Body: "MoodBloom is not a medical device. It cannot diagnose conditions like bipolar disorder, depression, or anxiety. Consult a qualified professional." (`disclaimer_copy.dart:8–12`, used at line 59–62 of the dialog).
   - Button: "I understand" (`disclaimer_copy.dart:21`).
@@ -152,7 +152,7 @@ Sixteen real screens shipped to v1.5. Each entry: route → trigger → primary 
 ### Settings
 
 - **Route:** `/settings`. File: `apps/mobile/lib/features/settings/presentation/settings_screen.dart`.
-- **Sections (in order):** ACCOUNT, GARDEN, PRIVACY (signed-in only), NOTIFICATIONS, SYNC (signed-in only), THEME, DISCLAIMER, ABOUT, DELETE ACCOUNT, plus DEBUG in `kDebugMode` only — rendered full-width below the two-column layout on tablet/desktop so neither column ends up visibly shorter.
+- **Sections (in order):** ACCOUNT, GARDEN, PRIVACY (signed-in only), NOTIFICATIONS, SYNC (signed-in only), THEME, DISCLAIMER, ABOUT, DELETE ACCOUNT, plus DEBUG in `kDebugMode` only - rendered full-width below the two-column layout on tablet/desktop so neither column ends up visibly shorter.
 - **Copy notes:** Title "Settings" (Fraunces 24 w600); footer "Made with care · School of Information Technology, KMUTT" (line 123).
 
 ### Weekly Summary (Harvest)
@@ -161,7 +161,7 @@ Sixteen real screens shipped to v1.5. Each entry: route → trigger → primary 
 - **Trigger:** End-of-week harvest signal; `GardenScreen` auto-opens via `WeeklySummarySheet.show()` (`garden_screen.dart:91–102`).
 - **Primary action:** Review hero garden + average mood scale + top-3 emotions + pattern check-ins → "Continue to new week" button (`continueLabel` constant, line 38).
 - **Secondary action:** Close icon (dismisses without archiving; re-appears next session).
-- **Copy notes — locked verbatim (CLAUDE.md, file line 32–34):** "Your garden this week has been harvested and saved to your history. A new week begins - a fresh canvas for your story."
+- **Copy notes - locked verbatim (CLAUDE.md, file line 32–34):** "Your garden this week has been harvested and saved to your history. A new week begins - a fresh canvas for your story."
 
 ### Skin Shop
 
@@ -172,20 +172,20 @@ Sixteen real screens shipped to v1.5. Each entry: route → trigger → primary 
 - **Visual state inputs:** `skinStateStreamProvider`, `tokenBalanceStreamProvider`, `gardenStateStreamProvider` (for tier-gated skins), `perSpeciesSkinStateStreamProvider`.
 - **Copy notes:** "Skin Shop" (AppBar); grid is 1/2/3 columns at phone/tablet/desktop.
 
-### Intervention — Breathing Exercise (modal)
+### Intervention - Breathing Exercise (modal)
 
 - **Route:** `/home/intervention/breathing` (named `intervention.breathing`).
 - **Trigger:** "Take a breath" pill on Home, or Tier 1 banner.
 - **Primary action:** Follow 2-minute paced breathing animation; "I'm done" button to exit early.
 - **Copy notes:** Body is the dispatched quote + `DisclaimerCopy.notificationFooter`, demoted to small italic dim text below the body.
 
-### Intervention — Journaling Prompt
+### Intervention - Journaling Prompt
 
 - **Route:** `/home/intervention/journal` (named `intervention.journal`). File: `apps/mobile/lib/features/intervention/presentation/screens/journaling_prompt_screen.dart`.
 - **Trigger:** Tier 2 banner.
 - **Primary action:** Read the dispatched journaling prompt; optionally write a few lines; Save.
 
-### Intervention — Crisis Resources
+### Intervention - Crisis Resources
 
 - **Route:** `/home/intervention/crisis` (named `intervention.crisis`). File: `apps/mobile/lib/features/intervention/presentation/screens/crisis_resources_screen.dart`.
 - **Trigger:** Tier 3 banner.
@@ -199,11 +199,11 @@ Sixteen real screens shipped to v1.5. Each entry: route → trigger → primary 
 2. **Screen init resets state.** `initState` → `_enterScreen()` → `_resetAll()` so the draft, AI suggestion, and submission controllers don't carry over from a previous abandoned session (`log_mood_screen.dart:75–88`).
 3. **Mood selection.** "How are you feeling?" header (Fraunces 26 w600) above a 3×2 mood-type grid (joy, sad, anxious, calm, hopeful, frustrated); tap fires `controller.pickMood(MoodType)` via `MoodTypeGrid` (`log_mood_screen.dart:498`).
 4. **Intensity slider.** Scale 1–5 with labels "barely" → "quite a bit". On Android the slider fires `HapticFeedback.selectionClick` at each integer transition (`intensity_slider.dart:85–86`); the thumb is white with a coloured (mood-tinted) border and five 4 dp tick dots. Thumb colour follows the picked mood.
-5. **Text + AI suggestion.** User types in NOTE (≤500 chars). Every keystroke pumps into `aiSuggestionControllerProvider`; if ≥12 trimmed chars AND 600 ms elapse without further typing (debounce, `ai_suggestion_controller.dart:57–64`), the Cloud Function `analyzeMoodText` is called via `httpsCallable` (`ai_analysis_functions_datasource.dart:22`). Request payload: `{ text, requestId (UUID), locale?, v: 1 }`. Response: an `AiSuggestion` with detected mood type + inferred intensity. **Confidence levels are NOT explicitly surfaced in the UI** — every returned suggestion renders the same pill. The user can accept or "Choose another".
+5. **Text + AI suggestion.** User types in NOTE (≤500 chars). Every keystroke pumps into `aiSuggestionControllerProvider`; if ≥12 trimmed chars AND 600 ms elapse without further typing (debounce, `ai_suggestion_controller.dart:57–64`), the Cloud Function `analyzeMoodText` is called via `httpsCallable` (`ai_analysis_functions_datasource.dart:22`). Request payload: `{ text, requestId (UUID), locale?, v: 1 }`. Response: an `AiSuggestion` with detected mood type + inferred intensity. **Confidence levels are NOT explicitly surfaced in the UI** - every returned suggestion renders the same pill. The user can accept or "Choose another".
 6. **Optional media.** Picker collects local files; **uploads happen at save time, not pick time**, so the user backing out doesn't orphan files. Uploads are sequential, not parallel, to avoid network saturation (`log_mood_controller.dart:139–156`).
 7. **Save.** Button text: "Save to your garden" (create) or "Save changes" (edit) (`log_mood_screen.dart:670`). On tap → `controller.save()` (`log_mood_controller.dart:123–167`): (a) validate signed-in, (b) sequentially upload media; abort on first failure, (c) call `saveMoodEntryUseCaseProvider`, (d) **persistence ordering: Drift (local) FIRST, then Firestore mirror.**
 8. **Post-save side effects (fire-and-forget).** On success `_onSaveOk()` invokes `_runPatternEngine()` and `_awardTokens()` unawaited (`log_mood_controller.dart:222–241`). Failures are logged PII-free and swallowed; never block the user's success surfacing.
-9. **Token grant.** `tokenRepositoryProvider.awardForLog(userId)` via `_awardTokens` (`log_mood_controller.dart:292–311`). Rules: 5 tokens on first log of the calendar day; 1 token on logs 2–10 same day; cap 10/day; resets at local midnight. Token award is **mood-agnostic** — see §6.
+9. **Token grant.** `tokenRepositoryProvider.awardForLog(userId)` via `_awardTokens` (`log_mood_controller.dart:292–311`). Rules: 5 tokens on first log of the calendar day; 1 token on logs 2–10 same day; cap 10/day; resets at local midnight. Token award is **mood-agnostic** - see §6.
 10. **Confirmation.** A toast appears over the garden: title "Saved", body "Your mood is now part of this week's garden." (`log_mood_screen.dart:256–260`). No animation; the toast is the only visible confirmation. The user navigates back to `/home` to see the new plant in today's slot of the SkyHeader strip.
 
 ---
@@ -226,41 +226,41 @@ Source: `apps/mobile/lib/features/pattern_engine/domain/algorithms/` + `apps/mob
 
 ### Per-tier dispatch path (file:line)
 
-1. **Cooldown check.** `CooldownGuard` enforces `dailyLimit` (1/24h) and `cooldown48h` (`cooldown_guard.dart:34–38`). Global across tiers — Tier 1 today blocks Tier 3 tomorrow if within 48h. Fail-closed on anchor read failure (`cooldown_guard.dart:50–58`).
+1. **Cooldown check.** `CooldownGuard` enforces `dailyLimit` (1/24h) and `cooldown48h` (`cooldown_guard.dart:34–38`). Global across tiers - Tier 1 today blocks Tier 3 tomorrow if within 48h. Fail-closed on anchor read failure (`cooldown_guard.dart:50–58`).
 2. **Quote selection (Tier 1/2):** `aiQuoteRepository.requestSuggestion(AiAllowedTier.one|two, QuoteContext)` (`tiered_intervention_dispatcher.dart:77–78`). Gemini hybrid: Gemini suggests, the `QuoteSafetyFilter` only allows pre-approved phrasing through; on filter rejection OR Gemini failure, fall back to the curated phrase pool (`tiered_intervention_dispatcher.dart:107–125`).
-3. **TIER 3 — NO GEMINI EVER. Confirmed:**
-   - Type-level fence: `AiAllowedTier { one, two }` excludes `three` by construction; `AiAllowedTier.fromTier(Tier.three)` throws `StateError` (proved by `test/features/auth/domain/entities/ai_allowed_tier_test.dart:15–24`, "Tier.three throws StateError — compiler-level fence").
+3. **TIER 3 - NO GEMINI EVER. Confirmed:**
+   - Type-level fence: `AiAllowedTier { one, two }` excludes `three` by construction; `AiAllowedTier.fromTier(Tier.three)` throws `StateError` (proved by `test/features/auth/domain/entities/ai_allowed_tier_test.dart:15–24`, "Tier.three throws StateError - compiler-level fence").
    - Runtime fence: `if (tier == Tier.three) { return curated; }` at `tiered_intervention_dispatcher.dart:69–73` returns BEFORE any AI repo call is reachable.
    - **Test proof: `test/features/intervention/domain/services/tiered_intervention_dispatcher_test.dart:106–161`** (TC-40):
      - Line 127–130: `expect(ai.calls, isEmpty, reason: 'ADR-0012 §"Decision" point 1: Tier 3 must never reach Gemini.')`
      - Line 145–150: body is one of eight team-reviewed Tier 3 pool phrases.
      - Line 155: body contains the literal substring "1323".
-   - **Test proof for the Safety Filter (TC-41):** `test/features/intervention/domain/services/quote_safety_filter_impl_test.dart` — Sprint-5 retro (`docs/retros/sprint-5-retro.md:11`) reports 100% reject rate on 55 adversarial inputs.
+   - **Test proof for the Safety Filter (TC-41):** `test/features/intervention/domain/services/quote_safety_filter_impl_test.dart` - Sprint-5 retro (`docs/retros/sprint-5-retro.md:11`) reports 100% reject rate on 55 adversarial inputs.
 4. **Disclaimer attachment.** Body composed as `'${quote.text}\n\n${DisclaimerCopy.notificationFooter}'` at `tiered_intervention_dispatcher.dart:153` (also referenced at line 81–84). Footer verbatim: "MoodBloom is not a medical device. Not a substitute for professional care." (`disclaimer_copy.dart:14–18`).
-5. **Dispatch.** `DispatchInterventionUseCase` writes an audit record to `users/{uid}/interventions/{dispatchId}` (Firestore), and the in-app surface — `InterventionBanner` — listens via `interventionControllerProvider`. The FCM push path is wired but the **primary** surface the user sees is the in-app banner.
+5. **Dispatch.** `DispatchInterventionUseCase` writes an audit record to `users/{uid}/interventions/{dispatchId}` (Firestore), and the in-app surface - `InterventionBanner` - listens via `interventionControllerProvider`. The FCM push path is wired but the **primary** surface the user sees is the in-app banner.
 6. **In-app banner.** Bottom-anchored Material card hosted in `MaterialApp.router(builder:)` (so it can appear on any screen). Tier 3 uses `colorScheme.errorContainer`; Tier 1/2 use `colorScheme.surfaceContainerHighest` (`intervention_banner.dart:36–42`). The body is split at the disclaimer footer so the actionable quote reads at 14 pt Nunito and the disclaimer demotes to 10 pt italic dim (`intervention_banner.dart:49–52`). Dismissible (horizontal swipe = opt-out). Two buttons: "Open" + "I'm okay".
 7. **Open tap → tier screen.** Banner navigates via `ref.read(routerProvider).pushNamed(...)` (NOT `context.pushNamed`) because the banner sits above the Router's Navigator in `MaterialApp.router(builder:)`. Route mapping (`intervention_banner.dart:153–157`):
-   - Tier 1 → `intervention.breathing` (BreathingSheet — 2-minute paced breathing, "I'm done" exit).
+   - Tier 1 → `intervention.breathing` (BreathingSheet - 2-minute paced breathing, "I'm done" exit).
    - Tier 2 → `intervention.journal` (JournalingPromptScreen).
    - Tier 3 → `intervention.crisis` (CrisisResourcesScreen).
    The dispatch object is forwarded as `extra` so each screen renders the body verbatim instead of re-deriving it.
-8. **I'm okay tap.** Calls `interventionControllerProvider.notifier.optOut()`. Writes `optedOut = true` on the audit record AND advances the cooldown anchor via `writeLastTriggeredAt(now)` — so opting out costs the user the next 48 h of nudges (no "burning a bridge", but no double-nag either). Test coverage: `test/features/intervention/domain/services/cooldown_guard_test.dart:50–145` proves the 24 h `dailyLimit` and 48 h `cooldown48h` rules; no explicit "opt-out survives app restart" test was found, but the Firestore write-through guarantees persistence by design.
+8. **I'm okay tap.** Calls `interventionControllerProvider.notifier.optOut()`. Writes `optedOut = true` on the audit record AND advances the cooldown anchor via `writeLastTriggeredAt(now)` - so opting out costs the user the next 48 h of nudges (no "burning a bridge", but no double-nag either). Test coverage: `test/features/intervention/domain/services/cooldown_guard_test.dart:50–145` proves the 24 h `dailyLimit` and 48 h `cooldown48h` rules; no explicit "opt-out survives app restart" test was found, but the Firestore write-through guarantees persistence by design.
 
 ---
 
 ## 5. Weekly Harvest Flow
 
-1. **Trigger condition.** Computed by `harvestPendingProvider` (`weekly_summary_controller.dart:28–52`). Pending when `now >= activeWeekStart + 7d` AND at least one entry exists in the previous week's range. `activeWeekStart` is Monday-midnight of the earliest unarchived week, derived by walking the archive history newest-first and finding the next Monday after the latest archived `weekStart`; falls back to Monday of the first entry if the archive is empty (`weekly_summary_controller.dart:59–88`). **Not time-based** — there is no scheduled push or specific hour; the provider re-evaluates on every Garden render until the condition is met.
+1. **Trigger condition.** Computed by `harvestPendingProvider` (`weekly_summary_controller.dart:28–52`). Pending when `now >= activeWeekStart + 7d` AND at least one entry exists in the previous week's range. `activeWeekStart` is Monday-midnight of the earliest unarchived week, derived by walking the archive history newest-first and finding the next Monday after the latest archived `weekStart`; falls back to Monday of the first entry if the archive is empty (`weekly_summary_controller.dart:59–88`). **Not time-based** - there is no scheduled push or specific hour; the provider re-evaluates on every Garden render until the condition is met.
 2. **Pre-harvest summary modal.** When pending, `GardenScreen` auto-opens `WeeklySummarySheet` via the `pendingWeeklySummaryProvider` listen + post-frame callback (`garden_screen.dart:91–102`). Non-dismissible bottom sheet on phone; centred dialog on tablet+. Header: "Your week" with a close icon (close = dismiss without archiving; modal re-opens next session).
 3. **Summary contents.**
-   - Hero garden bed at the top — `HarvestMiniGarden` rendering the week's entries at the ending plant tier.
+   - Hero garden bed at the top - `HarvestMiniGarden` rendering the week's entries at the ending plant tier.
    - Average-mood scale −1.0 to +1.0 with a marker (`_AverageMoodSection`, lines 174–192).
    - Dominant emotions card (top-3 mood chips with flower-species sprites + counts) (`_DominantEmotionsSection`, lines 274–319).
-   - Pattern check-ins line (`_PatternCheckInsSection`, lines 368–392) — "N days the engine paused with you" or "No pattern check-ins this week".
-4. **CTA copy — LOCKED.** "Continue to new week" (`continueLabel` constant at `weekly_summary_screen.dart:38`). Disabled while archive write is in flight; disabled after success to prevent double-archive.
+   - Pattern check-ins line (`_PatternCheckInsSection`, lines 368–392) - "N days the engine paused with you" or "No pattern check-ins this week".
+4. **CTA copy - LOCKED.** "Continue to new week" (`continueLabel` constant at `weekly_summary_screen.dart:38`). Disabled while archive write is in flight; disabled after success to prevent double-archive.
 5. **On tap.** Controller calls `archiveWeeklyGardenUseCaseProvider` → writes a new `WeeklyGarden` doc at `weeklyGardens/{weekId}` with `weekStart`, `weekEnd`, `summary` (average score, mood counts, tier, triggered-intervention count), `archivedAt: now()`, and references to entry IDs (no entry duplication). The Garden Health EWMA state resets (H₀ → 0). Modal auto-pops on `HarvestArchiveSuccess` (`weekly_summary_screen.dart:85–97`).
 6. **Browsing past weeks.**
-   - **Harvest tab** (`apps/mobile/lib/features/harvest/presentation/weekly_harvests_tab.dart`) — list of archived weeks newest-first as cards (week range, mini-garden, average score, dominant emotion count).
+   - **Harvest tab** (`apps/mobile/lib/features/harvest/presentation/weekly_harvests_tab.dart`) - list of archived weeks newest-first as cards (week range, mini-garden, average score, dominant emotion count).
    - Tap a card → `ArchivedWeekScreen` detail view (`apps/mobile/lib/features/harvest/presentation/archived_week_screen.dart`).
    - History tab → Calendar view also surfaces per-day plant sprites; tapping a day drills into that entry.
 
@@ -272,7 +272,7 @@ Source: `apps/mobile/lib/features/pattern_engine/domain/algorithms/` + `apps/mob
 
 Source of truth: `apps/mobile/lib/features/tokens/domain/services/award_daily_tokens.dart:43–79`.
 
-- **What grants tokens:** logging any mood entry — `awardDailyTokens` invoked from the post-save hook (`log_mood_controller.dart:292–311`).
+- **What grants tokens:** logging any mood entry - `awardDailyTokens` invoked from the post-save hook (`log_mood_controller.dart:292–311`).
 - **How many:** **5 tokens** on the first log of the calendar day; **1 token** each on logs 2–10 same day; **0** once the cap is reached.
 - **Cap:** 10 tokens/day (`earnedToday` field, checked at line 64).
 - **Reset:** at **local midnight** via `localMidnight()` equality, NOT 24-hour elapsed (line 49). Crossing midnight resets `earnedToday` to zero; `balance` is preserved verbatim.
@@ -281,7 +281,7 @@ Source of truth: `apps/mobile/lib/features/tokens/domain/services/award_daily_to
 ### Spending
 
 - **Skin Shop layout.** `SkinShopScreen`:
-  - Hero "Equipped" card: 80×80 preview + 6-mood mini row + skin name + tagline (dark-mode aware — light: softGreen bg + seedDark text; dark: green-tinted card + seedBright text).
+  - Hero "Equipped" card: 80×80 preview + 6-mood mini row + skin name + tagline (dark-mode aware - light: softGreen bg + seedDark text; dark: green-tinted card + seedBright text).
   - Locked tiles: 0.85 opacity with lock overlay and a "Reach the Flourishing tier to unlock" hint (lines 675–700).
   - Unlocked + owned tile: "Equip" button (line 562).
   - Unlocked + affordable tile: "Purchase" button (lines 567–578).
@@ -289,11 +289,11 @@ Source of truth: `apps/mobile/lib/features/tokens/domain/services/award_daily_to
   - Global skin: title "Confirm purchase" (`skin_purchase_confirm_sheet.dart:126`), cost breakdown card (158–177), copy "Skins apply to every plant in your garden. You can change skins anytime from settings." (180–181), CTA "Purchase & equip" (186).
   - Per-species skin: copy "This skin recolours just this one flower, layered over your garden skin. You can switch back to the default anytime." (`per_species_skin_purchase_confirm_sheet.dart:172–173`).
 - **Model:** dual-layer by product decision. A global `GardenSkin` themes the whole garden; a per-species `PerSpeciesSkin` overlays one species (e.g. sunflower) on top. Both can be equipped together.
-- **Application scope:** per-species skins apply to **future logs only**. Past archived gardens keep their original `selectedSkinId` — proved by `garden_skin_propagation_test.dart:70–100` (TC-6: "unlock sunflower skin → ALL sunflowers in this week's garden display the new skin; past harvested gardens keep their original `selectedSkinId`").
+- **Application scope:** per-species skins apply to **future logs only**. Past archived gardens keep their original `selectedSkinId` - proved by `garden_skin_propagation_test.dart:70–100` (TC-6: "unlock sunflower skin → ALL sunflowers in this week's garden display the new skin; past harvested gardens keep their original `selectedSkinId`").
 
 ### Loss-aversion / contingent-reward audit
 
-`awardDailyTokens` is **mood-agnostic by construction** — the function signature (line 43) has zero emotion content parameters. Logging "Sad intensity 5" earns identical 5 tokens to "Joy intensity 5". Test proof: `test/features/tokens/domain/services/award_daily_tokens_test.dart:77–94` (TC-2, mood-agnostic invariant). Missed days do not penalise — `current.balance` is preserved on new-day transitions (line 53).
+`awardDailyTokens` is **mood-agnostic by construction** - the function signature (line 43) has zero emotion content parameters. Logging "Sad intensity 5" earns identical 5 tokens to "Joy intensity 5". Test proof: `test/features/tokens/domain/services/award_daily_tokens_test.dart:77–94` (TC-2, mood-agnostic invariant). Missed days do not penalise - `current.balance` is preserved on new-day transitions (line 53).
 
 ---
 
@@ -301,7 +301,7 @@ Source of truth: `apps/mobile/lib/features/tokens/domain/services/award_daily_to
 
 All four placements as they actually exist. **No deviation from the CLAUDE.md spec wording was found.**
 
-### Placement 1 — Onboarding slide 4 of 5
+### Placement 1 - Onboarding slide 4 of 5
 
 - File: `apps/mobile/lib/features/onboarding/presentation/onboarding_screen.dart:98–110`.
 - **Slide number: 5 (final slide).** *Note: an earlier agent report called this "slide 4 of 5" because slide 4 is the notification-permission slide; the disclaimer slide sits at index 4 (zero-indexed) = "slide 5" to the user.*
@@ -309,27 +309,27 @@ All four placements as they actually exist. **No deviation from the CLAUDE.md sp
 - Title: "Not a substitute\nfor care." (line 100).
 - Body (verbatim, lines 101–104): "MoodBloom is not a medical device. It cannot diagnose conditions like bipolar disorder, depression, or anxiety. Consult a qualified professional."
 - Buttons: "I understand" (line 105) + secondary "Read full disclaimer" (line 107).
-- **Can the user skip past it?** Yes — "I understand" advances the deck without writing an ack. The binding ack is enforced later, in the Patterns screen.
+- **Can the user skip past it?** Yes - "I understand" advances the deck without writing an ack. The binding ack is enforced later, in the Patterns screen.
 
-### Placement 2 — Notification footer (intervention bodies)
+### Placement 2 - Notification footer (intervention bodies)
 
 - File: `apps/mobile/lib/features/disclaimer/domain/disclaimer_copy.dart:14–18`.
 - Constant: `DisclaimerCopy.notificationFooter`.
 - Text (verbatim): "MoodBloom is not a medical device. Not a substitute for professional care."
 - Attached at: `tiered_intervention_dispatcher.dart:153` → `final body = '${quote.text}\n\n${DisclaimerCopy.notificationFooter}';` (and again referenced at lines 81–84).
 
-### Placement 3 — Insights ack dialog
+### Placement 3 - Insights ack dialog
 
 - File: `apps/mobile/lib/features/disclaimer/presentation/widgets/disclaimer_ack_dialog.dart:50–62`.
-- Title (line 51–57): "A note about MoodBloom" — Fraunces, 20 pt, centered.
+- Title (line 51–57): "A note about MoodBloom" - Fraunces, 20 pt, centered.
 - Body (lines 59–62): uses `DisclaimerCopy.full` (verbatim): "MoodBloom is not a medical device. It cannot diagnose conditions like bipolar disorder, depression, or anxiety. Consult a qualified professional."
 - Button label (line 73): `DisclaimerCopy.ackButton` = "I understand" (`disclaimer_copy.dart:21`).
-- **Dismissible?** No — `barrierDismissible: false` (line 27). Only the button can pop.
+- **Dismissible?** No - `barrierDismissible: false` (line 27). Only the button can pop.
 
-### Placement 4 — Settings → About / Disclaimer cluster
+### Placement 4 - Settings → About / Disclaimer cluster
 
 - File: `apps/mobile/lib/features/disclaimer/presentation/widgets/disclaimer_panel.dart`.
-- Renders the full canonical text `DisclaimerCopy.full` (`disclaimer_copy.dart:28`) — same wording as the ack dialog body.
+- Renders the full canonical text `DisclaimerCopy.full` (`disclaimer_copy.dart:28`) - same wording as the ack dialog body.
 - Surfaced inside Settings via an expansion tile.
 
 ---
@@ -340,11 +340,11 @@ For each persona quality risk, the actual test (or honest "no test found"):
 
 | Claim | Test | Status |
 |---|---|---|
-| Lin's "I want to log in under 30 seconds" | — | **No test found.** No cold-start / load-time / time-to-first-log test exists. Performance profiling is a v1.6 follow-up per `docs/retros/sprint-5-retro.md:56`. |
+| Lin's "I want to log in under 30 seconds" | - | **No test found.** No cold-start / load-time / time-to-first-log test exists. Performance profiling is a v1.6 follow-up per `docs/retros/sprint-5-retro.md:56`. |
 | Lin's "I don't want plants to die on me" (TC-18, TC-24) | `test/features/garden/...` golden tests | **No explicit TC-18 / TC-24 golden tests found.** The invariant is enforced by CLAUDE.md copy rules ("NEVER: delete, clear, reset, lost, destroyed, wilted, wilting, dead, dying") and by `lib/features/garden/domain/entities/plant_tier.dart` having five live tiers and no death state. Domain tests exist at `test/features/garden/domain/garden_state_test.dart`; no golden test asserts the absence of a wilt animation. |
 | Som's "Don't suggest I have a clinical condition" (TC-40) | `test/features/intervention/domain/services/tiered_intervention_dispatcher_test.dart:106–161` | **PASS.** Asserts `expect(ai.calls, isEmpty)` for Tier 3 (line 127–130); body must be from the 8-item Tier 3 curated pool (line 145–150); body must contain "1323" (line 155). |
-| TC-41 — Quote Safety Filter rejects unsafe content | `test/features/intervention/domain/services/quote_safety_filter_impl_test.dart` | **PASS.** Retro reports 100% reject rate on 55 adversarial inputs (`docs/retros/sprint-5-retro.md:11`). |
-| Som's "I want to opt out without burning a bridge" | `test/features/intervention/domain/services/cooldown_guard_test.dart:50–145` | **Partial — design proof.** TC-31 (`dailyLimit`) and TC-32 (`cooldown48h`) prove the cooldown rules. Opt-out writes `lastTriggeredAt` (Firestore write-through) — no explicit "survives app restart" widget test was found, but persistence is structural. |
+| TC-41 - Quote Safety Filter rejects unsafe content | `test/features/intervention/domain/services/quote_safety_filter_impl_test.dart` | **PASS.** Retro reports 100% reject rate on 55 adversarial inputs (`docs/retros/sprint-5-retro.md:11`). |
+| Som's "I want to opt out without burning a bridge" | `test/features/intervention/domain/services/cooldown_guard_test.dart:50–145` | **Partial - design proof.** TC-31 (`dailyLimit`) and TC-32 (`cooldown48h`) prove the cooldown rules. Opt-out writes `lastTriggeredAt` (Firestore write-through) - no explicit "survives app restart" widget test was found, but persistence is structural. |
 | "Tokens never punish missed days" (TC-5) | `test/features/tokens/domain/services/award_daily_tokens_test.dart` | **PASS (different TC number).** TC-1 at lines 20–34 proves first-log-of-day = 5 tokens; TC-2 at lines 77–94 proves mood-agnostic award; line 96 enforces the no-mood-content invariant via a file-level grep test. The "missed days don't lose balance" property follows from `current.balance` being preserved on new-day transitions (`award_daily_tokens.dart:53`). |
 
 ---
@@ -353,7 +353,7 @@ For each persona quality risk, the actual test (or honest "no test found"):
 
 | Gap | Evidence |
 |---|---|
-| **Thai localization** | No `l10n.yaml`; no `app_*.arb` files anywhere in the tree. The persona/journey LaTeX (`docs/persona-and-journey-map.tex:3`) notes "compile with xelatex/lualatex if you want to re-introduce Thai script" — confirming Thai was an aspiration, not shipped. |
+| **Thai localization** | No `l10n.yaml`; no `app_*.arb` files anywhere in the tree. The persona/journey LaTeX (`docs/persona-and-journey-map.tex:3`) notes "compile with xelatex/lualatex if you want to re-introduce Thai script" - confirming Thai was an aspiration, not shipped. |
 | **iOS build target** | `apps/mobile/ios/` exists as a Flutter scaffold but has no app-specific configuration (no Firebase iOS plist, no signing setup). CLAUDE.md scopes the product to "Android and Web". |
 | **Therapist / clinician export** | No export feature in `features/settings/` or `features/history/`. Not on the v1.5 backlog. |
 | **WebAuthn cold-boot sign-in in production** | Cloud Functions deployed (`webauthnRegisterStart/Finish`, `webauthnAssertionStart/Finish`, `webauthnLoginStart/Finish`) and Dart client wired, but the **production origin** is empty in `functions/.env` (`WEBAUTHN_PRODUCTION_ORIGIN=` is intentionally blank); the feature is live for localhost dev with `WEBAUTHN_RPID=localhost` + staging origins, but a production rollout needs an origin first. v1.5.1 agenda item per the retro. |
@@ -367,24 +367,24 @@ For each persona quality risk, the actual test (or honest "no test found"):
 
 For a planning team that only saw the Sprint-1 brief, the five most surprising deltas in the shipped product:
 
-1. **Disclaimer ack is inline, not a route gate.** Sprint-1 sketched a modal-route gate before any Insights access; the shipped design uses an inline `_DisclaimerBanner` on the Patterns screen that becomes a `_PatternCheckInsCard` once the user acks. The user can scroll the screen pre-ack — the gate is on the *insight content*, not the *route*.
+1. **Disclaimer ack is inline, not a route gate.** Sprint-1 sketched a modal-route gate before any Insights access; the shipped design uses an inline `_DisclaimerBanner` on the Patterns screen that becomes a `_PatternCheckInsCard` once the user acks. The user can scroll the screen pre-ack - the gate is on the *insight content*, not the *route*.
 2. **Dual-layer skin model coexists by product decision.** Both a global `GardenSkin` (one for the whole garden) AND a per-species `PerSpeciesSkin` (overrides one species' shape + accent) are live at the same time; they layer at the presentation edge. Not described in Sprint 1.
 3. **WebAuthn shipped as a cold-boot sign-in pair, not just re-auth.** ADR-0014 originally framed WebAuthn as a Privacy-Lock re-auth fallback. v1.5 ships *both* the re-auth path (Privacy Lock) AND a new unauthenticated cold-boot pair (`webauthnLoginStart/Finish`) that mints a Firebase custom token. The cold-boot mint went through a focused security review (atomic single-use challenge claim, IP rate-limit on both legs, opaque failure codes, `getUser` existence check before mint).
-4. **Animated atmosphere — clouds, rain, butterflies, birds.** The SkyHeader is alive — cloud drift, butterfly flutter + wing flap, bird glide-and-wrap, storm rain fall. Driven by a single 14 s repeating controller using integer-multiplier phases so every motion returns to its start at loop end (seamless). Sprint 1 sketched a static atmosphere.
-5. **Marker-band + Recent-Triggers wiring closes the analytical loop.** Tapping a row in `RecentTriggersCard` publishes the day index to `insightsFocusedDayIndexProvider`; `PatternMarkerBand` reads it and animates a 1.6× scale on the matching dot for 600 ms. The full chain — `Pattern Engine result → marker band → Recent Triggers → MarkerDetailSheet` — was not in the Sprint-1 sketch; it emerged from the HB-009 redesign and ships on the Patterns screen post-disclaimer-ack.
+4. **Animated atmosphere - clouds, rain, butterflies, birds.** The SkyHeader is alive - cloud drift, butterfly flutter + wing flap, bird glide-and-wrap, storm rain fall. Driven by a single 14 s repeating controller using integer-multiplier phases so every motion returns to its start at loop end (seamless). Sprint 1 sketched a static atmosphere.
+5. **Marker-band + Recent-Triggers wiring closes the analytical loop.** Tapping a row in `RecentTriggersCard` publishes the day index to `insightsFocusedDayIndexProvider`; `PatternMarkerBand` reads it and animates a 1.6× scale on the matching dot for 600 ms. The full chain - `Pattern Engine result → marker band → Recent Triggers → MarkerDetailSheet` - was not in the Sprint-1 sketch; it emerged from the HB-009 redesign and ships on the Patterns screen post-disclaimer-ack.
 
 ---
 
-## Appendix — Document inventory (read before drafting)
+## Appendix - Document inventory (read before drafting)
 
-- `CLAUDE.md` — copy rules, data model, locked phrasing (kept current).
-- `.claude/specs/sprint-4-5-spec.md` — authoritative ecosystem spec (formulas, 5 algorithms, 35 acceptance test cases, citations).
-- `docs/retros/sprint-5-retro.md` — what shipped vs slipped (1018 Flutter tests + 73 Cloud Function tests passing at v1.5 tag; six polish waves).
-- `docs/adr/` — 8 ADRs (ADR-0008 biometric, ADR-0009 cooldown, ADR-0012 Tier-3 fence, ADR-0013 PIN fallback, ADR-0014 WebAuthn).
-- `docs/handoffs/` — HB-007 dispatcher, HB-008 quote library, HB-009 skins redesign.
-- `docs/persona-and-journey-map.tex` — a previous (now superseded) persona/journey draft; the rebuild will replace it.
-- `agile/05_Personas.pdf`, `agile/06_JourneyMaps.pdf` — current personas Lin Worachat + Som Phetchaburi; **these are what the planning team is rebuilding**.
-- `agile/agents/`, `agile/briefs/`, `agile/prompts/`, `agile/specs/` — the agile-process side of the project.
+- `CLAUDE.md` - copy rules, data model, locked phrasing (kept current).
+- `.claude/specs/sprint-4-5-spec.md` - authoritative ecosystem spec (formulas, 5 algorithms, 35 acceptance test cases, citations).
+- `docs/retros/sprint-5-retro.md` - what shipped vs slipped (1018 Flutter tests + 73 Cloud Function tests passing at v1.5 tag; six polish waves).
+- `docs/adr/` - 8 ADRs (ADR-0008 biometric, ADR-0009 cooldown, ADR-0012 Tier-3 fence, ADR-0013 PIN fallback, ADR-0014 WebAuthn).
+- `docs/handoffs/` - HB-007 dispatcher, HB-008 quote library, HB-009 skins redesign.
+- `docs/persona-and-journey-map.tex` - a previous (now superseded) persona/journey draft; the rebuild will replace it.
+- `agile/05_Personas.pdf`, `agile/06_JourneyMaps.pdf` - current personas Lin Worachat + Som Phetchaburi; **these are what the planning team is rebuilding**.
+- `agile/agents/`, `agile/briefs/`, `agile/prompts/`, `agile/specs/` - the agile-process side of the project.
 
 ---
 

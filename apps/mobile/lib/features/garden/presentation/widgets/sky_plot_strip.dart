@@ -386,9 +386,7 @@ class _Row extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          for (final spec in specs) _plant(spec),
-        ],
+        children: <Widget>[for (final spec in specs) _plant(spec)],
       ),
     );
   }

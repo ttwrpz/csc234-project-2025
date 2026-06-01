@@ -933,7 +933,7 @@ class SyncQueueRow extends DataClass implements Insertable<SyncQueueRow> {
   final String payload;
   final int attemptCount;
 
-  /// Truncated to 200 chars at write time — see [SyncQueueDao.markFailed].
+  /// Truncated to 200 chars at write time - see [SyncQueueDao.markFailed].
   /// Never include PII (entry text, email).
   final String? lastError;
   final String? lastErrorCode;

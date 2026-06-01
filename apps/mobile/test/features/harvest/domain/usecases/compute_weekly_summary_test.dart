@@ -37,7 +37,7 @@ void main() {
       expect(summary.totalEntryCount, 3);
     });
 
-    test('is 0.0 with no entries (defensive — caller rejects empty week)', () {
+    test('is 0.0 with no entries (defensive - caller rejects empty week)', () {
       final summary = useCase(
         weekEntries: const [],
         dailyHealthHistory: const [],
@@ -110,7 +110,7 @@ void main() {
   });
 
   group('triggeredTierCount', () {
-    test('passes through verbatim — caller pulls from patterns docs', () {
+    test('passes through verbatim - caller pulls from patterns docs', () {
       final summary = useCase(
         weekEntries: [_entry(mood: MoodType.happy, intensity: 5)],
         dailyHealthHistory: const [0.1],

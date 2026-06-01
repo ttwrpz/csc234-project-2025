@@ -1,5 +1,5 @@
 // Widget tests for the "Use security key" affordance on
-// [PrivacyLockScreen] — ADR-0014 Decision D.
+// [PrivacyLockScreen] - ADR-0014 Decision D.
 //
 // The button appears only when WebAuthn is reachable AND the user has
 // a credential registered (via `webauthnCredentialProvider`). The test
@@ -116,7 +116,7 @@ Future<void> _pumpPrivacyLock(
 }
 
 void main() {
-  group('PrivacyLockScreen — Use security key', () {
+  group('PrivacyLockScreen - Use security key', () {
     testWidgets('button appears when webauthnAvailable && credential != null', (
       tester,
     ) async {
@@ -181,7 +181,7 @@ void main() {
         // Calling `onPressed` directly (rather than via `tester.tap`)
         // avoids the off-screen hit-test ambiguity that
         // TextButton.icon's nested _TextButtonWithIcon layout exposes
-        // under the 420×1200 surface — the tap target's exact bounds
+        // under the 420×1200 surface - the tap target's exact bounds
         // depend on the icon-plus-label flex resolution. The handler
         // is a plain Dart callback; invoking it directly exercises the
         // same code path and asserts the use case is dispatched.

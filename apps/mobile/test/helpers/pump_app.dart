@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// Centralises the rig used across feature widget tests so individual
 /// helpers (`_pumpSignIn`, `_pumpLogMood`, `_pumpGarden`) can migrate to
-/// it. The existing per-feature helpers are NOT migrated in Sprint 4 —
+/// it. The existing per-feature helpers are NOT migrated in Sprint 4 -
 /// see Sprint 5 follow-up to reduce blast radius now while the test
 /// suite is being expanded for WBS 7.2.
 ///

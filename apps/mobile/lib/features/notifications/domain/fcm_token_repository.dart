@@ -7,7 +7,7 @@ import 'notifications_settings.dart';
 ///
 /// Implementations live in `data/`; they wrap `firebase_messaging`,
 /// `cloud_firestore` and `shared_preferences`. The domain layer never
-/// imports any of those — see CLAUDE.md "the one rule that cannot
+/// imports any of those - see CLAUDE.md "the one rule that cannot
 /// break".
 ///
 /// All write methods return `Result<void, NotificationFailure>` so
@@ -50,7 +50,7 @@ abstract class FcmTokenRepository {
 
   /// Toggles the Tier 3 (Hotline 1323 reminder) intervention channel.
   /// See [setTier1Enabled] for the cheer-up shim semantics. Note that
-  /// Tier 3 quote content is CURATED ONLY — disabling the channel
+  /// Tier 3 quote content is CURATED ONLY - disabling the channel
   /// suppresses delivery but never affects the deterministic safety
   /// rule on the Cloud Function side.
   Future<Result<void, NotificationFailure>> setTier3Enabled({
@@ -60,7 +60,7 @@ abstract class FcmTokenRepository {
 
   /// Streams the user's current notifications settings document, or
   /// `null` if no document exists yet (first-run state). Returns `null`
-  /// from the method itself when [uid] is empty — callers gate on
+  /// from the method itself when [uid] is empty - callers gate on
   /// auth-state before subscribing.
   Stream<NotificationsSettings>? watchSettings({required String uid});
 }

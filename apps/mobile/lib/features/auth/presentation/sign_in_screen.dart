@@ -67,7 +67,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         // Auth-state stream emits; the router redirect navigates to /home.
         break;
       case Err(:final failure):
-        if (failure.isUserCanceled) return; // dismissed prompt — silent.
+        if (failure.isUserCanceled) return; // dismissed prompt - silent.
         messenger.showSnackBar(SnackBar(content: Text(failure.message)));
     }
   }
@@ -82,7 +82,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     return Scaffold(
       backgroundColor: mb.bg,
       // Centred form column. Sign-in needs neither full screen width nor a
-      // ListView's vertical bias on desktop — capping at 420 dp and
+      // ListView's vertical bias on desktop - capping at 420 dp and
       // centring vertically keeps the form compact and keeps the brand
       // mark in the visual sweet spot regardless of viewport size.
       body: SafeArea(
@@ -178,7 +178,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       label: 'Sign in',
                       onPressed: state.isSubmitting ? null : controller.submit,
                       // Only spin when the password flow is the one
-                      // actively in flight — the Google flow disables
+                      // actively in flight - the Google flow disables
                       // this button but no longer triggers its spinner.
                       loading:
                           state.submittingWith == SignInSubmitMethod.password,
@@ -197,7 +197,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     ),
                     // Web-only WebAuthn entry point, behind the
                     // `kEnableWebauthn` build flag. No native "Use
-                    // biometric" affordance here — biometric at the
+                    // biometric" affordance here - biometric at the
                     // cold-boot sign-in stage is a no-op:
                     // `LocalAuthentication.authenticate()` returns
                     // success but produces no credentials, and the
@@ -220,7 +220,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     const SizedBox(height: 16),
                     // Two-colour footer link: the prompt noun reads in the
                     // dim text colour, the call-to-action verb in seed
-                    // green w700 — same pattern as the prototype's
+                    // green w700 - same pattern as the prototype's
                     // `SignInScreen` "New here? Create an account".
                     Center(
                       child: _AuthFooterLink(
@@ -247,7 +247,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   }
 }
 
-/// Thin "—— or ——" separator. Matches the prototype's auth divider.
+/// Thin "-- or --" separator. Matches the prototype's auth divider.
 class _OrDivider extends StatelessWidget {
   const _OrDivider({required this.mb});
   final MbColors mb;
@@ -278,7 +278,7 @@ class _OrDivider extends StatelessWidget {
 /// Two-tone footer link used at the bottom of Sign In / Sign Up. The
 /// [prompt] reads in the dim text colour; [action] is the tappable
 /// affordance, painted in the brand seed colour with w700 weight.
-/// Tapping anywhere on the row fires [onTap] — Semantics is wired up
+/// Tapping anywhere on the row fires [onTap] - Semantics is wired up
 /// so screen readers announce "Create one, button" rather than
 /// reading the prompt as the activation phrase.
 class _AuthFooterLink extends StatelessWidget {

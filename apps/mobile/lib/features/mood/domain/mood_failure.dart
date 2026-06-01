@@ -96,7 +96,7 @@ class _MediaPermissionDenied extends MoodFailure {
             : 'Permission is required to attach from your $source.',
       );
 
-  /// 'camera' or 'gallery' — the surface that needed the denied permission.
+  /// 'camera' or 'gallery' - the surface that needed the denied permission.
   final String source;
 
   /// True when the OS will not re-prompt (user picked "Don't ask again" on

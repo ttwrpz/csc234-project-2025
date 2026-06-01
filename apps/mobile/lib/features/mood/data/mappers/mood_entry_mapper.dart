@@ -31,7 +31,7 @@ class MoodEntryMapper {
   }
 
   /// Builds a DTO ready to write. The `id` is empty until Firestore allocates
-  /// one; the timestamps are placeholders — the actual server timestamps are
+  /// one; the timestamps are placeholders - the actual server timestamps are
   /// applied by [MoodEntryDto.toFirestoreOnCreate].
   MoodEntryDto toDtoForCreate({
     required String userId,

@@ -159,7 +159,7 @@ void main() {
       expect(
         entry.isLocked(now: DateTime(2026, 4, 28, 23, 59)),
         isFalse,
-        reason: 'still the same calendar day — editable',
+        reason: 'still the same calendar day - editable',
       );
     });
 

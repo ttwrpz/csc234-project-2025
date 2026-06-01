@@ -8,7 +8,7 @@ import 'package:moodbloom/features/pattern_engine/domain/usecases/run_pattern_en
 final _now = DateTime(2026, 5, 9, 10, 30);
 
 /// Builds a `MoodEntry` quickly. `intensity` defaults to 5 so the per-entry
-/// `MoodScore.value` is `±1.0` (sign × 1) — easiest to reason about in
+/// `MoodScore.value` is `±1.0` (sign × 1) - easiest to reason about in
 /// aggregate-tier tests.
 MoodEntry _entry({
   required DateTime createdAt,
@@ -37,7 +37,7 @@ DateTime _ago(int days) => DateTime(
 void main() {
   const useCase = RunPatternEngineUseCase();
 
-  group('RunPatternEngineUseCase — empty + degenerate', () {
+  group('RunPatternEngineUseCase - empty + degenerate', () {
     test('empty entries → all defaults, no tier triggered', () {
       final result = useCase(const <MoodEntry>[], now: _now);
       expect(result.dateId, '2026-05-09');
@@ -60,7 +60,7 @@ void main() {
     });
   });
 
-  group('RunPatternEngineUseCase — same-day aggregation', () {
+  group('RunPatternEngineUseCase - same-day aggregation', () {
     test('3 entries same day (Joy×4, Calm×2, Sad×3) → avgScore = +0.2', () {
       // Joy×4: +0.8; Calm×2: +0.4; Sad×3: -0.6 → mean = +0.2.
       // Today: not Tier-3 heavy (+0.2 > -0.6). No tier triggered.
@@ -75,7 +75,7 @@ void main() {
     });
   });
 
-  group('RunPatternEngineUseCase — tier resolution (highest wins)', () {
+  group('RunPatternEngineUseCase - tier resolution (highest wins)', () {
     test('3-consecutive heavy days → Tier 3 (even if MK also fires)', () {
       // 3 heavy days today + a slope of decline over 14 days.
       final history = <MoodEntry>[
@@ -83,7 +83,7 @@ void main() {
         _entry(id: 'a', createdAt: _ago(0), mood: MoodType.sad),
         _entry(id: 'b', createdAt: _ago(1), mood: MoodType.sad),
         _entry(id: 'c', createdAt: _ago(2), mood: MoodType.sad),
-        // Earlier days at moderate positive — establishes a downward trend.
+        // Earlier days at moderate positive - establishes a downward trend.
         for (var i = 3; i < 14; i++)
           _entry(id: 'd$i', createdAt: _ago(i), mood: MoodType.calm),
       ];
@@ -145,18 +145,18 @@ void main() {
       expect(result.mannKendallZ, isNotNull);
       // Did NOT fire Tier 3 (no 3-consecutive heavy, no z<-2.5, no CUSUM).
       expect(result.consecutiveHighIntensity, lessThan(3));
-      // Did NOT fire Tier 2 (no 5 negative days — entries are all positive).
+      // Did NOT fire Tier 2 (no 5 negative days - entries are all positive).
       expect(result.slidingNegCount, 0);
       // Tier 1 only fires when MK Z < -1.96. Whether that happens depends
       // on the exact descent slope; for this construction it does (verified
-      // by computing — strictly decreasing 14 days → Z ≈ -4.93).
+      // by computing - strictly decreasing 14 days → Z ≈ -4.93).
       expect(result.triggeredTier, anyOf(equals(Tier.one), isNull));
       // Use _ = history to silence unused_local_variable on the scaffolding.
       expect(history, isNotEmpty);
     });
   });
 
-  group('RunPatternEngineUseCase — dateId formatting', () {
+  group('RunPatternEngineUseCase - dateId formatting', () {
     test('1 second past midnight → dateId is the new day', () {
       final justAfterMidnight = DateTime(2026, 5, 12, 0, 0, 1);
       final result = useCase(const <MoodEntry>[], now: justAfterMidnight);

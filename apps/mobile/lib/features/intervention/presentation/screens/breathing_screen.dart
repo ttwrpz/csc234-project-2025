@@ -9,7 +9,7 @@ import '../../domain/entities/intervention_dispatch.dart';
 import '../controllers/intervention_controller.dart';
 import '../widgets/dispatch_safe_defaults.dart';
 
-/// Tier 1 surface — a 2-minute paced-breathing therapeutic deliverable,
+/// Tier 1 surface - a 2-minute paced-breathing therapeutic deliverable,
 /// presented as a modal (bottom sheet on phone, dialog on tablet+) per
 /// the v1.6 prototype's `ModalFrame`.
 ///
@@ -151,7 +151,7 @@ class _BreathingViewState extends ConsumerState<BreathingView>
     return '$m minutes $s seconds remaining';
   }
 
-  /// Single done/close handler — used by the header close icon, the
+  /// Single done/close handler - used by the header close icon, the
   /// body "I'm done" CTA, and natural timer completion. All converge
   /// through the same controller `complete()` call.
   void _onDone() {
@@ -242,7 +242,7 @@ class _CountdownLabel extends StatelessWidget {
   }
 }
 
-/// Breathing rhythm guide — a 200 dp radial-gradient disc (soft-green
+/// Breathing rhythm guide - a 200 dp radial-gradient disc (soft-green
 /// fading to the page background) with a seed-coloured ring that scales
 /// with the breath cycle, and the current phase word ("Inhale" / "Hold"
 /// / "Exhale") centred in serif. Ports the prototype's breathing circle;

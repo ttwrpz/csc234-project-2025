@@ -9,7 +9,7 @@ import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
 /// Tests target the pure-Dart join function exposed by
 /// [InsightsRepositoryImpl.joinForTest]. The use case itself is a thin
-/// wrapper around the repository's stream — these tests exercise the
+/// wrapper around the repository's stream - these tests exercise the
 /// real shape-correctness invariant the screen relies on.
 
 MoodEntry _entry({
@@ -42,7 +42,7 @@ PatternResult _pattern({required String dateId, Tier? tier}) {
 
 void main() {
   // Anchor "now" at a Wednesday so the 14-day window straddles two
-  // Mondays — exercises the weekly H_t reset path.
+  // Mondays - exercises the weekly H_t reset path.
   // 2026-05-13 is a Wednesday.
   final now = DateTime(2026, 5, 13, 9);
 
@@ -217,17 +217,17 @@ void main() {
         const [],
       );
       // The Sunday May 3 itself is BEFORE the window start (May 3
-      // is exactly 13 days before May 16, so it IS the window start —
+      // is exactly 13 days before May 16, so it IS the window start -
       // adjust expectation). Verify the gradient: the Sunday cell has
       // a non-null H (negative), and the immediately-following Monday
-      // cell has the reset H (null or 0 — null in our impl because
+      // cell has the reset H (null or 0 - null in our impl because
       // no entries fold yet on that Monday).
       final sunCell = result.firstWhere((d) => d.date == sunBeforeMonday);
       final monCell = result.firstWhere((d) => d.date == mondayAfter);
       expect(sunCell.gardenHealthH, isNotNull);
       expect(sunCell.gardenHealthH! < 0, isTrue);
       // After the Monday reset, H should be null (no entries that
-      // Monday) — proving the reset cleared the previous week's H.
+      // Monday) - proving the reset cleared the previous week's H.
       expect(monCell.gardenHealthH, isNull);
     });
 

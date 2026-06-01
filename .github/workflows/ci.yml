@@ -2,13 +2,13 @@
 #
 # Three jobs run on every push to main and every pull request:
 #
-#   1. flutter — format + analyze + test for apps/mobile and every package,
+#   1. flutter - format + analyze + test for apps/mobile and every package,
 #      plus codegen (build_runner) and the domain-purity grep that enforces
 #      "domain/ has zero Flutter/Firebase imports" from CLAUDE.md.
-#   2. firestore-rules — boots the Firestore + Storage emulators and runs
+#   2. firestore-rules - boots the Firestore + Storage emulators and runs
 #      the rules-unit-testing suite under firebase/test/ (15 cases for
-#      WBS 2.3 — per-user RBAC, 24h immutability, field-level validation).
-#   3. functions — TypeScript build + lint + jest for the Cloud Functions
+#      WBS 2.3 - per-user RBAC, 24h immutability, field-level validation).
+#   3. functions - TypeScript build + lint + jest for the Cloud Functions
 #      proxy. Skips gracefully until functions/package.json exists (D3.1
 #      lands the analyzeMoodText function per ADR-0003).
 name: CI
@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   flutter:
-    name: Flutter — format, analyze, test, domain purity
+    name: Flutter - format, analyze, test, domain purity
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -130,7 +130,7 @@ jobs:
       # rendering or pixel diffs are surfaced distinctly from logic
       # failures. Baselines are committed and only updated via local
       # `flutter test --update-goldens --tags=golden` on Linux. Off-Linux
-      # contributors should not run the golden step locally — sub-pixel
+      # contributors should not run the golden step locally - sub-pixel
       # differences make the diffs noisy.
       # ------------------------------------------------------------------
       - name: flutter test (apps/mobile)
@@ -141,14 +141,14 @@ jobs:
         working-directory: apps/mobile
         # Goldens were trimmed during the v1.5 polish wave (no
         # @Tags(['golden']) suites remain today). flutter test exits
-        # 79 when no tests match the tag selector — treat that as a
+        # 79 when no tests match the tag selector - treat that as a
         # pass so the step survives until goldens are restored.
         run: |
           set +e
           flutter test --tags=golden
           rc=$?
           if [ $rc -eq 79 ]; then
-            echo "No golden-tagged tests in the suite — skipping."
+            echo "No golden-tagged tests in the suite - skipping."
             exit 0
           fi
           exit $rc
@@ -169,7 +169,7 @@ jobs:
       # Sanctioned exception (ADR-0010 §"Compliance Check"):
       #   `apps/mobile/lib/features/settings/domain/services/day_night_strategy.dart`
       # imports `package:flutter/material.dart` for the `ThemeMode` enum.
-      # `ThemeMode` has no Flutter behaviour — three named constants —
+      # `ThemeMode` has no Flutter behaviour - three named constants -
       # and re-creating a `MoodBloomThemeMode` mirror only to map back at
       # every call site would be ceremony with no testability benefit.
       # The file's own header documents the carve-out; the CI grep
@@ -216,7 +216,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ ! -f coverage/lcov.info ]; then
-            echo "No coverage/lcov.info — skipping comment."
+            echo "No coverage/lcov.info - skipping comment."
             exit 0
           fi
           TOTAL=$(grep -c "^DA:" coverage/lcov.info || true)
@@ -227,7 +227,7 @@ jobs:
             PCT="n/a"
           fi
           gh pr comment "${{ github.event.pull_request.number }}" \
-            --body "📊 **Coverage:** ${PCT}% (${HIT} / ${TOTAL} lines hit) — _from CI run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})_"
+            --body "📊 **Coverage:** ${PCT}% (${HIT} / ${TOTAL} lines hit) - _from CI run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})_"
 
   firestore-rules:
     name: Firestore + Storage rules emulator tests
@@ -242,7 +242,7 @@ jobs:
         uses: pnpm/action-setup@v5
         with:
           # Version is read from `firebase/test/package.json#packageManager`
-          # (pnpm@10.18.0 — kept in sync with `functions/package.json`).
+          # (pnpm@10.18.0 - kept in sync with `functions/package.json`).
           package_json_file: firebase/test/package.json
           run_install: false
 
@@ -274,7 +274,7 @@ jobs:
             "cd firebase/test && pnpm test"
 
   functions:
-    name: Cloud Functions — lint, build, test
+    name: Cloud Functions - lint, build, test
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

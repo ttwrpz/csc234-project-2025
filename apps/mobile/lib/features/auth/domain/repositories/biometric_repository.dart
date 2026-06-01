@@ -5,7 +5,7 @@ import '../entities/biometric_capability.dart';
 /// `SharedPreferences`; tests inject a fake.
 ///
 /// Returning `bool` from [authenticate] (instead of throwing on cancel) keeps
-/// the user-cancellation path quiet — cancellation isn't an error, it's a
+/// the user-cancellation path quiet - cancellation isn't an error, it's a
 /// choice. Hardware/config errors still propagate as exceptions and are
 /// translated into `AuthFailure.biometricFailed` upstream.
 abstract class BiometricRepository {

@@ -1,7 +1,7 @@
 name: moodbloom
-description: "MoodBloom — a compassionate cross-platform mood tracker."
+description: "MoodBloom - a compassionate cross-platform mood tracker."
 publish_to: 'none'
-version: 1.0.0+3
+version: 1.6.0+4
 
 environment:
   sdk: ^3.10.7
@@ -44,7 +44,7 @@ dependencies:
   # which requires `meta ^1.18.0`, but the SDK's `flutter_test` pins
   # `meta 1.17.0`. Until the team upgrades Flutter to a release that
   # unpins meta, stay on `sqlite3_flutter_libs ^0.5.0` (the last line
-  # that still ships native libs — 0.6.0+eol is a deprecation tombstone
+  # that still ships native libs - 0.6.0+eol is a deprecation tombstone
   # that ships no code and was the root cause of `libsqlite3.so not
   # found` on Android).
   sqlite3_flutter_libs: ^0.5.0
@@ -54,7 +54,7 @@ dependencies:
   # Promoted from transitive (was pulled in via `uuid`) to a direct dep so
   # the PIN fallback layer can rely on `Hmac<Sha256>` without sprouting a
   # transitive-dep version-pin risk. PBKDF2 is hand-rolled on top of
-  # `crypto`'s `Hmac` primitive — see ADR-0013 Open Follow-up #1.
+  # `crypto`'s `Hmac` primitive - see ADR-0013 Open Follow-up #1.
   crypto: ^3.0.7
   # Promoted from transitive to a direct dep so the WebAuthn JS-interop
   # binding at `features/auth/data/datasources/webauthn_browser_datasource_web.dart`
@@ -71,7 +71,7 @@ dependencies:
   connectivity_plus: ^7.1.1
   url_launcher: ^6.3.1
   # Runtime permission prompts for camera + media access on Android
-  # 6+. image_picker itself does not request these — the camera
+  # 6+. image_picker itself does not request these - the camera
   # intent fails silently without `CAMERA` (Android 6+) and the
   # pre-Photo-Picker gallery flow needs `READ_EXTERNAL_STORAGE` /
   # `READ_MEDIA_IMAGES` (Android 13+).
@@ -89,6 +89,10 @@ dev_dependencies:
   json_serializable: ^6.9.0
   drift_dev: ^2.20.0
   golden_toolkit: ^0.15.0
+  # Direct dev dep so golden tests can pin `GoogleFonts.config` to an
+  # offline shim (test/support/golden_fonts.dart). Already present
+  # transitively via packages/design_system.
+  google_fonts: ^6.2.1
   flutter_launcher_icons: ^0.13.1
   image: ^4.0.0
 

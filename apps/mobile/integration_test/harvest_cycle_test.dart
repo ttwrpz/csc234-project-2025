@@ -16,7 +16,7 @@ import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
 
 /// Recording fake [HarvestRepository]. Captures every [archive] call so
 /// the test can assert that the harvest cycle reached the persistence
-/// boundary, and with what payload — the weekId + entry count + summary
+/// boundary, and with what payload - the weekId + entry count + summary
 /// stats are all visible on the captured [WeeklyGarden].
 class _RecordingHarvestRepository implements HarvestRepository {
   final List<WeeklyGarden> archiveCalls = <WeeklyGarden>[];
@@ -105,7 +105,7 @@ List<MoodEntry> _sevenDaysFor(String uid, DateTime weekStart) {
   ];
 }
 
-/// WBS 8.3 Test 4 — Weekly Harvest cycle (TC-15 + TC-23 + CLAUDE.md copy).
+/// WBS 8.3 Test 4 - Weekly Harvest cycle (TC-15 + TC-23 + CLAUDE.md copy).
 ///
 /// The harvest screen is the only place where a week is "completed" and
 /// moved into history. This test verifies three contracts:
@@ -115,7 +115,7 @@ List<MoodEntry> _sevenDaysFor(String uid, DateTime weekStart) {
 ///      vocabulary ("harvested", "new week", "fresh canvas") and contains
 ///      NONE of the forbidden words ("delete", "clear", "reset", "lost",
 ///      "destroyed", "wilted", "dead", "dying"). The constant is the
-///      single source of truth — a regression that swaps "harvested" for
+///      single source of truth - a regression that swaps "harvested" for
 ///      "deleted" gets caught here even if the screen still renders.
 ///
 ///   2. **The real archive use case persists a WeeklyGarden.** Calling
@@ -135,7 +135,7 @@ List<MoodEntry> _sevenDaysFor(String uid, DateTime weekStart) {
 /// controller invokes the use case) is exercised by
 /// `weekly_summary_screen_test.dart` at the widget level. This
 /// integration test re-asserts the same contract at the use-case
-/// boundary against a recording repo — the missing link between the
+/// boundary against a recording repo - the missing link between the
 /// widget-level acknowledge() and the data-layer persist write.
 ///
 /// Domain purity: tests-only file; touches no production code.
@@ -364,7 +364,7 @@ void main() {
       // The brief asks: "Verify past entries remain readable in
       // History." History is a stream of [WeeklyGarden] docs from
       // the repo. The audit-trail invariant is that those docs are
-      // FROZEN once written — both at the entity level
+      // FROZEN once written - both at the entity level
       // (List.unmodifiable) and at the Firestore-rules level
       // (write-once-on-archive per ADR-0010 §6).
       //
@@ -386,7 +386,7 @@ void main() {
 
       final garden = (result as Ok<WeeklyGarden, HarvestFailure>).value;
 
-      // WeeklyGarden.entries is built via List.unmodifiable —
+      // WeeklyGarden.entries is built via List.unmodifiable -
       // mutation attempt must throw.
       expect(
         () => garden.entries.add(weekEntries.first),
@@ -404,7 +404,7 @@ void main() {
             'write-once contract as entries',
       );
 
-      // The repository saw exactly one archive call — defensive
+      // The repository saw exactly one archive call - defensive
       // double-write would surface here too.
       expect(
         harvestRepo.archiveCalls,

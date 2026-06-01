@@ -1,4 +1,4 @@
-# ADR-0008 — Intervention Cooldown Persistence: Firestore-Primary, SharedPreferences-Mirror
+# ADR-0008 - Intervention Cooldown Persistence: Firestore-Primary, SharedPreferences-Mirror
 
 **Status:** Accepted (Sprint 5)
 **Date:** 2026-05-13
@@ -9,13 +9,13 @@
 
 Sprint 4 shipped the cheer-up cooldown and escalation anchors as SharedPreferences-only state in `apps/mobile/lib/features/garden/data/intervention_state_storage.dart`. The detector reads `lastTriggeredAt` and `firstTriggeredAt` from local prefs, applies the 48h cooldown gate and the 10-day escalation rule, and returns an `InterventionState`. The S4 acceptance bar tolerated this because no consumer outside the local app process needed the anchors.
 
-Sprint 5 changes that. The `sendCheerUpPush` Cloud Function (HB-003) needs a server-side signal that the user has just hit a fresh trigger so it can multicast to every registered FCM device. SharedPreferences is single-device-only — a user signed in on Android and Web sees two independent cooldowns, the CF cannot read either, and a server-driven 24h rate limit cannot collaborate with a client-driven 48h cooldown without a shared store.
+Sprint 5 changes that. The `sendCheerUpPush` Cloud Function (HB-003) needs a server-side signal that the user has just hit a fresh trigger so it can multicast to every registered FCM device. SharedPreferences is single-device-only - a user signed in on Android and Web sees two independent cooldowns, the CF cannot read either, and a server-driven 24h rate limit cannot collaborate with a client-driven 48h cooldown without a shared store.
 
 A second concern: the Sprint-5 plan §11 risk #3 ("Hotline 1323 footer fires too early") is harder to audit when the anchor lives only in device-local prefs. A Firestore-resident anchor is inspectable by an emulator-driven security test that seeds `firstTriggeredAt = now - 11d` and asserts the footer surfaces; same test against SharedPreferences requires platform-channel mocking and is brittle.
 
 ## Decision
 
-The cheer-up cooldown and escalation anchors persist primarily in Firestore at `users/{uid}/interventionState/current` (single doc, fields `lastTriggeredAt: timestamp | null`, `firstTriggeredAt: timestamp | null`, `schemaV: 1`). The existing `InterventionStateStorage` (SharedPreferences) is retained as the offline-read mirror only — every successful Firestore read warms the mirror, every successful Firestore write mirrors locally, and reads fall back to the mirror on Firestore failure. A new `InterventionStateRepository` abstract in the domain layer hides the topology from the detector.
+The cheer-up cooldown and escalation anchors persist primarily in Firestore at `users/{uid}/interventionState/current` (single doc, fields `lastTriggeredAt: timestamp | null`, `firstTriggeredAt: timestamp | null`, `schemaV: 1`). The existing `InterventionStateStorage` (SharedPreferences) is retained as the offline-read mirror only - every successful Firestore read warms the mirror, every successful Firestore write mirrors locally, and reads fall back to the mirror on Firestore failure. A new `InterventionStateRepository` abstract in the domain layer hides the topology from the detector.
 
 ## Consequences
 
@@ -28,8 +28,8 @@ The cheer-up cooldown and escalation anchors persist primarily in Firestore at `
 
 **Bad**
 
-- One additional Firestore write per trigger fire. Bounded — the trigger fires at most once per (uid, day, reason) combination by construction (idempotent event-doc id), and the anchor write is one document update per fire.
-- Network-dependent write path: a user who triggers offline now sees a slightly degraded state — the local mirror is updated immediately so the local detector is correct, but the CF will not fire until the queued mutation drains. Documented in HB-003 OQ-B and the rollback runbook.
+- One additional Firestore write per trigger fire. Bounded - the trigger fires at most once per (uid, day, reason) combination by construction (idempotent event-doc id), and the anchor write is one document update per fire.
+- Network-dependent write path: a user who triggers offline now sees a slightly degraded state - the local mirror is updated immediately so the local detector is correct, but the CF will not fire until the queued mutation drains. Documented in HB-003 OQ-B and the rollback runbook.
 - Conflict surface: two devices that hit the trigger within milliseconds of each other will both write `lastTriggeredAt`. Last-write-wins per ADR-0005 applies; the millisecond difference is invisible to the 48h gate.
 
 ## Alternatives Considered
@@ -41,6 +41,6 @@ The cheer-up cooldown and escalation anchors persist primarily in Firestore at `
 ## Compliance Check
 
 - Clean Architecture domain-zero-imports rule: satisfied. `InterventionStateRepository` is abstract in `apps/mobile/lib/features/garden/domain/`; `InterventionAnchors` is pure-Dart (no Flutter / Firebase imports). Implementation lives in `data/`.
-- Enterprise Term Assignment requirements touched: **R3** (architecture quality — repository pattern preserved across the persistence shift); **R5** (security — Firestore rules enforce per-user isolation via `match /users/{uid}/interventionState/{docId}` block in `firestore.rules`).
+- Enterprise Term Assignment requirements touched: **R3** (architecture quality - repository pattern preserved across the persistence shift); **R5** (security - Firestore rules enforce per-user isolation via `match /users/{uid}/interventionState/{docId}` block in `firestore.rules`).
 - Quality gates affected: **Correctness** (multi-device parity is now testable); **Security** (per-user rule isolation, immutable schemaV, allowed-key set). Performance: one extra write per trigger fire, bounded.
-- CLAUDE.md feature-flag rollback: N/A — anchors are state, not behaviour. The CF that consumes them is gated by `users/{uid}/settings/notifications.enabled`; if a runaway anchor is ever observed, the CF can be paused without touching the anchors.
+- CLAUDE.md feature-flag rollback: N/A - anchors are state, not behaviour. The CF that consumes them is gated by `users/{uid}/settings/notifications.enabled`; if a runaway anchor is ever observed, the CF can be paused without touching the anchors.

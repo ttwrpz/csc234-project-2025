@@ -36,7 +36,7 @@ cd "$REPO_ROOT"
 
 echo "Deploying to $PROJECT_ID ($ONLY)"
 
-# "all" matches what firebase.json actually declares — firestore +
+# "all" matches what firebase.json actually declares - firestore +
 # storage rules, the Remote Config template, and functions. Hosting is
 # opt-in because the project doesn't ship a hosting block today; pass
 # `--only hosting` once one is added.
@@ -53,7 +53,7 @@ for t in "${TARGETS[@]}"; do
   if [[ "$t" == "functions" ]]; then contains_functions=1; fi
 done
 
-# Sync functions deps before the firebase predeploy build runs — the
+# Sync functions deps before the firebase predeploy build runs - the
 # v1.6 deploy failed because @simplewebauthn/server was declared in
 # package.json but missing from node_modules (pnpm install was never
 # run after the dep was added).

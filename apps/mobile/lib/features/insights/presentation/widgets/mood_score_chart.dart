@@ -42,7 +42,7 @@ class MoodScoreChart extends StatelessWidget {
         healthLineColor: const Color(0xFF7A96AE),
         gridColor: mb.line,
         axisLabelColor: mb.textDim,
-        // Plant-tier bands — top-to-bottom, top = healthiest. Each band
+        // Plant-tier bands - top-to-bottom, top = healthiest. Each band
         // gets a distinct hue (deep green / light green / neutral / sand /
         // coral) rather than just different alphas of the same colour, so
         // adjacent tiers stay readable on light cream and don't bleed

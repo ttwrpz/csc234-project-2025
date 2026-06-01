@@ -11,7 +11,7 @@ import '../disclaimer_failure.dart';
 /// (false → true is allowed, true → false is denied), so [ack] is
 /// idempotent and never reverts.
 ///
-/// Pure-Dart contract — imports only `package:core/core.dart` and a
+/// Pure-Dart contract - imports only `package:core/core.dart` and a
 /// sibling failure type. Domain-purity rule per CLAUDE.md.
 abstract class DisclaimerRepository {
   /// Streams the user's current ack state. Default `false` for new

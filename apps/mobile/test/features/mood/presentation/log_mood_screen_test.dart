@@ -88,7 +88,7 @@ Future<void> _pumpLogMood(
 
 /// Locates the Save FilledButton without depending on a Key in production.
 /// The button's label is "Save entry" once a mood is picked, and
-/// "Pick a feeling to continue" while the draft has no mood — the
+/// "Pick a feeling to continue" while the draft has no mood - the
 /// underlying [FilledButton] (wrapped by `MbPrimaryButton`) is the same
 /// instance either way, so we look up by widget type and pick the only
 /// one in the tree.
@@ -156,7 +156,7 @@ void main() {
           findsNothing,
           reason:
               'narrow ListView layout must NOT render alongside the wide '
-              'layout — exactly one of the two paths is taken per build',
+              'layout - exactly one of the two paths is taken per build',
         );
         // v1.6 redesign: the wide layout is a single Row that contains
         // two Expanded Columns; the inner-column ValueKeys were dropped.

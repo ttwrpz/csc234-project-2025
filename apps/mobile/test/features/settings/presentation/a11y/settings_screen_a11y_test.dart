@@ -50,7 +50,7 @@ class _StubFcmRepo implements FcmTokenRepository {
       Stream<NotificationsSettings>.value(NotificationsSettings.initial());
 }
 
-/// Sprint 5 Day 3 a11y sweep — Settings screen.
+/// Sprint 5 Day 3 a11y sweep - Settings screen.
 ///
 /// Covers two pieces:
 ///   1. The decorative `_Avatar` (initial letter on a gradient) is
@@ -61,7 +61,7 @@ class _StubFcmRepo implements FcmTokenRepository {
 ///      shipping in v1.0) must survive 200% type without overflow.
 ///
 /// The full per-tier-notification-toggle dialog cluster lives on a
-/// separate v1.5 branch and isn't present here — when that lands the
+/// separate v1.5 branch and isn't present here - when that lands the
 /// tier toggle widget gets its own a11y test under
 /// `notifications/presentation/a11y/`.
 
@@ -116,7 +116,7 @@ Future<void> _pumpSettings(
   // Drain async streams + initial frames without pumpAndSettle. The
   // theme-mode controller, current-user stream, and biometric capability
   // future all need to resolve, but pumpAndSettle can spin indefinitely
-  // if a layout exception is pending at 200% type — three explicit
+  // if a layout exception is pending at 200% type - three explicit
   // frames cover the realistic warm-up.
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 50));
@@ -124,7 +124,7 @@ Future<void> _pumpSettings(
 }
 
 void main() {
-  group('SettingsScreen — semantics', () {
+  group('SettingsScreen - semantics', () {
     testWidgets(
       'account tile surfaces the email (display-name editing removed)',
       (tester) async {
@@ -147,7 +147,7 @@ void main() {
       // view before asserting.
       await tester.scrollUntilVisible(find.text('Sign out'), 100);
 
-      // ListTile composes the title into its own semantics — verify
+      // ListTile composes the title into its own semantics - verify
       // the destructive action surfaces with the correct label
       // (capitalised "Sign out") rather than just the trailing icon.
       // The Settings screen contains several ListTiles, so we find the
@@ -167,16 +167,16 @@ void main() {
     });
   });
 
-  group('SettingsScreen — sign-out dialog 200% type', () {
+  group('SettingsScreen - sign-out dialog 200% type', () {
     testWidgets(
       'sign-out confirmation dialog opens without RenderFlex overflow at 200%',
       (tester) async {
-        // Use a slightly larger surface than the other a11y tests — the
+        // Use a slightly larger surface than the other a11y tests - the
         // sign-out dialog at 200% type can overrun a 360-wide phone
         // because the buttons sit on a Row and Material's AlertDialog
         // does not yet have `scrollable` set (it's a short dialog, just
         // two-sentence content; not the same surface as the disclaimer).
-        // We snapshot the layout on a 480x800 viewport — still phone-class
+        // We snapshot the layout on a 480x800 viewport - still phone-class
         // but enough headroom for the two-button action row.
         await _pumpSettings(
           tester,
@@ -211,7 +211,7 @@ void main() {
               'Sign-out AlertDialog must not throw a layout exception at '
               '200% type. Got: $exception',
         );
-        // Sanity — if the tap landed and the dialog opened, both
+        // Sanity - if the tap landed and the dialog opened, both
         // actions should be reachable. If the scroll didn't bring the
         // tile fully on-screen we accept skipping the dialog check;
         // the no-overflow guarantee from `takeException()` above is

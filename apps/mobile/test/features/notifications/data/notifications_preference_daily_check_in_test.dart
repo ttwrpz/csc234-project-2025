@@ -3,7 +3,7 @@ import 'package:moodbloom/features/notifications/data/datasources/notifications_
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  group('NotificationsPreferenceDatasource — daily check-in', () {
+  group('NotificationsPreferenceDatasource - daily check-in', () {
     setUp(() => SharedPreferences.setMockInitialValues({}));
 
     Future<NotificationsPreferenceDatasource> build() async {

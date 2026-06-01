@@ -2,13 +2,13 @@ import 'package:core/core.dart';
 
 /// Failure modes for the Tier 1/2 hybrid quote path.
 ///
-/// The dispatcher treats EVERY one of these as "fall back to curated" — the
+/// The dispatcher treats EVERY one of these as "fall back to curated" - the
 /// Safety Filter is fail-closed. The reasons are differentiated only so
 /// logs / analytics can attribute the fallback.
 sealed class QuoteFailure extends Failure {
   const QuoteFailure({required super.message});
 
-  /// The Safety Filter rejected the Gemini-suggested text — disallowed
+  /// The Safety Filter rejected the Gemini-suggested text - disallowed
   /// substring, clinical label, urgency word, or off-script phrasing.
   const factory QuoteFailure.filterReject({required String snippet}) =
       FilterReject;

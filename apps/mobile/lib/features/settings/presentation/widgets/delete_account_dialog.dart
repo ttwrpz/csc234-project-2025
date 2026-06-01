@@ -28,7 +28,7 @@ class DeleteAccountDialog extends ConsumerStatefulWidget {
 
   /// Helper that opens the dialog from a button tap. Returns `true` if
   /// deletion completed; `false` (or `null`) otherwise. Callers should
-  /// generally not need to inspect the return value — the auth-state
+  /// generally not need to inspect the return value - the auth-state
   /// stream takes care of the navigation side-effect.
   static Future<bool?> show(BuildContext context) {
     return showDialog<bool>(
@@ -162,7 +162,7 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
       _submitting = true;
       _inlineError = null;
     });
-    // Resolve the email from the currently signed-in user — the
+    // Resolve the email from the currently signed-in user - the
     // PasswordCredentials envelope needs both halves, but we only
     // ask the user for the password (asking them to retype their own
     // email would be friction without a security gain).
@@ -209,7 +209,7 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
             ),
           );
         } else {
-          // Generic fallback — surface inline so the user can retry.
+          // Generic fallback - surface inline so the user can retry.
           setState(() {
             _submitting = false;
             _inlineError = failure.message;
@@ -219,7 +219,7 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
   }
 
   // Sentinel comparisons via `identical` exploit the `const factory`
-  // contract on AuthFailure — every variant constructed via the
+  // contract on AuthFailure - every variant constructed via the
   // factory is the same instance. Keeps the dialog free of private
   // class imports from the failure module.
   static bool _isWrongPassword(AuthFailure failure) =>

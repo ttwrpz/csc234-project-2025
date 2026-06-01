@@ -40,7 +40,7 @@ void main() {
         );
 
         expect(find.text('What am I looking at?'), findsOneWidget);
-        // Body visible immediately — no expansion tile.
+        // Body visible immediately - no expansion tile.
         expect(find.textContaining('The solid line'), findsOneWidget);
         expect(find.byType(ExpansionTile), findsNothing);
       },

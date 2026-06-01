@@ -29,7 +29,7 @@ void main() {
       await tester.pumpWidget(_wrap(const TokenBalanceChip(balance: 42)));
       // Walk the semantics tree for a node whose merged label exactly
       // matches '42 tokens'. This is what TalkBack / VoiceOver
-      // announce — accessibility users get the same signal as sighted
+      // announce - accessibility users get the same signal as sighted
       // users.
       final handle = tester.ensureSemantics();
       expect(find.bySemanticsLabel('42 tokens'), findsOneWidget);

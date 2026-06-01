@@ -3,10 +3,10 @@ import 'package:core/core.dart';
 /// All failure modes for the Weekly Harvest data layer.
 ///
 /// Sealed so consumers that switch on the variants get exhaustive-switch help
-/// from the analyzer. Extends [Failure] directly — harvest failures are
+/// from the analyzer. Extends [Failure] directly - harvest failures are
 /// conceptually distinct from mood-entity or pattern-engine failures.
 ///
-/// Imports only `package:core/core.dart` — domain-purity rule per CLAUDE.md.
+/// Imports only `package:core/core.dart` - domain-purity rule per CLAUDE.md.
 sealed class HarvestFailure extends Failure {
   const HarvestFailure({required super.message});
 

@@ -34,7 +34,7 @@ sealed class PinVerifyFailure extends Failure {
   const factory PinVerifyFailure.invalidFormat() = _InvalidFormat;
 
   /// Firestore read failed. The user is not held hostage by a transient
-  /// network blip — the UI surfaces a retry affordance.
+  /// network blip - the UI surfaces a retry affordance.
   const factory PinVerifyFailure.storage() = _Storage;
 
   /// Catch-all for unexpected exceptions. Wraps the cause for the

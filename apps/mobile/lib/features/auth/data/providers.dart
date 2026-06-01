@@ -59,7 +59,7 @@ final firebaseAuthDatasourceProvider = Provider<FirebaseAuthDatasource>((ref) {
 /// region as the rest of the project's callables (`asia-southeast1`).
 /// Defined here rather than reusing `features/mood/data/providers.dart`'s
 /// `firebaseFunctionsProvider` because that module already imports from
-/// this one — a cross-import would create a cycle. Tests override this
+/// this one - a cross-import would create a cycle. Tests override this
 /// provider directly with a fake.
 final authFirebaseFunctionsProvider = Provider<FirebaseFunctions>(
   (ref) => FirebaseFunctions.instanceFor(region: 'asia-southeast1'),
@@ -87,7 +87,7 @@ final currentUserStreamProvider = StreamProvider<AppUser?>((ref) {
   return ref.watch(authRepositoryProvider).watchAuthState();
 });
 
-// Use case providers — domain classes themselves are pure Dart; only the
+// Use case providers - domain classes themselves are pure Dart; only the
 // providers (which need flutter_riverpod) live here.
 
 final signInWithEmailUseCaseProvider = Provider<SignInWithEmailUseCase>((ref) {
@@ -134,7 +134,7 @@ final biometricDatasourceProvider = Provider<BiometricDatasource>((ref) {
 });
 
 /// Reads the async [sharedPreferencesProvider] and exposes a synchronous
-/// preference datasource. Throws if read before SharedPreferences is ready —
+/// preference datasource. Throws if read before SharedPreferences is ready -
 /// callers should consume [biometricRepositoryProvider] via
 /// [biometricCapabilityProvider] which is already a `FutureProvider`.
 final biometricPreferenceDatasourceProvider =
@@ -183,7 +183,7 @@ final biometricCapabilityProvider = FutureProvider<BiometricCapability>((ref) {
 /// behaviour).
 ///
 /// Replaces the prior `biometricUnlockedThisSessionProvider` +
-/// `historyUnlockedThisSessionProvider` pair — one cold-boot gate, one
+/// `historyUnlockedThisSessionProvider` pair - one cold-boot gate, one
 /// flag. Whole-app scope means no idle/background timer; the gate fires
 /// once per session and the flag stays set until sign-out.
 ///
@@ -255,7 +255,7 @@ final privacyLockPreferenceDatasourceProvider =
 ///
 /// `main.dart` pre-resolves SharedPreferences and overrides this
 /// notifier with [SeededPrivacyLockEnabledNotifier] so the very first
-/// router redirect pass reads a real value — without the override, the
+/// router redirect pass reads a real value - without the override, the
 /// build() below would read `sharedPreferencesProvider.requireValue`
 /// which throws until the async provider settles, producing a
 /// flash-of-home race on cold boot.
@@ -267,7 +267,7 @@ class PrivacyLockEnabledNotifier extends Notifier<bool> {
 
   /// Persists the new state to SharedPreferences and refreshes the
   /// reactive value. Callers (the Settings switch) should only call
-  /// this once the setup flow has actually completed — the toggle is
+  /// this once the setup flow has actually completed - the toggle is
   /// not the source of truth for "is there a PIN to verify against."
   Future<void> set(bool enabled) async {
     await ref.read(privacyLockPreferenceDatasourceProvider).setEnabled(enabled);
@@ -301,17 +301,17 @@ final privacyLockEnabledProvider =
     );
 
 // ────────────────────────────────────────────────────────────────────────
-// WebAuthn fallback factor — ships DARK behind `kEnableWebauthn` (a
+// WebAuthn fallback factor - ships DARK behind `kEnableWebauthn` (a
 // build-time const in `feature_flags.dart`). When the flag is `false`
 // (the default), every consumer of these providers short-circuits to a
-// hidden / no-op state — the JS-interop datasource is never
+// hidden / no-op state - the JS-interop datasource is never
 // instantiated and the Firestore credential stream is never subscribed.
 
 /// True only when WebAuthn is reachable on the current platform AND the
 /// build-time flag enables the surface. Returns `false` while
-/// `kEnableWebauthn` is `false` — the JS-interop binding is never
+/// `kEnableWebauthn` is `false` - the JS-interop binding is never
 /// instantiated. Flipping the const enables the second clause
-/// (`kIsWeb` — Android/iOS use `local_auth`) as the gating check.
+/// (`kIsWeb` - Android/iOS use `local_auth`) as the gating check.
 final webauthnAvailableProvider = Provider<bool>((_) {
   if (!kEnableWebauthn) return false;
   return kIsWeb;
@@ -371,7 +371,7 @@ final signInWithWebauthnUseCaseProvider = Provider<SignInWithWebauthnUseCase>(
 
 /// Streams the registered credential (or null when none). When
 /// `kEnableWebauthn` is `false`, this provider returns a closed stream
-/// that always emits `null` — the JS-interop binding is never reached
+/// that always emits `null` - the JS-interop binding is never reached
 /// and the Firestore subscription is never opened.
 final webauthnCredentialProvider = StreamProvider<WebauthnCredential?>((ref) {
   if (!kEnableWebauthn) {

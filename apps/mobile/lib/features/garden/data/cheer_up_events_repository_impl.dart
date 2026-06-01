@@ -9,7 +9,7 @@ import 'datasources/cheer_up_events_firestore_datasource.dart';
 /// The cheer-up audit log lives in `users/{uid}/cheerUpEvents/{evtId}`
 /// where `evtId == ${dayUtc}-${reason}`. Two re-evaluations on the same
 /// day collide on this id; the `set` write fails with `already-exists`
-/// in that case and we treat it as success — that IS the idempotent
+/// in that case and we treat it as success - that IS the idempotent
 /// path the CF relies on (one trigger per (uid, day, reason)).
 ///
 /// On `permission-denied` we surface
@@ -64,7 +64,7 @@ class CheerUpEventsRepositoryImpl implements CheerUpEventsRepository {
       return const Ok(null);
     } on FirebaseException catch (e) {
       if (e.code == 'already-exists') {
-        // Idempotent path — the same (uid, day, reason) combo was
+        // Idempotent path - the same (uid, day, reason) combo was
         // already written, the CF already fired (or rate-limited
         // legitimately). Success from the controller's perspective.
         return const Ok(null);

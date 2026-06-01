@@ -8,9 +8,9 @@ import 'package:moodbloom/features/intervention/presentation/controllers/interve
 import 'package:moodbloom/features/intervention/presentation/widgets/intervention_banner.dart';
 import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
-/// Sprint 5 Day 3 a11y sweep — intervention banner (S5-new surface).
+/// Sprint 5 Day 3 a11y sweep - intervention banner (S5-new surface).
 ///
-/// Mirrors the pump-helper pattern from `intervention_banner_test.dart` —
+/// Mirrors the pump-helper pattern from `intervention_banner_test.dart` -
 /// uses a `_SeededController` that overrides build() to a known state so
 /// the test never goes through the real auth + pattern-stream wiring.
 ///
@@ -21,8 +21,8 @@ import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 ///   2. Pending state → the banner body text is reachable in the
 ///      semantics tree (screen readers must see the curated/Gemini
 ///      filtered quote).
-///   3. "I'm okay" opt-out is announced with action context — "I'm okay,
-///      dismiss this reminder" — not the bare verb.
+///   3. "I'm okay" opt-out is announced with action context - "I'm okay,
+///      dismiss this reminder" - not the bare verb.
 ///   4. "Open" CTA announces correctly as a button.
 ///   5. Tier 3 banner uses `colorScheme.errorContainer` (visual
 ///      prominence affordance, complements the semantic label).
@@ -36,7 +36,7 @@ class _SeededController extends InterventionController {
   @override
   InterventionControllerState build() => initial;
 
-  // Stub out the side-effect path — the optOut() call would otherwise
+  // Stub out the side-effect path - the optOut() call would otherwise
   // try to read interventionRepositoryProvider which would crash the
   // ProviderScope here. The a11y tests don't assert call-counts; the
   // existing intervention_banner_test.dart already covers that.
@@ -70,7 +70,7 @@ Future<void> _pumpBanner(
   await tester.binding.setSurfaceSize(surfaceSize);
   addTearDown(() => tester.binding.setSurfaceSize(null));
 
-  // A minimal GoRouter — the banner's "Open" CTA calls `context.goNamed`,
+  // A minimal GoRouter - the banner's "Open" CTA calls `context.goNamed`,
   // which crashes without a router. We register stub destinations for
   // every tier so the test can also exercise navigation if needed.
   final router = GoRouter(
@@ -119,7 +119,7 @@ Future<void> _pumpBanner(
 }
 
 void main() {
-  group('InterventionBanner — semantics visibility', () {
+  group('InterventionBanner - semantics visibility', () {
     testWidgets(
       'Idle state hides the banner entirely (no Material card, no buttons)',
       (tester) async {
@@ -127,20 +127,20 @@ void main() {
         await _pumpBanner(tester, controller: controller);
 
         // The widget itself is still in the tree (the host renders it
-        // every frame), but it must collapse to SizedBox.shrink — no
+        // every frame), but it must collapse to SizedBox.shrink - no
         // visual surface, no Material card, no labels in the semantics
         // tree.
         expect(find.byType(InterventionBanner), findsOneWidget);
         expect(find.text('Open'), findsNothing);
         expect(find.text("I'm okay"), findsNothing);
         // A screen reader visiting the banner subtree should find no
-        // text content — the curated body must not leak from a prior
+        // text content - the curated body must not leak from a prior
         // Pending state's stale render.
         expect(
           find.byType(Dismissible),
           findsNothing,
           reason:
-              'Idle state must not leave a Dismissible behind — its '
+              'Idle state must not leave a Dismissible behind - its '
               'horizontal-swipe gesture would be a hidden opt-out action.',
         );
       },
@@ -161,14 +161,14 @@ void main() {
           find.textContaining('A compassionate quote for tier one'),
           findsOneWidget,
           reason:
-              'Curated dispatch body must be readable by screen readers — '
+              'Curated dispatch body must be readable by screen readers - '
               'a silent banner is worse than no banner.',
         );
       },
     );
   });
 
-  group('InterventionBanner — button semantic labels', () {
+  group('InterventionBanner - button semantic labels', () {
     testWidgets(
       "'I'm okay' opt-out is announced with action context, not the bare verb",
       (tester) async {
@@ -210,7 +210,7 @@ void main() {
     });
   });
 
-  group('InterventionBanner — Tier 3 visual prominence', () {
+  group('InterventionBanner - Tier 3 visual prominence', () {
     testWidgets(
       'Tier 3 banner paints with errorContainer for compassionate prominence',
       (tester) async {
@@ -231,7 +231,7 @@ void main() {
           materials.any((m) => m.color == scheme.errorContainer),
           isTrue,
           reason:
-              'Tier 3 banner must paint with colorScheme.errorContainer — '
+              'Tier 3 banner must paint with colorScheme.errorContainer - '
               'visual affordance complements the semantic label.',
         );
       },
@@ -250,7 +250,7 @@ void main() {
         final materials = tester
             .widgetList<Material>(find.byType(Material))
             .toList();
-        // Tier 1 must NOT use errorContainer — the spec's compassionate
+        // Tier 1 must NOT use errorContainer - the spec's compassionate
         // imperative ("Gentle nudges") demands a quieter visual register.
         expect(
           materials.any((m) => m.color == scheme.errorContainer),
@@ -266,7 +266,7 @@ void main() {
     );
   });
 
-  group('InterventionBanner — 200% type readability', () {
+  group('InterventionBanner - 200% type readability', () {
     testWidgets(
       'pending state renders without RenderFlex overflow at 200% type',
       (tester) async {
@@ -286,11 +286,11 @@ void main() {
           // Wider surface so the two action buttons (Outlined "I'm okay"
           // + Filled "Open") sit on one row at 200% type. The banner
           // truncates body to 2 lines via TextOverflow.ellipsis already
-          // — the test is for the surrounding Row(spaceBetween) layout.
+          // - the test is for the surrounding Row(spaceBetween) layout.
           surfaceSize: const Size(480, 720),
         );
 
-        // Sanity — the banner is still mounted and the CTAs are
+        // Sanity - the banner is still mounted and the CTAs are
         // reachable. The body uses maxLines:2 + ellipsis so the head of
         // the preview should still be on screen.
         expect(find.text('Open'), findsOneWidget);

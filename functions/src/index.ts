@@ -2,7 +2,7 @@
 //
 // Initialises the Firebase Admin SDK exactly once at module load. Without
 // this, `getFirestore()` (used by the rate limiter) throws
-// `"The default Firebase app does not exist"` — firebase-admin v13
+// `"The default Firebase app does not exist"` - firebase-admin v13
 // dropped the implicit auto-initialisation that earlier versions had. The
 // resulting exception is caught by each handler's rate-limit try/catch
 // and surfaced to the client as `code: "internal"`, which manifests as a

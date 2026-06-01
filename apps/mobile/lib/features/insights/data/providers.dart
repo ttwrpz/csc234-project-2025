@@ -12,7 +12,7 @@ import 'insights_repository_impl.dart';
 /// no new Firestore collections are introduced. Tests can fake either
 /// the upstream repos OR this provider directly via `overrideWithValue`.
 
-/// Composed [InsightsRepository] — joins the per-feature mood + pattern
+/// Composed [InsightsRepository] - joins the per-feature mood + pattern
 /// streams into the day-bucketed [DailyInsight] list the chart renders.
 final insightsRepositoryProvider = Provider<InsightsRepository>(
   (ref) => InsightsRepositoryImpl(
@@ -21,7 +21,7 @@ final insightsRepositoryProvider = Provider<InsightsRepository>(
   ),
 );
 
-/// Pure-Dart [LoadInsightsUseCase] — const-ish wrapper so controllers
+/// Pure-Dart [LoadInsightsUseCase] - const-ish wrapper so controllers
 /// depend on a single-method abstraction.
 final loadInsightsUseCaseProvider = Provider<LoadInsightsUseCase>(
   (ref) =>

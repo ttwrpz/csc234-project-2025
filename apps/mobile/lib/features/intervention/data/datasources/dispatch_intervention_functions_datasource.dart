@@ -11,7 +11,7 @@ import '../../../pattern_engine/domain/entities/tier.dart';
 ///
 /// **PII fence:** outbound payload carries only `{ v, tier, dispatchId }`.
 /// Never the quote text, never tokens, never the user's mood text. The
-/// audit-doc body field is intentionally NOT sent — the CF's notification
+/// audit-doc body field is intentionally NOT sent - the CF's notification
 /// payload is module-scope-constant per tier (see `dispatchIntervention.ts`).
 ///
 /// Errors are SWALLOWED at the call site: the in-app banner has already
@@ -27,7 +27,7 @@ abstract class DispatchInterventionFunctionsDatasource {
   /// Fires the FCM dispatch best-effort. Returns the CF's outcome string
   /// on success (`'sent'`, `'opted_out'`, `'rate_limited'`, …). Returns
   /// `null` on any transport-level error so the caller can carry on
-  /// without a typed exception ladder — the in-app banner is the source
+  /// without a typed exception ladder - the in-app banner is the source
   /// of truth, not this call.
   Future<String?> call({
     required Tier tier,
@@ -53,7 +53,7 @@ class DispatchInterventionFunctionsDatasourceImpl
     final callable = _functions.httpsCallable('dispatchIntervention');
     final request = <String, Object?>{
       'v': 1,
-      'tier': tier.name, // 'one' | 'two' | 'three' — matches the CF schema.
+      'tier': tier.name, // 'one' | 'two' | 'three' - matches the CF schema.
       'dispatchId': dispatchId,
       'requestId': ?requestId,
     };

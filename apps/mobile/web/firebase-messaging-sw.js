@@ -3,7 +3,7 @@
 // Registers the messaging SDK so the browser can receive cheer-up pushes
 // when the tab is in the background. The default FCM SDK handler renders
 // the notification from the payload's `notification` block, which is
-// what `sendCheerUpPush` emits — no `onBackgroundMessage` override
+// what `sendCheerUpPush` emits - no `onBackgroundMessage` override
 // needed.
 //
 // The config values mirror `apps/mobile/lib/firebase_options.dart`'s

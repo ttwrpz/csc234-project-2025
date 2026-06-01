@@ -27,19 +27,25 @@ void main() {
       expect(auth.customTokenCalls, ['minted-token']);
     });
 
-    test('ceremony failure → propagates the verify failure, no exchange', () async {
-      final webauthn = FakeWebauthnRepository()
-        ..loginResult = const Err(WebauthnVerifyFailure.userCanceled());
-      final auth = FakeAuthRepository();
-      final useCase = SignInWithWebauthnUseCase(webauthn: webauthn, auth: auth);
+    test(
+      'ceremony failure → propagates the verify failure, no exchange',
+      () async {
+        final webauthn = FakeWebauthnRepository()
+          ..loginResult = const Err(WebauthnVerifyFailure.userCanceled());
+        final auth = FakeAuthRepository();
+        final useCase = SignInWithWebauthnUseCase(
+          webauthn: webauthn,
+          auth: auth,
+        );
 
-      final result = await useCase();
+        final result = await useCase();
 
-      expect(result, isA<Err<void, WebauthnVerifyFailure>>());
-      final failure = (result as Err<void, WebauthnVerifyFailure>).failure;
-      expect(failure.isUserCanceled, isTrue);
-      expect(auth.customTokenCalls, isEmpty);
-    });
+        expect(result, isA<Err<void, WebauthnVerifyFailure>>());
+        final failure = (result as Err<void, WebauthnVerifyFailure>).failure;
+        expect(failure.isUserCanceled, isTrue);
+        expect(auth.customTokenCalls, isEmpty);
+      },
+    );
 
     test('token valid but Firebase exchange fails → network failure', () async {
       final webauthn = FakeWebauthnRepository()

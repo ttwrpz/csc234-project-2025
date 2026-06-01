@@ -115,7 +115,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
   }
 }
 
-/// Just the calendar card — header, weekday row, month grid. Stateless so
+/// Just the calendar card - header, weekday row, month grid. Stateless so
 /// the parent can drive the selection from outside (the wide layout) or
 /// not at all (the phone layout).
 class _CalendarCard extends ConsumerWidget {
@@ -137,12 +137,12 @@ class _CalendarCard extends ConsumerWidget {
   final VoidCallback? onNext;
 
   /// Tapping "Today" jumps back to the current month + selects today.
-  /// `null` when the user is already viewing the current month — the
+  /// `null` when the user is already viewing the current month - the
   /// header hides the chip in that case.
   final VoidCallback? onToday;
 
   /// When non-null, day cells call this *instead of* the
-  /// detail-or-sheet navigation — used by the wide layout to drive the
+  /// detail-or-sheet navigation - used by the wide layout to drive the
   /// side panel without leaving the screen.
   final ValueChanged<DateTime>? onDayTap;
 
@@ -205,7 +205,7 @@ class DayEntriesSheet extends StatelessWidget {
   /// Width threshold above which the day-entries surface renders as a
   /// centered dialog rather than a bottom sheet. Below this the
   /// bottom-sheet ergonomics (thumb-reach, drag-to-dismiss) win; above
-  /// it a dialog is the natural desktop / web affordance — bottom
+  /// it a dialog is the natural desktop / web affordance - bottom
   /// sheets feel pinned-to-the-bottom on a 1440px window.
   ///
   /// 720dp was chosen to match the wide-layout breakpoint already in
@@ -216,7 +216,7 @@ class DayEntriesSheet extends StatelessWidget {
     final mb = Theme.of(context).extension<MbColors>()!;
     final width = MediaQuery.of(context).size.width;
     if (width >= _dialogBreakpoint) {
-      // Desktop / web wide layout — render as a centered dialog so the
+      // Desktop / web wide layout - render as a centered dialog so the
       // mouse-driven dismiss + close button feel native. The same
       // [DayEntriesPanel] body backs both surfaces; only the chrome
       // changes.
@@ -260,7 +260,7 @@ class DayEntriesSheet extends StatelessWidget {
         ),
       );
     }
-    // Narrow layout — keep the bottom sheet (phone-class screen).
+    // Narrow layout - keep the bottom sheet (phone-class screen).
     return showModalBottomSheet<void>(
       context: context,
       showDragHandle: false,
@@ -431,10 +431,7 @@ class _PrimaryEntryBlock extends StatelessWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                MbMoodChip(
-                  mood: entry.mood.mbKind,
-                  intensity: entry.intensity,
-                ),
+                MbMoodChip(mood: entry.mood.mbKind, intensity: entry.intensity),
                 const Spacer(),
                 Text(
                   _formatTime(entry.createdAt),
@@ -569,7 +566,7 @@ class _MonthHeader extends StatelessWidget {
             ),
           ),
         ),
-        // Today chip — only rendered once the user has paged away from
+        // Today chip - only rendered once the user has paged away from
         // the current month, so it never duplicates state already on
         // screen. Sits inline with the chevrons so the layout stays
         // tight on narrow phone widths.
@@ -872,7 +869,7 @@ Color _categoryColor(MoodCategory category) => switch (category) {
   MoodCategory.negativeStrong => MoodBloomColors.moodAngry,
 };
 
-/// Representative `MbMoodKind` for each 3-bucket `MoodCategory` — used by
+/// Representative `MbMoodKind` for each 3-bucket `MoodCategory` - used by
 /// the calendar day cells to pick a small glyph that matches the color
 /// tint. The mapping mirrors `_categoryColor` exactly.
 MbMoodKind _categoryMood(MoodCategory category) => switch (category) {

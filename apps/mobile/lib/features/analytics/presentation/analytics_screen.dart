@@ -19,7 +19,7 @@ import '../../mood/domain/entities/mood_type.dart';
 import '../../mood/presentation/widgets/mood_kind_adapter.dart';
 import 'widgets/pattern_insight_card.dart';
 
-/// Patterns — the unified read-only dashboard, refreshed for v1.6 per
+/// Patterns - the unified read-only dashboard, refreshed for v1.6 per
 /// `PatternsScreen` in `prototype/screens-extra.jsx`.
 ///
 /// v1.5.1 merged the former separate `/analytics` and `/analytics/insights`
@@ -38,7 +38,7 @@ import 'widgets/pattern_insight_card.dart';
 ///   3. Mood-score chart card (eyebrow + confidence + chart + date range)
 ///   4. Disclaimer banner [pre-ack] OR pattern-markers + chart-key [post-ack]
 ///   5. AI PatternInsightCard (Remote Config gated, separate concern)
-///   6. Quick stats row (3 cards — always visible)
+///   6. Quick stats row (3 cards - always visible)
 ///   7. Responsive rail: chart reading guide / tier legend / recent
 ///      triggers (phone = stack, tablet = 2-col, desktop = 3-col)
 class AnalyticsScreen extends ConsumerWidget {

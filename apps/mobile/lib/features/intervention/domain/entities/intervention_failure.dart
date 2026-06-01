@@ -3,7 +3,7 @@ import 'package:core/core.dart';
 /// All failure modes the dispatcher / cooldown guard / record writer can
 /// surface to a caller. Sealed so callers pattern-match exhaustively.
 ///
-/// `cooldown` is informational, not an error — it appears here because the
+/// `cooldown` is informational, not an error - it appears here because the
 /// `DispatchInterventionUseCase` returns `Result<InterventionDispatch,
 /// InterventionFailure>` and a cooldown-blocked dispatch is a non-emission
 /// path the controller needs to render as "no banner this time" rather than
@@ -19,7 +19,7 @@ sealed class InterventionFailure extends Failure {
 
   /// Anchor read failed AND the mirror was also empty. Caller should treat
   /// the gate as closed (do not dispatch) to avoid a re-nag loop on a flapping
-  /// network — Tier 3 is the floor, never a fallback for an unknown state.
+  /// network - Tier 3 is the floor, never a fallback for an unknown state.
   const factory InterventionFailure.anchorReadFailed() = _AnchorReadFailed;
 
   /// Catch-all wrapped exception. The dispatcher never lets a raw exception
@@ -28,7 +28,7 @@ sealed class InterventionFailure extends Failure {
 }
 
 /// Why the cooldown gate blocked. Mirrors `BlockReason` on the guard's
-/// internal sealed result — repeated here so the use-case caller does not
+/// internal sealed result - repeated here so the use-case caller does not
 /// need to import the guard's private types.
 enum CooldownBlock { dailyLimit, cooldown48h, optedOut }
 

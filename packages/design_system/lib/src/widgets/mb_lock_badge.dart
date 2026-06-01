@@ -2,7 +2,7 @@ import 'mb_fonts.dart';
 import 'package:flutter/material.dart';
 
 /// Small lock pill shown on entries past the 24h immutability window. Uses
-/// the Material `Icons.lock_outline` glyph (a control), not the 🔒 emoji —
+/// the Material `Icons.lock_outline` glyph (a control), not the 🔒 emoji -
 /// emoji are reserved for brand mood-emotion glyphs.
 ///
 /// Set [small] for the tighter list-row variant.

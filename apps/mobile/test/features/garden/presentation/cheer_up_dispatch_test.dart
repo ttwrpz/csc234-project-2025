@@ -154,7 +154,7 @@ void main() {
         // guarantees no double-fire even if the listen rebuilds.
         expect(stateRepo.writeLastCalls, 1);
         expect(stateRepo.writeFirstIfNullCalls, 1);
-        // 5.5b — event-doc create dispatched alongside the anchors.
+        // 5.5b - event-doc create dispatched alongside the anchors.
         expect(eventsRepo.calls, hasLength(1));
         expect(eventsRepo.calls.single.reason, '5_of_7_negative');
       },

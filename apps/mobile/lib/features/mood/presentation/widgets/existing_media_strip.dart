@@ -9,7 +9,7 @@ import '../../../../app/providers.dart';
 /// circular ✕ to drop the gs:// URI from the draft's `mediaRefs`.
 ///
 /// Lives in the mood feature (not history) because removal mutates the
-/// log-mood draft state — keeping it here means the screen owns its
+/// log-mood draft state - keeping it here means the screen owns its
 /// own attachment lifecycle.
 class ExistingMediaStrip extends ConsumerWidget {
   const ExistingMediaStrip({
@@ -128,7 +128,7 @@ class _Tile extends ConsumerWidget {
 
 /// Cache of gs:// → download URL. Same shape as the entry-detail
 /// version; kept private here so each feature owns its own provider
-/// (different lifecycles — the edit-mode strip can be torn down at any
+/// (different lifecycles - the edit-mode strip can be torn down at any
 /// moment without affecting cached entries on the detail screen).
 final _urlProvider = FutureProvider.family<String, String>((ref, gsUri) async {
   final storage = ref.watch(firebaseStorageProvider);

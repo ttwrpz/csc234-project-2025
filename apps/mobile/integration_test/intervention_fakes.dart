@@ -16,7 +16,7 @@ import 'package:moodbloom/features/notifications/domain/notifications_settings.d
 ///
 /// These re-use the SAME shape as the controller unit tests in
 /// `apps/mobile/test/features/intervention/presentation/controllers/
-/// intervention_controller_test.dart` — recording fakes (hand-written,
+/// intervention_controller_test.dart` - recording fakes (hand-written,
 /// no `mocktail`) so the test can assert call counts + the captured
 /// arguments. The codebase does not depend on `mocktail` so we cannot
 /// use `verifyNever` directly; the integration-level TC-40 re-assertion
@@ -30,7 +30,7 @@ import 'package:moodbloom/features/notifications/domain/notifications_settings.d
 /// [requestSuggestion]. The integration test asserts
 /// `aiRepo.calls.isEmpty` after a Tier 3 emission settles, which is
 /// the same invariant the unit test in
-/// `tiered_intervention_dispatcher_test.dart` already covers — but
+/// `tiered_intervention_dispatcher_test.dart` already covers - but
 /// re-asserted here at the integration level so a future regression
 /// that swaps the dispatcher's tier-3 arm for a hybrid path would fail
 /// BOTH the unit and the integration suite.
@@ -164,7 +164,7 @@ class FakeFcmTokenRepository implements FcmTokenRepository {
 }
 
 /// Convenience constructor for the "every tier on" notification
-/// settings — the default rig for both integration tests.
+/// settings - the default rig for both integration tests.
 NotificationsSettings allTiersOnSettings() => const NotificationsSettings(
   cheerUpEnabled: true,
   tier1Enabled: true,

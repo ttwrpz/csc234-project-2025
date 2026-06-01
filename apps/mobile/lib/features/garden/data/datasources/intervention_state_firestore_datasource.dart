@@ -49,7 +49,7 @@ class InterventionStateFirestoreDatasource {
     }, SetOptions(merge: true));
   }
 
-  /// Transactional conditional write — sets `firstTriggeredAt` only when
+  /// Transactional conditional write - sets `firstTriggeredAt` only when
   /// the persisted value is `null`. Race-free across multiple devices.
   /// Returns the value that ended up persisted.
   Future<DateTime?> writeFirstTriggeredAtIfNull(

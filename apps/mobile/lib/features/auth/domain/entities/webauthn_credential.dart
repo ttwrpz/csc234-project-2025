@@ -7,7 +7,7 @@ part 'webauthn_credential.g.dart';
 /// (ADR-0014 Decision C).
 ///
 /// Stored under `users/{uid}/webauthn/{credentialId}` and surfaced to the
-/// Privacy UI for the "Security key registered — last used …" status
+/// Privacy UI for the "Security key registered - last used …" status
 /// tile. The full credential doc on Firestore carries additional
 /// server-managed fields (`publicKeyBase64`, `counter`, `aaguid`,
 /// `transports`) that the client never needs; this projection includes

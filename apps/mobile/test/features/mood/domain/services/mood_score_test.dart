@@ -3,7 +3,7 @@ import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
 import 'package:moodbloom/features/mood/domain/services/mood_score.dart';
 
 void main() {
-  group('computeMoodScore — spec §2.1 examples', () {
+  group('computeMoodScore - spec §2.1 examples', () {
     test('happy @ intensity 4 → +0.8, sign +1', () {
       final score = computeMoodScore(MoodType.happy, 4);
       expect(score.value, closeTo(0.8, 1e-9));
@@ -33,7 +33,7 @@ void main() {
     });
   });
 
-  group('computeMoodScore — okay-flip regression (ADR-0010)', () {
+  group('computeMoodScore - okay-flip regression (ADR-0010)', () {
     test('okay @ intensity 1 → +0.2, sign +1 (was -0.2 before the flip)', () {
       final score = computeMoodScore(MoodType.okay, 1);
       expect(score.value, closeTo(0.2, 1e-9));

@@ -1,6 +1,6 @@
-# Sprint 5 — Cross-Platform + Performance Runbook (Day 4)
+# Sprint 5 - Cross-Platform + Performance Runbook (Day 4)
 
-**Owner:** Theerawat (orchestrator) — run locally before v1.5 tag.
+**Owner:** Theerawat (orchestrator) - run locally before v1.5 tag.
 **Audit head:** `f38408c1`.
 **Prereqs:** Android emulator (Pixel 6 API 34) booted; Chrome stable installed; `flutter doctor` shows no missing platforms.
 
@@ -24,7 +24,7 @@ flutter test       # confirm everything still passes
 
 The cross-platform run is most meaningful against the **integration branch** so screenshots include the skin system. If short on time, run against `feat/s5-d3-a11y-new-surfaces` and screenshot the skin system separately from its own branch.
 
-## Part 1 — Cross-platform integration tests
+## Part 1 - Cross-platform integration tests
 
 ### Android emulator
 
@@ -43,7 +43,7 @@ flutter test integration_test\ -d emulator-5554
 
 Expected: all 18 integration tests in `intervention_tier_1_2_test.dart`, `intervention_tier_3_test.dart`, `auth_smoke_test.dart`, `mood_log_smoke_test.dart`, `ai_override_test.dart`, `harvest_cycle_test.dart` pass.
 
-**TC-40 hard assertion:** `intervention_tier_3_test.dart` asserts `aiRepo.calls.isEmpty` after a Tier 3 dispatch. If this fails on Android, **block the v1.5 tag** — ADR-0012 invariant violated.
+**TC-40 hard assertion:** `intervention_tier_3_test.dart` asserts `aiRepo.calls.isEmpty` after a Tier 3 dispatch. If this fails on Android, **block the v1.5 tag** - ADR-0012 invariant violated.
 
 If `flutter drive` syntax is preferred (existing convention from `auth_flow_test.dart` et al):
 
@@ -77,20 +77,20 @@ If integration tests run successfully on Chrome, repeat for all 6 integration te
 
 For each test target (Android emulator + Chrome web):
 
-1. App home (Garden) — light theme + dark theme + each atmosphere (sunny / calm / light-rain / storm).
-2. Log Mood — pick joy intensity 4, attach a photo.
-3. History — list view + calendar view.
-4. Insights — pre-ack dialog (first view) + post-ack chart with seeded 14d data.
-5. Settings — preferences zone showing 3 tier toggles.
+1. App home (Garden) - light theme + dark theme + each atmosphere (sunny / calm / light-rain / storm).
+2. Log Mood - pick joy intensity 4, attach a photo.
+3. History - list view + calendar view.
+4. Insights - pre-ack dialog (first view) + post-ack chart with seeded 14d data.
+5. Settings - preferences zone showing 3 tier toggles.
 6. Account → Delete account → both dialog steps.
-7. Intervention banner (Tier 1) — Open → BreathingScreen mid-cycle.
+7. Intervention banner (Tier 1) - Open → BreathingScreen mid-cycle.
 8. Intervention banner (Tier 2) → JournalingPromptScreen.
 9. Intervention banner (Tier 3) → CrisisResourcesScreen with Hotline 1323 tile.
 10. Skin system: SkinModalSheet with one locked + one unlocked skin.
 
 Save screenshots to `docs/test-reports/screenshots/v1.5/android/` and `.../chrome/`. Naming: `<screen>-<theme>-<atmosphere>.png` (e.g. `garden-light-storm.png`).
 
-## Part 2 — Performance profile
+## Part 2 - Performance profile
 
 ### Cold start measurement
 
@@ -102,9 +102,9 @@ flutter run --profile --trace-startup -d emulator-5554
 
 Open `apps\mobile\build\start_up_info.json`. The fields to extract:
 
-- `timeToFirstFrameMicros` — first frame to be rendered.
-- `timeToFrameworkInitMicros` — Flutter engine ready.
-- `timeAfterFrameworkInitMicros` — time from framework-ready to first frame.
+- `timeToFirstFrameMicros` - first frame to be rendered.
+- `timeToFrameworkInitMicros` - Flutter engine ready.
+- `timeAfterFrameworkInitMicros` - time from framework-ready to first frame.
 
 **CLAUDE.md target:** `timeToFirstFrameMicros < 2_000_000` (2 seconds) on mid-range Android. Pixel 6 emulator is faster than mid-range; aim for < 1.5s here so a real mid-range device has headroom.
 
@@ -127,7 +127,7 @@ The frame timeline is saved as `apps\mobile\build\<timestamp>.timeline.json`. Op
 
 - **Median frame time < 16.7 ms** (60fps target).
 - **No frames over 33.4 ms** (sub-30fps jank).
-- **P-L01 follow-up** — check `breathing_screen.dart`'s `AnimatedBuilder` rebuild cost. If the breathing-circle frame budget exceeds 8ms, file the split-AnimatedBuilder fix from `sprint-5-perf-static-review.md`.
+- **P-L01 follow-up** - check `breathing_screen.dart`'s `AnimatedBuilder` rebuild cost. If the breathing-circle frame budget exceeds 8ms, file the split-AnimatedBuilder fix from `sprint-5-perf-static-review.md`.
 
 ### Memory growth (50-entry harvest cycle)
 
@@ -146,12 +146,12 @@ flutter run --profile -d emulator-5554
 
 Compare the three snapshots. The harvest cycle should:
 - Reduce live entry references (the archived week's `MoodEntry` instances should be eligible for GC).
-- Not accumulate `_LatestCombiner` instances from `InsightsRepositoryImpl` (the rxdart-replacement combinator the Insights agent built — verify it disposes correctly on widget unmount).
-- Not retain canceled `StreamSubscription`s — check the intervention controller's `_patternSub` is cancelled on auth-state changes.
+- Not accumulate `_LatestCombiner` instances from `InsightsRepositoryImpl` (the rxdart-replacement combinator the Insights agent built - verify it disposes correctly on widget unmount).
+- Not retain canceled `StreamSubscription`s - check the intervention controller's `_patternSub` is cancelled on auth-state changes.
 
 If you see steady memory growth across 3 harvest cycles, file a v1.6 leak finding.
 
-## Part 3 — Manual cross-platform QA (no test framework)
+## Part 3 - Manual cross-platform QA (no test framework)
 
 For each platform (Android emulator, Chrome desktop, Chrome on Android), run the **v1.5 demo script** end-to-end:
 
@@ -175,7 +175,7 @@ For each platform (Android emulator, Chrome desktop, Chrome on Android), run the
 
 Document each step in the Audit Report with a screenshot. Any step that fails on either platform is a v1.5 blocker.
 
-## Part 4 — Final smoke pass (Day 5 morning)
+## Part 4 - Final smoke pass (Day 5 morning)
 
 Before tagging `v1.5`:
 
@@ -195,7 +195,7 @@ Then run the v1.5 demo script one final time on Android emulator. If everything 
 cd C:\Users\user\Desktop\FlutterProjects\csc234-project-2025
 git switch main
 git merge --no-ff feat/s5-d4-integration   # or whichever branch is the v1.5 head
-git tag -a v1.5 -m "Sprint 5 — Tiered Intervention + Quote Library + Disclaimer + Final QA"
+git tag -a v1.5 -m "Sprint 5 - Tiered Intervention + Quote Library + Disclaimer + Final QA"
 git push origin main --tags
 ```
 

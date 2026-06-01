@@ -1,23 +1,23 @@
-// wipeUserData — Cloud Function tests covering the Sprint 5 Day 2 audit
+// wipeUserData - Cloud Function tests covering the Sprint 5 Day 2 audit
 // findings (R-H01 Storage cascade, R-M01 rate-limit cleanup, R-M02
 // idempotency contract, plus the PII canary on structured logs).
 //
 // Coverage:
-//   1. R-H01 — Storage canary. Seed a fake bucket with
+//   1. R-H01 - Storage canary. Seed a fake bucket with
 //      `users/test-uid/media/canary.jpg`; assert deleteFiles({prefix:
 //      'users/test-uid/media/'}) is invoked exactly once and that the
 //      structured log line includes only counts (never the object name).
-//   2. R-M01 — rate-limit-doc cleanup. Assert all four collection
+//   2. R-M01 - rate-limit-doc cleanup. Assert all four collection
 //      delete()s are invoked, including the case where one is
 //      already-not-found (admin SDK delete is idempotent).
-//   3. R-M02 — idempotency flag. First invocation returns
+//   3. R-M02 - idempotency flag. First invocation returns
 //      {alreadyDeleted: false, deleted: {...}}; second invocation on a
 //      cleaned state (no profile doc + empty moods) returns
 //      {alreadyDeleted: true} without doing any work.
-//   4. PII canary — across every logger call, Storage object names never
+//   4. PII canary - across every logger call, Storage object names never
 //      appear in the structured-log payload.
 //
-// R-M03 (runtime options — timeoutSeconds, memory, enforceAppCheck) is
+// R-M03 (runtime options - timeoutSeconds, memory, enforceAppCheck) is
 // configuration, not behaviour. The firebase-functions v2 onCall builder
 // stores the options object on the handler but does not expose a stable
 // public type for assertion, so we skip a runtime test here. The config
@@ -265,7 +265,7 @@ function seedFullAccount(uid: string): void {
   });
   docStore.set(`users/${uid}/moods/m1`, { mood: 'sad', intensity: 4 });
   docStore.set(`users/${uid}/cooldowns/tier-1`, { lastDispatchedAt: 0 });
-  // Rate-limit docs — note the dot in 'rateLimits.cheerUp' is a literal
+  // Rate-limit docs - note the dot in 'rateLimits.cheerUp' is a literal
   // segment in our flat-key fake (matches the production usage where the
   // doc path is `rateLimits.cheerUp/{uid}`).
   docStore.set(`rateLimits/${uid}`, { count: 3 });
@@ -336,7 +336,7 @@ describe('wipeUserData handler', () => {
         const payload = warn?.payload as Record<string, unknown>;
         expect(payload['uid']).toBe(uid);
         expect(payload['errorName']).toBe('Error');
-        // Never leak the message body or stack — only event tag + uid +
+        // Never leak the message body or stack - only event tag + uid +
         // errorName allowed.
         expect(Object.keys(payload).sort()).toEqual(
           ['errorName', 'event', 'uid'].sort(),
@@ -344,7 +344,7 @@ describe('wipeUserData handler', () => {
       },
     );
 
-    test('PII canary — Storage object names never appear in any log payload', async () => {
+    test('PII canary - Storage object names never appear in any log payload', async () => {
       const uid = 'test-uid';
       seedFullAccount(uid);
       const canaryName = 'super-secret-mood-photo-2026-05-13.jpg';
@@ -371,7 +371,7 @@ describe('wipeUserData handler', () => {
 
         const out = await handleWipeUserData(call(uid) as never);
 
-        // Five collections — one per CF (analyzeMoodText / analyzePatterns
+        // Five collections - one per CF (analyzeMoodText / analyzePatterns
         // / sendCheerUpPush / suggestQuote) plus `rateLimits.webauthn`
         // added by ADR-0014 for the four `webauthn*` callables.
         expect(out).toMatchObject({
@@ -395,14 +395,14 @@ describe('wipeUserData handler', () => {
         seedFullAccount(uid);
         // Pretend one of the four was already cleaned (TTL reaped it).
         docStore.delete(`rateLimits.cheerUp/${uid}`);
-        // And one throws on delete (e.g. transient Firestore error) —
+        // And one throws on delete (e.g. transient Firestore error) -
         // the cascade should still return ok.
         deleteShouldThrow.add(`rateLimits.suggestQuote/${uid}`);
 
         const out = await handleWipeUserData(call(uid) as never);
 
         // Two definitely deleted; one was already-missing (counted as
-        // success in the fake — admin SDK treats not-found as success);
+        // success in the fake - admin SDK treats not-found as success);
         // one threw and was suppressed.
         expect(out).toMatchObject({ ok: true, alreadyDeleted: false });
         const outDone = out as Extract<typeof out, { alreadyDeleted: false }>;
@@ -436,7 +436,7 @@ describe('wipeUserData handler', () => {
       'second invocation on cleaned state returns alreadyDeleted: true with NO work',
       async () => {
         const uid = 'test-uid';
-        // No profile doc, no moods — simulate the post-first-run state.
+        // No profile doc, no moods - simulate the post-first-run state.
         // Don't even seed media/rate-limit; the idempotency check should
         // short-circuit before touching Storage.
 
@@ -461,7 +461,7 @@ describe('wipeUserData handler', () => {
       'second invocation with leftover moods proceeds (does NOT short-circuit)',
       async () => {
         const uid = 'test-uid';
-        // No profile doc — but a stale mood survived the first run.
+        // No profile doc - but a stale mood survived the first run.
         docStore.set(`users/${uid}/moods/m-stale`, { mood: 'sad' });
 
         const out = await handleWipeUserData(call(uid) as never);
@@ -502,13 +502,13 @@ describe('wipeUserData handler', () => {
   });
 
   // -------------------------------------------------------------------------
-  // PII discipline (broader — confirms nothing sensitive leaks anywhere).
+  // PII discipline (broader - confirms nothing sensitive leaks anywhere).
   // -------------------------------------------------------------------------
   describe('PII canary on logs', () => {
     test('no doc-body field appears in any log payload', async () => {
       const uid = 'test-uid';
       seedFullAccount(uid);
-      // Plant a canary value in a doc body — should never leak to logs.
+      // Plant a canary value in a doc body - should never leak to logs.
       docStore.set(`users/${uid}/moods/m1`, {
         mood: 'sad',
         text: 'PII-CANARY-MOOD-TEXT-XYZ',

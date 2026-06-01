@@ -14,7 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// In-memory fake of [InterventionStateFirestoreDatasource]. Records every
 /// call. Configurable to throw on the next invocation of any method.
 ///
-/// We deliberately do NOT use `mockito` here — the call surface is small
+/// We deliberately do NOT use `mockito` here - the call surface is small
 /// (4 methods, 4 call counters) and a hand-rolled fake stays readable.
 /// Mirrors the existing `_FakeMoodFirestoreDatasource` pattern.
 class _FakeDatasource implements InterventionStateFirestoreDatasource {

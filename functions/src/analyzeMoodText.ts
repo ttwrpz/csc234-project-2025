@@ -72,13 +72,13 @@ function makeError(
 }
 
 /**
- * Core handler — exported for tests so they can call it without going through
+ * Core handler - exported for tests so they can call it without going through
  * `firebase-functions-test`'s wrap layer if desired.
  */
 export async function handleAnalyzeMoodText(
   request: CallableRequest<unknown>,
 ): Promise<AnalyzeMoodTextResponse> {
-  // 1. Auth check. Throw, do NOT echo a requestId — caller is unauthenticated
+  // 1. Auth check. Throw, do NOT echo a requestId - caller is unauthenticated
   // and we have no trustworthy correlation id at this point.
   if (!request.auth?.uid) {
     throw new HttpsError('unauthenticated', 'Authentication required.');
@@ -103,7 +103,7 @@ export async function handleAnalyzeMoodText(
   }
 
   // 3. Length cap. (The Zod schema also enforces 1..500 after trim, so this
-  // branch is double-defensive — kept explicit.)
+  // branch is double-defensive - kept explicit.)
   const text = parsed.text;
   if (text.length < 1 || text.length > 500) {
     logger.info({
@@ -233,7 +233,7 @@ export async function handleAnalyzeMoodText(
   const clamped = confidence !== originalConfidence;
 
   // Intensity: clamp to [1,5]. Default to 3 (neutral) when the
-  // model omits it — older deployments may not have been instructed
+  // model omits it - older deployments may not have been instructed
   // to emit `intensity`, and we'd rather surface a neutral default
   // than fail the whole call. Round to int so the client's slider
   // (1..5 step 1) lands on a valid stop.

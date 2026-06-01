@@ -7,7 +7,7 @@ import '../entities/weekly_garden.dart';
 /// Computes a [WeeklySummary] from a week's entries + per-day Garden
 /// Health history.
 ///
-/// Pure-Dart, no I/O. Stateless — instantiated as a const value. The
+/// Pure-Dart, no I/O. Stateless - instantiated as a const value. The
 /// archive use case calls this once per harvest; tests can also exercise
 /// the math standalone.
 ///
@@ -16,7 +16,7 @@ import '../entities/weekly_garden.dart';
 /// archive use case rejects empty weeks before this point, so the zero
 /// fallback only matters for unit tests).
 ///
-/// `moodCounts` is the per-emotion histogram across the week — the
+/// `moodCounts` is the per-emotion histogram across the week - the
 /// presentation layer reads the top-3 keys from this map.
 ///
 /// `endingPlantTier` is `PlantTier.fromHealth(dailyHealthHistory.last)`,
@@ -24,7 +24,7 @@ import '../entities/weekly_garden.dart';
 /// would never reach `endingPlantTier`, but the fallback keeps the
 /// function total).
 ///
-/// `triggeredTierCount` is passed through verbatim — the caller pulls
+/// `triggeredTierCount` is passed through verbatim - the caller pulls
 /// it from `patterns/{date}.triggeredTier != null` over the week, since
 /// the use case has no Firestore handle.
 class ComputeWeeklySummaryUseCase {

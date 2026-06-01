@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/mood_type.dart';
 import 'mood_type_tile.dart';
 
-/// Responsive mood-type picker — 3-column x 2-row grid with the prototype's
+/// Responsive mood-type picker - 3-column x 2-row grid with the prototype's
 /// 1.1:1 aspect ratio (84 dp tall floor). The grid uses `LayoutBuilder` so
 /// it adapts to the parent column width without overflowing on narrow
 /// phones (<360 dp) or stretching on a wide desktop slot.

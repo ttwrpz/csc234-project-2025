@@ -10,7 +10,7 @@ void main() {
 
     test('renders 4-digit year for past century', () {
       final dt = DateTime.utc(999, 12, 31, 23, 59);
-      // Year 999 still pads to 4 digits per the spec — `padLeft(4, "0")`.
+      // Year 999 still pads to 4 digits per the spec - `padLeft(4, "0")`.
       expect(formatDayUtc(dt), '0999-12-31');
     });
 
@@ -20,14 +20,14 @@ void main() {
       expect(formatDayUtc(localPlus10), '2026-05-13');
 
       // 02:00 in UTC+10 (= 16:00 UTC the previous day) drops to the
-      // PREVIOUS UTC date — verifying the .toUtc() conversion lands
+      // PREVIOUS UTC date - verifying the .toUtc() conversion lands
       // before the slice.
       final crossing = DateTime.fromMillisecondsSinceEpoch(
         DateTime.utc(2026, 5, 14, 0, 30).millisecondsSinceEpoch,
         isUtc: false,
       );
       // Just sanity-check the function doesn't crash / returns the
-      // UTC slice — the exact value depends on the host TZ.
+      // UTC slice - the exact value depends on the host TZ.
       expect(formatDayUtc(crossing), matches(r'^\d{4}-\d{2}-\d{2}$'));
     });
   });

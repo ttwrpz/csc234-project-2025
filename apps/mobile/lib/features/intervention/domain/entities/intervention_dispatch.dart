@@ -28,7 +28,7 @@ abstract class InterventionDispatch with _$InterventionDispatch {
     /// Semantic CTA keys for the renderer. Order matches reading order.
     /// Tier 1: `['open_breathing', 'opt_out']`.
     /// Tier 2: `['open_journal', 'opt_out']`.
-    /// Tier 3: `['open_crisis', 'opt_out']` — crisis screen carries the
+    /// Tier 3: `['open_crisis', 'opt_out']` - crisis screen carries the
     /// Hotline 1323 link.
     required List<String> ctas,
 

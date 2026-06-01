@@ -3,7 +3,7 @@ import 'package:moodbloom/features/garden/domain/entities/atmosphere.dart';
 import 'package:moodbloom/features/garden/domain/services/atmosphere.dart';
 
 void main() {
-  group('computeAtmosphere — service-level boundaries', () {
+  group('computeAtmosphere - service-level boundaries', () {
     test('empty list → calmSunny (morning-default neutral)', () {
       // No entries yet today; we render a calm sky rather than rain.
       expect(computeAtmosphere(const []), Atmosphere.calmSunny);

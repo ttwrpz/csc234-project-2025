@@ -58,7 +58,7 @@ class FakeHttpsError extends Error {
 }
 jest.unstable_mockModule('firebase-functions/v2/https', () => ({
   HttpsError: FakeHttpsError,
-  // Pass through to the handler — we exercise handleAnalyzeMoodText directly.
+  // Pass through to the handler - we exercise handleAnalyzeMoodText directly.
   onCall: (_opts: unknown, handler: unknown) => handler,
 }));
 
@@ -243,7 +243,7 @@ function call(uid: string | null, data: unknown): CallableLike {
 }
 
 function uuid(): string {
-  // RFC 4122 v4-shape literal — Zod only needs format, not entropy.
+  // RFC 4122 v4-shape literal - Zod only needs format, not entropy.
   return '00000000-0000-4000-8000-000000000000';
 }
 
@@ -448,7 +448,7 @@ describe('analyzeMoodText handler', () => {
     });
   });
 
-  // 13. PII canary — input contains "PII-CANARY-12345"; assert no logger.* call's
+  // 13. PII canary - input contains "PII-CANARY-12345"; assert no logger.* call's
   //     serialized payload contains the canary.
   test('13. PII canary never appears in any logger payload', async () => {
     const canary = 'PII-CANARY-12345';

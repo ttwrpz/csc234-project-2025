@@ -40,7 +40,7 @@ InterventionState detectPattern(
   DateTime? lastTriggeredAt,
   DateTime? firstTriggeredAt,
 }) {
-  // Cooldown gate first — a recent trigger suppresses re-firing regardless
+  // Cooldown gate first - a recent trigger suppresses re-firing regardless
   // of current pattern.
   if (lastTriggeredAt != null &&
       now.difference(lastTriggeredAt) < const Duration(hours: 48)) {
@@ -86,7 +86,7 @@ InterventionState detectPattern(
     );
   }
 
-  // Rule 2: 3 consecutive heavy-negative days ending today (or yesterday —
+  // Rule 2: 3 consecutive heavy-negative days ending today (or yesterday -
   // we walk back from today and count up to three consecutive heavy days).
   var consecutiveHeavy = 0;
   for (var i = 0; i < 3; i += 1) {

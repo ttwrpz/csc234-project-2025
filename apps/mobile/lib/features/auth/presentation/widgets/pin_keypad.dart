@@ -6,7 +6,7 @@ import '../../domain/entities/pin.dart';
 /// 6-digit numeric keypad. Shared between PIN setup (two-pass entry)
 /// and PIN verify (the History unlock flow).
 ///
-/// State is held internally — the parent receives only the completed
+/// State is held internally - the parent receives only the completed
 /// PIN via [onComplete] once 6 digits are typed. Intermediate progress
 /// is rendered as filled / unfilled dots so the user never sees their
 /// digits echoed (the screen has no `Text` rendering of the secret).
@@ -37,7 +37,7 @@ class PinKeypad extends StatefulWidget {
   /// the keypad after a wrong-PIN / mismatch event.
   final PinKeypadController? controller;
 
-  /// Inline message shown above the keypad — used for mismatch /
+  /// Inline message shown above the keypad - used for mismatch /
   /// "wrong PIN" / "too many tries" copy. Pass null when there is no
   /// error to render.
   final String? errorText;
@@ -124,7 +124,7 @@ class _PinKeypadState extends State<PinKeypad> {
               widget.errorText!,
               style: MbFonts.nunito(
                 fontSize: 13,
-                // Theme-aware destructive-text token — `coralText` is
+                // Theme-aware destructive-text token - `coralText` is
                 // the design-system "destructive text on cream" token
                 // and is not dark-safe, so prefer the MbColors
                 // extension when present.
@@ -277,7 +277,7 @@ class _KeypadButton extends StatelessWidget {
           );
     // Material+InkWell with explicit high-alpha splash/highlight tints
     // so the press effect lands visibly on the cream/navy theme (the
-    // default Material splash is washed out in this palette — same
+    // default Material splash is washed out in this palette - same
     // story as the Settings tiles). A subtle background tile gives the
     // button an obvious "I am a button" affordance.
     return Semantics(

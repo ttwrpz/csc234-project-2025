@@ -51,7 +51,7 @@ void main() {
     dominantEmotion: MoodType.sad,
   );
 
-  group('AIQuoteRepositoryImpl — success path', () {
+  group('AIQuoteRepositoryImpl - success path', () {
     test('200 OK with suggestedText → Ok(rawText)', () async {
       ds.nextResponse = <String, dynamic>{
         'suggestedText': 'Maybe a quiet breath helps.',
@@ -75,7 +75,7 @@ void main() {
     });
   });
 
-  group('AIQuoteRepositoryImpl — datasource exceptions', () {
+  group('AIQuoteRepositoryImpl - datasource exceptions', () {
     test('rate-limit exception → QuoteFailure.network', () async {
       ds.throwOnCall = const SuggestQuoteDatasourceException.rateLimited();
       final result = await repo.requestSuggestion(AiAllowedTier.one, ctx);
@@ -131,7 +131,7 @@ void main() {
     });
   });
 
-  group('AIQuoteRepositoryImpl — outbound PII canary', () {
+  group('AIQuoteRepositoryImpl - outbound PII canary', () {
     test(
       'payload contains ONLY tier, weekId, dailyAvgS, dominantEmotion',
       () async {
@@ -151,7 +151,7 @@ void main() {
           );
         }
 
-        // Explicit deny-list — assert these PII fields are absent.
+        // Explicit deny-list - assert these PII fields are absent.
         expect(call.containsKey('userId'), isFalse);
         expect(call.containsKey('email'), isFalse);
         expect(call.containsKey('moodText'), isFalse);

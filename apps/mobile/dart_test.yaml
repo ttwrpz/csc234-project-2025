@@ -1,6 +1,6 @@
 # Tag declarations consumed by `flutter test --tags=<tag>`.
 #
-# `golden` — golden-image tests. Run separately in CI so font-rendering
+# `golden` - golden-image tests. Run separately in CI so font-rendering
 # failures are distinguishable from logic failures, and so non-Linux
 # contributors can skip them locally (sub-pixel diffs across OSes are
 # noisy). Each golden test file declares `@Tags(['golden'])` at the top.

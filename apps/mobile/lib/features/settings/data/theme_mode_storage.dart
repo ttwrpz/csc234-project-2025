@@ -5,7 +5,7 @@ import '../domain/entities/theme_mode_preference.dart';
 /// Thin synchronous wrapper that persists the user's
 /// [ThemeModePreference] choice to SharedPreferences. Takes an
 /// already-resolved [SharedPreferences] instance so the controller can
-/// read/write without awaiting — the eager-resolve happens once in
+/// read/write without awaiting - the eager-resolve happens once in
 /// `main.dart` so the first frame of the app picks up the persisted
 /// preference without a flash-of-light.
 ///
@@ -26,7 +26,7 @@ class ThemeModeStorage {
 
   /// Reads the persisted preference. Defaults to
   /// [ThemeModePreference.system] on first launch and on malformed
-  /// values — the device's own light/dark setting is the most
+  /// values - the device's own light/dark setting is the most
   /// respectful first-touch.
   ThemeModePreference read() {
     switch (_prefs.getString(_key)) {

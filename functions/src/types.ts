@@ -116,11 +116,11 @@ export const RATIONALE_WIRE_MAX = 80;
 export const TEXT_MAX = 500;
 
 // ---------------------------------------------------------------------------
-// analyzePatterns — request / response schemas
+// analyzePatterns - request / response schemas
 // ---------------------------------------------------------------------------
 
 /**
- * Request schema for `analyzePatterns`. Strict — rejects unknown keys at the
+ * Request schema for `analyzePatterns`. Strict - rejects unknown keys at the
  * Zod boundary so a buggy refactor cannot accidentally smuggle `text` or
  * `mediaRefs` through the proxy. The schema deliberately has NO `text` field;
  * pattern analysis is computed from numeric mood codes + dates only.

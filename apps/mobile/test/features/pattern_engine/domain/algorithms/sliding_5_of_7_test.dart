@@ -14,7 +14,7 @@ DailyScore _day(DateTime when, double avgScore) =>
 DateTime _ago(int days) => localMidnight(_now).subtract(Duration(days: days));
 
 void main() {
-  group('slidingNegCount — degenerate inputs', () {
+  group('slidingNegCount - degenerate inputs', () {
     test('empty history → 0', () {
       expect(slidingNegCount(const [], now: _now), 0);
     });
@@ -30,7 +30,7 @@ void main() {
     });
   });
 
-  group('slidingNegCount — TC-25 (5 of 7) and neighbouring patterns', () {
+  group('slidingNegCount - TC-25 (5 of 7) and neighbouring patterns', () {
     test('TC-25: 5 negative + 2 positive → 5 (caller fires Tier 2)', () {
       final history = [
         _day(_ago(0), -0.4),
@@ -45,7 +45,7 @@ void main() {
     });
 
     test('5 negative + 2 empty days → 5 (empty days do not count)', () {
-      // Days 5 and 6 ago have NO DailyScore — they are empty. The predicate
+      // Days 5 and 6 ago have NO DailyScore - they are empty. The predicate
       // is calendar-day based: empty days contribute 0, not negative.
       final history = [
         _day(_ago(0), -0.4),
@@ -57,7 +57,7 @@ void main() {
       expect(slidingNegCount(history, now: _now), 5);
     });
 
-    test('4 negative + 3 empty days → 4 (NOT 7 — empty ≠ negative)', () {
+    test('4 negative + 3 empty days → 4 (NOT 7 - empty ≠ negative)', () {
       // Architect's answer to HB-004 open question 1: empty days contribute
       // 0, not "negative because no positive logged." A user who logs only 4
       // negative entries in a 7-day window does NOT trigger Tier 2 simply
@@ -73,13 +73,13 @@ void main() {
     });
   });
 
-  group('slidingNegCount — window boundaries', () {
+  group('slidingNegCount - window boundaries', () {
     test('negative entries from 8+ days ago are ignored (outside window)', () {
       final history = [
         _day(_ago(7), -0.9),
         _day(_ago(8), -0.9),
         _day(_ago(15), -0.9),
-        _day(_ago(0), -0.5), // inside window — counts.
+        _day(_ago(0), -0.5), // inside window - counts.
       ];
       expect(slidingNegCount(history, now: _now), 1);
     });
@@ -96,7 +96,7 @@ void main() {
     });
   });
 
-  group('slidingNegCount — sign boundary', () {
+  group('slidingNegCount - sign boundary', () {
     test('avgScore == 0.0 is NOT negative (strict < 0)', () {
       final history = [
         _day(_ago(0), 0.0),

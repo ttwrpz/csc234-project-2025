@@ -7,12 +7,12 @@ import '../../domain/entities/pattern_result.dart';
 ///
 /// One doc per local-midnight day; `dateId` IS the doc id, formatted
 /// `yyyy-MM-dd`. Same-day re-evaluations overwrite the doc cleanly via
-/// `set(merge: false)` — we don't merge because the orchestrator always
+/// `set(merge: false)` - we don't merge because the orchestrator always
 /// computes the full [PatternResult] from history (never a partial
 /// patch), so a merge would only mask bugs where a field went missing
 /// from a re-eval.
 ///
-/// Uses `PatternResult.toJson()` / `fromJson()` directly — the entity is
+/// Uses `PatternResult.toJson()` / `fromJson()` directly - the entity is
 /// already JSON-serialisable, no separate DTO needed. The Firestore
 /// document shape matches the entity's JSON shape 1:1, which is exactly
 /// the shape the firestore.rules `affectedKeys()` allowlist pins.
@@ -32,7 +32,7 @@ class PatternsFirestoreDatasource {
         .doc(userId)
         .collection('patterns')
         .doc(result.dateId);
-    // `merge: false` — see class doc. Always a complete overwrite.
+    // `merge: false` - see class doc. Always a complete overwrite.
     await ref.set(result.toJson(), SetOptions(merge: false));
   }
 
@@ -55,7 +55,7 @@ class PatternsFirestoreDatasource {
   }
 
   /// Streams every pattern document with id in `[startDateId, endDateId]`
-  /// inclusive — used by the Insights screen for historical reads.
+  /// inclusive - used by the Insights screen for historical reads.
   ///
   /// Firestore document ids are strings, so the inclusive range filter is
   /// `FieldPath.documentId() >= startDateId && <= endDateId`. The dateId

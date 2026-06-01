@@ -7,7 +7,7 @@ import '../controllers/daily_check_in_controller.dart';
 /// plus a "Reminder time" sub-row that opens [showTimePicker]. The time
 /// row is greyed and inert while the toggle is off.
 ///
-/// This is a purely local, self-set nudge to log a mood — distinct from
+/// This is a purely local, self-set nudge to log a mood - distinct from
 /// the FCM-driven "Support reminders" (Tier 3) above it. On enable or time
 /// change the controller requests OS permission and arms a real daily
 /// local notification; on disable it cancels it.

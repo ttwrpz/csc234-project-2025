@@ -66,7 +66,7 @@ class IntensitySlider extends StatelessWidget {
               borderWidth: 3,
               elevation: 2,
             ),
-            // Hide the default divider ticks — we paint our own 4 dp dots
+            // Hide the default divider ticks - we paint our own 4 dp dots
             // on top in `_TickOverlay`.
             tickMarkShape: SliderTickMarkShape.noTickMark,
           ),

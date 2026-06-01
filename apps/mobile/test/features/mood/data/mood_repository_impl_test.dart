@@ -25,7 +25,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Fake Firestore datasource that records every call and can be configured to
 /// throw the next time a method is invoked. Modelled on the duplicate in
-/// `mood_sync_manager_test.dart` — the architect's brief permits copy-paste at
+/// `mood_sync_manager_test.dart` - the architect's brief permits copy-paste at
 /// S3 scope (DRY can come in S4).
 class _FakeMoodFirestoreDatasource implements MoodFirestoreDatasource {
   final List<MoodEntryDto> createCalls = [];
@@ -117,7 +117,7 @@ class _FakeMoodFirestoreDatasource implements MoodFirestoreDatasource {
 
 /// Records `kick()` calls; bootstrap/shutdown are no-ops. The sync manager is a
 /// concrete class (not abstract), so we extend it and override the public
-/// surface — the constructor still requires the real machinery, so we hand it
+/// surface - the constructor still requires the real machinery, so we hand it
 /// the same in-memory database the repo uses to keep state consistent.
 class _FakeMoodSyncManager extends MoodSyncManager {
   _FakeMoodSyncManager({
@@ -136,7 +136,7 @@ class _FakeMoodSyncManager extends MoodSyncManager {
   @override
   void kick() {
     kickCount += 1;
-    // Intentionally do NOT call super.kick() — we don't want the real drainer
+    // Intentionally do NOT call super.kick() - we don't want the real drainer
     // to fire during these unit tests; mood_sync_manager_test covers that.
   }
 
@@ -223,7 +223,7 @@ void main() {
       await connectivity.close();
       await db.close();
     });
-    currentClock = _atHour(12); // 2h after default entry createdAt — non-locked
+    currentClock = _atHour(12); // 2h after default entry createdAt - non-locked
   });
 
   MoodRepositoryImpl buildRepo({bool offlineFirst = true}) {
@@ -239,7 +239,7 @@ void main() {
   }
 
   // -------------------------------------------------------------------------
-  // Offline-first path (default — flag = true)
+  // Offline-first path (default - flag = true)
   // -------------------------------------------------------------------------
 
   group('offline-first path', () {
@@ -294,7 +294,7 @@ void main() {
         // Seed a row first so this is a real update.
         final saved = await buildRepo().save(_entry(id: 'm-up'));
         expect(saved, isA<Ok<MoodEntry, MoodFailure>>());
-        // Drain the queue manually — clear the queue + reset kick counter so the
+        // Drain the queue manually - clear the queue + reset kick counter so the
         // next assertion is clean.
         await queueDao.dequeue((await queueDao.peekNextDue(now: 1 << 60))!.id);
         fakeSync.kickCount = 0;
@@ -416,7 +416,7 @@ void main() {
 
         await Future<void>.delayed(Duration.zero);
 
-        // Direct DAO insert — the repository must surface it.
+        // Direct DAO insert - the repository must surface it.
         await moodDao.upsertFromLocal(
           MoodEntriesCompanion.insert(
             id: 'd1',
@@ -431,7 +431,7 @@ void main() {
           ),
         );
 
-        // Drift's `watch` is async — give it a few microtasks.
+        // Drift's `watch` is async - give it a few microtasks.
         await Future<void>.delayed(const Duration(milliseconds: 20));
 
         final flat = emissions.expand((e) => e).toList();
@@ -553,7 +553,7 @@ void main() {
           (result as Err<void, MoodFailure>).failure.message,
           contains('older than 24h'),
         );
-        // Cloud delete NOT called — guard rejected before the network hop.
+        // Cloud delete NOT called - guard rejected before the network hop.
         expect(fakeRemote.deleteCalls, isEmpty);
       },
     );

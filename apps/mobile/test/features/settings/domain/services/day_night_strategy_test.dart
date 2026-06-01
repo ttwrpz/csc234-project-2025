@@ -7,7 +7,7 @@ void main() {
   group('DayNightStrategy', () {
     const strategy = DayNightStrategy();
     // Anchor `now` on a fixed local DateTime so the test is reproducible
-    // regardless of the host machine's time zone — `toLocal()` is a
+    // regardless of the host machine's time zone - `toLocal()` is a
     // no-op on a `DateTime` already constructed in local time.
     DateTime localAt(int hour) => DateTime(2026, 5, 12, hour);
 
@@ -73,7 +73,7 @@ void main() {
         );
       });
 
-      // Boundary cases — the cutoff is inclusive at 07:00 (light) and
+      // Boundary cases - the cutoff is inclusive at 07:00 (light) and
       // exclusive at 19:00 (dark from 19:00 onwards). 06:59 is dark,
       // 18:59 is light.
       test('06:59 local → ThemeMode.dark (just before sunrise cutoff)', () {
@@ -128,7 +128,7 @@ void main() {
     });
 
     group('custom dayStartHour / dayEndHour', () {
-      // Sanity check that the cutoffs are configurable — useful for a
+      // Sanity check that the cutoffs are configurable - useful for a
       // v1.x sunrise/sunset table replacement and for tests in other
       // time zones.
       const earlyDay = DayNightStrategy(dayStartHour: 5, dayEndHour: 21);

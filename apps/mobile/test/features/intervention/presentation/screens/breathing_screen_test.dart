@@ -70,22 +70,19 @@ Widget _makeApp({
   );
   return ProviderScope(
     overrides: [interventionControllerProvider.overrideWith(() => controller)],
-    child: MaterialApp.router(
-      routerConfig: router,
-      theme: buildLightTheme(),
-    ),
+    child: MaterialApp.router(routerConfig: router, theme: buildLightTheme()),
   );
 }
 
 /// Pumps the app, then PUSHes /host/breathing so the breathing screen
 /// sits on the navigation stack with /host below it. Also sets a
 /// 1200×900 surface so the lower-row CTAs ("Done for now" / "I'm okay")
-/// stay inside the viewport — the default 800×600 was clipping the
+/// stay inside the viewport - the default 800×600 was clipping the
 /// right-anchored button.
 Future<void> _pushScreen(WidgetTester tester) async {
   // Force the view's logical size large enough that the bottom button
   // row stays inside the hit-testable region. `tester.view` is the
-  // canonical knob — `setSurfaceSize` alone does NOT propagate to
+  // canonical knob - `setSurfaceSize` alone does NOT propagate to
   // `MediaQuery.of(context).size`; we have to set both physicalSize
   // and devicePixelRatio.
   tester.view.physicalSize = const Size(1200, 1800);
@@ -162,11 +159,11 @@ void main() {
       // by intervention_banner_test.dart.
       await tester.tap(find.text("I'm done"));
       // Avoid pumpAndSettle because the breathing animation repeats
-      // forever — settle never returns.
+      // forever - settle never returns.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(controller.completeCalls, 1);
-      // The host route is on top again — the screen content is gone.
+      // The host route is on top again - the screen content is gone.
       expect(find.text('host-screen'), findsOneWidget);
     });
 
@@ -203,7 +200,7 @@ void main() {
       }
       // The SnackBar emerges via an enter animation that briefly has
       // two render-tree positions (the queue + the active slot), so
-      // accept any positive count here — the contract under test is
+      // accept any positive count here - the contract under test is
       // "completion surfaces the canonical message", not "exactly one
       // mount frame".
       expect(find.textContaining('Well done'), findsAtLeastNWidgets(1));

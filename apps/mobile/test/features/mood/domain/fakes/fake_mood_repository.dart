@@ -4,7 +4,7 @@ import 'package:moodbloom/features/mood/domain/mood_failure.dart';
 import 'package:moodbloom/features/mood/domain/mood_repository.dart';
 
 /// Hand-rolled fake mirroring the auth feature's `FakeAuthRepository` pattern.
-/// We don't use mockito in S2 — keeps generated code count low and tests
+/// We don't use mockito in S2 - keeps generated code count low and tests
 /// readable.
 class FakeMoodRepository implements MoodRepository {
   FakeMoodRepository({this.saveResult, this.findByIdResult});

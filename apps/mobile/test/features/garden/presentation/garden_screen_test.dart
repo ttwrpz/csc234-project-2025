@@ -95,12 +95,15 @@ void main() {
       // locked footer line.
       expect(find.byType(WeeklyScoreCard), findsOneWidget);
       expect(find.text('DAILY SCORE'), findsOneWidget);
-      expect(find.text('Mood is weather. The ecosystem holds.'),
-          findsOneWidget);
+      expect(
+        find.text('Mood is weather. The ecosystem holds.'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('populated week forwards the week entries to the strip',
-        (tester) async {
+    testWidgets('populated week forwards the week entries to the strip', (
+      tester,
+    ) async {
       final today = DateTime.now();
       final entries = [
         for (var i = 0; i < 5; i += 1)
@@ -151,11 +154,7 @@ void main() {
       ];
       final repo = FakeMoodRepository()..streamedEntries = [entries];
 
-      await _pumpGarden(
-        tester,
-        repo: repo,
-        surface: const Size(1280, 900),
-      );
+      await _pumpGarden(tester, repo: repo, surface: const Size(1280, 900));
 
       // Two-column tree contains a Row that holds both the SkyHeader
       // (left) and the recent-moods list (right). The strip mounts

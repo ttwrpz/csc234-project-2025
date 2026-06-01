@@ -18,7 +18,7 @@ import '../../domain/entities/pattern_insight.dart';
 /// row is separated by a 1 px [MbColors.line] divider.
 ///
 /// Hides itself entirely when `ai_pattern_analysis_enabled` Remote Config
-/// is false — both as defence in depth and to power the demo kill-switch
+/// is false - both as defence in depth and to power the demo kill-switch
 /// rehearsal.
 class PatternInsightCard extends ConsumerWidget {
   const PatternInsightCard({super.key});
@@ -27,7 +27,7 @@ class PatternInsightCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Server-side feature flag check. The widget self-hides when off,
     // and the slot in `analytics_screen.dart` ALSO short-circuits at
-    // the insertion site — both layers are intentional.
+    // the insertion site - both layers are intentional.
     final flagOn = ref.watch(featureFlagsProvider).aiPatternAnalysisEnabled;
     if (!flagOn) return const SizedBox.shrink();
 
@@ -60,7 +60,7 @@ class PatternInsightCard extends ConsumerWidget {
 }
 
 /// FutureProvider keyed on the current entries list. The current list is the
-/// natural input — there is no `MoodWindow` parameter here because the card
+/// natural input - there is no `MoodWindow` parameter here because the card
 /// runs over the full history (the server applies its own window).
 final _patternInsightsProvider =
     FutureProvider.family<
@@ -71,7 +71,7 @@ final _patternInsightsProvider =
       return repo.analyzePatterns(history: entries);
     });
 
-/// Hero header bar — larger sparkle badge, brand-gradient backdrop, and
+/// Hero header bar - larger sparkle badge, brand-gradient backdrop, and
 /// a Fraunces "AI Insight" title that distinguishes this personalised
 /// card from the static "View detailed insights" link below it on the
 /// Patterns screen.
@@ -224,7 +224,7 @@ class _DataCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Cap at 3 — anything more crowds the dashboard.
+    // Cap at 3 - anything more crowds the dashboard.
     final visible = insights.take(3).toList();
     return _CardShell(
       child: Column(

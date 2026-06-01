@@ -95,7 +95,7 @@ class MbColors extends ThemeExtension<MbColors> {
     line: Color(0xFFECE7DC),
     text: Color(0xFF1F2937),
     textDim: Color(0xFF6B7280),
-    // Deep coral on cream — ~9.5:1 contrast, AAA.
+    // Deep coral on cream - ~9.5:1 contrast, AAA.
     destructiveText: Color(0xFF7A1E13),
     skyTop: Color(0xFFFFE4D1),
     skyMid: Color(0xFFF5E9DA),
@@ -118,7 +118,7 @@ class MbColors extends ThemeExtension<MbColors> {
     line: Color(0xFF2E3B4B),
     text: Color(0xFFF0F3F7),
     textDim: Color(0xFFA6B2C2),
-    // Bright coral on navy — ~6:1 contrast, AA. The deep coralText
+    // Bright coral on navy - ~6:1 contrast, AA. The deep coralText
     // (#7A1E13) collapses to ~1.7:1 here; this brighter tone keeps the
     // destructive-affordance hue family while staying readable.
     destructiveText: Color(0xFFF4A78C),

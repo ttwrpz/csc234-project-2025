@@ -13,12 +13,12 @@ import 'package:moodbloom/features/notifications/domain/notifications_settings.d
 import 'package:moodbloom/features/notifications/presentation/widgets/tier_toggle_tile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Sprint 5 Day 3 a11y sweep — per-tier notification toggle tile.
+/// Sprint 5 Day 3 a11y sweep - per-tier notification toggle tile.
 ///
 /// Covered:
 ///   1. Each of the 3 tiles announces title + subtitle (the
 ///      compassionate-imperatives copy from CLAUDE.md).
-///   2. Subtitles follow the locked copy strings — "Quiet reminders…",
+///   2. Subtitles follow the locked copy strings - "Quiet reminders…",
 ///      "A nudge to write…", "If something feels heavy…" + the
 ///      Hotline 1323 reference on the Tier 3 tile.
 ///   3. The switch's value is reachable in the semantics tree (the
@@ -113,7 +113,7 @@ Future<void> _pumpThreeTiles(
 }
 
 void main() {
-  group('TierToggleTile — semantics labels (compassionate copy)', () {
+  group('TierToggleTile - semantics labels (compassionate copy)', () {
     testWidgets('Tier 1 announces "Gentle nudges" + compassionate subtitle', (
       tester,
     ) async {
@@ -128,7 +128,7 @@ void main() {
         findsOneWidget,
         reason:
             'Tier 1 subtitle MUST use the locked compassionate-copy '
-            'phrasing — any reword needs copy-reviewer sign-off.',
+            'phrasing - any reword needs copy-reviewer sign-off.',
       );
     });
 
@@ -143,7 +143,7 @@ void main() {
           ),
           findsOneWidget,
           reason:
-              'Tier 2 subtitle MUST use the locked "rainy days" phrasing — '
+              'Tier 2 subtitle MUST use the locked "rainy days" phrasing - '
               'no clinical language per CLAUDE.md copy rules.',
         );
       },
@@ -161,7 +161,7 @@ void main() {
           find.textContaining('Hotline 1323'),
           findsOneWidget,
           reason:
-              'Tier 3 subtitle must name Hotline 1323 explicitly — users '
+              'Tier 3 subtitle must name Hotline 1323 explicitly - users '
               'need to know what they\'re opting out of.',
         );
         expect(
@@ -188,7 +188,7 @@ void main() {
         // SwitchListTile composes the on/off state into a toggleable
         // Semantics node. We don't introspect the raw flag (Material's
         // merge strategy varies by version, per the baseline
-        // notifications_toggle_tile_a11y_test rationale) — instead we
+        // notifications_toggle_tile_a11y_test rationale) - instead we
         // pin the value getter directly.
         expect(tiles[0].value, isTrue);
         expect(tiles[1].value, isTrue);
@@ -197,7 +197,7 @@ void main() {
     );
   });
 
-  group('TierToggleTile — 200% type readability', () {
+  group('TierToggleTile - 200% type readability', () {
     testWidgets(
       '3 stacked tiles render without RenderFlex overflow at 200% type',
       (tester) async {
@@ -208,7 +208,7 @@ void main() {
         );
 
         // Generous height so 3 tiles can stack vertically at 2x type.
-        // The Tier 3 subtitle is the longest — at 200% it wraps to 3
+        // The Tier 3 subtitle is the longest - at 200% it wraps to 3
         // lines on a narrow phone.
         await _pumpThreeTiles(
           tester,
@@ -228,7 +228,7 @@ void main() {
               'Got: $overflows',
         );
 
-        // Sanity — all three titles are still reachable.
+        // Sanity - all three titles are still reachable.
         expect(find.text('Gentle nudges'), findsOneWidget);
         expect(find.text('Journaling check-ins'), findsOneWidget);
         expect(find.text('Support reminders'), findsOneWidget);

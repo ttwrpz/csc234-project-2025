@@ -24,7 +24,7 @@ class _FakeMoodFirestoreDatasource implements MoodFirestoreDatasource {
 
   // One controller per uid drives the listener stream.
   final Map<String, StreamController<List<MoodEntryDto>>> _controllers = {};
-  // Latest emission per uid — replayed to any subscriber that joins after
+  // Latest emission per uid - replayed to any subscriber that joins after
   // the emit. Mirrors the BehaviorSubject pattern; needed because the
   // manager subscribes asynchronously after `await listenerSub.cancel()` on
   // re-bootstrap, which would otherwise miss the test's pre-queued emit.
@@ -261,7 +261,7 @@ void main() {
     );
   }
 
-  group('drain — happy paths', () {
+  group('drain - happy paths', () {
     test('online + queued create → datasource.create called, row dequeued, '
         'mood_entries.sync_state synced', () async {
       // Seed local row + queue mutation.
@@ -340,7 +340,7 @@ void main() {
     );
   });
 
-  group('drain — gating', () {
+  group('drain - gating', () {
     test(
       'offline + queued create → datasource NOT called, row stays',
       () async {
@@ -393,7 +393,7 @@ void main() {
     });
   });
 
-  group('drain — error handling', () {
+  group('drain - error handling', () {
     test('FirebaseException(unavailable) → row stays; attempt_count++; '
         'retry_after in the future', () async {
       await moodDao.upsertFromLocal(_moodRow(id: 'm1'));
@@ -458,7 +458,7 @@ void main() {
         reason: 'permission-denied must NOT bump attempt_count',
       );
       expect(row.lastErrorCode, 'permission-denied');
-      // 1 year out (per kPoisonRetryAfter) — guard with a generous lower bound.
+      // 1 year out (per kPoisonRetryAfter) - guard with a generous lower bound.
       final oneYearMs = 360 * 24 * 60 * 60 * 1000;
       expect(row.retryAfter, greaterThan(currentEpoch + oneYearMs));
     });
@@ -558,12 +558,12 @@ void main() {
     );
 
     test('bootstrap timeout → caught, listener still attaches', () async {
-      // Don't emit at all — `first` will hit the 10s timeout. To keep the
+      // Don't emit at all - `first` will hit the 10s timeout. To keep the
       // test fast, we run bootstrap with no microtask emit and just await.
       //
       // Because the manager uses `_kSeedTimeout = 10s`, we use `fakeAsync`-
       // style time travel via a controller that never emits. We accept the
-      // 10s wait would be slow — instead, shortcut via emitting empty so the
+      // 10s wait would be slow - instead, shortcut via emitting empty so the
       // seed phase completes quickly and the listener still attaches.
       Future<void>.microtask(() => fakeRemote.emit(_userA, const []));
 
@@ -572,7 +572,7 @@ void main() {
       await manager.bootstrap(_userA);
       await _settle();
 
-      // Marker set (empty seed counts as seeded — idempotent).
+      // Marker set (empty seed counts as seeded - idempotent).
       expect(prefs.getBool('mood.seeded.$_userA'), isTrue);
 
       // Listener attached: a later emit reaches Drift.
@@ -639,7 +639,7 @@ void main() {
     });
   });
 
-  group('listener — remote diff', () {
+  group('listener - remote diff', () {
     test('modified DTO → Drift row updated via LWW', () async {
       Future<void>.microtask(
         () => fakeRemote.emit(_userA, [
@@ -725,14 +725,14 @@ void main() {
       expect(await queueDao.length(), 1);
 
       // userA signs in, manager bootstraps + queue drains successfully.
-      // (Skip the userA drain — we want the row to STILL be in queue when
+      // (Skip the userA drain - we want the row to STILL be in queue when
       // userB shows up, so we keep userA offline.)
       final manager = build();
       addTearDown(manager.shutdown);
       Future<void>.microtask(() => fakeRemote.emit(_userA, const []));
       await manager.bootstrap(_userA);
       await _settle();
-      // Still offline — queue row stays.
+      // Still offline - queue row stays.
       expect(await queueDao.length(), 1);
       expect(fakeRemote.createCalls, isEmpty);
 

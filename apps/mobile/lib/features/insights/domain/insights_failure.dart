@@ -3,11 +3,11 @@ import 'package:core/core.dart';
 /// All failure modes the Insights read path can surface.
 ///
 /// Sealed so consumers that switch on the variants get exhaustive-switch
-/// help from the analyzer. Extends [Failure] directly — Insights failures
+/// help from the analyzer. Extends [Failure] directly - Insights failures
 /// are conceptually distinct from mood / pattern / disclaimer failures
 /// even when the underlying cause is the same Firestore exception.
 ///
-/// Imports only `package:core/core.dart` — domain-purity rule per
+/// Imports only `package:core/core.dart` - domain-purity rule per
 /// CLAUDE.md.
 sealed class InsightsFailure extends Failure {
   const InsightsFailure({required super.message});

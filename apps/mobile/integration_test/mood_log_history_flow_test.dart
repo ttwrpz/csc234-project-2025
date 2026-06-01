@@ -17,7 +17,7 @@ import 'fakes.dart';
 /// entry from the history list and asserts the detail screen renders the
 /// mood, intensity, and text we entered.
 ///
-/// Step 2 of WBS 7.3a — pumps real screens (no widget-level shortcuts) so
+/// Step 2 of WBS 7.3a - pumps real screens (no widget-level shortcuts) so
 /// the router transitions, controller resets, and Riverpod stream
 /// plumbing are exercised end-to-end against the same fakes the auth
 /// flow uses.
@@ -94,13 +94,13 @@ void main() {
 
         // 2. Pick the "sad" mood tile. The tile is keyed on its
         // semantics label which mirrors `${type.name}, mood selector
-        // tile` in mood_type_tile.dart — tapping the visible text label
+        // tile` in mood_type_tile.dart - tapping the visible text label
         // is enough because each tile renders the mood name uniquely.
         await tester.tap(find.text('sad'));
         await tester.pumpAndSettle();
 
         // 3. Intensity defaults to 3 (see MoodDraft.empty()), so the
-        // test deliberately does NOT drag the slider — slider drag-
+        // test deliberately does NOT drag the slider - slider drag-
         // distance → integer rounding is brittle in integration_test
         // because the rendered viewport varies by host. We assert the
         // "n / 5" header echoes the expected value instead, which is
@@ -108,7 +108,7 @@ void main() {
         expect(
           find.text('3 / 5'),
           findsOneWidget,
-          reason: 'default intensity is 3 — the header must reflect it',
+          reason: 'default intensity is 3 - the header must reflect it',
         );
 
         // 4. Type the note. The screen has exactly one TextField (the
@@ -127,7 +127,7 @@ void main() {
           findsOneWidget,
           reason:
               'Save bar label flips between "Pick a feeling…" and '
-              '"Save entry" — once a mood is picked, the latter must '
+              '"Save entry" - once a mood is picked, the latter must '
               'be visible',
         );
         await tester.tap(saveButton);
@@ -148,7 +148,7 @@ void main() {
           equals('u-mood'),
           reason:
               'the save use case must thread the signed-in uid through to '
-              'the repository — guards against future "anon save" regressions',
+              'the repository - guards against future "anon save" regressions',
         );
 
         // 7. Save success routes to /history. The list view header
@@ -169,7 +169,7 @@ void main() {
           tile,
           findsOneWidget,
           reason:
-              'the new sad@3 entry must appear in the History list — the '
+              'the new sad@3 entry must appear in the History list - the '
               'IntegrationMoodRepository broadcast stream feeds '
               'myMoodsStreamProvider live, no manual refresh required',
         );
@@ -205,7 +205,7 @@ void main() {
           findsOneWidget,
           reason:
               'detail screen renders the intensity caption '
-              '"intensity <n> / 5" — locked into the prototype copy',
+              '"intensity <n> / 5" - locked into the prototype copy',
         );
         expect(
           find.text('long day'),

@@ -21,9 +21,9 @@ import 'package:moodbloom/features/insights/domain/repositories/insights_reposit
 /// The former `/analytics` + `/analytics/insights` split is now one
 /// surface. These tests pin down the only behaviour that's actually new:
 ///
-///   1. Pre-ack — the inline disclaimer banner renders and the
+///   1. Pre-ack - the inline disclaimer banner renders and the
 ///      "Pattern check-ins" tier-marker section is hidden.
-///   2. Post-ack — the disclaimer banner disappears and the
+///   2. Post-ack - the disclaimer banner disappears and the
 ///      "Pattern check-ins" section renders.
 ///
 /// Existing widget-level tests in `test/features/insights/` cover the

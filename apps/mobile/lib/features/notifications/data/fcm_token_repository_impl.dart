@@ -76,7 +76,7 @@ class FcmTokenRepositoryImpl implements FcmTokenRepository {
       return const Err(NotificationFailure.tokenUnavailable());
     }
     try {
-      // Mirror locally first — the UI may resubscribe before Firestore
+      // Mirror locally first - the UI may resubscribe before Firestore
       // confirms. Best-effort: a failure here does not block the remote
       // write.
       await _preference?.setCheerUpEnabled(enabled);
@@ -139,7 +139,7 @@ class FcmTokenRepositoryImpl implements FcmTokenRepository {
       });
       // Best-effort local mirror sync: the cheer-up shim has been
       // re-derived inside the transaction. Reading the local mirror
-      // back here would require a second Firestore round-trip — skip
+      // back here would require a second Firestore round-trip - skip
       // it. The local mirror only ever drives the cold-start initial
       // value of the cheer-up toggle (which is itself being phased out
       // by the three new tier toggles) so a brief skew is harmless.
@@ -165,7 +165,7 @@ class FcmTokenRepositoryImpl implements FcmTokenRepository {
 }
 
 /// Private discriminator for the shared `_setTier` helper. The numeric
-/// label is used only in log lines — the public API surfaces three
+/// label is used only in log lines - the public API surfaces three
 /// named methods so callers never have to plumb an enum through.
 enum _Tier {
   one('1'),

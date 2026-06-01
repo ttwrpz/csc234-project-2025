@@ -4,7 +4,7 @@
 // `dart.library.js_interop` is NOT available (Android / iOS / desktop).
 // The native build has no `navigator.credentials` to bind, so the only
 // thing to provide is the unsupported-stub that throws
-// [WebauthnUnsupportedException] on every call — the repository maps the
+// [WebauthnUnsupportedException] on every call - the repository maps the
 // throw to a `Failure` and the UI falls back to PIN.
 //
 // The web counterpart lives in `webauthn_browser_datasource_web.dart`

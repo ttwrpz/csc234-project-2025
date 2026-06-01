@@ -37,7 +37,7 @@ abstract class AiSuggestionDto with _$AiSuggestionDto {
       _$AiSuggestionDtoFromJson(json);
 
   /// Convert the wire DTO to the domain entity. Returns `Err(parseError)` on
-  /// any unrecognised mood string (defence-in-depth — the server's
+  /// any unrecognised mood string (defence-in-depth - the server's
   /// `responseSchema` already constrains the enum, but a future schema-drift
   /// scenario would surface here rather than crashing the UI).
   Result<AiSuggestion, AiAnalysisFailure> toEntity() {

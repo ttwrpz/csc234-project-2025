@@ -2,19 +2,19 @@
 //
 // The Dart side calls this CF with an `AiAllowedTier` projection that
 // excludes Tier 3 at the type level. The CF additionally rejects
-// `tier: 3` at the input-schema boundary — belt-and-suspenders per
+// `tier: 3` at the input-schema boundary - belt-and-suspenders per
 // ADR-0012 §"Decision" point 1: Tier 3 messages NEVER call Gemini, EVER.
 //
 // Validation order mirrors `analyzeMoodText.ts`:
 //   1. Auth check (throws `HttpsError('unauthenticated')`).
-//   2. Zod schema validation (strict — unknown keys rejected, tier ∈
+//   2. Zod schema validation (strict - unknown keys rejected, tier ∈
 //      {1, 2}, weekId regex, dailyAvgS ∈ [-1, 1], dominantEmotion ∈
 //      6-mood enum).
 //   3. Rate limit: 10 calls / uid / day. Consumed BEFORE the Gemini
 //      call so an upstream outage cannot DoS the project's Gemini quota.
 //   4. Gemini call with the locked, tier-specific prompt. 30s budget;
 //      `temperature: 0.4`; `maxOutputTokens: 80`.
-//   5. Return `{suggestedText: string}` — NO server-side trim or
+//   5. Return `{suggestedText: string}` - NO server-side trim or
 //      post-process. The Dart-side QuoteSafetyFilter is the second line
 //      of defence and MUST see what Gemini actually said.
 //
@@ -38,7 +38,7 @@ import { consumeToken } from './rateLimit.js';
 import { MOOD_TYPES, MODEL_VERSION } from './types.js';
 
 // ---------------------------------------------------------------------------
-// Locked system prompt — top-of-file `const`, NEVER from Remote Config.
+// Locked system prompt - top-of-file `const`, NEVER from Remote Config.
 // HB-008 §"system prompt (locked, version-controlled in this file)".
 // Edits require an ADR amendment + security-reviewer sign-off.
 // ---------------------------------------------------------------------------
@@ -46,7 +46,7 @@ import { MOOD_TYPES, MODEL_VERSION } from './types.js';
 /** Returns the locked system prompt for the given tier. */
 function buildSystemPrompt(tier: 1 | 2): string {
   const verb = tier === 1 ? 'breathing exercise' : 'journaling prompt';
-  return `You are a gentle companion for a mood-tracking app. Suggest a single supportive sentence (max 140 characters) inviting the user to a ${verb}. Forbidden words: depression, anxiety disorder, bipolar, diagnose, medication, therapy, must, should. Use compassionate language only. Reply with the sentence only — no quotes, no preamble.`;
+  return `You are a gentle companion for a mood-tracking app. Suggest a single supportive sentence (max 140 characters) inviting the user to a ${verb}. Forbidden words: depression, anxiety disorder, bipolar, diagnose, medication, therapy, must, should. Use compassionate language only. Reply with the sentence only - no quotes, no preamble.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -55,7 +55,7 @@ function buildSystemPrompt(tier: 1 | 2): string {
 
 const WEEK_ID_RE = /^\d{4}-W\d{2}$/;
 
-/** Zod schema for the suggestQuote request. Strict — rejects unknown keys. */
+/** Zod schema for the suggestQuote request. Strict - rejects unknown keys. */
 export const SuggestQuoteRequestSchema = z
   .object({
     /** Tier-3 is INTENTIONALLY absent. ADR-0012 §"Decision" point 1. */
@@ -72,7 +72,7 @@ export const SuggestQuoteRequestSchema = z
 
 export type SuggestQuoteRequest = z.infer<typeof SuggestQuoteRequestSchema>;
 
-const RATE_LIMIT_WINDOW_MS = 86_400_000; // 24h — 10 calls per uid per day.
+const RATE_LIMIT_WINDOW_MS = 86_400_000; // 24h - 10 calls per uid per day.
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_COLLECTION = 'rateLimits.suggestQuote';
 
@@ -101,7 +101,7 @@ interface LogPayload {
  */
 function buildUserContent(req: SuggestQuoteRequest): string {
   // Compose a short, structured framing. Gemini sees only the three
-  // aggregate signals — no field-level PII whatsoever.
+  // aggregate signals - no field-level PII whatsoever.
   return [
     'Context for the suggestion:',
     `- week: ${req.context.weekId}`,
@@ -160,7 +160,7 @@ export async function callGeminiForQuote(
 // ---------------------------------------------------------------------------
 
 /**
- * Core handler — exported for tests so they can call it without going
+ * Core handler - exported for tests so they can call it without going
  * through `firebase-functions-test`'s wrap layer.
  */
 export async function handleSuggestQuote(
@@ -173,7 +173,7 @@ export async function handleSuggestQuote(
   const uid = request.auth.uid;
   const startMs = Date.now();
 
-  // 2. Schema validation. Strict — rejects unknown keys, tier=3, malformed
+  // 2. Schema validation. Strict - rejects unknown keys, tier=3, malformed
   // weekId, dailyAvgS out of [-1, 1], unknown emotion, etc.
   let parsed: SuggestQuoteRequest;
   try {
@@ -190,7 +190,7 @@ export async function handleSuggestQuote(
     logger.info(payload);
     throw new HttpsError(
       'invalid-argument',
-      // ADR-0012 §"Decision" point 1 — make the Tier-3 rejection obvious
+      // ADR-0012 §"Decision" point 1 - make the Tier-3 rejection obvious
       // in the error message so a future reviewer sees the invariant at
       // a glance. The generic invalid-argument bucket covers the other
       // shape errors (weekId regex, dailyAvgS range, etc.).
@@ -198,7 +198,7 @@ export async function handleSuggestQuote(
     );
   }
 
-  // 3. Rate limit — 10/uid/day.
+  // 3. Rate limit - 10/uid/day.
   let rateLimit;
   try {
     rateLimit = await consumeToken(uid, Date.now(), {
@@ -214,7 +214,7 @@ export async function handleSuggestQuote(
       errorReason: 'rate_limit_tx_failed',
       latencyMs: Date.now() - startMs,
     };
-    // NEVER log `e.message` — could indirectly carry context. Log the
+    // NEVER log `e.message` - could indirectly carry context. Log the
     // error name only.
     logger.error({ ...payload, cause: e instanceof Error ? e.name : 'unknown' });
     throw new HttpsError('internal', 'internal-error');
@@ -236,7 +236,7 @@ export async function handleSuggestQuote(
   }
 
   // 4. Gemini call with 30s AbortController. The dailyAvgS / dominantEmotion
-  // values flow into the prompt body but NEVER into the structured log —
+  // values flow into the prompt body but NEVER into the structured log -
   // dailyAvgS could leak inferences about the user's day.
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), GEMINI_TIMEOUT_MS);
@@ -250,7 +250,7 @@ export async function handleSuggestQuote(
       uid,
       outcome: 'gemini_failure',
       tier: parsed.tier,
-      // Log the exception NAME only — never the message. Gemini errors
+      // Log the exception NAME only - never the message. Gemini errors
       // may carry user-context inferences in their message bodies, and
       // ADR-0012 + HB-008 forbid that surfacing in observability.
       errorReason: e instanceof Error ? e.name : 'unknown',
@@ -261,7 +261,7 @@ export async function handleSuggestQuote(
   }
   clearTimeout(timer);
 
-  // 5. Allowlist log. The suggested text is NOT logged — only the tier,
+  // 5. Allowlist log. The suggested text is NOT logged - only the tier,
   // latency, and rate-limit telemetry.
   const successLog: LogPayload = {
     event: 'suggestQuote',
@@ -281,7 +281,7 @@ export async function handleSuggestQuote(
  * The exported v2 callable. Mirrors the `analyzeMoodText` deployment
  * posture: `asia-southeast1`, 256MiB, 30s timeout.
  *
- * `enforceAppCheck` — kept `false` to match the existing CFs in this
+ * `enforceAppCheck` - kept `false` to match the existing CFs in this
  * project. Per `analyzeMoodText.ts`, App Check enforcement is
  * temporarily disabled across the suite until the Flutter web client
  * initialises `firebase_app_check`. Re-enable when the client ships

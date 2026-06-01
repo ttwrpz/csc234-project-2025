@@ -32,7 +32,7 @@ abstract class MoodEntry with _$MoodEntry {
       _$MoodEntryFromJson(json);
 
   /// Domain-level mutability guard. Returns `true` once the local
-  /// calendar day of [createdAt] has passed — i.e. the entry is from
+  /// calendar day of [createdAt] has passed - i.e. the entry is from
   /// yesterday or earlier in the user's local time. Same-day edits and
   /// deletes are allowed regardless of how many hours have elapsed.
   ///

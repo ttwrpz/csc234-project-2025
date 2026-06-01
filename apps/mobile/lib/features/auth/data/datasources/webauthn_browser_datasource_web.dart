@@ -67,7 +67,7 @@ class _WebauthnBrowserDatasourceWeb implements WebauthnBrowserDatasource {
       throw const WebauthnUserCanceledException();
     }
 
-    // Cast through JSObject — the returned Credential is structurally a
+    // Cast through JSObject - the returned Credential is structurally a
     // PublicKeyCredential when the publicKey option drove the call. We
     // read the fields off via dynamic JS property access rather than
     // typing through the deep `PublicKeyCredential` extension type to
@@ -169,7 +169,7 @@ class _WebauthnBrowserDatasourceWeb implements WebauthnBrowserDatasource {
     return out;
   }
 
-  /// Same shape as the creation options but for the assertion side —
+  /// Same shape as the creation options but for the assertion side -
   /// only `challenge` and `allowCredentials[].id` are binary.
   JSObject _buildRequestOptions(Map<String, Object?> options) {
     final out = options.jsify() as JSObject;
@@ -249,7 +249,7 @@ class _WebauthnBrowserDatasourceWeb implements WebauthnBrowserDatasource {
           name == 'InvalidStateError') {
         throw const WebauthnUnsupportedException();
       }
-      // Anything else — rethrow for the repository's catch-all to map
+      // Anything else - rethrow for the repository's catch-all to map
       // to `verificationFailed` / `unknown`.
       rethrow;
     }

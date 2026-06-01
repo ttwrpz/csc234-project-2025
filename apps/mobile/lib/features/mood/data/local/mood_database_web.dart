@@ -8,7 +8,7 @@
 //
 // LazyDatabase defers actual opening until first query. Constructing the
 // MoodDatabase on Web is therefore safe: the throw only fires if some future
-// caller bypasses the offline-first guard. That's the right failure mode —
+// caller bypasses the offline-first guard. That's the right failure mode -
 // loud and clear, not silent corruption.
 
 import 'package:drift/drift.dart';

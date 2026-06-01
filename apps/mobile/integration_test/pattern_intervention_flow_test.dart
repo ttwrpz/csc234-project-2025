@@ -29,7 +29,7 @@ import 'fakes.dart';
 ///      is observed (the post-frame callback in `_GardenView`
 ///      dispatches `CheerUpController.onShown` which writes the
 ///      cooldown anchor).
-///   3. The locked CLAUDE.md sentence is visible on the banner —
+///   3. The locked CLAUDE.md sentence is visible on the banner -
 ///      "It's been a heavy week. Want to try a two-minute breathing
 ///      exercise?" (rendered as two visible Text widgets per the v1.0
 ///      visual baseline; PR #28 covers the Semantics-label parity).
@@ -37,7 +37,7 @@ import 'fakes.dart';
 ///      tree.
 ///   5. After the post-frame callback fires, the SharedPreferences
 ///      mirror at `intervention.last_triggered_at_iso8601` carries an
-///      ISO-8601 timestamp — proves the cooldown write reached at
+///      ISO-8601 timestamp - proves the cooldown write reached at
 ///      least the offline mirror even when Firestore is unreachable in
 ///      the test (per ADR-0008's Firestore-primary, mirror-fallback
 ///      contract).
@@ -223,7 +223,7 @@ void main() {
             'the cheer-up nudge on every home visit.',
       );
 
-      // The cooldown anchor must NOT be written either — only a real
+      // The cooldown anchor must NOT be written either - only a real
       // trigger should consume the cooldown budget.
       final prefs = await SharedPreferences.getInstance();
       expect(

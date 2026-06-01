@@ -30,13 +30,13 @@ Future<void> main() async {
         options: DefaultFirebaseOptions.currentPlatform,
       );
 
-      // Explicit Firestore settings — make the offline cache durable
+      // Explicit Firestore settings - make the offline cache durable
       // across hot restarts and force a generous cache budget so
       // reads keep working when the gRPC channel is briefly wedged
       // (Samsung Android can leave the channel in a "Unable to resolve
       // host" state after hot restart even though DNS is healthy).
       // Setting `settings` MUST happen before the first Firestore
-      // call — runs here right after Firebase.initializeApp.
+      // call - runs here right after Firebase.initializeApp.
       if (!kIsWeb) {
         FirebaseFirestore.instance.settings = const Settings(
           persistenceEnabled: true,
@@ -44,7 +44,7 @@ Future<void> main() async {
         );
       }
 
-      // Crashlytics — capture both Flutter framework errors and async errors
+      // Crashlytics - capture both Flutter framework errors and async errors
       // from the platform dispatcher.
       //
       // Collection is ALWAYS enabled (including debug). The
@@ -53,7 +53,7 @@ Future<void> main() async {
       // the app but the dashboard never received the report,
       // defeating the affordance's only purpose. Crashlytics writes
       // the report locally on crash and uploads on the NEXT app
-      // launch — to see your test crash in the dashboard, reopen the
+      // launch - to see your test crash in the dashboard, reopen the
       // app after tapping "Crash now". Real dev-time framework
       // exceptions still print to the console; they also upload,
       // which is a small extra noise floor we accept in exchange for
@@ -65,7 +65,7 @@ Future<void> main() async {
       // platform interface
       // (`pluginConstants['isCrashlyticsCollectionEnabled'] != null`)
       // because no Web plugin is registered. We gracefully no-op on
-      // Web — unhandled errors still surface in the browser console.
+      // Web - unhandled errors still surface in the browser console.
       if (!kIsWeb) {
         FlutterError.onError =
             FirebaseCrashlytics.instance.recordFlutterFatalError;
@@ -78,10 +78,10 @@ Future<void> main() async {
         );
       }
 
-      // Remote Config — register defaults synchronously so flag reads return
+      // Remote Config - register defaults synchronously so flag reads return
       // sane values even before the first fetchAndActivate completes. The
       // 60-min `minimumFetchInterval` matches CLAUDE.md "Feature flag
-      // (rollback plan)" — production clients pick up server-side flips
+      // (rollback plan)" - production clients pick up server-side flips
       // within an hour.
       final rc = FirebaseRemoteConfig.instance;
       // Defaults MUST stay in sync with `FeatureFlags.defaults()` in
@@ -102,17 +102,17 @@ Future<void> main() async {
           minimumFetchInterval: const Duration(minutes: 60),
         ),
       );
-      // Fire-and-forget — must not block app startup.
+      // Fire-and-forget - must not block app startup.
       unawaited(rc.fetchAndActivate());
 
       // FCM cheer-up channel. Without this, Android 8+ silently drops
-      // notifications attached to the `cheer_up` channel id — the FCM
+      // notifications attached to the `cheer_up` channel id - the FCM
       // SDK falls back to the channel declared in AndroidManifest.xml,
       // but only if it's been created by the app at least once. Channel
       // id MUST match the manifest meta-data
       // (`com.google.firebase.messaging.default_notification_channel_id`)
       // and the Cloud Function payload (`functions/src/sendCheerUpPush.ts`)
-      // — all three are the literal string `'cheer_up'`. Skipped on
+      // - all three are the literal string `'cheer_up'`. Skipped on
       // Web because flutter_local_notifications has no Web impl; the
       // browser FCM service worker handles its own notification UX.
       if (!kIsWeb) {
@@ -122,7 +122,7 @@ Future<void> main() async {
         // Android. Without initialize, the Android binding is never
         // wired up and `requestNotificationsPermission()` silently
         // returns `null` instead of triggering the OS POST_NOTIFICATIONS
-        // dialog — which manifests as "the onboarding notification
+        // dialog - which manifests as "the onboarding notification
         // toggle never prompts." Icon reference matches AndroidManifest's
         // `android:icon` so the OS uses the right asset on the system
         // tray when the cheer-up channel fires.
@@ -154,7 +154,7 @@ Future<void> main() async {
       // `client_type: 3`). On Android the v7 plugin drives Credential
       // Manager, which needs an audience to issue the idToken for; with
       // a null serverClientId, Credential Manager picks a random
-      // matching client — and when no SHA-1-bound Android OAuth client
+      // matching client - and when no SHA-1-bound Android OAuth client
       // exists in the Firebase project, it silently returns
       // `GoogleSignInExceptionCode.canceled` AFTER the user picks an
       // account, which surfaces as "Google sign-in was cancelled" even
@@ -173,7 +173,7 @@ Future<void> main() async {
       }
 
       // Eager-resolve SharedPreferences before runApp so the theme-mode
-      // controller has its persisted value on the very first frame —
+      // controller has its persisted value on the very first frame -
       // avoids the flash-of-light that an AsyncValue.loading would
       // produce. The cost is a single async call at startup; the
       // benefit is a settled theme on cold launch.
@@ -190,7 +190,7 @@ Future<void> main() async {
       //
       // On Web `local_auth` throws on every call (no platform impl),
       // so we wrap the capability lookup and fall back to "unavailable"
-      // — the unlock screen handles that gracefully (PIN-only).
+      // - the unlock screen handles that gracefully (PIN-only).
       // SharedPreferences is platform-safe on every supported target.
       BiometricCapability cap = const BiometricCapability(
         isAvailable: false,
@@ -204,7 +204,7 @@ Future<void> main() async {
         );
         cap = await biometricRepo.capability();
       } catch (_) {
-        // Web (no local_auth impl) or transient platform failure —
+        // Web (no local_auth impl) or transient platform failure -
         // fall back to the unavailable record so the unlock screen
         // shows the PIN keypad only.
       }
@@ -213,7 +213,7 @@ Future<void> main() async {
       ).isEnabled();
 
       // One-shot migration marker. Flips the marker forward without
-      // mutating any existing keys — old `auth.biometric_enabled` and
+      // mutating any existing keys - old `auth.biometric_enabled` and
       // `auth.privacy_lock_enabled` keep their values, and the unified
       // tile in Settings now reads both correctly. Existing biometric-
       // only users will see Privacy Lock OFF (no PIN was ever set);

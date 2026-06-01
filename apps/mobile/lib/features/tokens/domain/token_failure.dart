@@ -3,11 +3,11 @@ import 'package:core/core.dart';
 /// All failure modes for the token-economy data layer.
 ///
 /// Sealed so consumers that switch on the variants get exhaustive-switch
-/// help from the analyzer. Mirrors the shape of `PatternFailure` —
+/// help from the analyzer. Mirrors the shape of `PatternFailure` -
 /// narrow on purpose: we only need surface for "the award write
 /// failed and the next render should not assume it succeeded."
 ///
-/// Imports only `package:core/core.dart` — domain-purity rule per
+/// Imports only `package:core/core.dart` - domain-purity rule per
 /// CLAUDE.md.
 sealed class TokenFailure extends Failure {
   const TokenFailure({required super.message});

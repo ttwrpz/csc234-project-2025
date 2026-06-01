@@ -27,10 +27,10 @@ abstract class WebauthnRepository {
   /// Register a new authenticator for [uid].
   ///
   /// Orchestrates the two-step registration ceremony:
-  ///   1. `webauthnRegisterStart` (CF) — server issues challenge.
-  ///   2. `navigator.credentials.create()` — browser shows the platform
+  ///   1. `webauthnRegisterStart` (CF) - server issues challenge.
+  ///   2. `navigator.credentials.create()` - browser shows the platform
   ///      authenticator prompt; user presents key.
-  ///   3. `webauthnRegisterFinish` (CF) — server verifies attestation,
+  ///   3. `webauthnRegisterFinish` (CF) - server verifies attestation,
   ///      persists credential.
   ///
   /// v1.5 ships single-credential; calling this when a credential is
@@ -43,10 +43,10 @@ abstract class WebauthnRepository {
   /// Verify the user's registered authenticator for [uid].
   ///
   /// Orchestrates the two-step assertion ceremony:
-  ///   1. `webauthnAssertionStart` (CF) — server issues challenge.
-  ///   2. `navigator.credentials.get()` — browser shows the platform
+  ///   1. `webauthnAssertionStart` (CF) - server issues challenge.
+  ///   2. `navigator.credentials.get()` - browser shows the platform
   ///      authenticator prompt; user presents key.
-  ///   3. `webauthnAssertionFinish` (CF) — server verifies signature,
+  ///   3. `webauthnAssertionFinish` (CF) - server verifies signature,
   ///      bumps counter.
   ///
   /// On success, the Privacy Lock session flag is flipped by the
@@ -54,15 +54,15 @@ abstract class WebauthnRepository {
   /// `privacyLockUnlockedThisSessionProvider` set-to-true call).
   Future<Result<void, WebauthnVerifyFailure>> verify({required String uid});
 
-  /// Cold-boot sign-in with a security key — runs BEFORE any Firebase
+  /// Cold-boot sign-in with a security key - runs BEFORE any Firebase
   /// session exists, so there is no [uid] to pass.
   ///
   /// Orchestrates the usernameless (discoverable-credential) ceremony:
-  ///   1. `webauthnLoginStart` (CF, unauthenticated) — server issues a
+  ///   1. `webauthnLoginStart` (CF, unauthenticated) - server issues a
   ///      challenge with an empty allow-list.
-  ///   2. `navigator.credentials.get()` — the authenticator offers its
+  ///   2. `navigator.credentials.get()` - the authenticator offers its
   ///      resident passkey and returns the `userHandle` (= the uid).
-  ///   3. `webauthnLoginFinish` (CF, unauthenticated) — server verifies
+  ///   3. `webauthnLoginFinish` (CF, unauthenticated) - server verifies
   ///      the assertion against the stored public key and mints a Firebase
   ///      custom token.
   ///
@@ -75,7 +75,7 @@ abstract class WebauthnRepository {
   /// no credential is registered.
   ///
   /// Used by:
-  ///   - the Privacy UI status tile (shows "Security key registered —
+  ///   - the Privacy UI status tile (shows "Security key registered -
   ///     last used May 17" when non-null);
   ///   - the PIN verify screen (renders the "Use security key" button
   ///     when non-null).

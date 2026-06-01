@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Thin Firestore wrapper for the PIN hash sub-document.
 ///
 /// Doc path: `users/{uid}/security/pin` (single doc). The fields are
-/// fixed by the security rules' field allow-list — any new field
+/// fixed by the security rules' field allow-list - any new field
 /// requires a rules change + security-reviewer pass.
 ///
 /// This class deliberately speaks `Map<String, Object?>` rather than
@@ -21,7 +21,7 @@ class PinFirestoreDatasource {
       .doc('pin');
 
   /// Reads the PIN doc. Returns the raw field map, or `null` when the
-  /// doc doesn't exist. Throws on permission-denied — the repository
+  /// doc doesn't exist. Throws on permission-denied - the repository
   /// translates this into a [PinVerifyFailure.locked] when the rate
   /// limit gate fires.
   Future<Map<String, dynamic>?> read({required String userId}) async {

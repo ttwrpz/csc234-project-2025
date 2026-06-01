@@ -27,7 +27,7 @@ void main() {
       expect(Pin.tryFrom('1234.5'), isNull);
     });
 
-    test('does NOT trim whitespace — UI owns input shaping', () {
+    test('does NOT trim whitespace - UI owns input shaping', () {
       // A user pasting " 12345" should not be silently accepted as
       // valid; we let the UI fix that explicitly.
       expect(Pin.tryFrom(' 12345'), isNull);
@@ -64,7 +64,7 @@ void main() {
 
   group('Pin.unchecked', () {
     test('skips validation for test fixtures', () {
-      // Intentionally bypassing — confirms the escape hatch exists
+      // Intentionally bypassing - confirms the escape hatch exists
       // for fixture construction. Production should always use
       // `tryFrom`.
       const bypassed = Pin.unchecked('not-a-real-pin');

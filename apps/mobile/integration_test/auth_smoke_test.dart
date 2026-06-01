@@ -7,14 +7,14 @@ import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
 import 'app_harness.dart';
 import 'fakes.dart';
 
-/// WBS 8.3 Test 1 — smoke test for the auth surface.
+/// WBS 8.3 Test 1 - smoke test for the auth surface.
 ///
 /// Verifies that the harness boots, the router renders the sign-in form
 /// when the auth-state stream is null, and the router redirects to
 /// `/home` once a signed-in [AppUser] reaches the stream. Sign-out flips
 /// the stream back to null and the router returns to `/sign-in`.
 ///
-/// Companion to the older `auth_flow_test.dart` (PR #25 + #34) — that
+/// Companion to the older `auth_flow_test.dart` (PR #25 + #34) - that
 /// file drove the same surface through real text input and a failure
 /// path. This smoke variant focuses on the harness contract (do
 /// provider overrides + the [IntegrationAuthRepository] state-changes
@@ -32,7 +32,7 @@ import 'fakes.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Auth smoke (WBS 8.3 — Test 1)', () {
+  group('Auth smoke (WBS 8.3 - Test 1)', () {
     late IntegrationAuthRepository authRepo;
 
     setUp(() async {
@@ -56,7 +56,7 @@ void main() {
         ],
       );
 
-      // The sign-in tagline is the load-bearing anchor — if it's
+      // The sign-in tagline is the load-bearing anchor - if it's
       // present, the router resolved /sign-in correctly. Any future
       // copy change must update the SignInScreen widget test in
       // lockstep.
@@ -92,7 +92,7 @@ void main() {
         ],
       );
 
-      // Absence of the /sign-in tagline is the load-bearing signal —
+      // Absence of the /sign-in tagline is the load-bearing signal -
       // matches the "valid creds → /home" pattern from auth_flow_test.
       // Asserting the absence (vs. asserting on /home content) keeps
       // the smoke resilient to garden-screen copy churn.
@@ -120,7 +120,7 @@ void main() {
         ],
       );
 
-      // Drive the auth transition manually — the production flow goes
+      // Drive the auth transition manually - the production flow goes
       // through Settings, but for a smoke we exercise the router's
       // refreshListenable contract directly.
       authRepo.setUser(null);
@@ -164,7 +164,7 @@ void main() {
 
       // SignUpScreen's primary button label is also "Create account"
       // (see sign_up_screen.dart). Two matches is the expected steady
-      // state once we're on the sign-up route — the field, the
+      // state once we're on the sign-up route - the field, the
       // button. We assert at least one so the test does not depend on
       // the exact widget count.
       expect(
@@ -172,7 +172,7 @@ void main() {
         findsAtLeastNWidgets(1),
         reason: 'sign-up screen must render its primary submit CTA',
       );
-      // The sign-up screen has a confirm-password field — three
+      // The sign-up screen has a confirm-password field - three
       // TextFields total (email, password, confirm). This anchors the
       // route assertion without depending on a screen title.
       expect(

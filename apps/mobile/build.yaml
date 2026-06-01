@@ -4,7 +4,7 @@
 # recursively on nested objects when generating `_$XxxToJson()` methods.
 # Without it, a Freezed entity with a nested `List<NestedEntity>` or
 # `NestedEntity` field gets `'field': instance.field` in the output map
-# — a raw Dart object, not a JSON-encodable map.
+# - a raw Dart object, not a JSON-encodable map.
 #
 # That works for `jsonEncode(...)` (Dart's default toEncodable walks
 # objects via toJson) but it BREAKS direct Web Firestore writes:

@@ -55,7 +55,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     return Scaffold(
       backgroundColor: mb.bg,
-      // Centred form column. See sign_in_screen.dart for the rationale —
+      // Centred form column. See sign_in_screen.dart for the rationale -
       // capping at 420 dp keeps the form compact on desktop and stops a
       // ListView from spreading the brand mark across half the screen.
       body: SafeArea(
@@ -207,7 +207,7 @@ class _OrDivider extends StatelessWidget {
   }
 }
 
-/// Two-tone footer link — see `sign_in_screen.dart` for the rationale.
+/// Two-tone footer link - see `sign_in_screen.dart` for the rationale.
 /// Duplicated here intentionally so each screen file stays
 /// self-contained; the visual treatment is small enough that lifting
 /// it to a shared widget would obscure more than it would share.

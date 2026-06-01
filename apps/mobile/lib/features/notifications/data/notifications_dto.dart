@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../domain/notifications_settings.dart';
 
 /// Wire-format mirror of `users/{uid}/settings/notifications`. Lives in
-/// `data/` only — the domain layer never touches Firestore types.
+/// `data/` only - the domain layer never touches Firestore types.
 ///
 /// Doc shape:
 /// ```json
@@ -57,7 +57,7 @@ class NotificationsSettingsDto {
 
   /// `true` when the doc has the legacy `cheerUpEnabled` flag but is
   /// missing AT LEAST ONE of the three new tier flags. Brand-new docs
-  /// (no `cheerUpEnabled` key) are NOT considered pre-migration — they
+  /// (no `cheerUpEnabled` key) are NOT considered pre-migration - they
   /// take the default path via [NotificationsSettings.initial].
   ///
   /// The check is deliberately "missing any tier flag" rather than

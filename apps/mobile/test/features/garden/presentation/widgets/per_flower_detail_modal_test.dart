@@ -47,16 +47,16 @@ void main() {
         ),
       );
 
-      // Mood title — sentence-cased from `MoodType.name` ("happy" → "Happy").
+      // Mood title - sentence-cased from `MoodType.name` ("happy" → "Happy").
       expect(find.text('Happy'), findsOneWidget);
       // Body excerpt.
       expect(find.text('had a nice walk'), findsOneWidget);
-      // Date — formatted as "Mon D, HH:MM" in the modal's `_formatDate`.
+      // Date - formatted as "Mon D, HH:MM" in the modal's `_formatDate`.
       // We assert on the substring "May 10" + ":30" so the test stays
       // resilient to a future swap from 24-hr to 12-hr clock formatting.
       expect(find.textContaining('May 10'), findsOneWidget);
       expect(find.textContaining(':30'), findsOneWidget);
-      // Intensity dots — one MbIntensityDots widget with the value we
+      // Intensity dots - one MbIntensityDots widget with the value we
       // passed in. Reading the field directly is more diagnostic than
       // counting filled dots from the painter.
       final dots = tester.widget<MbIntensityDots>(find.byType(MbIntensityDots));
@@ -73,7 +73,7 @@ void main() {
         ),
       );
 
-      // Empty-string text resolves to "—" in the modal's body card.
+      // Empty-string text resolves to "-" in the modal's body card.
       expect(find.text('-'), findsOneWidget);
     });
 
@@ -112,7 +112,7 @@ void main() {
       // `context.go(...)` so the bottom-sheet route is gone before the
       // router push. We host the modal under a real
       // `showModalBottomSheet` so the pop tears down the sheet route
-      // (and not the page below) — same wiring production uses.
+      // (and not the page below) - same wiring production uses.
       final entry = _entry(
         id: 'e-route',
         mood: MoodType.okay,
@@ -237,7 +237,7 @@ void main() {
         await tester.pump();
 
         // The bed wires per-flower hit-spots as round InkResponse hit-
-        // spots (v1.5 final polish — switched from InkWell rectangles to
+        // spots (v1.5 final polish - switched from InkWell rectangles to
         // CircleBorder-shaped InkResponses so the tap area matches the
         // flower silhouette). One per visible entry when `onFlowerTap !=
         // null`. The bed sorts entries by `createdAt` descending, so
@@ -284,7 +284,7 @@ void main() {
       await tester.pump();
 
       // No callback → no Positioned hit-spots in the Stack. The bed
-      // falls back to a bare CustomPaint canvas — no InkResponse
+      // falls back to a bare CustomPaint canvas - no InkResponse
       // anywhere.
       final inkWell = find.descendant(
         of: find.byType(GardenBed),

@@ -18,7 +18,7 @@ class SyncQueue extends Table {
   IntColumn get attemptCount =>
       integer().named('attempt_count').withDefault(const Constant(0))();
 
-  /// Truncated to 200 chars at write time — see [SyncQueueDao.markFailed].
+  /// Truncated to 200 chars at write time - see [SyncQueueDao.markFailed].
   /// Never include PII (entry text, email).
   TextColumn get lastError => text().named('last_error').nullable()();
   TextColumn get lastErrorCode => text().named('last_error_code').nullable()();

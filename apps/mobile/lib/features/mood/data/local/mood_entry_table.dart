@@ -21,7 +21,7 @@ class MediaRefsConverter extends TypeConverter<List<String>, String> {
 
 /// Local mirror of the Firestore `users/{uid}/moods/{moodId}` document plus
 /// the offline-first sync bookkeeping columns (`sync_state`, `device_id`,
-/// `deleted_at`). Times are stored as INTEGER epoch milliseconds UTC — never
+/// `deleted_at`). Times are stored as INTEGER epoch milliseconds UTC - never
 /// Firestore `Timestamp`, never ISO strings.
 @DataClassName('MoodEntryRow')
 class MoodEntries extends Table {

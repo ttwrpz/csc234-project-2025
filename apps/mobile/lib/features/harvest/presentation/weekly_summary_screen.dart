@@ -19,7 +19,7 @@ import 'widgets/harvest_mini_garden.dart';
 ///
 /// Locked banner copy (CLAUDE.md §"Pre-approved phrasing"):
 /// "Your garden this week has been harvested and saved to your history.
-/// A new week begins — a fresh canvas for your story."
+/// A new week begins - a fresh canvas for your story."
 ///
 /// Layout (top → bottom): "Your week" modal header → hero `GardenBed` →
 /// banner copy → average-mood scale → top-3 dominant emotion chips →
@@ -27,13 +27,13 @@ import 'widgets/harvest_mini_garden.dart';
 class WeeklySummarySheet {
   const WeeklySummarySheet._();
 
-  /// Locked banner phrasing — verbatim from CLAUDE.md "Pre-approved
+  /// Locked banner phrasing - verbatim from CLAUDE.md "Pre-approved
   /// intervention phrasing". Test asserts the exact string is rendered.
   static const String harvestBanner =
       'Your garden this week has been harvested and saved to your history. '
       'A new week begins - a fresh canvas for your story.';
 
-  /// Locked CTA label — keeps the screen's only navigation action
+  /// Locked CTA label - keeps the screen's only navigation action
   /// stable so widget + golden tests pin to a known string.
   static const String continueLabel = 'Continue to new week';
 
@@ -66,7 +66,7 @@ class WeeklySummaryView extends ConsumerWidget {
 
   final WeeklySummary summary;
 
-  /// The week's entries — drives the hero [GardenBed] so the user sees
+  /// The week's entries - drives the hero [GardenBed] so the user sees
   /// real plants for the moods they logged this week, not generic
   /// stylized buds. Empty list collapses the hero to a small archive
   /// marker so the screen still mounts on edge-case test rigs.
@@ -77,7 +77,7 @@ class WeeklySummaryView extends ConsumerWidget {
     final status = ref.watch(weeklySummaryControllerProvider);
 
     // Pop the modal as soon as the archive write resolves. The
-    // controller doesn't navigate itself — it only flips state — so the
+    // controller doesn't navigate itself - it only flips state - so the
     // Continue button used to leave the user stuck on a "Running…" CTA
     // even though the archive landed cleanly. Listening once at the
     // build level routes every success path (manual tap, debug force,
@@ -151,7 +151,7 @@ class _HarvestBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
-    // Prototype's harvest banner uses the AI-tint card style — `aiBg`
+    // Prototype's harvest banner uses the AI-tint card style - `aiBg`
     // background + `aiBd` border + body Nunito 14 line-height 1.55.
     // The string itself is the locked
     // [WeeklySummarySheet.harvestBanner]; we only refresh the
@@ -277,7 +277,7 @@ class _DominantEmotionsSection extends StatelessWidget {
   final Map<MoodType, int> counts;
 
   /// Top-3 mood types ordered by count descending. Ties are broken by
-  /// the [MoodType] enum index — stable across runs.
+  /// the [MoodType] enum index - stable across runs.
   List<MapEntry<MoodType, int>> get _top3 {
     final entries = counts.entries.where((e) => e.value > 0).toList()
       ..sort((a, b) {

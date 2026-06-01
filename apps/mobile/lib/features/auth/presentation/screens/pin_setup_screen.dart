@@ -13,7 +13,7 @@ import '../widgets/pin_keypad.dart';
 /// match the use case writes `users/{uid}/security/pin` and the
 /// screen calls [onSuccess].
 ///
-/// The screen is decoupled from routing — it accepts an [onSuccess]
+/// The screen is decoupled from routing - it accepts an [onSuccess]
 /// callback so the caller (the privacy setup flow OR the future Change
 /// PIN flow) can decide what to do next.
 class PinSetupScreen extends ConsumerStatefulWidget {
@@ -52,7 +52,7 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
     if (_busy) return;
 
     if (_firstPin == null) {
-      // First pass — accept and ask for confirmation.
+      // First pass - accept and ask for confirmation.
       setState(() {
         _firstPin = pin;
         _error = null;
@@ -61,7 +61,7 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
       return;
     }
 
-    // Second pass — submit through the use case.
+    // Second pass - submit through the use case.
     setState(() => _busy = true);
     final useCase = ref.read(setupPinUseCaseProvider);
     final result = await useCase(

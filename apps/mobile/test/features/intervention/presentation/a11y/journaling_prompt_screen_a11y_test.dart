@@ -19,7 +19,7 @@ import 'package:moodbloom/features/mood/domain/mood_repository.dart';
 import 'package:moodbloom/features/mood/domain/usecases/save_mood_entry.dart';
 import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
-/// Sprint 5 Day 3 a11y sweep — Tier 2 journaling prompt screen.
+/// Sprint 5 Day 3 a11y sweep - Tier 2 journaling prompt screen.
 ///
 /// Covered:
 ///   1. The dispatched body + the curated prompt question are reachable
@@ -29,7 +29,7 @@ import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 ///   3. The multi-line journal TextField announces a hint that includes
 ///      "journal" so screen readers don't simply say "text field".
 ///   4. "Save", "Maybe later", "I'm okay" buttons announce with distinct
-///      labels — "I'm okay" carries the dismiss-action context.
+///      labels - "I'm okay" carries the dismiss-action context.
 ///   5. 200% type renders without RenderFlex overflow.
 
 class _RecordingController extends InterventionController {
@@ -47,7 +47,7 @@ class _RecordingController extends InterventionController {
   }
 }
 
-/// Inert mood repo — the a11y tests never actually save; we just need
+/// Inert mood repo - the a11y tests never actually save; we just need
 /// the screen to mount without crashing on the use-case resolution.
 class _NoopMoodRepo implements MoodRepository {
   @override
@@ -148,12 +148,12 @@ Future<void> _pushScreen(
   GoRouter.of(ctx).push('/host/journal');
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 50));
-  // Auth stream drain — mirrors journaling_prompt_screen_test.dart.
+  // Auth stream drain - mirrors journaling_prompt_screen_test.dart.
   await tester.pump(const Duration(milliseconds: 100));
 }
 
 void main() {
-  group('JournalingPromptScreen — content semantics', () {
+  group('JournalingPromptScreen - content semantics', () {
     testWidgets('dispatched body text is reachable in the semantics tree', (
       tester,
     ) async {
@@ -185,7 +185,7 @@ void main() {
         // The dispatcher rotates a deterministic prompt based on
         // dispatchId.hashCode. Whichever lands, it must be reachable
         // verbatim (the prompt is the surface's load-bearing affordance
-        // — without it the user is staring at a blank field).
+        // - without it the user is staring at a blank field).
         const prompts = [
           "What's been weighing on you?",
           "Is there anything you've been holding back?",
@@ -206,7 +206,7 @@ void main() {
     );
   });
 
-  group('JournalingPromptScreen — mood chip strip semantics', () {
+  group('JournalingPromptScreen - mood chip strip semantics', () {
     testWidgets('every mood chip is reachable by its mood-name label', (
       tester,
     ) async {
@@ -216,7 +216,7 @@ void main() {
       await _pushScreen(tester);
 
       // The chip labels come from _labelFor(MoodType) on the screen.
-      // Joyful / Calm / Okay / Sad / Angry / Anxious — all six must be
+      // Joyful / Calm / Okay / Sad / Angry / Anxious - all six must be
       // reachable so AT users can pick a different mood than the
       // default "Sad" before saving.
       const labels = ['Joyful', 'Calm', 'Okay', 'Sad', 'Angry', 'Anxious'];
@@ -239,13 +239,13 @@ void main() {
 
       // "Sad" is the default selection (sliding-5-of-7 fires from a
       // heavy stretch). Verify the ChoiceChip's underlying Material
-      // semantics carries `isSelected == true` for the Sad chip — and
+      // semantics carries `isSelected == true` for the Sad chip - and
       // false for every other chip. ChoiceChip composes the selected
       // flag into a SemanticsNode whose label is the chip text.
       // `flagsCollection.isSelected` returns a Tristate (post-3.32
       // semantics API), not a bool, so the `hasFlag` boolean variant
       // is what we want here. `// ignore` suppresses the deprecation
-      // info — the migration to the Tristate API is a separate effort.
+      // info - the migration to the Tristate API is a separate effort.
       final sadNode = tester.getSemantics(find.text('Sad'));
       expect(
         // ignore: deprecated_member_use
@@ -266,8 +266,8 @@ void main() {
     });
   });
 
-  group('JournalingPromptScreen — text field semantics', () {
-    testWidgets('text field hint mentions journaling — not just "text field"', (
+  group('JournalingPromptScreen - text field semantics', () {
+    testWidgets('text field hint mentions journaling - not just "text field"', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -289,7 +289,7 @@ void main() {
     });
   });
 
-  group('JournalingPromptScreen — button labels', () {
+  group('JournalingPromptScreen - button labels', () {
     testWidgets(
       '"Save" / "Maybe later" / "I\'m okay" each announce distinctly',
       (tester) async {
@@ -326,7 +326,7 @@ void main() {
     );
   });
 
-  group('JournalingPromptScreen — 200% type readability', () {
+  group('JournalingPromptScreen - 200% type readability', () {
     testWidgets('renders without RenderFlex overflow at 200% type', (
       tester,
     ) async {
@@ -337,7 +337,7 @@ void main() {
       // Apply the text scaler via a MediaQuery wrapper. The screen's
       // body is in a SingleChildScrollView so vertical overflow is
       // already protected; this test pins the bottom button row's
-      // Row(spaceBetween) layout — that's the genuine risk zone.
+      // Row(spaceBetween) layout - that's the genuine risk zone.
       final controller = _RecordingController();
       final repo = _NoopMoodRepo();
       final router = GoRouter(
@@ -384,7 +384,7 @@ void main() {
       );
       // Wide test surface so the bottom Row(spaceBetween) doesn't fight
       // the body's text wrap. 200% type roughly doubles the row's
-      // intrinsic width — 1200dp is generous-but-realistic for a tablet
+      // intrinsic width - 1200dp is generous-but-realistic for a tablet
       // viewport.
       tester.view.physicalSize = const Size(1200, 2400);
       tester.view.devicePixelRatio = 1.0;

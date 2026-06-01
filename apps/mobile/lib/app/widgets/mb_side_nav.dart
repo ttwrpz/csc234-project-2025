@@ -34,7 +34,7 @@ class MbSideNav extends StatelessWidget {
 
   /// Account-level action widgets rendered above the [footer] caption.
   /// Used on desktop for the sign-out button + theme switcher. Empty
-  /// list (default) collapses the slot — phones / tablet shells that
+  /// list (default) collapses the slot - phones / tablet shells that
   /// never compose this widget keep their original layout.
   final List<Widget> actions;
 
@@ -55,7 +55,7 @@ class MbSideNav extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 16),
-              // Brand row — 36×36 gradient tile (seed → seedDark) hosts
+              // Brand row - 36×36 gradient tile (seed → seedDark) hosts
               // the inline `MbBrandSvg`, paired with the "MoodBloom"
               // wordmark in Fraunces 17 / w700.
               Padding(
@@ -130,7 +130,7 @@ class MbSideNav extends StatelessWidget {
 }
 
 /// Public action tile reusable in [MbSideNav.actions]. Same visual
-/// language as a non-active nav tab — icon + label, transparent
+/// language as a non-active nav tab - icon + label, transparent
 /// background, hover-tinted on focus. Optional [destructive] flag
 /// applies the high-contrast `coralText` color from the design tokens.
 class MbSideNavAction extends StatelessWidget {

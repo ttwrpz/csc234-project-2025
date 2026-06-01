@@ -5,10 +5,10 @@ part 'insight_window.freezed.dart';
 /// User-visible window over which the Patterns screen aggregates mood +
 /// pattern history. The v1.6 redesign locked the picker to **7d / 14d /
 /// 30d** (per the user's locked decision), so the quarter (90d) preset
-/// is gone. `fortnight` (14d) is the default — it matches the Mann-Kendall
+/// is gone. `fortnight` (14d) is the default - it matches the Mann-Kendall
 /// trend test's natural span and the prototype's middle tab.
 ///
-/// Pure-Dart entity — no Flutter / Firebase imports per the
+/// Pure-Dart entity - no Flutter / Firebase imports per the
 /// domain-purity rule in CLAUDE.md.
 enum InsightWindowPreset {
   week(days: 7, label: '7d'),

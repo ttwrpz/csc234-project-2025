@@ -5,7 +5,7 @@ import 'package:core/core.dart';
 ///
 /// `counterRegression` deserves the explicit variant because it
 /// indicates a potential cloned-authenticator attack (ADR-0014 §"Counter
-/// rollover") — the UI silently routes the user to PIN and the server
+/// rollover") - the UI silently routes the user to PIN and the server
 /// emits a structured log line, but the variant is preserved here so
 /// telemetry / debug screens can distinguish it from a benign
 /// `verificationFailed`.
@@ -31,7 +31,7 @@ sealed class WebauthnVerifyFailure extends Failure {
   /// The asserted signature counter is not strictly greater than the
   /// stored counter (and the stored counter is non-zero). Indicates a
   /// cloned authenticator OR a stateless authenticator that always
-  /// returns 0 — either way, v1.5 fails closed per ADR-0014.
+  /// returns 0 - either way, v1.5 fails closed per ADR-0014.
   const factory WebauthnVerifyFailure.counterRegression() = _CounterRegression;
 
   /// The 5-minute challenge TTL elapsed before the user completed the
@@ -63,7 +63,7 @@ class _UserCanceled extends WebauthnVerifyFailure {
 }
 
 class _CounterRegression extends WebauthnVerifyFailure {
-  // Copy is deliberately neutral — the user shouldn't be told they may
+  // Copy is deliberately neutral - the user shouldn't be told they may
   // have been targeted by a cloned-authenticator attack. PIN is the
   // safe fallback.
   const _CounterRegression()

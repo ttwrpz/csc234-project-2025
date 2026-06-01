@@ -5,12 +5,12 @@ import 'package:core/core.dart';
 /// One doc per `(uid, dayUtc, reason)` triple. The doc id is
 /// `${dayUtc}-${reason}` so two same-day re-evaluations collide and the
 /// second `create` short-circuits with the canonical `already-exists`
-/// error — caught by the impl and surfaced as success because that IS
+/// error - caught by the impl and surfaced as success because that IS
 /// the idempotent path.
 ///
 /// The Firestore-side trigger `sendCheerUpPush`
 /// (functions/src/sendCheerUpPush.ts) fires on the create and is the ONLY
-/// consumer of this collection. Append-only at the rules layer — update
+/// consumer of this collection. Append-only at the rules layer - update
 /// + delete denied.
 ///
 /// Domain-pure: no Firestore / Flutter / Firebase imports anywhere in
@@ -19,7 +19,7 @@ abstract class CheerUpEventsRepository {
   /// Idempotently writes the `cheerUpEvents/{dayUtc}-{reason}` doc.
   ///
   /// On a duplicate same-day write the impl swallows the
-  /// `already-exists` error and returns `Ok(null)` — the CF only needs
+  /// `already-exists` error and returns `Ok(null)` - the CF only needs
   /// the FIRST write to fire its trigger; subsequent writes are no-ops.
   ///
   /// `now` is the moment the controller's `onShown` ran. The impl
@@ -56,7 +56,7 @@ class _Unknown extends CheerUpEventsFailure {
   final Object? cause;
 }
 
-/// Allowed `reason` values — mirrors the regex in `firebase/firestore.rules`
+/// Allowed `reason` values - mirrors the regex in `firebase/firestore.rules`
 /// and the Cloud Function's runtime check. Exposed as a const set so the
 /// repository impl AND the controller can validate before round-tripping.
 ///

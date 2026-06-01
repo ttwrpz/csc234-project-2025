@@ -52,14 +52,14 @@ final class InterventionPending extends InterventionControllerState {
 ///
 ///   1. Reads the per-tier toggle from [NotificationsToggleState]. If
 ///      the user has opted out of THIS tier, the controller skips
-///      silently — other tiers stay live (FCM toggle expansion
+///      silently - other tiers stay live (FCM toggle expansion
 ///      semantics; see [NotificationsController]).
 ///   2. Builds a [QuoteContext] from `myMoodsStreamProvider`-derived
 ///      daily averages.
 ///   3. Invokes [DispatchInterventionUseCase] which already encapsulates
 ///      cooldown + tier-3 determinism + quote selection + audit-doc
 ///      write + `lastTriggeredAt` advance. The controller does NOT
-///      duplicate any of those writes — that would create two paths to
+///      duplicate any of those writes - that would create two paths to
 ///      the same Firestore docs.
 ///   4. On Ok: emits [InterventionPending] so the banner appears.
 ///   5. On Err(cooldown) | Err(tierDisabled): silent (no UI).
@@ -71,7 +71,7 @@ final class InterventionPending extends InterventionControllerState {
 /// the system does not re-nag).
 ///
 /// On `complete()`: clears the pending state. No additional Firestore
-/// write — the audit record from step 3 is the source of truth.
+/// write - the audit record from step 3 is the source of truth.
 class InterventionController extends Notifier<InterventionControllerState> {
   /// Tracks the most-recent tier we've already dispatched for so the
   /// stream's snapshot replay (Firestore re-emits on listener attach
@@ -101,7 +101,7 @@ class InterventionController extends Notifier<InterventionControllerState> {
   void _attach(String uid) {
     _detach();
     final now = DateTime.now();
-    // dateId = yyyy-MM-dd from local midnight — matches the format
+    // dateId = yyyy-MM-dd from local midnight - matches the format
     // produced by RunPatternEngineUseCase when it writes today's
     // PatternResult doc at users/{uid}/patterns/{dateId}.
     final dateId =
@@ -127,7 +127,7 @@ class InterventionController extends Notifier<InterventionControllerState> {
       return;
     }
     if (tier == _lastDispatchedTier) return;
-    // Fire-and-forget — the dispatch use case is itself best-effort and
+    // Fire-and-forget - the dispatch use case is itself best-effort and
     // already swallows / surfaces failures via the Result type.
     unawaited(_dispatchFor(tier));
   }
@@ -154,7 +154,7 @@ class InterventionController extends Notifier<InterventionControllerState> {
     switch (result) {
       case Ok(:final value):
         state = InterventionPending(value);
-        // Fire the FCM push fire-and-forget — gated on Remote Config so
+        // Fire the FCM push fire-and-forget - gated on Remote Config so
         // the in-app banner ships independent of the push surface. The
         // CF call is best-effort; transport failures are swallowed at
         // the datasource so they cannot unwind the in-app experience.
@@ -169,7 +169,7 @@ class InterventionController extends Notifier<InterventionControllerState> {
   /// Fires the per-tier FCM push by invoking `dispatchIntervention` with
   /// the dispatch id the audit doc already carries. The CF reads the
   /// audit doc back, validates tier + opt-out, and sends a LOCKED
-  /// per-tier payload — the request never carries body text.
+  /// per-tier payload - the request never carries body text.
   ///
   /// Errors are logged PII-free (runtimeType only) and discarded. The
   /// in-app banner is the source of truth for the user-visible surface.
@@ -254,7 +254,7 @@ class InterventionController extends Notifier<InterventionControllerState> {
     return best;
   }
 
-  /// ISO-8601 week id `YYYY-Www` — for log correlation only. Pulled
+  /// ISO-8601 week id `YYYY-Www` - for log correlation only. Pulled
   /// inline rather than importing the harvest helper because that helper
   /// is currently a private static on `ArchiveWeeklyGardenUseCase`.
   static String _isoWeekId(DateTime date) {
@@ -271,7 +271,7 @@ class InterventionController extends Notifier<InterventionControllerState> {
 
   /// Builds the use case from current providers. Returns null when the
   /// anchor repository hasn't resolved yet (`FutureProvider` is in
-  /// loading state — happens on first frame after sign-in).
+  /// loading state - happens on first frame after sign-in).
   Future<DispatchInterventionUseCase?> _useCase() async {
     final dispatcher = TieredInterventionDispatcher(
       quoteLibrary: ref.read(quoteLibraryProvider),
@@ -295,7 +295,7 @@ class InterventionController extends Notifier<InterventionControllerState> {
     );
   }
 
-  /// Logs the failure with the runtimeType only — no PII, no body, no
+  /// Logs the failure with the runtimeType only - no PII, no body, no
   /// uid. The cooldown / tierDisabled cases are the silent paths (no
   /// banner should surface); the anchor / unknown cases are observability
   /// signals only.
@@ -337,7 +337,7 @@ class InterventionController extends Notifier<InterventionControllerState> {
   /// gate AND the user's per-tier opt-out flags so QA / demo can drive
   /// each banner → screen flow on demand AND can re-trigger repeatedly
   /// without waiting 24h between fires. Production callers MUST gate
-  /// invocations behind `kDebugMode` — there is no production surface
+  /// invocations behind `kDebugMode` - there is no production surface
   /// that should reach this path. The Tier 3 determinism guarantee is
   /// preserved: the dispatcher's type-level fence still routes Tier 3
   /// to the curated pool only.
@@ -347,9 +347,9 @@ class InterventionController extends Notifier<InterventionControllerState> {
   /// `CooldownGuard` and reject the second-and-subsequent calls in a
   /// 24-hour window. We do still write the audit doc to
   /// `users/{uid}/interventions/{id}` so the dispatch is observable in
-  /// Firestore — that's harmless for production observability and
+  /// Firestore - that's harmless for production observability and
   /// keeps the integration tests happy. We do NOT advance the cooldown
-  /// anchor (which would be the production behaviour) — that's what
+  /// anchor (which would be the production behaviour) - that's what
   /// lets debug-trigger fire repeatedly.
   Future<void> debugDispatch(Tier tier) async {
     const logger = Logger('intervention.controller.debug');
@@ -364,7 +364,7 @@ class InterventionController extends Notifier<InterventionControllerState> {
     switch (result) {
       case Ok(:final value):
         // Write the audit doc best-effort (don't block the banner if
-        // Firestore is unreachable — debug path).
+        // Firestore is unreachable - debug path).
         final repo = ref.read(interventionRepositoryProvider);
         unawaited(
           repo.writeRecord(

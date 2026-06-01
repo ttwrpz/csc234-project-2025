@@ -50,7 +50,7 @@ Future<void> _pumpDialog(
 }
 
 void main() {
-  group('DeleteAccountDialog — step 1 (confirm intent)', () {
+  group('DeleteAccountDialog - step 1 (confirm intent)', () {
     testWidgets('renders title, body, Cancel and Continue buttons', (
       tester,
     ) async {
@@ -107,7 +107,7 @@ void main() {
     });
   });
 
-  group('DeleteAccountDialog — step 2 (reauth + final confirm)', () {
+  group('DeleteAccountDialog - step 2 (reauth + final confirm)', () {
     Future<void> goToStep2(
       WidgetTester tester, {
       required FakeAuthRepository repo,
@@ -151,7 +151,7 @@ void main() {
       },
     );
 
-    testWidgets('wrong password — inline error shown, dialog stays open', (
+    testWidgets('wrong password - inline error shown, dialog stays open', (
       tester,
     ) async {
       final repo = FakeAuthRepository(
@@ -168,7 +168,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Delete forever'));
       await tester.pumpAndSettle();
 
-      // Dialog still open — title visible.
+      // Dialog still open - title visible.
       expect(find.text('Confirm your password'), findsOneWidget);
       // Inline error visible.
       expect(find.textContaining('did not match'), findsOneWidget);
@@ -179,7 +179,7 @@ void main() {
     });
 
     testWidgets(
-      'happy path — use case called once, signOut triggered, dialog closes',
+      'happy path - use case called once, signOut triggered, dialog closes',
       (tester) async {
         final repo = FakeAuthRepository(
           currentUserOverride: const AppUser(

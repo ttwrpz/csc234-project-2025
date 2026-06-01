@@ -9,16 +9,16 @@ import '../datasources/patterns_firestore_datasource.dart';
 /// Firestore-backed implementation of [PatternRepository].
 ///
 /// Failure mapping mirrors `CheerUpEventsRepositoryImpl`:
-///   * `permission-denied` → [PatternFailure.permissionDenied] — the
+///   * `permission-denied` → [PatternFailure.permissionDenied] - the
 ///     rule rejected the write (e.g. another uid in the path), surface
 ///     so the controller doesn't blame transient cloud weather.
 ///   * `unavailable`, `deadline-exceeded`, `cancelled` → [PatternFailure.network]
-///     — transient, the next mood log will retry.
+///     - transient, the next mood log will retry.
 ///   * everything else → [PatternFailure.unknown] with the exception
 ///     `runtimeType` for the post-save logger (PII-free).
 ///
 /// The post-save controller swallows failures and keeps surfacing the
-/// user's mood-save success — see `LogMoodController._onSaveOk`.
+/// user's mood-save success - see `LogMoodController._onSaveOk`.
 class PatternRepositoryImpl implements PatternRepository {
   const PatternRepositoryImpl({required PatternsFirestoreDatasource datasource})
     : _datasource = datasource;
@@ -31,7 +31,7 @@ class PatternRepositoryImpl implements PatternRepository {
     required PatternResult result,
   }) async {
     if (userId.isEmpty) {
-      // Defense-in-depth — caller is `LogMoodController` which already
+      // Defense-in-depth - caller is `LogMoodController` which already
       // gates on a signed-in user, but a stale ref shouldn't round-trip
       // a malformed write. Network is the closest "transient, retry on
       // next save" semantic.

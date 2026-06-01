@@ -1,4 +1,4 @@
-// webauthnRegisterFinish — Cloud Function callable for the registration
+// webauthnRegisterFinish - Cloud Function callable for the registration
 // ceremony's second leg.
 //
 // Flow:
@@ -6,7 +6,7 @@
 //   2. Read the challenge at users/{uid}/webauthnChallenges/{challengeId};
 //      reject with { ok: false, code: 'challenge_expired' } if missing or
 //      past `expiresAt`.
-//   3. Provisioning guard — same isProvisioned() check the start handler
+//   3. Provisioning guard - same isProvisioned() check the start handler
 //      runs (defence in depth; the start handler should already have
 //      blocked the call if the env-var isn't set, but the finish path
 //      should refuse to verify against a placeholder origin).
@@ -167,7 +167,7 @@ export async function handleWebauthnRegisterFinish(
   }
 
   // Persist the credential. `@simplewebauthn/server@^11` returns the
-  // registration info nested under a `credential` object — extract the
+  // registration info nested under a `credential` object - extract the
   // canonical fields and serialize the binary ones to base64url.
   const regInfo = verification.registrationInfo as {
     credential: {
@@ -203,7 +203,7 @@ export async function handleWebauthnRegisterFinish(
     lockedUntil: null,
   });
 
-  // Delete the challenge — single-use.
+  // Delete the challenge - single-use.
   await challengeRef.delete().catch(() => undefined);
 
   logger.info({
@@ -230,7 +230,7 @@ export const webauthnRegisterFinish = onCall(
   },
   (req: CallableRequest<FinishRequest>) => {
     // Touch the defineString params so they're registered with the
-    // Functions v2 runtime — same pattern the start handler uses.
+    // Functions v2 runtime - same pattern the start handler uses.
     void WEBAUTHN_PRODUCTION_ORIGIN.value();
     void WEBAUTHN_STAGING_ORIGINS.value();
     void WEBAUTHN_RPID.value();

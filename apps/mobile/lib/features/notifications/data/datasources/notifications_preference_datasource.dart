@@ -5,7 +5,7 @@ const String _dailyCheckInEnabledKey = 'notifications.daily_check_in_enabled';
 const String _dailyCheckInHourKey = 'notifications.daily_check_in_hour';
 const String _dailyCheckInMinuteKey = 'notifications.daily_check_in_minute';
 
-/// Onboarding prototype default — a quiet 21:30 evening nudge. Used when
+/// Onboarding prototype default - a quiet 21:30 evening nudge. Used when
 /// the user has never set a time. Kept here (not in the UI layer) so the
 /// persisted default and the read-back default are the same value.
 const int defaultDailyCheckInHour = 21;
@@ -16,7 +16,7 @@ const int defaultDailyCheckInMinute = 30;
 ///
 /// **Off by default.** Opt-in-by-default was confusing on Web because
 /// the browser permission prompt only fires on the user's first toggle
-/// tap — until then, the toggle showed `enabled=true` but no FCM token
+/// tap - until then, the toggle showed `enabled=true` but no FCM token
 /// actually existed and no pushes would ever land. Off-by-default makes
 /// the explicit opt-in flow (toggle → permission prompt → token
 /// registration) the canonical first-touch path on both Web and native.

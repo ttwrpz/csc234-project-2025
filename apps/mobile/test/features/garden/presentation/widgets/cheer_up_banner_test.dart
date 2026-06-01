@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/garden/presentation/widgets/cheer_up_banner.dart';
 import 'package:moodbloom/features/intervention/presentation/screens/breathing_screen.dart';
 
-/// Locked sentence per CLAUDE.md "Copy rules — Intervention banner text".
+/// Locked sentence per CLAUDE.md "Copy rules - Intervention banner text".
 /// The visual layout splits this across two `Text` widgets (titleSmall +
 /// bodyMedium) but the [Semantics] label MUST contain the full sentence so
 /// screen readers hear the complete prompt.
@@ -30,7 +30,7 @@ Future<void> _pumpBanner(
 }
 
 void main() {
-  group('CheerUpBanner — copy parity (HB-003 §5.5a)', () {
+  group('CheerUpBanner - copy parity (HB-003 §5.5a)', () {
     testWidgets(
       'Semantics label starts with the locked sentence (5_of_7_negative)',
       (tester) async {
@@ -52,7 +52,7 @@ void main() {
     testWidgets(
       'Semantics label starts with the locked sentence (unknown reason)',
       (tester) async {
-        // Unknown codes must not break the parity contract — the locked
+        // Unknown codes must not break the parity contract - the locked
         // sentence is independent of the reason caption tail.
         await _pumpBanner(tester, reason: 'something_unmapped');
 
@@ -78,7 +78,7 @@ void main() {
     });
   });
 
-  group('CheerUpBanner — interactions', () {
+  group('CheerUpBanner - interactions', () {
     testWidgets('"Not now" invokes onDismiss; banner does not self-close', (
       tester,
     ) async {
@@ -89,7 +89,7 @@ void main() {
       await tester.pump();
 
       expect(dismissed, 1);
-      // The banner does NOT close itself — that is the parent's job (the
+      // The banner does NOT close itself - that is the parent's job (the
       // garden screen reads `bannerDismissed` from CheerUpController in
       // 5.5a and rebuilds without the banner).
       expect(find.byType(CheerUpBanner), findsOneWidget);
@@ -106,7 +106,7 @@ void main() {
     });
   });
 
-  group('CheerUpBanner — reason caption mapping', () {
+  group('CheerUpBanner - reason caption mapping', () {
     test('5_of_7_negative maps to the seven-day caption', () {
       expect(
         CheerUpBanner.reasonCaption('5_of_7_negative'),

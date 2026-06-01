@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/tokens/domain/entities/token_balance.dart';
 import 'package:moodbloom/features/tokens/domain/services/award_daily_tokens.dart';
 
-/// Tests for the pure-Dart [awardDailyTokens] engine — pivot feature #10
-/// (CLAUDE.md), HB-005 §"Track 6.2 — Token economy", spec §7.1–§7.5
+/// Tests for the pure-Dart [awardDailyTokens] engine - pivot feature #10
+/// (CLAUDE.md), HB-005 §"Track 6.2 - Token economy", spec §7.1–§7.5
 /// (TC-1..TC-5).
 ///
 /// TC-2 is THE load-bearing assertion: the function is mood-agnostic by
@@ -16,7 +16,7 @@ import 'package:moodbloom/features/tokens/domain/services/award_daily_tokens.dar
 ///      change that adds a mood-typed import trips the test
 ///      immediately, surfacing a design violation at PR time.
 void main() {
-  group('awardDailyTokens — TC-1..TC-5', () {
+  group('awardDailyTokens - TC-1..TC-5', () {
     test('TC-1 first log of day → 5 tokens, balance += 5', () {
       const start = TokenBalance(
         balance: 12,
@@ -77,7 +77,7 @@ void main() {
     test('TC-2 mood-agnostic: same balance state produces same award '
         '(no emotion input by construction)', () {
       // The function takes only the balance + clock. A fresh-day call
-      // returns 5 unconditionally — there is no path through which an
+      // returns 5 unconditionally - there is no path through which an
       // emotion-content value could change the answer, because no
       // emotion-content value is in the signature.
       const fresh = TokenBalance(
@@ -100,7 +100,7 @@ void main() {
       final source = _readTokenServiceSource();
       // Grep the canonical filenames of the emotion feature.
       // Any line importing from those would fail this assertion.
-      // A comment that mentions them in passing also fails — by
+      // A comment that mentions them in passing also fails - by
       // design: even comment-level coupling signals a design
       // smell that should surface at PR time.
       for (final needle in const [
@@ -116,7 +116,7 @@ void main() {
           isFalse,
           reason:
               'award_daily_tokens.dart contains forbidden reference '
-              '"$needle" — the function MUST stay mood-agnostic by '
+              '"$needle" - the function MUST stay mood-agnostic by '
               'construction (Cheng et al. 2019).',
         );
       }
@@ -172,7 +172,7 @@ void main() {
       final award = awardDailyTokens(current: state, now: now);
 
       expect(award.award, 5);
-      // Crucially, the previous 47-token balance is preserved — the
+      // Crucially, the previous 47-token balance is preserved - the
       // user is NOT punished for missing days. Cheng et al. 2019
       // guardrail.
       expect(award.updated.balance, 52);
@@ -201,7 +201,7 @@ void main() {
 
     test('boundary: lastEarnedDate 23:59 yesterday + now 00:01 today → '
         'fresh-day reset (different calendar day)', () {
-      // Only 2 minutes elapsed but two distinct calendar days —
+      // Only 2 minutes elapsed but two distinct calendar days -
       // localMidnight comparison fires correctly.
       final yesterdayLate = DateTime(2026, 5, 11, 23, 59);
       final nowEarly = DateTime(2026, 5, 12, 0, 1);

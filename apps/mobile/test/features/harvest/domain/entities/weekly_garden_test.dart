@@ -68,7 +68,7 @@ void main() {
       // Round-trip through JSON encode/decode so nested Freezed objects
       // are flattened to maps the same way Firestore would. Without
       // jsonEncode the List<MoodEntry> reference is preserved verbatim
-      // and `fromJson` would throw on the cast — this matches the
+      // and `fromJson` would throw on the cast - this matches the
       // production path (Firestore ↔ Map<String, dynamic>).
       final json =
           jsonDecode(jsonEncode(garden.toJson())) as Map<String, Object?>;

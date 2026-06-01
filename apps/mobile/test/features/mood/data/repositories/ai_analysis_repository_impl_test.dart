@@ -97,7 +97,7 @@ void main() {
     );
   });
 
-  group('AiAnalysisRepositoryImpl — success path', () {
+  group('AiAnalysisRepositoryImpl - success path', () {
     test('valid success payload → Ok(AiSuggestion)', () async {
       ds.nextResponse = Map<String, dynamic>.from(successPayload());
       final result = await repo.analyzeMoodText(text: 'happy day');
@@ -117,7 +117,7 @@ void main() {
     });
   });
 
-  group('AiAnalysisRepositoryImpl — server error envelopes', () {
+  group('AiAnalysisRepositoryImpl - server error envelopes', () {
     test('rate_limited carries retryAfterSec into Duration', () async {
       ds.nextResponse = Map<String, dynamic>.from(
         errorPayload('rate_limited', extra: {'retryAfterSec': 30}),
@@ -169,7 +169,7 @@ void main() {
     });
   });
 
-  group('AiAnalysisRepositoryImpl — datasource exceptions', () {
+  group('AiAnalysisRepositoryImpl - datasource exceptions', () {
     test('AiUnauthenticatedException → unauthenticated', () async {
       ds.throwOnCall = const AiAnalysisDatasourceException.unauthenticated();
       final result = await repo.analyzeMoodText(text: 'x');

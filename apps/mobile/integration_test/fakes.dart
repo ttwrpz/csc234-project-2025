@@ -43,7 +43,7 @@ class IntegrationAuthRepository implements AuthRepository {
   Result<AppUser, AuthFailure>? nextSignInResult;
 
   /// Drive a sign-in transition manually (used by tests that bypass the UI).
-  /// Not the same as calling [signInWithEmail] — does not record a call.
+  /// Not the same as calling [signInWithEmail] - does not record a call.
   void setUser(AppUser? user) {
     _user = user;
     _controller.add(user);
@@ -84,11 +84,12 @@ class IntegrationAuthRepository implements AuthRepository {
       const Err(AuthFailure.unknown(null));
 
   /// Added when the WebAuthn cold-boot sign-in landed (v1.5). Integration
-  /// tests don't cover the security-key path — returns an unconditional
+  /// tests don't cover the security-key path - returns an unconditional
   /// Err so any accidental invocation is observable rather than silent.
   @override
-  Future<Result<AppUser, AuthFailure>> signInWithCustomToken(String token) async =>
-      const Err(AuthFailure.unknown(null));
+  Future<Result<AppUser, AuthFailure>> signInWithCustomToken(
+    String token,
+  ) async => const Err(AuthFailure.unknown(null));
 
   @override
   Future<Result<void, AuthFailure>> signOut() async {
@@ -97,7 +98,7 @@ class IntegrationAuthRepository implements AuthRepository {
   }
 
   // PR #34 (HB-004 step 1) added these to the AuthRepository abstract.
-  // The integration-test fake returns Ok by default — the v1.5 Settings
+  // The integration-test fake returns Ok by default - the v1.5 Settings
   // Danger zone flow is exercised at the use-case level by
   // delete_account_test.dart, not via this integration fake. Step 2
   // (PR #36 + PR #37) adds the real wiring against a Cloud Functions
@@ -135,7 +136,7 @@ class IntegrationAuthRepository implements AuthRepository {
 /// `myMoodsStreamProvider` without a manual refresh.
 ///
 /// Mirrors the unit-test `FakeMoodRepository` shape but drives the
-/// stream live (the unit-test fake yields a fixed sequence) — required
+/// stream live (the unit-test fake yields a fixed sequence) - required
 /// here because the History screen subscribes to `watchAll(...)` and
 /// must observe a save made by the Log screen.
 class IntegrationMoodRepository implements MoodRepository {
@@ -256,7 +257,7 @@ class _NoopFirestoreDatasource implements MoodFirestoreDatasource {
   Future<void> delete({required String userId, required String id}) async {}
 }
 
-/// Integration-test [MoodSyncManager] — bootstrap, shutdown, and kick are
+/// Integration-test [MoodSyncManager] - bootstrap, shutdown, and kick are
 /// no-ops so the router's auth-transition listener can read the provider
 /// without dragging in real Firestore / Drift / connectivity_plus.
 ///
@@ -275,7 +276,7 @@ class FakeSyncManager extends MoodSyncManager {
   }) : super(mapper: const MoodEntryMapper());
 
   /// Build a [FakeSyncManager] with a fresh in-memory Drift DB and
-  /// disposable connectivity stream. Caller owns lifetime — call
+  /// disposable connectivity stream. Caller owns lifetime - call
   /// [dispose] in tearDown.
   static Future<FakeSyncManager> create() async {
     SharedPreferences.setMockInitialValues({});
@@ -303,7 +304,7 @@ class FakeSyncManager extends MoodSyncManager {
 
   @override
   void kick() {
-    // No-op — production drainer would touch Firestore.
+    // No-op - production drainer would touch Firestore.
   }
 
   @override
@@ -315,7 +316,7 @@ class FakeSyncManager extends MoodSyncManager {
   Future<void> shutdown() async {
     shutdownCalls += 1;
     // Cancel the parent's connectivity sub + poll timer for a clean
-    // tearDown — without this, dangling timers leak across tests.
+    // tearDown - without this, dangling timers leak across tests.
     await super.shutdown();
   }
 

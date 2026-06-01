@@ -35,7 +35,7 @@ class TierToggleTile extends ConsumerWidget {
     // Surface a one-shot SnackBar after a failure. We listen rather than
     // build-time read so re-renders triggered by other state shifts
     // don't re-fire the toast. The listener fires from EVERY tier tile,
-    // so we use `previous.lastError == next.lastError` to dedupe — the
+    // so we use `previous.lastError == next.lastError` to dedupe - the
     // first tile that sees the new failure shows the SnackBar, the
     // others stay quiet.
     ref.listen<NotificationsToggleState>(notificationsControllerProvider, (
@@ -88,7 +88,7 @@ class TierToggleTile extends ConsumerWidget {
   }
 
   /// Per-tier copy + icon. Kept inside the widget file so the three
-  /// strings live next to the switch that renders them — easier for
+  /// strings live next to the switch that renders them - easier for
   /// the qa-engineer + copy reviewer to audit than spreading them
   /// across a separate constants file.
   ///

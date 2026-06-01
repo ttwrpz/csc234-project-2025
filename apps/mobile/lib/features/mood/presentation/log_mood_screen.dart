@@ -21,7 +21,7 @@ import 'widgets/media_thumbnail_strip.dart';
 import 'widgets/mood_text_field.dart';
 import 'widgets/mood_type_grid.dart';
 
-/// Mood logging screen — intensity 1..5 entry plus the AI mood detection
+/// Mood logging screen - intensity 1..5 entry plus the AI mood detection
 /// entry point.
 ///
 /// Visual treatment refreshed in v1.6 to match `LogMoodScreen` in
@@ -244,7 +244,7 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
     if (context.mounted) {
       // Edit returns to the detail screen so the user can verify the
       // updated values. New-entry flows drop on the garden home (`/home`)
-      // — the user just logged a mood and the SkyHeader / daily-score
+      // - the user just logged a mood and the SkyHeader / daily-score
       // strip is where they SEE the impact (atmosphere shift, EWMA tier,
       // today's cell).
       if (original != null) {
@@ -281,7 +281,7 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
   }
 }
 
-/// Phone layout — single column. Order per the prototype:
+/// Phone layout - single column. Order per the prototype:
 /// header (above) -> mood grid -> intensity slider -> AI suggestion ->
 /// note field -> media row -> save -> disclaimer.
 class _NarrowBody extends ConsumerWidget {
@@ -364,7 +364,7 @@ class _NarrowBody extends ConsumerWidget {
   }
 }
 
-/// Tablet+/desktop layout — two columns. Left column hosts the mood
+/// Tablet+/desktop layout - two columns. Left column hosts the mood
 /// grid + intensity slider; right column hosts the AI pill + note field
 /// + media + save + disclaimer.
 class _WideBody extends ConsumerWidget {
@@ -461,7 +461,7 @@ class _WideBody extends ConsumerWidget {
   }
 }
 
-/// Header — "How are you feeling?" (or "Edit entry" in edit mode).
+/// Header - "How are you feeling?" (or "Edit entry" in edit mode).
 class _Header extends StatelessWidget {
   const _Header({required this.isEditMode});
 
@@ -501,7 +501,7 @@ class _MoodGridSection extends StatelessWidget {
   }
 }
 
-/// Intensity slider section — eyebrow + slider in a card + "barely" /
+/// Intensity slider section - eyebrow + slider in a card + "barely" /
 /// "quite a bit" end-cap labels.
 class _IntensitySection extends StatelessWidget {
   const _IntensitySection({
@@ -562,7 +562,7 @@ class _IntensitySection extends StatelessWidget {
   }
 }
 
-/// Note field — "NOTE (OPTIONAL)" eyebrow over an `MbCard` that hosts the
+/// Note field - "NOTE (OPTIONAL)" eyebrow over an `MbCard` that hosts the
 /// 4-row text input plus a "n/500" counter. The placeholder matches the
 /// prototype: "What's on your mind? (you can skip this)".
 class _NoteField extends StatelessWidget {
@@ -604,7 +604,7 @@ class _NoteField extends StatelessWidget {
   }
 }
 
-/// Media section — eyebrow + `MediaPickerButton` + existing thumbnails.
+/// Media section - eyebrow + `MediaPickerButton` + existing thumbnails.
 class _MediaSection extends StatelessWidget {
   const _MediaSection({
     required this.draft,
@@ -648,7 +648,7 @@ class _MediaSection extends StatelessWidget {
   }
 }
 
-/// Save button — "Save to your garden" / "Save changes" with a leading
+/// Save button - "Save to your garden" / "Save changes" with a leading
 /// check icon, per the prototype's primary CTA.
 class _SaveButton extends StatelessWidget {
   const _SaveButton({
@@ -679,7 +679,7 @@ class _SaveButton extends StatelessWidget {
   }
 }
 
-/// Footer disclaimer line — "Tokens are earned for showing up. Empty days
+/// Footer disclaimer line - "Tokens are earned for showing up. Empty days
 /// are fine." Italic Nunito 12 / `textDim`, centered.
 class _DisclaimerFootnote extends StatelessWidget {
   const _DisclaimerFootnote({required this.color});
@@ -701,7 +701,7 @@ class _DisclaimerFootnote extends StatelessWidget {
 }
 
 /// Soft-coral banner shown at the top of Log Mood when in edit mode.
-/// Tells the user (1) which entry they're editing — by date — and
+/// Tells the user (1) which entry they're editing - by date - and
 /// (2) gives them a one-tap escape via Cancel that drops them back at
 /// the detail screen unchanged.
 class _EditModeBanner extends StatelessWidget {

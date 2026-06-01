@@ -9,11 +9,11 @@ import '../harvest_failure.dart';
 /// Implementations live in `data/` and may use Firestore, Drift, or a
 /// fake. The concrete implementation writes to
 /// `users/{userId}/weeklyGardens/{weekId}` via `set(merge: false)`. The
-/// firestore rule denies update + delete on this collection — calling
+/// firestore rule denies update + delete on this collection - calling
 /// [archive] for an existing weekId surfaces as
 /// [HarvestFailure.alreadyArchived].
 ///
-/// Pure-Dart contract — imports only `package:core/core.dart` and sibling
+/// Pure-Dart contract - imports only `package:core/core.dart` and sibling
 /// domain entities. Domain-purity rule per CLAUDE.md.
 abstract class HarvestRepository {
   /// Writes the [garden] to its `weeklyGardens/{garden.weekId}` doc.

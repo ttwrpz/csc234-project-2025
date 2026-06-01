@@ -12,7 +12,7 @@ DailyScore _day(DateTime when, double avgScore) =>
 DateTime _ago(int days) => localMidnight(_now).subtract(Duration(days: days));
 
 void main() {
-  group('zScoreToday — guards', () {
+  group('zScoreToday - guards', () {
     test('today not in history → null (no signal today)', () {
       // Plenty of baseline but no entry for today.
       final history = [
@@ -42,7 +42,7 @@ void main() {
     });
   });
 
-  group('zScoreToday — TC-28 worked example', () {
+  group('zScoreToday - TC-28 worked example', () {
     // Baseline series (14 distinct days, lookback excludes today):
     //   [0.5, 0.4, 0.3, 0.2, 0.1, 0.4, 0.3, 0.2, 0.5, 0.3, 0.3, 0.3, 0.2, 0.4]
     // → μ ≈ 0.31429, population σ ≈ 0.11247.
@@ -52,7 +52,7 @@ void main() {
     // sails far past that threshold so the assertion is robust against
     // small variance-divisor changes (n vs n-1). The pinned z value is
     // verified by the implementation; if a future divisor change shifts
-    // it, recompute and update — the Tier-3 inequality is the user-facing
+    // it, recompute and update - the Tier-3 inequality is the user-facing
     // contract.
 
     test('TC-28: z ≈ -10.80 (well below -2.5 → Tier 3 trigger)', () {
@@ -68,13 +68,13 @@ void main() {
       final z = zScoreToday(history, now: _now);
       expect(z, isNotNull);
       expect(z!, lessThan(-2.5));
-      // Pinned numerically — see header comment for derivation.
+      // Pinned numerically - see header comment for derivation.
       expect(z, closeTo(-10.795, 0.005));
     });
 
     test('today equals baseline mean → z ≈ 0', () {
       // 14 distinct baseline days with μ = 0.3 by construction.
-      // Use `[0.32, 0.28, 0.32, 0.28, ...]` — μ = 0.3, small but non-zero σ.
+      // Use `[0.32, 0.28, 0.32, 0.28, ...]` - μ = 0.3, small but non-zero σ.
       final history = [
         _day(_ago(0), 0.3), // today
         for (var i = 1; i <= 14; i++) _day(_ago(i), i.isOdd ? 0.32 : 0.28),
@@ -85,7 +85,7 @@ void main() {
     });
   });
 
-  group('zScoreToday — threshold neighbourhood', () {
+  group('zScoreToday - threshold neighbourhood', () {
     test('z just under -2.5 is reported (caller decides Tier 3)', () {
       // Construct baseline so today's z lands at ≈ -2.49:
       //   μ = 0.0, σ ≈ 0.4, today = -2.49 × 0.4 ≈ -0.996.
@@ -114,7 +114,7 @@ void main() {
     });
   });
 
-  group('zScoreToday — baseline window', () {
+  group('zScoreToday - baseline window', () {
     test(
       'days outside the 30-day window are not in the baseline (custom window)',
       () {

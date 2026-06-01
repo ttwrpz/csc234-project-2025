@@ -114,7 +114,7 @@ class InterventionStateRepositoryImpl implements InterventionStateRepository {
 
     try {
       final persisted = await _datasource.writeFirstTriggeredAtIfNull(uid, now);
-      // Mirror with whatever value won the transaction — that may NOT
+      // Mirror with whatever value won the transaction - that may NOT
       // be `now` if a concurrent device anchored first.
       if (persisted != null) {
         await _mirror.writeFirstTriggeredAt(persisted);

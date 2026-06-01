@@ -200,7 +200,7 @@ class WebauthnRepositoryImpl implements WebauthnRepository {
       return const Err(WebauthnVerifyFailure.unknown(null));
     }
 
-    // Usernameless get — the server sent an empty allowCredentials list,
+    // Usernameless get - the server sent an empty allowCredentials list,
     // so the browser surfaces the resident passkey and returns its
     // userHandle (= uid) in the assertion.
     final WebauthnAssertionResponse browserResp;
@@ -213,7 +213,9 @@ class WebauthnRepositoryImpl implements WebauthnRepository {
     } on WebauthnUnsupportedException {
       return const Err(WebauthnVerifyFailure.network());
     } catch (e) {
-      _logger.warn('webauthn browser login getAssertion failed: ${e.runtimeType}');
+      _logger.warn(
+        'webauthn browser login getAssertion failed: ${e.runtimeType}',
+      );
       return Err(WebauthnVerifyFailure.unknown(e.runtimeType));
     }
 

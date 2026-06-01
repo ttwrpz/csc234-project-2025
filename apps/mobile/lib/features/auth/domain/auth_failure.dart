@@ -22,7 +22,7 @@ sealed class AuthFailure extends Failure {
   const factory AuthFailure.biometricFailed(String reason) = _BiometricFailed;
   // Surfaced by `AuthRepository.deleteCurrentUser()` when Firebase
   // Auth's ~5-minute recent-login window has elapsed. This is a
-  // *recoverable* state from a data-integrity standpoint — the server
+  // *recoverable* state from a data-integrity standpoint - the server
   // cascade has already run, so the local Auth record being orphaned
   // is acceptable. The use case logs and proceeds to signOut.
   const factory AuthFailure.requiresRecentLogin() = _RequiresRecentLogin;

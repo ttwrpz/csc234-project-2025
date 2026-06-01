@@ -1,5 +1,5 @@
 /**
- * Firestore + Storage Security Rules — emulator tests (WBS 2.3).
+ * Firestore + Storage Security Rules - emulator tests (WBS 2.3).
  *
  * These tests boot the Firestore + Storage emulators (via firebase emulators:exec)
  * and exercise every branch of `firebase/firestore.rules` and
@@ -138,10 +138,10 @@ function validMoodPayload(
 }
 
 // ---------------------------------------------------------------------------
-// Cases 1-12 — Firestore rules
+// Cases 1-12 - Firestore rules
 // ---------------------------------------------------------------------------
 
-describe("Firestore rules — users/{uid}/moods", () => {
+describe("Firestore rules - users/{uid}/moods", () => {
   it("Case 1: userB cannot write to userA's moods (per-user RBAC)", async () => {
     const userB = testEnv.authenticatedContext(USER_B).firestore();
     await assertFails(
@@ -151,7 +151,7 @@ describe("Firestore rules — users/{uid}/moods", () => {
 
   it("Case 2: create with createdAt != request.time is denied", async () => {
     const userA = testEnv.authenticatedContext(USER_A).firestore();
-    // Backdated timestamp — must NOT equal request.time (server time).
+    // Backdated timestamp - must NOT equal request.time (server time).
     const backdated = Timestamp.fromMillis(Date.now() - ONE_HOUR_MS);
     await assertFails(
       setDoc(
@@ -227,7 +227,7 @@ describe("Firestore rules — users/{uid}/moods", () => {
     // Anchor `createdAt` at today's UTC midnight + 1h. The rule
     // permits updates when `request.time.year/month/day` equals
     // `resource.data.createdAt.year/month/day`, so this is the test
-    // for "same day" — replacing the prior 24h-window semantics.
+    // for "same day" - replacing the prior 24h-window semantics.
     const recentCreatedAt = todayMidnightUtcPlus(ONE_HOUR_MS);
     await seedMoodEntry(USER_A, "m1", {
       mood: "okay",
@@ -257,7 +257,7 @@ describe("Firestore rules — users/{uid}/moods", () => {
     });
 
     const userA = testEnv.authenticatedContext(USER_A).firestore();
-    // Try to shift createdAt — rules require equality with resource.data.createdAt.
+    // Try to shift createdAt - rules require equality with resource.data.createdAt.
     await assertFails(
       updateDoc(doc(userA, `users/${USER_A}/moods/m1`), {
         createdAt: Timestamp.fromMillis(Date.now() - 5 * 60 * 1000),
@@ -303,7 +303,7 @@ describe("Firestore rules — users/{uid}/moods", () => {
   });
 
   it("Case 12: read of another user's rateLimits/{otherUid} is denied", async () => {
-    // rateLimits is admin-SDK only — even the owner cannot read.
+    // rateLimits is admin-SDK only - even the owner cannot read.
     await testEnv.withSecurityRulesDisabled(async (context) => {
       const adminDb = context.firestore();
       await setDoc(doc(adminDb, `rateLimits/${USER_A}`), { count: 7 });
@@ -314,7 +314,7 @@ describe("Firestore rules — users/{uid}/moods", () => {
   });
 
   // -------------------------------------------------------------------------
-  // Cases 16-17 — R-1 and R-2 from the security-reviewer audit (2026-04-29)
+  // Cases 16-17 - R-1 and R-2 from the security-reviewer audit (2026-04-29)
   // -------------------------------------------------------------------------
 
   it("Case 16 (R-1): update with client-supplied past updatedAt is denied", async () => {
@@ -329,7 +329,7 @@ describe("Firestore rules — users/{uid}/moods", () => {
     });
 
     const userA = testEnv.authenticatedContext(USER_A).firestore();
-    // Client tries to backdate updatedAt — rules require == request.time, so
+    // Client tries to backdate updatedAt - rules require == request.time, so
     // any client-supplied Timestamp (past or future) must be rejected.
     const backdatedUpdatedAt = Timestamp.fromMillis(
       Date.now() - 10 * 60 * 60 * 1000,
@@ -365,10 +365,10 @@ describe("Firestore rules — users/{uid}/moods", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Cases 18-23 — users/{uid}/settings/notifications (WBS 6.3, HB-003)
+// Cases 18-23 - users/{uid}/settings/notifications (WBS 6.3, HB-003)
 // ---------------------------------------------------------------------------
 
-describe("Firestore rules — users/{uid}/settings/notifications", () => {
+describe("Firestore rules - users/{uid}/settings/notifications", () => {
   /** Seed a notifications-settings doc bypassing rules. */
   async function seedSettings(
     uid: string,
@@ -512,10 +512,10 @@ describe("Firestore rules — users/{uid}/settings/notifications", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Cases 26-32 — users/{uid}/cheerUpEvents (HB-003 §5.5b)
+// Cases 26-32 - users/{uid}/cheerUpEvents (HB-003 §5.5b)
 // ---------------------------------------------------------------------------
 
-describe("Firestore rules — users/{uid}/cheerUpEvents", () => {
+describe("Firestore rules - users/{uid}/cheerUpEvents", () => {
   /** Build a valid cheerUpEvents payload for create. */
   function validEventPayload(
     overrides: Partial<Record<string, unknown>> = {},
@@ -563,7 +563,7 @@ describe("Firestore rules — users/{uid}/cheerUpEvents", () => {
 
   it("Case 29: create with client-supplied past createdAt is denied", async () => {
     const userA = testEnv.authenticatedContext(USER_A).firestore();
-    // Rule requires createdAt == request.time — any client Timestamp must fail.
+    // Rule requires createdAt == request.time - any client Timestamp must fail.
     const backdated = Timestamp.fromMillis(Date.now() - ONE_HOUR_MS);
     await assertFails(
       setDoc(
@@ -618,7 +618,7 @@ describe("Firestore rules — users/{uid}/cheerUpEvents", () => {
   });
 
   it("Case 32 (regression analog of Case 25): userB cannot write to userA's cheerUpEvents", async () => {
-    // Mirrors Case 25 for the new collection — the outer per-user
+    // Mirrors Case 25 for the new collection - the outer per-user
     // RBAC gate and the new match block must both deny cross-user
     // creates, with explicit coverage so future drift cannot silently
     // open a hole.
@@ -633,10 +633,10 @@ describe("Firestore rules — users/{uid}/cheerUpEvents", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Cases 33-37 — users/{uid}/interventionState/current (HB-003 §5.5a/b, ADR-0008)
+// Cases 33-37 - users/{uid}/interventionState/current (HB-003 §5.5a/b, ADR-0008)
 // ---------------------------------------------------------------------------
 
-describe("Firestore rules — users/{uid}/interventionState/current", () => {
+describe("Firestore rules - users/{uid}/interventionState/current", () => {
   /** Build a valid interventionState/current payload for create. */
   function validAnchorPayload(
     overrides: Partial<Record<string, unknown>> = {},
@@ -723,7 +723,7 @@ describe("Firestore rules — users/{uid}/interventionState/current", () => {
     // previously included `schemaV` without a type guard, letting a
     // buggy or malicious client overwrite it with arbitrary values.
     // The fix tightens affectedKeys to ['lastTriggeredAt','firstTriggeredAt']
-    // — schemaV is set on create and is immutable thereafter (a real
+    // - schemaV is set on create and is immutable thereafter (a real
     // schema migration runs in a Cloud Function under admin SDK,
     // bypassing this rule). This test guards the invariant so a future
     // permissive-allowlist regression fails CI.
@@ -744,11 +744,11 @@ describe("Firestore rules — users/{uid}/interventionState/current", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Cases 13-15 — Storage rules
+// Cases 13-15 - Storage rules
 // ---------------------------------------------------------------------------
 
-describe("Storage rules — users/{uid}/media/**", () => {
-  // 1×1 transparent PNG — small valid image fixture.
+describe("Storage rules - users/{uid}/media/**", () => {
+  // 1×1 transparent PNG - small valid image fixture.
   const SMALL_PNG = new Uint8Array([
     0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
     0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
@@ -788,7 +788,7 @@ describe("Storage rules — users/{uid}/media/**", () => {
 });
 
 /**
- * Sprint-4 redesign — Pattern Engine result collection.
+ * Sprint-4 redesign - Pattern Engine result collection.
  *
  * The 5-algorithm engine (Mann-Kendall, sliding 5-of-7, 3-consecutive
  * S<=-0.6, Z-score, CUSUM) writes one PatternResult per local-midnight
@@ -866,7 +866,7 @@ describe("Sprint-4 patterns/{dateId} rule (ADR-0011)", () => {
     );
   });
 
-  it("create with off-allowlist key (e.g. moodCode) is denied — PII guard", async () => {
+  it("create with off-allowlist key (e.g. moodCode) is denied - PII guard", async () => {
     const userA = testEnv.authenticatedContext(USER_A).firestore();
     await assertFails(
       setDoc(doc(userA, `users/${USER_A}/patterns/${TODAY}`), {
@@ -966,7 +966,7 @@ describe("Sprint-4 S5-stub collections (ADR-0011)", () => {
 
   it("interventions/{id} read is allowed for owner", async () => {
     const userA = testEnv.authenticatedContext(USER_A).firestore();
-    // Doc may or may not exist — assertSucceeds covers both.
+    // Doc may or may not exist - assertSucceeds covers both.
     await assertSucceeds(
       getDoc(doc(userA, `users/${USER_A}/interventions/abc`)),
     );
@@ -990,7 +990,7 @@ describe("Sprint-4 S5-stub collections (ADR-0011)", () => {
 });
 
 /**
- * v1.0-polish — `users/{uid}.insightsDisclaimerAcked` field-level guard.
+ * v1.0-polish - `users/{uid}.insightsDisclaimerAcked` field-level guard.
  *
  * Spec §4 + ADR-0010: the bipolar/medical disclaimer ack is one-way
  * (false → true). The user-doc rule splits read / create / update so
@@ -1040,7 +1040,7 @@ describe("v1.0-polish users/{uid}.insightsDisclaimerAcked one-way guard", () => 
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(doc(ctx.firestore(), `users/${USER_A}`), {
         displayName: "Alice",
-        // insightsDisclaimerAcked field absent — legacy doc shape.
+        // insightsDisclaimerAcked field absent - legacy doc shape.
       });
     });
     const userA = testEnv.authenticatedContext(USER_A).firestore();
@@ -1119,20 +1119,20 @@ describe("v1.0-polish users/{uid}.insightsDisclaimerAcked one-way guard", () => 
 });
 
 /**
- * v1.0-polish — `users/{uid}/weeklyGardens/{weekId}` archive rule.
+ * v1.0-polish - `users/{uid}/weeklyGardens/{weekId}` archive rule.
  *
  * HB-005 Track 6.1 + ADR-0010 §6 ("Weekly Harvest cycle: write-once-on-
  * archive, then read-only"). The collection was unintentionally omitted
  * from the Sprint-4 architect rules pass (firestore.rules commit
  * `a7c1dd80` only added `patterns/{date}` + S5-stub denials). Result:
  * a 403 on `BatchGetDocuments` from `weeklyGardenHistoryProvider` and
- * the dev-mode "Force harvest now" button — Firestore denies-by-default
+ * the dev-mode "Force harvest now" button - Firestore denies-by-default
  * when no match block is present. This rule unblocks the History tab
  * read-side AND the create-side write.
  *
  * Validation: doc-id `^\d{4}-W\d{2}$`; `weekId` field matches the doc
  * id; `archivedAt` is an ISO-8601 string (json_serializable's default
- * DateTime serializer — Firestore does NOT auto-convert unless the
+ * DateTime serializer - Firestore does NOT auto-convert unless the
  * client uses `FieldValue.serverTimestamp()`). Update + delete denied.
  */
 describe("v1.0-polish weeklyGardens/{weekId} write-once rule", () => {

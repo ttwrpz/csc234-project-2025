@@ -22,7 +22,7 @@ import 'repositories/token_repository_impl.dart';
 /// The repository provider lives here (data layer) because the domain
 /// layer must not import `package:flutter_riverpod` per CLAUDE.md's
 /// domain-purity rule. The pure-Dart [awardDailyTokens] function is
-/// invoked inside the datasource transaction — no provider needed.
+/// invoked inside the datasource transaction - no provider needed.
 
 /// Thin Firestore datasource for the three token-economy fields on the
 /// `users/{uid}` profile doc. Tests fake this provider via
@@ -33,7 +33,7 @@ final tokenBalanceFirestoreDatasourceProvider =
     );
 
 /// Firestore-backed [TokenRepository]. Wraps the datasource and maps
-/// `FirebaseException` codes to `TokenFailure`. Best-effort writes —
+/// `FirebaseException` codes to `TokenFailure`. Best-effort writes -
 /// failures are logged + swallowed by the post-save controller.
 final tokenRepositoryProvider = Provider<TokenRepository>(
   (ref) => TokenRepositoryImpl(
@@ -46,7 +46,7 @@ final tokenRepositoryProvider = Provider<TokenRepository>(
 /// skin-purchase write, etc).
 ///
 /// Returns [AsyncValue.loading] before auth resolves and a synthetic
-/// fresh-user balance once a `null` user emits — the garden chip is
+/// fresh-user balance once a `null` user emits - the garden chip is
 /// only rendered for signed-in users so the loading branch is a
 /// presentation no-op.
 final tokenBalanceStreamProvider = StreamProvider<TokenBalance>((ref) {

@@ -8,13 +8,13 @@ import 'package:moodbloom/features/mood/domain/entities/mood_type.dart';
 
 import '../../../helpers/pump_app.dart';
 
-/// TC-6 — the canonical assertion is "unlock sunflower skin → ALL
+/// TC-6 - the canonical assertion is "unlock sunflower skin → ALL
 /// sunflowers in this week's garden display the new skin; past
 /// harvested gardens keep their original `selectedSkinId`."
 ///
 /// The MoodEntry domain entity does NOT carry a `selectedSkinId`
 /// field in v1.0 (see `apps/mobile/lib/features/mood/domain/entities/
-/// mood_entry.dart` — the redesign moved per-species selection onto
+/// mood_entry.dart` - the redesign moved per-species selection onto
 /// the user profile's `selectedSkins` map). Per-flower skin
 /// propagation therefore flows through `GardenBed.speciesAccent`:
 ///
@@ -22,12 +22,12 @@ import '../../../helpers/pump_app.dart';
 ///     from the user's `SkinState.selectedFor(species)`. Every
 ///     painted flower of that species recolours.
 ///   * Past harvested gardens (history archive view) pass `null` so
-///     the painter uses its hardcoded species defaults — preserving
+///     the painter uses its hardcoded species defaults - preserving
 ///     the snapshot look at archive time.
 ///
 /// We split TC-6 across two scenarios to mirror that data-flow
 /// boundary (the prompt explicitly allows splitting). Both rely on
-/// the public `GardenBed` API only — no provider rig, no Firestore.
+/// the public `GardenBed` API only - no provider rig, no Firestore.
 MoodEntry _entry({
   required String id,
   required MoodType mood,
@@ -67,7 +67,7 @@ Future<void> _pumpBed(
 }
 
 void main() {
-  group('GardenBed — TC-6 current-week sunflower skin propagation', () {
+  group('GardenBed - TC-6 current-week sunflower skin propagation', () {
     // Pick a unique colour the painter would never produce on its own
     // for the default sunflower (which uses 0xFFF6C45A). Asserting
     // that the painter received this accent for the sunflower species
@@ -78,7 +78,7 @@ void main() {
 
     testWidgets(
       'live canvas with 3 sunflower entries receives the sunflower accent '
-      'override (TC-6 Part A — current week)',
+      'override (TC-6 Part A - current week)',
       (tester) async {
         // Three sunflower entries from this week.
         final entries = [
@@ -111,7 +111,7 @@ void main() {
 
         final bed = tester.widget<GardenBed>(find.byType(GardenBed));
         // Painter contract: the bed forwards `speciesAccent` verbatim.
-        // This is the seam TC-6 asserts on — every sunflower painted
+        // This is the seam TC-6 asserts on - every sunflower painted
         // by `_GardenBedPainter._paintSunflower` reads its front-petal
         // colour from this map. Three entries × one map → all three
         // sunflowers recolour.
@@ -132,7 +132,7 @@ void main() {
               'in the accent map; the painter falls back to the species '
               'default for absent keys',
         );
-        // Semantics label still reports 3 sunflowers — the recolour
+        // Semantics label still reports 3 sunflowers - the recolour
         // happens at paint time only, not at the entry-counting layer.
         expect(find.bySemanticsLabel(RegExp(r'3 plants')), findsOneWidget);
         expect(find.bySemanticsLabel(RegExp(r'sunflower')), findsOneWidget);
@@ -141,10 +141,10 @@ void main() {
 
     testWidgets(
       'archived past-week canvas passes speciesAccent: null so historical '
-      'sunflowers keep their snapshot look (TC-6 Part B — past week)',
+      'sunflowers keep their snapshot look (TC-6 Part B - past week)',
       (tester) async {
         // Same three sunflower entries, but this time the surface
-        // mounts the bed with `speciesAccent: null` — mirroring the
+        // mounts the bed with `speciesAccent: null` - mirroring the
         // history-archive call-site (`garden_bed.dart` line 79: "Past
         // harvested gardens never receive this override").
         final entries = [
@@ -182,7 +182,7 @@ void main() {
 
     testWidgets(
       'empty speciesAccent map (no alternates selected) is equivalent to '
-      'null for absent keys — default rendering preserved',
+      'null for absent keys - default rendering preserved',
       (tester) async {
         // The GardenScreen builds `speciesAccent` only for species
         // where (a) the user selected a skin AND (b) that skin is an
@@ -239,7 +239,7 @@ void main() {
         expect(bed.speciesAccent![FlowerSpecies.sunflower], sunflowerAccent);
         expect(bed.speciesAccent![FlowerSpecies.lavender], lavenderAccent);
         // Daisy and fern entries are present, but the user has not
-        // selected an alternate for them — their species keys must
+        // selected an alternate for them - their species keys must
         // be absent from the override map (the painter falls back to
         // the species default for absent keys).
         expect(bed.speciesAccent!.containsKey(FlowerSpecies.daisy), isFalse);

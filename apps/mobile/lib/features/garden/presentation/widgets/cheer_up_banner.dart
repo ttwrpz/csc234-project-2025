@@ -15,7 +15,7 @@ import '../../../intervention/presentation/screens/breathing_screen.dart';
 /// "Try it" opens the breathing modal via [BreathingSheet]. "Not now"
 /// calls [onDismiss],
 /// which the parent uses to hide the banner for the rest of the session
-/// (it does NOT write the cooldown to storage — that flow lives in the
+/// (it does NOT write the cooldown to storage - that flow lives in the
 /// pattern detector).
 class CheerUpBanner extends StatelessWidget {
   const CheerUpBanner({
@@ -82,7 +82,7 @@ class CheerUpBanner extends StatelessWidget {
           children: [
             const Padding(
               padding: EdgeInsets.only(top: 2),
-              // The cherry-blossom is purely ornamental — the
+              // The cherry-blossom is purely ornamental - the
               // surrounding Semantics(label:) already covers the full
               // locked sentence. Excluding stops screen readers from
               // announcing "cherry blossom emoji" before the sentence.

@@ -8,16 +8,16 @@ import '../../domain/notifications_settings.dart';
 /// Outcome of a [FcmDatasource.requestPermission] call.
 ///
 /// Mirrors the subset of `AuthorizationStatus` that matters for the
-/// toggle: granted vs. not. `provisional` (iOS) is treated as granted —
+/// toggle: granted vs. not. `provisional` (iOS) is treated as granted -
 /// the user can still receive non-interruptive cheer-up pushes.
 enum FcmPermissionOutcome { granted, denied }
 
 /// Public VAPID key for web push subscriptions. Generate via Firebase
 /// Console → Project Settings → Cloud Messaging → Web configuration →
 /// "Generate key pair". The public half is safe to ship in client code
-/// — the browser uses it to subscribe; the matching private half stays
+/// - the browser uses it to subscribe; the matching private half stays
 /// in Firebase. Leave empty to fall back to platform-default behaviour
-/// (Android only — web `getToken` will return `null`).
+/// (Android only - web `getToken` will return `null`).
 const String _kWebVapidPublicKey =
     'BOTljqdiD_OL2ti5FpqeG0e0g5LmRp9c8kx69VMMSJm26GYqX2Rn6SDnpnevIh3oxrXldoUGZguyuFah-PcCMw0';
 
@@ -31,13 +31,13 @@ class FcmDatasource {
 
   /// Requests notification permission. On Android < 13 this returns
   /// `granted` immediately because permission is granted at install
-  /// time. On Web this triggers the browser permission prompt — but
+  /// time. On Web this triggers the browser permission prompt - but
   /// only when `web/firebase-messaging-sw.js` is registered with a
   /// real Firebase config (a placeholder config silently denies the
   /// prompt).
   ///
   /// **Android 13+ note:** `firebase_messaging.requestPermission()`
-  /// does NOT show the runtime POST_NOTIFICATIONS dialog — the plugin
+  /// does NOT show the runtime POST_NOTIFICATIONS dialog - the plugin
   /// only reads `NotificationManagerCompat.areNotificationsEnabled()`
   /// and returns `notDetermined`/`denied` without prompting. To
   /// actually surface the OS dialog we route through
@@ -52,7 +52,7 @@ class FcmDatasource {
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >();
-      // `null` = Android < 13 (no runtime permission concept — already
+      // `null` = Android < 13 (no runtime permission concept - already
       // granted at install). `true` = user just allowed. `false` =
       // user just denied. Fall through to firebase_messaging in the
       // first two cases so FCM's internal state stays consistent with

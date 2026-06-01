@@ -1,6 +1,6 @@
 import 'package:flutter/painting.dart';
 
-/// Colours and visual constants for [MoodScoreLineChart]. Pure data —
+/// Colours and visual constants for [MoodScoreLineChart]. Pure data -
 /// no Flutter widgets. Callers compose this from their theme so the
 /// chart stays decoupled from `packages/design_system`.
 ///

@@ -33,7 +33,7 @@ import 'datasources/intervention_state_firestore_datasource.dart';
 import 'intervention_state_repository_impl.dart';
 import 'intervention_state_storage.dart';
 
-/// Garden has no Firestore-backed data layer of its own — it is a derived
+/// Garden has no Firestore-backed data layer of its own - it is a derived
 /// view over the mood feed. The providers in this file just wire the pure
 /// use case to the existing `myMoodsStreamProvider`.
 
@@ -46,13 +46,13 @@ final computeGardenStateUseCaseProvider = Provider<ComputeGardenStateUseCase>((
 });
 
 /// Debug-only override that forces a specific [PlantTier] on the
-/// computed [GardenState]. `null` (default) means "no override — use
+/// computed [GardenState]. `null` (default) means "no override - use
 /// the EWMA-derived tier". Settings → Debug exposes a tile that cycles
 /// this through the 5 tiers so reviewers can see every visual state
 /// without manufacturing entries.
 ///
 /// Production paths never set this. The override is a runtime state,
-/// not persisted across launches — it resets to `null` on app restart.
+/// not persisted across launches - it resets to `null` on app restart.
 class DebugPlantTierOverride extends Notifier<PlantTier?> {
   @override
   PlantTier? build() => null;
@@ -72,7 +72,7 @@ final debugPlantTierOverrideProvider =
 /// pure use case. `DateTime.now()` is captured on every recompute so the
 /// daily-score strip + atmosphere roll forward when the underlying stream
 /// re-emits (e.g. a fresh mood log). Crossing midnight without a new
-/// emission is acceptable — the strip refreshes on the next interaction.
+/// emission is acceptable - the strip refreshes on the next interaction.
 ///
 /// `weekStart` is the local-midnight `DateTime` of the current week's
 /// Monday. `H_t` resets to 0 on every fresh week (weekly harvest cycle).
@@ -99,7 +99,7 @@ final gardenStateStreamProvider = Provider<AsyncValue<GardenState>>((ref) {
 });
 
 /// Local-midnight `DateTime` of the Monday of the week containing [now].
-/// Pure helper colocated with the provider — kept private because the
+/// Pure helper colocated with the provider - kept private because the
 /// domain layer should not own week-start semantics (those are presentation /
 /// product policy: Monday vs Sunday vs ISO weeks).
 DateTime _localMondayMidnight(DateTime now) {
@@ -127,7 +127,7 @@ final gardenEntriesStreamProvider = Provider<AsyncValue<List<MoodEntry>>>(
 /// `SharedPreferences.setMockInitialValues({...})`.
 ///
 /// This is the OFFLINE MIRROR for [InterventionAnchors], not the source
-/// of truth — the cloud doc at `users/{uid}/interventionState/current` is
+/// of truth - the cloud doc at `users/{uid}/interventionState/current` is
 /// canonical. Read+write callers go through
 /// [interventionStateRepositoryProvider].
 final interventionStateStorageProvider =
@@ -205,7 +205,7 @@ final interventionAnchorsProvider = FutureProvider<InterventionAnchors>((
 /// launches.
 ///
 /// External shape unchanged (an `AsyncValue<InterventionState>`) so the
-/// Garden screen and any existing tests keep working — the swap of the
+/// Garden screen and any existing tests keep working - the swap of the
 /// underlying storage to the Firestore-primary repository is internal.
 final interventionStateProvider = Provider<AsyncValue<InterventionState>>((
   ref,

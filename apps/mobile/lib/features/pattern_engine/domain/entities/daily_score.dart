@@ -8,9 +8,9 @@ part 'daily_score.freezed.dart';
 /// `package:core/core.dart` when constructing). `avgScore` is the mean of
 /// `MoodScore.value` across the day's entries (pure-Dart computation; the
 /// orchestrator on Day 3 will build these from the user's `MoodEntry` list).
-/// `entryCount` is for diagnostics — the algorithms do not read it.
+/// `entryCount` is for diagnostics - the algorithms do not read it.
 ///
-/// Pure-Dart entity — only imports `freezed_annotation` (annotation-only).
+/// Pure-Dart entity - only imports `freezed_annotation` (annotation-only).
 @freezed
 abstract class DailyScore with _$DailyScore {
   const factory DailyScore({

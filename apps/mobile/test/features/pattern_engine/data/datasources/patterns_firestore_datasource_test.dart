@@ -6,7 +6,7 @@ import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 /// The project does not depend on `fake_cloud_firestore` (see
 /// `intervention_state_firestore_datasource.dart` for the same convention),
 /// so we cannot exercise the live Firestore round-trip here. Instead we
-/// pin the JSON shape that the datasource hands the cloud — that's what
+/// pin the JSON shape that the datasource hands the cloud - that's what
 /// the firestore.rules `affectedKeys()` allowlist actually validates, and
 /// it's what fails first if the entity drifts away from the rule schema.
 ///
@@ -90,7 +90,7 @@ void main() {
         cusumC: 0.0,
         triggeredTier: null,
       );
-      // SAME regex as `firebase/firestore.rules` — if this fails the rule
+      // SAME regex as `firebase/firestore.rules` - if this fails the rule
       // will deny the write.
       final pattern = RegExp(r'^\d{4}-\d{2}-\d{2}$');
       expect(pattern.hasMatch(result.dateId), isTrue);

@@ -30,7 +30,7 @@ class MbCard extends StatelessWidget {
     final resolvedPadding = padding ?? const EdgeInsets.all(16);
     final content = Padding(padding: resolvedPadding, child: child);
 
-    // Custom-decoration path — preserves the legacy behaviour for
+    // Custom-decoration path - preserves the legacy behaviour for
     // callers that hand in a tinted/gradient background (e.g. the AI
     // suggestion card). Inner InkWells in those subtrees still render
     // splash behind the decoration, but those call sites are
@@ -55,7 +55,7 @@ class MbCard extends StatelessWidget {
       );
     }
 
-    // Default-decoration path — uses an opaque `Material(color: mb.card)`
+    // Default-decoration path - uses an opaque `Material(color: mb.card)`
     // as the outermost widget so descendant InkWells (ListTiles inside
     // Settings clusters, etc.) can paint visible splash + highlight ON
     // TOP of the card surface. Without this, splashes paint beneath the

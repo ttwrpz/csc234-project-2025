@@ -1,26 +1,26 @@
 /// Value object for a user-entered PIN.
 ///
 /// PIN is the fallback authentication factor for the History privacy
-/// gate. 6 numeric digits — the modern minimum; 4 was rejected because
+/// gate. 6 numeric digits - the modern minimum; 4 was rejected because
 /// 10^6 vs 10^4 gives 100x the brute-force time at the same PBKDF2
 /// iteration count.
 ///
-/// Construction is the only enforcement point — once a [Pin] exists,
+/// Construction is the only enforcement point - once a [Pin] exists,
 /// callers can rely on `digits.length == 6` and every char being `0-9`.
 /// Use [tryFrom] from any caller that takes raw user input.
 class Pin {
-  /// PIN length — 6 digits.
+  /// PIN length - 6 digits.
   static const int length = 6;
 
-  /// Private — construct via [tryFrom] (or [Pin.unchecked] in tests).
+  /// Private - construct via [tryFrom] (or [Pin.unchecked] in tests).
   const Pin._(this.digits);
 
-  /// The raw 6 numeric characters. Never log this — it is the secret
+  /// The raw 6 numeric characters. Never log this - it is the secret
   /// the PIN protects.
   final String digits;
 
   /// Parses [raw] into a [Pin] or returns `null` if it is not exactly
-  /// [length] digits of `0-9`. Whitespace is NOT trimmed here — the
+  /// [length] digits of `0-9`. Whitespace is NOT trimmed here - the
   /// caller (UI) owns input shaping so we don't silently accept
   /// `" 123456"`.
   static Pin? tryFrom(String raw) {

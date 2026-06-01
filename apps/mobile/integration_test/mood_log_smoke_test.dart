@@ -10,7 +10,7 @@ import 'package:moodbloom/features/mood/presentation/controllers/ai_suggestion_c
 import 'app_harness.dart';
 import 'fakes.dart';
 
-/// WBS 8.3 Test 2 — mood-log smoke. Picks a positive mood (happy at
+/// WBS 8.3 Test 2 - mood-log smoke. Picks a positive mood (happy at
 /// intensity 4) so this file does not collide with the "sad@3 + note"
 /// detail flow in `mood_log_history_flow_test.dart`. Asserts only the
 /// load-bearing post-conditions: `MoodRepository.save` was called once
@@ -18,17 +18,17 @@ import 'fakes.dart';
 ///
 /// The longer `mood_log_history_flow_test.dart` exercises the History
 /// detail screen and is owned by Sprint 4 (WBS 7.3a). This smoke is the
-/// Sprint 5 Day 3 deliverable mandated by the integration matrix —
+/// Sprint 5 Day 3 deliverable mandated by the integration matrix -
 /// covers TC-15 (login + mood log smoke) at the smoke level so the
 /// suite gate cannot regress the create flow without a visible failure.
 ///
 /// **AI debounce gate:** the `aiSuggestionDebounceWindowProvider` is
 /// stretched to one day so typing into the journal field never fires
-/// the AI use case — this test asserts user pick + save, not AI flow.
+/// the AI use case - this test asserts user pick + save, not AI flow.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Mood log smoke (WBS 8.3 — Test 2)', () {
+  group('Mood log smoke (WBS 8.3 - Test 2)', () {
     late IntegrationAuthRepository authRepo;
     late IntegrationMoodRepository moodRepo;
 
@@ -86,13 +86,13 @@ void main() {
         await tester.pumpAndSettle();
 
         // 3. Intensity defaults to 3; tapping a positive mood twice
-        // does not change it. The brief asks for intensity 4 — we use
+        // does not change it. The brief asks for intensity 4 - we use
         // the +/- adjust buttons rather than dragging the slider,
         // since drag-distance → integer rounding is host-dependent on
         // `flutter_test`. Probe for a +/- button labelled by tooltip,
         // and fall back to slider as a last resort.
         //
-        // The IntensitySlider renders the value as "n / 5" — we
+        // The IntensitySlider renders the value as "n / 5" - we
         // assert that signal after the adjustment to pin the contract.
         // Many slider implementations expose Semantics increase/decrease
         // actions; we drive that path here because it is platform-

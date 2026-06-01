@@ -27,10 +27,10 @@ part 'cheer_up_controller.g.dart';
 ///
 /// Failure independence: the anchor write and the event-doc create are
 /// independent. If the anchor write fails (network), the event-doc
-/// create still attempts — the CF only needs the event doc to fire its
+/// create still attempts - the CF only needs the event doc to fire its
 /// trigger, the anchors live elsewhere. If the event-doc create fails
 /// on `already-exists`, the impl swallows it and we treat as success
-/// (idempotent path — the trigger already fired earlier today).
+/// (idempotent path - the trigger already fired earlier today).
 @riverpod
 class CheerUpController extends _$CheerUpController {
   @override
@@ -45,18 +45,18 @@ class CheerUpController extends _$CheerUpController {
   /// Writes happen in this order:
   ///   1. `lastTriggeredAt = now` (always overwrites)
   ///   2. `firstTriggeredAt = now` ONLY IF currently null (transactional
-  ///      inside the repo — race-free across multiple devices)
+  ///      inside the repo - race-free across multiple devices)
   ///   3. `cheerUpEvents/{dayUtc}-{reason}` create (idempotent;
   ///      already-exists is swallowed as success)
   ///
   /// Step 3 is what the Cloud Function trigger fires on. Steps 1+2
-  /// failing does NOT block step 3 — the CF only needs the event doc.
+  /// failing does NOT block step 3 - the CF only needs the event doc.
   Future<void> onShown({required String reason}) async {
     if (state.onShownDispatched) return;
     const logger = Logger('garden.cheerup.controller');
 
     // Remote-Config gate. When `interventionDispatchEnabled` is false,
-    // the legacy 2-rule dispatcher is dark — no anchor writes, no
+    // the legacy 2-rule dispatcher is dark - no anchor writes, no
     // audit-log event, no FCM push. The Pattern Engine writes
     // `users/{uid}/patterns/{date}` independently upstream; flipping
     // the flag to true re-points the dispatcher at that document with
@@ -84,7 +84,7 @@ class CheerUpController extends _$CheerUpController {
 
     final lastResult = await repo.writeLastTriggeredAt(now);
     if (lastResult is Err) {
-      // Mirror has been updated regardless inside the impl — the local
+      // Mirror has been updated regardless inside the impl - the local
       // detector still honours the cooldown gate. Log without PII.
       logger.warn('writeLastTriggeredAt failed; mirror updated locally');
     }
@@ -97,7 +97,7 @@ class CheerUpController extends _$CheerUpController {
     // Idempotent event-doc create. Independent of anchor writes above:
     // if the cloud is reachable for ONE of the two it's almost
     // certainly reachable for both, but failure of the anchor writes
-    // must not block this — the audit log is the canonical record of
+    // must not block this - the audit log is the canonical record of
     // a triggered cheer-up.
     //
     // The Cloud Function is not a Firestore document trigger (this
@@ -128,7 +128,7 @@ class CheerUpController extends _$CheerUpController {
       });
     } on FirebaseFunctionsException catch (e) {
       // `not-found` means the CF isn't deployed yet (e.g. local dev).
-      // Swallow without alarming the user — the audit doc is already
+      // Swallow without alarming the user - the audit doc is already
       // written, and the push is best-effort by design.
       logger.warn('sendCheerUpPush call failed: ${e.code}; push will not fire');
     } catch (e) {
@@ -142,7 +142,7 @@ class CheerUpController extends _$CheerUpController {
     ref.invalidate(interventionAnchorsProvider);
   }
 
-  /// Session-scoped hide of the banner. Does NOT clear cooldown — the
+  /// Session-scoped hide of the banner. Does NOT clear cooldown - the
   /// 48h gate is owned by `lastTriggeredAt`, not by this flag.
   void onDismissed() => state = state.copyWith(bannerDismissed: true);
 }

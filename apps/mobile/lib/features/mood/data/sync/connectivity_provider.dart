@@ -62,7 +62,7 @@ final connectivityCurrentProvider = FutureProvider<bool>((ref) async {
 
 /// Pure helper: at least one transport that is not [ConnectivityResult.none].
 ///
-/// Empty list (defensive — undocumented but observed on some platforms during
+/// Empty list (defensive - undocumented but observed on some platforms during
 /// startup) is treated as offline.
 bool isOnlineFromResults(List<ConnectivityResult> results) {
   if (results.isEmpty) return false;

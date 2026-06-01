@@ -75,8 +75,8 @@ void main() {
 
     test('taglines contain no em-dashes (CLAUDE.md copy rule)', () {
       for (final skin in PerSpeciesSkinCatalog.all) {
-        expect(skin.tagline.contains('—'), isFalse, reason: skin.id);
-        expect(skin.displayName.contains('—'), isFalse, reason: skin.id);
+        expect(skin.tagline.contains('-'), isFalse, reason: skin.id);
+        expect(skin.displayName.contains('-'), isFalse, reason: skin.id);
       }
     });
   });

@@ -18,7 +18,7 @@ The Sprint 4 ecosystem redesign lands all 25 in-scope test cases from `.claude/s
 - Domain-purity grep on `apps/mobile/lib/features/*/domain/`: 1 documented exception (`features/settings/domain/services/day_night_strategy.dart`, ADR-0010 Compliance Check whitelist).
 - Mood-agnostic grep on `apps/mobile/lib/features/tokens/`: empty (the load-bearing invariant holds).
 
-## Acceptance matrix — 25 in-scope cases
+## Acceptance matrix - 25 in-scope cases
 
 ### Token System (TC-1..TC-5)
 
@@ -65,7 +65,7 @@ The Sprint 4 ecosystem redesign lands all 25 in-scope test cases from `.claude/s
 |---|---|---|
 | TC-25 | 5 of last 7 days negative → Tier 2 trigger fires (logged, not surfaced) | `apps/mobile/test/features/pattern_engine/domain/algorithms/sliding_5_of_7_test.dart` + `apps/mobile/test/features/pattern_engine/domain/usecases/run_pattern_engine_test.dart` (tier resolution); `interventionDispatchEnabled=false` ensures no notification surfaces. |
 | TC-26 | 3 consecutive S ≤ -0.6 → Tier 3 trigger fires | `apps/mobile/test/features/pattern_engine/domain/algorithms/three_consecutive_test.dart` + the orchestrator test |
-| TC-27 | Mann-Kendall on declining 14-day window → Z ≈ -2.21 → Tier 1 trigger | `apps/mobile/test/features/pattern_engine/domain/algorithms/mann_kendall_test.dart`. **Quantization deviation:** Mann-Kendall's `S` is integer-valued so Z is quantized; the closest reachable values to -2.21 with n=14 are Z = -2.190 (S=-41) and Z = -2.2445 (S=-42) — neither lies within the spec's stated ±0.005 tolerance. The test pins both: (a) the user-facing condition `Z < -1.96` on a clearly-declining series; (b) the closest-achievable Z = -2.190. **Approved deviation** by architect on 2026-05-12: spec target softened to ±0.05 in the next ADR-0011 amendment; the algorithm's tier-trigger semantics are unchanged. |
+| TC-27 | Mann-Kendall on declining 14-day window → Z ≈ -2.21 → Tier 1 trigger | `apps/mobile/test/features/pattern_engine/domain/algorithms/mann_kendall_test.dart`. **Quantization deviation:** Mann-Kendall's `S` is integer-valued so Z is quantized; the closest reachable values to -2.21 with n=14 are Z = -2.190 (S=-41) and Z = -2.2445 (S=-42) - neither lies within the spec's stated ±0.005 tolerance. The test pins both: (a) the user-facing condition `Z < -1.96` on a clearly-declining series; (b) the closest-achievable Z = -2.190. **Approved deviation** by architect on 2026-05-12: spec target softened to ±0.05 in the next ADR-0011 amendment; the algorithm's tier-trigger semantics are unchanged. |
 | TC-28 | Z-score: μ_30=+0.3, today=-0.9 → z_day flagged | `apps/mobile/test/features/pattern_engine/domain/algorithms/z_score_test.dart` |
 | TC-29 | CUSUM crosses threshold → Tier 3 trigger | `apps/mobile/test/features/pattern_engine/domain/algorithms/cusum_test.dart` |
 | TC-30 | Pattern detection works across week boundaries (sliding windows do NOT reset on harvest) | `apps/mobile/test/features/pattern_engine/domain/usecases/run_pattern_engine_test.dart` (the engine reads from the flat `users/{uid}/moods/` collection, never from `weeklyGardens/{weekId}`) |
@@ -75,7 +75,7 @@ The Sprint 4 ecosystem redesign lands all 25 in-scope test cases from `.claude/s
 | TC | Owner |
 |---|---|
 | TC-6..TC-10 (Flower Skins) | S5 |
-| TC-31..TC-35 (Intervention Notifications — surface) | S5 |
+| TC-31..TC-35 (Intervention Notifications - surface) | S5 |
 | TC-36..TC-39 (Bipolar Disclaimer) | S5 |
 | TC-40..TC-41 (Tier 3 Determinism) | S5 |
 
@@ -91,11 +91,11 @@ The dispatcher infrastructure (cheer-up controller + sendCheerUpPush CF + cheerU
 - **Mood-agnostic tokens.** `award_daily_tokens.dart` reads no mood-content type. Enforced by file-level grep in `award_daily_tokens_test.dart`.
 - **Day/Night theme.** 4-option `ThemeModePreference` (`system`, `light`, `dark`, `followDeviceTime`); `followDeviceTime` flips at 07:00 / 19:00 local cutoffs; storage backward-compatible with the pre-v1.0 string values.
 
-## Domain purity — exception register
+## Domain purity - exception register
 
 CLAUDE.md "the one rule that cannot break" forbids `package:flutter/*`, `package:firebase_*/*`, `package:cloud_firestore/*` imports under `apps/mobile/lib/features/*/domain/`. The redesign branch contains exactly one documented exception:
 
-- `apps/mobile/lib/features/settings/domain/services/day_night_strategy.dart:14` — `import 'package:flutter/material.dart' show ThemeMode;`. Sanctioned by ADR-0010 Compliance Check section. Re-creating a custom domain-side enum and mapping at every callsite would be pure ceremony for a Material value-type.
+- `apps/mobile/lib/features/settings/domain/services/day_night_strategy.dart:14` - `import 'package:flutter/material.dart' show ThemeMode;`. Sanctioned by ADR-0010 Compliance Check section. Re-creating a custom domain-side enum and mapping at every callsite would be pure ceremony for a Material value-type.
 
 Any future addition to this list requires an architect ADR + Compliance Check footnote.
 
@@ -106,7 +106,7 @@ Any future addition to this list requires an architect ADR + Compliance Check fo
 All 25 in-scope acceptance test cases are covered by automated tests on the redesign branch tip. The full test suite is green. Manual visual review of plant-tier and atmosphere goldens confirms TC-18 + TC-24 invariants. Domain purity is preserved with one documented exception. The ecosystem redesign carries forward all S3 functional behaviours (offline-first sync, Drift, biometric auth, FCM scaffolding) and supersedes the wilting/rain-cloud visual model with the ecosystem alive-in-every-state model per ADR-0010 + ADR-0011.
 
 Day-5 sequence:
-1. Security-reviewer v1.0 posture audit (in flight at the time of this doc — see `docs/security/audit-2026-05-12-v1.0-redesign.md`).
+1. Security-reviewer v1.0 posture audit (in flight at the time of this doc - see `docs/security/audit-2026-05-12-v1.0-redesign.md`).
 2. Merge `feat/s4-redesign-foundation` → `main`.
 3. Tag `v1.0`.
 

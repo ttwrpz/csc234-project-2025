@@ -1,4 +1,4 @@
-# Sprint 5 Test Report — v1.5
+# Sprint 5 Test Report - v1.5
 
 **Sprint window:** May 13 – May 19, 2026
 **Baseline:** `v1.0` on `main`; `v1.0-polish` overlay
@@ -12,7 +12,7 @@
 | Surface | Tests passing | Notes |
 |---|---:|---|
 | Flutter (`apps/mobile`) | **1018 / 1018** | full suite after the v1.5 final trim |
-| Cloud Functions (`functions`) | **73 / 73** | 5 suites — `analyzeMoodText`, `analyzePatterns`, `sendCheerUpPush`, `suggestQuote`, `wipeUserData` (+ dark `webauthnRegisterStart` smoke) |
+| Cloud Functions (`functions`) | **73 / 73** | 5 suites - `analyzeMoodText`, `analyzePatterns`, `sendCheerUpPush`, `suggestQuote`, `wipeUserData` (+ dark `webauthnRegisterStart` smoke) |
 | Firestore rules emulator | 24 / 24 | +7 since v1.0 polish for interventions / cooldowns / security / insightsAck |
 | `flutter analyze lib` | clean | 0 issues |
 | `tsc -p tsconfig.json` (functions) | clean | 0 errors |
@@ -79,18 +79,18 @@ The pre-trim test count was 1096. The trim in commit `a23480b8` removed 78 tests
 
 **Total: 41 / 41 acceptance test cases pass.**
 
-### TC-40 evidence — 5+1 layer fence
+### TC-40 evidence - 5+1 layer fence
 
 | Layer | File | Assertion |
 |---|---|---|
-| 1. Type system | `intervention/domain/ai_allowed_tier.dart` | `enum AiAllowedTier { one, two }` — Tier.three is structurally unconstructible as an AI parameter |
+| 1. Type system | `intervention/domain/ai_allowed_tier.dart` | `enum AiAllowedTier { one, two }` - Tier.three is structurally unconstructible as an AI parameter |
 | 2. Dispatcher branch | `intervention/domain/dispatcher.dart` | `if (tier == Tier.three) return CuratedTier3Phrase.next(); // never AI` |
-| 3. Unit test | `intervention/domain/dispatcher_test.dart` | `test('Tier 3 dispatch with mocked AI records zero calls', ...)` — `recordingFake.calls.isEmpty` |
+| 3. Unit test | `intervention/domain/dispatcher_test.dart` | `test('Tier 3 dispatch with mocked AI records zero calls', ...)` - `recordingFake.calls.isEmpty` |
 | 4. Controller test | `intervention/presentation/controllers/dispatcher_controller_test.dart` | Re-asserts at controller layer with full Riverpod graph |
 | 5. Integration test | `integration_test/tier3_never_ai_test.dart` | Full app, only `AiRepository` mocked; runs the dispatcher end-to-end on Tier 3 inputs |
 | 6. Server schema | `functions/src/suggestQuote.ts` | `if (tier === 3) return res.status(400).json({error: 'tier_3_never_ai'})` + Jest test |
 
-### TC-41 evidence — Quote Safety Filter
+### TC-41 evidence - Quote Safety Filter
 
 `intervention/domain/quote_safety_filter_test.dart` asserts:
 
@@ -140,10 +140,10 @@ All 5 canary tests pass.
 
 ## Firestore rules emulator
 
-`firebase/test/firestore_rules.test.ts` — 24 tests covering:
+`firebase/test/firestore_rules.test.ts` - 24 tests covering:
 
 - Owner-only read/write under `users/{uid}/**` (8 tests).
-- Field-level `diff().affectedKeys()` validation on `users/{uid}/moods/{moodId}` (createdAt server timestamp; updatedAt within 24 h; immutability after 24 h — 4 tests).
+- Field-level `diff().affectedKeys()` validation on `users/{uid}/moods/{moodId}` (createdAt server timestamp; updatedAt within 24 h; immutability after 24 h - 4 tests).
 - Write-once on `users/{uid}/weeklyGardens/{weekId}` (1 test).
 - Monotonic-up on `users/{uid}.tokenBalance` (1 test).
 - One-way `false→true` on `users/{uid}.insightsDisclaimerAcked` (1 test).
@@ -164,7 +164,7 @@ All 24 pass.
 | Mood-agnostic grep on `features/skin/` | empty (new for v1.5; skins are bought with tokens, not awarded by mood) |
 | TC-15 copy-rule grep on `features/harvest/` | empty |
 | TC-24 plants-never-die grep on `features/garden/` | empty (banned vocabulary list extended to include "wilted/wilting/dead/dying/destroyed/lost") |
-| TC-40 fence grep — `package:cloud_functions` import in `intervention/domain/dispatcher.dart` | empty (the dispatcher's Tier 3 branch returns `CuratedTier3Phrase.next()` directly; the AI repository import is on the Tier 1/2 branch only) |
+| TC-40 fence grep - `package:cloud_functions` import in `intervention/domain/dispatcher.dart` | empty (the dispatcher's Tier 3 branch returns `CuratedTier3Phrase.next()` directly; the AI repository import is on the Tier 1/2 branch only) |
 
 ## Coverage
 
@@ -180,12 +180,12 @@ All 24 pass.
 | Domain `disclaimer/` | 100% | 100% |
 | Domain `auth/` (incl. PIN) | 93.8% | 90.4% |
 | Domain `skin/` | 92.6% | 88.7% |
-| Data | 78.4% | (not tracked — data layer covered by integration tests) |
-| Presentation | 71.2% | (not tracked — covered by widget tests) |
+| Data | 78.4% | (not tracked - data layer covered by integration tests) |
+| Presentation | 71.2% | (not tracked - covered by widget tests) |
 
-## Cross-platform runbook — partial execution (May 16, 2026)
+## Cross-platform runbook - partial execution (May 16, 2026)
 
-A partial run of `docs/test-reports/sprint-5-cross-platform-runbook.md` was executed on the orchestrator machine (Windows 11 + Flutter 3.41.9 stable + Pixel 9 Pro XL AVD, API 37 — the AVD configured on the local machine is API 37, not the runbook's nominal Pixel 6 API 34, but the surface is functionally equivalent).
+A partial run of `docs/test-reports/sprint-5-cross-platform-runbook.md` was executed on the orchestrator machine (Windows 11 + Flutter 3.41.9 stable + Pixel 9 Pro XL AVD, API 37 - the AVD configured on the local machine is API 37, not the runbook's nominal Pixel 6 API 34, but the surface is functionally equivalent).
 
 **What ran:**
 
@@ -193,12 +193,12 @@ A partial run of `docs/test-reports/sprint-5-cross-platform-runbook.md` was exec
 |---|---|---|
 | `flutter analyze lib` | host | clean (0 warnings/errors; 37 info-level deprecated-API lints, all non-blocking) |
 | `flutter test` (full unit + widget suite) | host | **1018 / 1018 pass** at head `977b86d3` |
-| `flutter test integration_test/intervention_tier_3_test.dart -d chrome` | Chrome web | **NOT SUPPORTED** — "Web devices are not supported for integration tests yet." Runbook caveat confirmed for Flutter 3.41.9. |
-| `flutter test integration_test/intervention_tier_3_test.dart -d windows` | Windows desktop | NOT VIABLE — Windows desktop scaffold absent from project. |
-| `flutter test integration_test/intervention_tier_3_test.dart -d emulator-5554` | Android emulator | **FAIL** — 1 test failed (see finding below) |
+| `flutter test integration_test/intervention_tier_3_test.dart -d chrome` | Chrome web | **NOT SUPPORTED** - "Web devices are not supported for integration tests yet." Runbook caveat confirmed for Flutter 3.41.9. |
+| `flutter test integration_test/intervention_tier_3_test.dart -d windows` | Windows desktop | NOT VIABLE - Windows desktop scaffold absent from project. |
+| `flutter test integration_test/intervention_tier_3_test.dart -d emulator-5554` | Android emulator | **FAIL** - 1 test failed (see finding below) |
 | `flutter test integration_test/mood_log_smoke_test.dart -d emulator-5554` | Android emulator | (recorded separately in the final test report addendum) |
 
-**Finding — A-INT-01 (Android integration test, intervention banner state not settling).** The `Tier 3 banner Open → CrisisResourcesScreen` testWidgets case in `integration_test/intervention_tier_3_test.dart:241` fails on Android emulator with `Found 0 widgets with text "Open"`. Root cause: `emitTier3AndSettle` pumps 16 × 50 ms (800 ms total) after the `patternRepo.emit(...)` call, which is sufficient on the desktop test harness but apparently not on Android emulator timing. The `InterventionBanner` widget IS in the tree (the `findsOneWidget` byType assertion passes), but is rendering its `SizedBox.shrink()` branch — i.e., the controller has not yet transitioned to `InterventionPending` by the time `find.text('Open')` runs. Severity: LOW — this is a test-harness timing issue, not a production regression. The widget code at `intervention_banner.dart:83` unambiguously renders an `'Open'` `FilledButton` whenever `state is InterventionPending`, and the 96 unit + widget tests for the intervention feature all assert this correctly. Recommendation: bump the settle loop from 16 iterations to 32 in `emitTier3AndSettle` (or replace with `await tester.pumpAndSettle()` after the emit) before the v1.5 tag push.
+**Finding - A-INT-01 (Android integration test, intervention banner state not settling).** The `Tier 3 banner Open → CrisisResourcesScreen` testWidgets case in `integration_test/intervention_tier_3_test.dart:241` fails on Android emulator with `Found 0 widgets with text "Open"`. Root cause: `emitTier3AndSettle` pumps 16 × 50 ms (800 ms total) after the `patternRepo.emit(...)` call, which is sufficient on the desktop test harness but apparently not on Android emulator timing. The `InterventionBanner` widget IS in the tree (the `findsOneWidget` byType assertion passes), but is rendering its `SizedBox.shrink()` branch - i.e., the controller has not yet transitioned to `InterventionPending` by the time `find.text('Open')` runs. Severity: LOW - this is a test-harness timing issue, not a production regression. The widget code at `intervention_banner.dart:83` unambiguously renders an `'Open'` `FilledButton` whenever `state is InterventionPending`, and the 96 unit + widget tests for the intervention feature all assert this correctly. Recommendation: bump the settle loop from 16 iterations to 32 in `emitTier3AndSettle` (or replace with `await tester.pumpAndSettle()` after the emit) before the v1.5 tag push.
 
 **What is still NOT covered by the partial run:**
 

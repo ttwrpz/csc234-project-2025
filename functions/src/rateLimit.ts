@@ -1,6 +1,6 @@
 // Per-uid rate limiter backed by a Firestore transaction.
 //
-// Window: 60s sliding-on-rollover (NOT a true sliding window — once the window
+// Window: 60s sliding-on-rollover (NOT a true sliding window - once the window
 // starts, the next 10 calls all count against it; we only roll over when the
 // next request lands >=60s after `windowStartMs`). Rationale: atomic, cheap,
 // transparent to users.

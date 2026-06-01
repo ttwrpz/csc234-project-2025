@@ -6,7 +6,7 @@ import 'package:moodbloom/features/disclaimer/data/repositories/disclaimer_repos
 import 'package:moodbloom/features/disclaimer/domain/disclaimer_failure.dart';
 
 /// Hand-rolled fake datasource. Mirrors the
-/// `pattern_repository_impl_test.dart` style — testing the repo through
+/// `pattern_repository_impl_test.dart` style - testing the repo through
 /// a fake at the datasource boundary keeps the assertions about
 /// FirebaseException → DisclaimerFailure mapping, while avoiding the
 /// `fake_cloud_firestore` dev dependency (not in pubspec).
@@ -17,7 +17,7 @@ class _FakeDatasource implements DisclaimerFirestoreDatasource {
   /// Captures the userId of every successful ack.
   final List<String> ackedUsers = [];
 
-  /// Driver for [watchAckState] — values returned in order.
+  /// Driver for [watchAckState] - values returned in order.
   final List<bool> nextStreamValues = [];
 
   /// Records the userId that the stream was subscribed for.

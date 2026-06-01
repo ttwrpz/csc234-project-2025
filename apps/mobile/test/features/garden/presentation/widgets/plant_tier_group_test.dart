@@ -6,7 +6,7 @@ import 'package:moodbloom/features/garden/presentation/widgets/plant_tier_group.
 import '../../../../helpers/pump_app.dart';
 
 void main() {
-  group('PlantTierGroup — smoke (one per tier)', () {
+  group('PlantTierGroup - smoke (one per tier)', () {
     Future<void> pump(WidgetTester tester, PlantTier tier) async {
       await pumpApp(
         tester,

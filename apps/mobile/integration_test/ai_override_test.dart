@@ -17,7 +17,7 @@ import 'app_harness.dart';
 import 'fakes.dart';
 
 /// Recording fake of [AIAnalysisRepository]. The `analyzeMoodText` Cloud
-/// Function (S3 — `analyzeMoodText.ts`) is intercepted here so the test
+/// Function (S3 - `analyzeMoodText.ts`) is intercepted here so the test
 /// never reaches Firebase: every call lands in [analyzeMoodTextCalls] and
 /// returns the test-seeded [nextSuggestion].
 ///
@@ -52,7 +52,7 @@ class _FakeAiAnalysisRepository implements AIAnalysisRepository {
   }
 }
 
-/// WBS 8.3 Test 3 — AI override flow.
+/// WBS 8.3 Test 3 - AI override flow.
 ///
 /// Validates the user-override contract for `analyzeMoodText` (S3 feature,
 /// HB-002): the AI is a SUGGESTER, never a chooser. The user can ignore
@@ -66,7 +66,7 @@ class _FakeAiAnalysisRepository implements AIAnalysisRepository {
 ///   3. The AI suggestion pill renders with the "AI suggests" leading
 ///      label + a "Dismiss" button + an "Accept" button (see
 ///      `ai_suggestion_pill.dart`).
-///   4. The user OVERRIDES — taps the `happy` mood tile (NOT "Accept"),
+///   4. The user OVERRIDES - taps the `happy` mood tile (NOT "Accept"),
 ///      then taps Save.
 ///   5. The repository sees a save with `mood: happy`. The AI's pick
 ///      lost; the user's pick won.
@@ -81,7 +81,7 @@ class _FakeAiAnalysisRepository implements AIAnalysisRepository {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  group('AI override flow (WBS 8.3 — Test 3)', () {
+  group('AI override flow (WBS 8.3 - Test 3)', () {
     late IntegrationAuthRepository authRepo;
     late IntegrationMoodRepository moodRepo;
     late _FakeAiAnalysisRepository aiRepo;
@@ -95,7 +95,7 @@ void main() {
         ),
       );
       moodRepo = IntegrationMoodRepository();
-      // Seed Gemini's "best guess" as `sad` at 85% confidence — the
+      // Seed Gemini's "best guess" as `sad` at 85% confidence - the
       // confidence stays in the "high" band so the pill renders the
       // strong-suggestion variant.
       aiRepo = _FakeAiAnalysisRepository(
@@ -115,7 +115,7 @@ void main() {
     });
 
     testWidgets(
-      'AI suggests "sad" — user overrides with "happy" — save honors the user',
+      'AI suggests "sad" - user overrides with "happy" - save honors the user',
       (tester) async {
         final defaults = await defaultIntegrationOverrides();
         addTearDown(() async => defaults.syncManager.dispose());
@@ -177,7 +177,7 @@ void main() {
           reason: 'the typed note must be forwarded to the AI verbatim',
         );
 
-        // 4. OVERRIDE — tap the `happy` mood tile instead of the
+        // 4. OVERRIDE - tap the `happy` mood tile instead of the
         // pill's "Accept" button. The mood tiles render the mood
         // names; the AI suggestion does NOT echo the word "happy" so
         // this finder is unambiguous.
@@ -194,7 +194,7 @@ void main() {
         await tester.tap(saveButton);
         await tester.pumpAndSettle();
 
-        // 6. Hard assertion — the user's pick won, the AI's lost.
+        // 6. Hard assertion - the user's pick won, the AI's lost.
         expect(
           moodRepo.saveCalls,
           hasLength(1),
@@ -206,7 +206,7 @@ void main() {
           equals(MoodType.happy),
           reason:
               'AI suggested SAD with 85% confidence; the user picked HAPPY. '
-              'The saved entry must honour the user pick — the AI is a '
+              'The saved entry must honour the user pick - the AI is a '
               'suggester, never a chooser (HB-002 + S3 contract).',
         );
         expect(

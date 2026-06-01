@@ -3,7 +3,7 @@ import 'package:core/core.dart';
 import '../entities/daily_score.dart';
 
 /// Returns the count of trailing consecutive days (ending today) where
-/// `avgScore <= -0.6`. Capped at 3 — the caller compares against `>= 3`
+/// `avgScore <= -0.6`. Capped at 3 - the caller compares against `>= 3`
 /// for Tier 3 and any further walk-back is wasted work.
 ///
 /// A missing day in the trailing 3-day window breaks the streak (returns
@@ -16,7 +16,7 @@ import '../entities/daily_score.dart';
 /// Trigger semantics (caller decides):
 ///  * count `>= 3` → Tier 3.
 ///
-/// Pure-Dart function — imports only `package:core/core.dart` (for
+/// Pure-Dart function - imports only `package:core/core.dart` (for
 /// `localMidnight`) and the sibling [DailyScore] entity. No Flutter /
 /// Firebase imports per CLAUDE.md.
 int consecutiveHighIntensityCount(

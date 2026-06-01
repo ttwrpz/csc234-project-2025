@@ -9,7 +9,7 @@ import '../datasources/weekly_gardens_firestore_datasource.dart';
 /// Firestore-backed implementation of [HarvestRepository].
 ///
 /// Failure mapping mirrors `PatternRepositoryImpl`:
-///   * `'already-exists'` → [HarvestFailure.alreadyArchived] — the doc
+///   * `'already-exists'` → [HarvestFailure.alreadyArchived] - the doc
 ///     already exists for this weekId. Surfaces the
 ///     write-once-on-archive guarantee at the controller layer.
 ///   * `'permission-denied'` → [HarvestFailure.permissionDenied].

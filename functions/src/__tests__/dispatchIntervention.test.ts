@@ -3,21 +3,21 @@
 // Mock infrastructure mirrors sendCheerUpPush.test.ts exactly: in-memory
 // Firestore + messaging mocks, pass-through onCall, allow-listed logger.
 // Cases (numbered for retro traceability):
-//   1.  happy-path Tier 1 — locked title/body for tier 'one'
-//   2.  happy-path Tier 2 — locked title/body for tier 'two'
-//   3.  happy-path Tier 3 — locked title/body for tier 'three' (Tier 3 FENCE)
+//   1.  happy-path Tier 1 - locked title/body for tier 'one'
+//   2.  happy-path Tier 2 - locked title/body for tier 'two'
+//   3.  happy-path Tier 3 - locked title/body for tier 'three' (Tier 3 FENCE)
 //   4.  unauthenticated → throws HttpsError
-//   5.  schema rejection — bad tier
-//   6.  schema rejection — missing dispatchId
-//   7.  dispatch_missing — no audit doc for that dispatchId
-//   8.  dispatch_mismatch — audit doc tier ≠ request tier
-//   9.  dispatch_opted_out — audit doc optedOut === true
-//  10.  opted_out — per-tier flag false in settings doc
-//  11.  no_tokens — settings present, tier enabled, but tokens empty
-//  12.  rate_limited — second call within 24h returns rate_limited
-//  13.  dead-token pruning — survivors written back, dead tokens dropped
-//  14.  PII canary — no body, no token strings in any log payload
-//  15.  channel-id literal — every multicast uses channelId='cheer_up'
+//   5.  schema rejection - bad tier
+//   6.  schema rejection - missing dispatchId
+//   7.  dispatch_missing - no audit doc for that dispatchId
+//   8.  dispatch_mismatch - audit doc tier ≠ request tier
+//   9.  dispatch_opted_out - audit doc optedOut === true
+//  10.  opted_out - per-tier flag false in settings doc
+//  11.  no_tokens - settings present, tier enabled, but tokens empty
+//  12.  rate_limited - second call within 24h returns rate_limited
+//  13.  dead-token pruning - survivors written back, dead tokens dropped
+//  14.  PII canary - no body, no token strings in any log payload
+//  15.  channel-id literal - every multicast uses channelId='cheer_up'
 
 import { jest } from '@jest/globals';
 
@@ -226,7 +226,7 @@ function seedAudit(
     tier,
     optedOut,
     quoteId: 'q-test',
-    body: 'IRRELEVANT — should never appear in any push body',
+    body: 'IRRELEVANT - should never appear in any push body',
     dispatchedAt: new Date(),
     cooldownUntil: new Date(),
     schemaV: 1,
@@ -256,7 +256,7 @@ const ENABLED_ALL_TIERS = {
   tokens: [{ token: 'tok-A', platform: 'android' }],
 };
 
-// Locked per-tier copy — duplicated here on purpose so a future edit to
+// Locked per-tier copy - duplicated here on purpose so a future edit to
 // the CF must also update this test, locking the public surface.
 const LOCKED_PAYLOADS = {
   one: {
@@ -320,7 +320,7 @@ describe('dispatchIntervention', () => {
     if (!msg) throw new Error('expected multicast');
     expect(msg.notification?.title).toBe(LOCKED_PAYLOADS.three.title);
     expect(msg.notification?.body).toBe(LOCKED_PAYLOADS.three.body);
-    // The audit doc carries body 'IRRELEVANT — should never appear...'
+    // The audit doc carries body 'IRRELEVANT - should never appear...'
     // Defense in depth: assert the leaked-doc text is NOT in the push.
     expect(msg.notification?.body).not.toContain('IRRELEVANT');
     // Tier 3 must not contain a hotline number in the push body
@@ -339,7 +339,7 @@ describe('dispatchIntervention', () => {
     expect(sendEachForMulticastMock).not.toHaveBeenCalled();
   });
 
-  test('5. schema rejection — bad tier value throws HttpsError', async () => {
+  test('5. schema rejection - bad tier value throws HttpsError', async () => {
     await expect(
       invoke({
         auth: { uid: 'u' },
@@ -349,14 +349,14 @@ describe('dispatchIntervention', () => {
     expect(sendEachForMulticastMock).not.toHaveBeenCalled();
   });
 
-  test('6. schema rejection — missing dispatchId throws HttpsError', async () => {
+  test('6. schema rejection - missing dispatchId throws HttpsError', async () => {
     await expect(
       invoke({ auth: { uid: 'u' }, data: { v: 1, tier: 'one' } }),
     ).rejects.toBeInstanceOf(FakeHttpsError);
     expect(sendEachForMulticastMock).not.toHaveBeenCalled();
   });
 
-  test('7. dispatch_missing — no audit doc → outcome=dispatch_missing, no FCM', async () => {
+  test('7. dispatch_missing - no audit doc → outcome=dispatch_missing, no FCM', async () => {
     seedSettings('uid-m', ENABLED_ALL_TIERS);
     // No seedAudit on purpose.
 
@@ -367,7 +367,7 @@ describe('dispatchIntervention', () => {
     expect(lastLog()?.payload).toMatchObject({ outcome: 'dispatch_missing' });
   });
 
-  test('8. dispatch_mismatch — audit tier ≠ request tier → no FCM', async () => {
+  test('8. dispatch_mismatch - audit tier ≠ request tier → no FCM', async () => {
     seedAudit('uid-mm', 'd-mm', 'one');
     seedSettings('uid-mm', ENABLED_ALL_TIERS);
 
@@ -378,7 +378,7 @@ describe('dispatchIntervention', () => {
     expect(lastLog()?.payload).toMatchObject({ outcome: 'dispatch_mismatch' });
   });
 
-  test('9. dispatch_opted_out — audit optedOut=true → no FCM', async () => {
+  test('9. dispatch_opted_out - audit optedOut=true → no FCM', async () => {
     seedAudit('uid-oo', 'd-oo', 'three', /* optedOut */ true);
     seedSettings('uid-oo', ENABLED_ALL_TIERS);
 
@@ -389,7 +389,7 @@ describe('dispatchIntervention', () => {
     expect(lastLog()?.payload).toMatchObject({ outcome: 'dispatch_opted_out' });
   });
 
-  test('10. opted_out — tier1Enabled=false for Tier 1 request', async () => {
+  test('10. opted_out - tier1Enabled=false for Tier 1 request', async () => {
     seedAudit('uid-t1', 'd-t1', 'one');
     seedSettings('uid-t1', {
       ...ENABLED_ALL_TIERS,
@@ -403,7 +403,7 @@ describe('dispatchIntervention', () => {
     expect(lastLog()?.payload).toMatchObject({ outcome: 'opted_out' });
   });
 
-  test('10b. opted_out — settings doc missing entirely → no FCM', async () => {
+  test('10b. opted_out - settings doc missing entirely → no FCM', async () => {
     seedAudit('uid-no', 'd-no', 'two');
     // No settings doc.
 
@@ -413,7 +413,7 @@ describe('dispatchIntervention', () => {
     expect(lastLog()?.payload).toMatchObject({ outcome: 'opted_out' });
   });
 
-  test('11. no_tokens — settings ok, tier enabled, but tokens empty', async () => {
+  test('11. no_tokens - settings ok, tier enabled, but tokens empty', async () => {
     seedAudit('uid-nt', 'd-nt', 'one');
     seedSettings('uid-nt', { ...ENABLED_ALL_TIERS, tokens: [] });
 
@@ -424,7 +424,7 @@ describe('dispatchIntervention', () => {
     expect(lastLog()?.payload).toMatchObject({ outcome: 'no_tokens' });
   });
 
-  test('12. rate_limited — second call within 24h is rate-limited', async () => {
+  test('12. rate_limited - second call within 24h is rate-limited', async () => {
     seedAudit('uid-rl', 'd-rl-1', 'one');
     seedAudit('uid-rl', 'd-rl-2', 'one');
     seedSettings('uid-rl', ENABLED_ALL_TIERS);
@@ -436,7 +436,7 @@ describe('dispatchIntervention', () => {
     expect(lastLog()?.payload).toMatchObject({ outcome: 'rate_limited' });
   });
 
-  test('13. dead-token pruning — survivors written back without dead token', async () => {
+  test('13. dead-token pruning - survivors written back without dead token', async () => {
     seedAudit('uid-dp', 'd-dp', 'two');
     seedSettings('uid-dp', {
       ...ENABLED_ALL_TIERS,
@@ -470,7 +470,7 @@ describe('dispatchIntervention', () => {
     });
   });
 
-  test('14. PII canary — neither title, body, nor token strings appear in any log payload', async () => {
+  test('14. PII canary - neither title, body, nor token strings appear in any log payload', async () => {
     seedAudit('uid-pii', 'd-pii', 'three');
     seedSettings('uid-pii', {
       ...ENABLED_ALL_TIERS,
@@ -488,7 +488,7 @@ describe('dispatchIntervention', () => {
     }
   });
 
-  test('15. channel-id literal — every multicast uses channelId=cheer_up', async () => {
+  test('15. channel-id literal - every multicast uses channelId=cheer_up', async () => {
     seedAudit('uid-ch', 'd-ch', 'one');
     seedSettings('uid-ch', ENABLED_ALL_TIERS);
 

@@ -48,7 +48,7 @@ class _BrokenStateRepo extends _FakeStateRepo {
 }
 
 void main() {
-  // Pinned "now" — May 9, 2026, 10:30 AM.
+  // Pinned "now" - May 9, 2026, 10:30 AM.
   final now = DateTime(2026, 5, 9, 10, 30);
   DateTime nowFn() => now;
 
@@ -142,7 +142,7 @@ void main() {
     });
 
     test(
-      'clock skew (anchor in the future) → Blocked(cooldown48h) — fail-closed',
+      'clock skew (anchor in the future) → Blocked(cooldown48h) - fail-closed',
       () async {
         final repo = _FakeStateRepo(
           anchors: InterventionAnchors(

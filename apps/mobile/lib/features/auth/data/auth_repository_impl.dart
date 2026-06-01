@@ -132,7 +132,7 @@ class AuthRepositoryImpl implements AuthRepository {
           await _datasource.reauthenticateWithGoogleIdToken(idToken);
         case BiometricCredentials():
           // Biometric reauth path is platform-keystore-backed and lands
-          // in a follow-up — no caller wires it today. Surface a marker
+          // in a follow-up - no caller wires it today. Surface a marker
           // failure so any caller wiring biometric reauth before that
           // path ships fails loudly rather than silently bypassing the
           // reauth fence.
@@ -164,7 +164,7 @@ class AuthRepositoryImpl implements AuthRepository {
     // Server-side cascade via the admin-SDK callable. The CF wipes
     // every subcollection under `users/{uid}/` plus any user-owned
     // Storage media, then resets the profile-doc fields. It
-    // deliberately does NOT delete the Firebase Auth record — that's
+    // deliberately does NOT delete the Firebase Auth record - that's
     // left to `deleteCurrentUser` so the use case can sequence reauth →
     // cascade → local-Auth-delete → signOut with a single recent-login
     // window.
@@ -172,7 +172,7 @@ class AuthRepositoryImpl implements AuthRepository {
       await _deleteAccountDatasource.call();
       return const Ok(null);
     } on DeleteAccountDatasourceException catch (e) {
-      // Log only the typed exception runtime — no uid, no payload. The
+      // Log only the typed exception runtime - no uid, no payload. The
       // caller already knows it's the delete path.
       _logger.warn('deleteAccount CF failed: ${e.runtimeType}');
       return Err(_mapDeleteAccountException(e));

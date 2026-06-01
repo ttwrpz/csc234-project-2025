@@ -10,12 +10,12 @@ import '../datasources/token_balance_firestore_datasource.dart';
 /// Firestore-backed implementation of [TokenRepository].
 ///
 /// Failure mapping mirrors `PatternRepositoryImpl`:
-///   * `permission-denied` → [TokenFailure.permissionDenied] — the rule
+///   * `permission-denied` → [TokenFailure.permissionDenied] - the rule
 ///     rejected the write (e.g. monotonic-down attempt, or stale uid in
 ///     the path). Surface so the controller doesn't blame transient
 ///     cloud weather for a programmer error.
 ///   * `unavailable`, `deadline-exceeded`, `cancelled` →
-///     [TokenFailure.network] — transient; the next mood log retries.
+///     [TokenFailure.network] - transient; the next mood log retries.
 ///   * everything else → [TokenFailure.unknown] with the exception's
 ///     `code` as the message (PII-free; the caller logs only the
 ///     `runtimeType` of the failure).
@@ -39,7 +39,7 @@ class TokenRepositoryImpl implements TokenRepository {
     required String userId,
   }) async {
     if (userId.isEmpty) {
-      // Defense-in-depth — caller is `LogMoodController` which already
+      // Defense-in-depth - caller is `LogMoodController` which already
       // gates on a signed-in user, but a stale ref shouldn't round-trip
       // a malformed write. Network is the closest "transient, retry on
       // next save" semantic.

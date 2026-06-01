@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 /// [SkinModalSheet]. Pairs a flower-token icon with the integer cost,
 /// dimmed when the user cannot afford it.
 ///
-/// Icon choice: `Icons.local_florist` — matches the [TokenBalanceChip]
+/// Icon choice: `Icons.local_florist` - matches the [TokenBalanceChip]
 /// so the visual vocabulary is consistent across the modal (the chip in
 /// the header reads "you have N tokens"; the chips on each locked skin
 /// read "this costs M tokens"). The "no mood-contingent rewards" rule
@@ -35,7 +35,7 @@ class LockedSkinChip extends StatelessWidget {
   /// chip's visual treatment.
   final bool affordable;
 
-  /// User's current balance — only included in the Semantics label when
+  /// User's current balance - only included in the Semantics label when
   /// the chip is rendered as unaffordable, so screen reader users hear
   /// both the price AND why the button is dimmed.
   final int? userBalance;

@@ -50,7 +50,7 @@ void main() {
       expect(dot.mostRecentEntryId, 'e1');
     });
 
-    test('two same-day entries — higher intensity wins category, '
+    test('two same-day entries - higher intensity wins category, '
         'most-recent wins id', () {
       final morning = DateTime(2026, 4, 12, 8, 0);
       final evening = DateTime(2026, 4, 12, 20, 0);

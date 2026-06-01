@@ -42,18 +42,12 @@ class DailyCheckInSchedule {
   /// target time we roll forward a day so a re-schedule triggered by the
   /// user tapping "on" at 21:30:00 doesn't fire instantly.
   ///
-  /// Pure and timezone-agnostic — operates in the same zone as [from].
+  /// Pure and timezone-agnostic - operates in the same zone as [from].
   /// The scheduler wraps the result in a `TZDateTime` before handing it
   /// to the platform plugin; keeping the arithmetic here (not in the
   /// data layer) makes the roll-forward rule testable.
   DateTime nextOccurrenceAfter(DateTime from) {
-    final todayAtTime = DateTime(
-      from.year,
-      from.month,
-      from.day,
-      hour,
-      minute,
-    );
+    final todayAtTime = DateTime(from.year, from.month, from.day, hour, minute);
     if (todayAtTime.isAfter(from)) return todayAtTime;
     return todayAtTime.add(const Duration(days: 1));
   }

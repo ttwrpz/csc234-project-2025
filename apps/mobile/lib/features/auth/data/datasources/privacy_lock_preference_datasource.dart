@@ -9,7 +9,7 @@ const String _privacyLockEnabledKey = 'auth.privacy_lock_enabled';
 /// with the PIN doc in Firestore (a user with the gate ON should have
 /// a PIN set, and turning OFF invalidates the PIN). Stored locally
 /// rather than in Firestore because a) the router redirect needs a
-/// synchronous read, b) the toggle has no cross-device relevance —
+/// synchronous read, b) the toggle has no cross-device relevance -
 /// if you sign in on a new device you re-opt-in.
 class PrivacyLockPreferenceDatasource {
   const PrivacyLockPreferenceDatasource(this._prefs);

@@ -68,18 +68,23 @@ void main() {
       expect(state.minute, 15);
     });
 
-    test('enable arms the scheduler at the current time and persists', () async {
-      final scheduler = _FakeScheduler();
-      final container = await _container(scheduler);
-      final notifier = container.read(dailyCheckInControllerProvider.notifier);
+    test(
+      'enable arms the scheduler at the current time and persists',
+      () async {
+        final scheduler = _FakeScheduler();
+        final container = await _container(scheduler);
+        final notifier = container.read(
+          dailyCheckInControllerProvider.notifier,
+        );
 
-      await notifier.setEnabled(true);
+        await notifier.setEnabled(true);
 
-      expect(scheduler.scheduleCalls, [(hour: 21, minute: 30)]);
-      expect(container.read(dailyCheckInControllerProvider).enabled, isTrue);
-      final sp = await SharedPreferences.getInstance();
-      expect(sp.getBool('notifications.daily_check_in_enabled'), isTrue);
-    });
+        expect(scheduler.scheduleCalls, [(hour: 21, minute: 30)]);
+        expect(container.read(dailyCheckInControllerProvider).enabled, isTrue);
+        final sp = await SharedPreferences.getInstance();
+        expect(sp.getBool('notifications.daily_check_in_enabled'), isTrue);
+      },
+    );
 
     test('permission denied keeps the toggle off and unpersisted', () async {
       final scheduler = _FakeScheduler()..scheduleResult = false;

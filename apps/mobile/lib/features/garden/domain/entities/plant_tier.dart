@@ -1,17 +1,17 @@
 /// 5-tier ecosystem state mapped from `H_t` (Garden Health EWMA). Every
-/// tier renders plants alive — the Storm Season tier shows rain falling
+/// tier renders plants alive - the Storm Season tier shows rain falling
 /// AROUND the garden with plants sheltered (never wilting, never dying).
 ///
 /// Threshold cuts. Each boundary belongs to the more-extreme tier (the
 /// one further from zero) so `fromHealth(0.4)` is flourishing and
-/// `fromHealth(-0.4)` is stormSeason — symmetric on both sides of zero:
+/// `fromHealth(-0.4)` is stormSeason - symmetric on both sides of zero:
 ///   * Flourishing    : H >=  +0.4
 ///   * Thriving       : +0.1 <= H <  +0.4
 ///   * Resting        : -0.1 <  H <  +0.1
 ///   * Weathering     : -0.4 <  H <= -0.1
 ///   * Storm Season   :          H <= -0.4
 ///
-/// Pure Dart — domain layer must not import Flutter/Firebase. Presentation
+/// Pure Dart - domain layer must not import Flutter/Firebase. Presentation
 /// widgets (`PlantTierGroup`) translate these enum values into visuals.
 enum PlantTier {
   flourishing,

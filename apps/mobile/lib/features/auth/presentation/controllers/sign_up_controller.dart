@@ -38,7 +38,7 @@ class SignUpController extends _$SignUpController {
     if (result is Ok && trimmedName.isNotEmpty) {
       // Email/password `createUserWithEmailAndPassword` has no field
       // for a display name, so push it through immediately after the
-      // account exists. Best-effort — if the patch fails the account
+      // account exists. Best-effort - if the patch fails the account
       // still lives, the user can set the name in Settings later.
       // ignore: discarded_futures
       ref.read(authRepositoryProvider).updateDisplayName(trimmedName);

@@ -5,12 +5,12 @@ import '../domain/repositories/quote_library.dart';
 
 /// Concrete [QuoteLibrary] backed by team-reviewed curated phrase pools.
 ///
-/// The pools are `static const` lists so the phrases ship with the binary —
+/// The pools are `static const` lists so the phrases ship with the binary -
 /// this is on purpose: a Remote Config push CANNOT mutate safety-critical
 /// content. Remote Config is for kill-switches, not for quote text.
 ///
 /// **Determinism:** Tier 3 rotation is `seed.toUtc().day % tier3Pool.length`
-/// — same calendar day → same phrase across cold launches. Tier 1/2 rotate
+/// - same calendar day → same phrase across cold launches. Tier 1/2 rotate
 /// by ISO week so a same-week 48h-spaced Tier 1 nudge does not echo itself,
 /// while a multi-week run cycles through the pool.
 ///
@@ -21,7 +21,7 @@ class QuoteLibraryImpl implements QuoteLibrary {
   const QuoteLibraryImpl();
 
   // ──────────────────────────────────────────────────────────────────────
-  // Tier 1 — breathing-prompt curated pool (12 entries).
+  // Tier 1 - breathing-prompt curated pool (12 entries).
   // Read aloud with the team before merge.
   // ──────────────────────────────────────────────────────────────────────
   static const List<String> tier1Pool = [
@@ -40,7 +40,7 @@ class QuoteLibraryImpl implements QuoteLibrary {
   ];
 
   // ──────────────────────────────────────────────────────────────────────
-  // Tier 2 — journaling-prompt curated pool (12 entries).
+  // Tier 2 - journaling-prompt curated pool (12 entries).
   // ──────────────────────────────────────────────────────────────────────
   static const List<String> tier2Pool = [
     'Would you like to write about what has been on your mind?',
@@ -58,7 +58,7 @@ class QuoteLibraryImpl implements QuoteLibrary {
   ];
 
   // ──────────────────────────────────────────────────────────────────────
-  // Tier 3 — acute-care curated pool (8 entries). Read aloud TWICE with
+  // Tier 3 - acute-care curated pool (8 entries). Read aloud TWICE with
   // the full team before merge. Every entry contains "Hotline 1323" in
   // the body.
   // ──────────────────────────────────────────────────────────────────────
@@ -74,7 +74,7 @@ class QuoteLibraryImpl implements QuoteLibrary {
   ];
 
   // ──────────────────────────────────────────────────────────────────────
-  // Approved-word sets per tier — fed into the Safety Filter's whitelist
+  // Approved-word sets per tier - fed into the Safety Filter's whitelist
   // gate. Derived from the curated pools themselves (tokenise +
   // normalise) plus a small set of generic connector words. Authored as
   // `static const` so the filter has a stable vocabulary independent of
@@ -82,7 +82,7 @@ class QuoteLibraryImpl implements QuoteLibrary {
   // entry passes its own tier's filter.
   // ──────────────────────────────────────────────────────────────────────
 
-  /// Generic connector tokens that any compassionate sentence may use —
+  /// Generic connector tokens that any compassionate sentence may use -
   /// pronouns, articles, prepositions. Kept tiny so an off-script
   /// sentence cannot drift past the 80%-tokens-in-set ratio just by
   /// stacking common English filler.
@@ -207,7 +207,7 @@ class QuoteLibraryImpl implements QuoteLibrary {
 
   /// Public so [QuoteSafetyFilterImpl] can share the canonical tokeniser.
   /// Lowercases, strips ASCII punctuation, splits on whitespace, drops
-  /// empty tokens. Numeric tokens like "1323" are kept — they appear in
+  /// empty tokens. Numeric tokens like "1323" are kept - they appear in
   /// the Tier 3 pool by design.
   static List<String> tokenise(String s) {
     // Replace every char not in [a-z0-9] (after lowercasing) with a space,
@@ -281,7 +281,7 @@ class QuoteLibraryImpl implements QuoteLibrary {
     return thursday.year * 100 + weekNumber;
   }
 
-  /// Convenience for the filter impl — `AiAllowedTier.one` → tier 1 set,
+  /// Convenience for the filter impl - `AiAllowedTier.one` → tier 1 set,
   /// `AiAllowedTier.two` → tier 2 set.
   static Set<String> approvedWordsFor(AiAllowedTier tier) => switch (tier) {
     AiAllowedTier.one => tier1ApprovedWords,

@@ -19,7 +19,7 @@ import 'intervention_opt_out_button.dart';
 /// verbatim instead of re-deriving it.
 ///
 /// Tier 3 dispatches paint the banner card with `colorScheme.errorContainer`
-/// — visually distinct but compassionate (no red flashing / no shake
+/// - visually distinct but compassionate (no red flashing / no shake
 /// animation). The CLAUDE.md "No streak-shaming" rule extends to crisis
 /// surfaces: prominence is appropriate, alarm is not.
 class InterventionBanner extends ConsumerWidget {
@@ -148,7 +148,7 @@ class InterventionBanner extends ConsumerWidget {
   }
 
   /// Maps the dispatched tier to its named route. Kept private here so
-  /// the banner is the single source of truth — the screens never
+  /// the banner is the single source of truth - the screens never
   /// re-derive the mapping.
   static String _routeNameFor(Tier tier) => switch (tier) {
     Tier.one => 'intervention.breathing',

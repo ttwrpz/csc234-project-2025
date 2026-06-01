@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 /// Quiet footer that surfaces only after the 10-day escalation
 /// threshold is reached (`InterventionState.escalated == true`). Per
 /// CLAUDE.md "Copy rules", **the hotline is footer-only** and must
-/// never be a primary CTA — this widget is a soft note, not an action.
+/// never be a primary CTA - this widget is a soft note, not an action.
 ///
 /// The exact wording is locked in CLAUDE.md and may not be paraphrased.
 class HotlineFooter extends StatelessWidget {

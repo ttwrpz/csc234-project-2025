@@ -1,4 +1,4 @@
-// webauthnAssertionFinish — Cloud Function callable for the assertion
+// webauthnAssertionFinish - Cloud Function callable for the assertion
 // ceremony's second leg.
 //
 // Flow:
@@ -8,7 +8,7 @@
 //   3. Read the registered credential (single-credential v1.5).
 //   4. Call verifyAuthenticationResponse with the stored public key +
 //      counter.
-//   5. Counter-regression detection per ADR-0014 Decision B — if the
+//   5. Counter-regression detection per ADR-0014 Decision B - if the
 //      asserted counter is NOT strictly greater than the stored counter
 //      (and the stored counter is > 0), emit a `webauthn.counter_regression`
 //      structured-log line and reject as `verificationFailed` (which the

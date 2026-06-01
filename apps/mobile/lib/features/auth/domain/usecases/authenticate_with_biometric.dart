@@ -23,7 +23,7 @@ class AuthenticateWithBiometricUseCase {
       if (ok) return const Ok(null);
       return const Err(AuthFailure.biometricCancelled());
     } catch (e) {
-      // Hardware / configuration error. We capture the runtimeType only —
+      // Hardware / configuration error. We capture the runtimeType only -
       // never the underlying message, which can include user-identifying
       // platform diagnostics.
       return Err(AuthFailure.biometricFailed(e.runtimeType.toString()));

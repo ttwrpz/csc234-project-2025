@@ -9,7 +9,7 @@ import '../datasources/disclaimer_firestore_datasource.dart';
 ///
 /// Failure mapping mirrors `PatternRepositoryImpl` and
 /// `HarvestRepositoryImpl`:
-///   * `'permission-denied'` → [DisclaimerFailure.permissionDenied] —
+///   * `'permission-denied'` → [DisclaimerFailure.permissionDenied] -
 ///     the firestore.rule rejected the write (e.g. another uid in the
 ///     path, or the rule guard blocked a `true → false` revert).
 ///   * `'unavailable'` / `'deadline-exceeded'` / `'cancelled'` →
@@ -33,7 +33,7 @@ class DisclaimerRepositoryImpl implements DisclaimerRepository {
   @override
   Future<Result<void, DisclaimerFailure>> ack({required String userId}) async {
     if (userId.isEmpty) {
-      // Defense-in-depth — caller is the ack dialog which gates on a
+      // Defense-in-depth - caller is the ack dialog which gates on a
       // signed-in user, but a stale ref shouldn't round-trip a
       // malformed write. Network is the closest "transient, retry"
       // semantic.

@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'fakes.dart';
 
 /// Shared rig for `integration_test/`. Builds a `ProviderScope` with the
-/// production [MoodBloomApp] inside it, plus the caller's [overrides] —
+/// production [MoodBloomApp] inside it, plus the caller's [overrides] -
 /// all Firebase-touching providers MUST be overridden by the caller so
 /// the test never reaches a real backend.
 ///
@@ -39,12 +39,12 @@ Future<void> pumpHarness(
 /// Returns the always-needed overrides for an integration test that boots
 /// the production [MoodBloomApp]. Adds:
 ///
-///   - `themeModeControllerProvider` — the production provider throws if
+///   - `themeModeControllerProvider` - the production provider throws if
 ///     not seeded (see `theme_mode_controller.dart` doc); we feed it a
 ///     real controller backed by the mock SharedPreferences.
-///   - `biometricCapabilityProvider` — non-shouldGate so the router
+///   - `biometricCapabilityProvider` - non-shouldGate so the router
 ///     does not insert the biometric gate between sign-in and `/home`.
-///   - `moodSyncManagerProvider` — a [FakeSyncManager] so the router's
+///   - `moodSyncManagerProvider` - a [FakeSyncManager] so the router's
 ///     `ref.read(moodSyncManagerProvider)` on auth-state transitions does
 ///     not drag in real Firestore / Drift / connectivity_plus.
 ///
@@ -72,7 +72,7 @@ defaultIntegrationOverrides() async {
           userOptedIn: false,
         ),
       ),
-      // Privacy Lock overrides — keep the cold-boot gate off in
+      // Privacy Lock overrides - keep the cold-boot gate off in
       // integration flows so the harness lands on the screen each test
       // is exercising rather than `/privacy-lock`. The session-unlocked
       // flag is pre-flipped to `true` for defence in depth in case any
@@ -90,7 +90,7 @@ defaultIntegrationOverrides() async {
 /// Convenience: ensure the onboarding gate is bypassed so the router lands
 /// on `/sign-in` (or `/home` if the user is non-null) on first frame.
 /// Called from setUp in every integration flow that exercises auth-state
-/// transitions — onboarding adds a screen-pump that the flow tests don't
+/// transitions - onboarding adds a screen-pump that the flow tests don't
 /// need to revisit.
 void seedOnboardingComplete() {
   SharedPreferences.setMockInitialValues({'onboarding_complete': true});

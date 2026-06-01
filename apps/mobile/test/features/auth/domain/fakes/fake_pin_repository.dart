@@ -5,13 +5,13 @@ import 'package:moodbloom/features/auth/domain/entities/pin_setup_failure.dart';
 import 'package:moodbloom/features/auth/domain/entities/pin_verify_failure.dart';
 import 'package:moodbloom/features/auth/domain/repositories/pin_repository.dart';
 
-/// Hand-rolled fake for [PinRepository] — mirrors the
+/// Hand-rolled fake for [PinRepository] - mirrors the
 /// `FakeBiometricRepository` style used elsewhere in the auth tests.
 ///
 /// Holds an in-memory `Pin → bool` matcher: `verify(pin)` succeeds iff
 /// the supplied PIN matches the stored "correct" PIN (defaults to
 /// "123456"). The use cases under test exercise the orchestration
-/// logic, not the cryptographic correctness — that's the data layer's
+/// logic, not the cryptographic correctness - that's the data layer's
 /// concern.
 class FakePinRepository implements PinRepository {
   FakePinRepository({

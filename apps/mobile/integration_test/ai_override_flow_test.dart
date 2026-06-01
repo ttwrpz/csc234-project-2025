@@ -12,9 +12,9 @@ void main() {
 
   group('AI override flow (S5)', () {
     testWidgets(
-      'STUB — full flow lands in S5',
+      'STUB - full flow lands in S5',
       (_) async {},
-      // WBS 7.3 stub — Sprint 5 CI matrix owns the implementation.
+      // WBS 7.3 stub - Sprint 5 CI matrix owns the implementation.
       skip: true,
     );
   });

@@ -19,7 +19,7 @@ import '../repositories/pin_repository.dart';
 ///   - Storage error on the replace → returns
 ///     [PinSetupFailure.storage].
 ///
-/// The two `Result` types are NOT unified into a single sealed type —
+/// The two `Result` types are NOT unified into a single sealed type -
 /// callers care about the distinction because the affordances differ
 /// (current-pin wrong gets a rate-limit countdown; new-pin mismatch
 /// just clears the keypad).

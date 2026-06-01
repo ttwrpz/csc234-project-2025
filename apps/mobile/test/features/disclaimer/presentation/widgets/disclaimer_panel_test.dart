@@ -34,7 +34,7 @@ void main() {
       expect(find.byIcon(Icons.medical_information_outlined), findsOneWidget);
     });
 
-    testWidgets('renders no interactive elements — read-only by construction', (
+    testWidgets('renders no interactive elements - read-only by construction', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -46,7 +46,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // No buttons / switches / radios should appear in this read-only
-      // surface — the (S5) ack dialog owns the "I understand" path.
+      // surface - the (S5) ack dialog owns the "I understand" path.
       expect(find.byType(FilledButton), findsNothing);
       expect(find.byType(TextButton), findsNothing);
       expect(find.byType(OutlinedButton), findsNothing);

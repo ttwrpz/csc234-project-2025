@@ -9,7 +9,7 @@
 | Surface | Tests passing | Notes |
 |---|---:|---|
 | Flutter (`apps/mobile`) | **736 / 736** | full suite incl. all goldens |
-| Cloud Functions (`functions`) | **40 / 40** | 3 suites — `analyzeMoodText`, `analyzePatterns`, `sendCheerUpPush` |
+| Cloud Functions (`functions`) | **40 / 40** | 3 suites - `analyzeMoodText`, `analyzePatterns`, `sendCheerUpPush` |
 | Firestore rules emulator | 17 / 17 | unchanged from v1.0 baseline |
 | `flutter analyze lib` | clean | 0 issues |
 | `tsc -p tsconfig.json` (functions) | clean | 0 errors |
@@ -36,7 +36,7 @@
 | harvest | 65 | 0 |
 | history | 32 | 0 |
 | mood | 168 | +6 |
-| notifications | 24 | 0 (2 rewrote — see below) |
+| notifications | 24 | 0 (2 rewrote - see below) |
 | onboarding | 18 | +1 |
 | pattern_engine (5-algo) | 47 | 0 |
 | settings | 28 | 0 |
@@ -91,9 +91,9 @@ The 8 tests in `sendCheerUpPush.test.ts` were rewritten in this round to match t
 
 ### Notable Cloud Function changes (v1.0 polish round)
 
-- **`analyzeMoodText.ts`** — extended Gemini system prompt with 1..5 intensity rubric; `RESPONSE_SCHEMA.intensity` added (INTEGER); `GeminiResponseSchema.intensity` accepts optional 1..5 with server-side clamp + round + default 3 fallback. `AnalyzeMoodTextSuccess.intensity` is now in the wire envelope.
-- **`sendCheerUpPush.ts`** — converted `onDocumentCreated` → `onCall`. `SendCheerUpPushRequest.requestId?` is the only request field. The 24h rate limit, opt-out check, dead-token pruning, multicast payload, and PII-allowlist log are byte-identical to the trigger version.
-- **NEW `wipeWeeklyGarden.ts`** — Admin-SDK callable that deletes the latest (or specified-by-weekId) `weeklyGardens/{weekId}` doc, bypassing the production write-once rule. Used by Settings → Debug → Force Harvest Now to make the demo replay-able.
+- **`analyzeMoodText.ts`** - extended Gemini system prompt with 1..5 intensity rubric; `RESPONSE_SCHEMA.intensity` added (INTEGER); `GeminiResponseSchema.intensity` accepts optional 1..5 with server-side clamp + round + default 3 fallback. `AnalyzeMoodTextSuccess.intensity` is now in the wire envelope.
+- **`sendCheerUpPush.ts`** - converted `onDocumentCreated` → `onCall`. `SendCheerUpPushRequest.requestId?` is the only request field. The 24h rate limit, opt-out check, dead-token pruning, multicast payload, and PII-allowlist log are byte-identical to the trigger version.
+- **NEW `wipeWeeklyGarden.ts`** - Admin-SDK callable that deletes the latest (or specified-by-weekId) `weeklyGardens/{weekId}` doc, bypassing the production write-once rule. Used by Settings → Debug → Force Harvest Now to make the demo replay-able.
 
 ### Firestore rules
 
@@ -117,16 +117,16 @@ Manual smoke pass on the changed surfaces. Run on Chrome 130 (web) + Pixel 8 (An
 | 1280 dp (desktop) | Mood entry tile | FlowerSprite leading glyph (no emoji); title + intensity dots + 2-line note + relative-time caption. |
 | All | Garden bed (animated) | Plants sway gently; butterflies drift on Flourishing tier; lanterns pulse on Storm Season. |
 | All | Garden bed (storm tier) | Rain fills full SkyHeader (top to ground); sun dimmed; closed sepal-buds (stage 0). |
-| All | Garden bed (resting tier, no rain) | Resting tier never shows rain — verified `_atmosphereForTier` clamping. |
+| All | Garden bed (resting tier, no rain) | Resting tier never shows rain - verified `_atmosphereForTier` clamping. |
 | All | Garden bed (empty entries) | Wipe account → ground+grass only, no flowers. |
 | All | Garden bed (30 entries) | "+5" overflow badge top-right (only on harvest archive surfaces, not live home). |
-| Web only | Onboarding "Allow notifications" | First-grant: popup → "Thanks — we'll only nudge…". Already-granted (cached): no popup → "Notifications are already enabled in this browser…". |
+| Web only | Onboarding "Allow notifications" | First-grant: popup → "Thanks - we'll only nudge…". Already-granted (cached): no popup → "Notifications are already enabled in this browser…". |
 
 ## Known issues / deferred
 
 - **CI lint workflow not re-run on the polish branch.** `flutter analyze` clean locally; CI re-run blocked on the deploy step (Cloud Functions deploy needs the `wipeWeeklyGarden` + onCall `sendCheerUpPush` to land first). Will re-run after the user's manual deploy.
-- **Settings golden drift (light + dark, ~0.86%)** — pre-existing pixel diff under the 4% tolerance threshold. The two settings goldens have drifted with each polish round but never exceeded tolerance. Tracked as a v1.x followup to regenerate the baselines.
-- **Sprint 4 acceptance criteria — all passing** (see `docs/audit/sprint-4-v1.0-acceptance.md` for the v1.0 baseline). The polish round did not break any criterion.
+- **Settings golden drift (light + dark, ~0.86%)** - pre-existing pixel diff under the 4% tolerance threshold. The two settings goldens have drifted with each polish round but never exceeded tolerance. Tracked as a v1.x followup to regenerate the baselines.
+- **Sprint 4 acceptance criteria - all passing** (see `docs/audit/sprint-4-v1.0-acceptance.md` for the v1.0 baseline). The polish round did not break any criterion.
 
 ## Commands run during this report
 

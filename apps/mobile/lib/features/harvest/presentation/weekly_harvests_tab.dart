@@ -23,7 +23,7 @@ import 'widgets/harvest_mini_garden.dart';
 /// a mini garden snapshot, range eyebrow, week label + tier headline,
 /// an Avg / Entries / Brightest stat row, and the dominant-mood chips.
 ///
-/// Empty state: "Your first week is still growing." — approved
+/// Empty state: "Your first week is still growing." - approved
 /// vocabulary. Tapping a locked week opens [ArchivedWeekScreen].
 class WeeklyHarvestsTab extends ConsumerWidget {
   const WeeklyHarvestsTab({super.key});
@@ -122,11 +122,13 @@ class WeeklyHarvestsTab extends ConsumerWidget {
   static _HarvestVm? _inProgressVm(List<MoodEntry> all, PlantTier tier) {
     final monday = _mondayOf(DateTime.now());
     final end = monday.add(const Duration(days: 7));
-    final entries = all.where((e) {
-      final local = e.createdAt.toLocal();
-      final day = DateTime(local.year, local.month, local.day);
-      return !day.isBefore(monday) && day.isBefore(end);
-    }).toList(growable: false);
+    final entries = all
+        .where((e) {
+          final local = e.createdAt.toLocal();
+          final day = DateTime(local.year, local.month, local.day);
+          return !day.isBefore(monday) && day.isBefore(end);
+        })
+        .toList(growable: false);
     if (entries.isEmpty) return null;
     return _HarvestVm(
       rangeLabel: _rangeLabel(monday, end),
@@ -162,7 +164,9 @@ class WeeklyHarvestsTab extends ConsumerWidget {
   static DateTime _mondayOf(DateTime now) {
     final local = now.toLocal();
     final midnight = DateTime(local.year, local.month, local.day);
-    return midnight.subtract(Duration(days: midnight.weekday - DateTime.monday));
+    return midnight.subtract(
+      Duration(days: midnight.weekday - DateTime.monday),
+    );
   }
 
   /// "This week" / "Last week" / "N weeks ago" from the week's Monday.
@@ -193,7 +197,8 @@ class WeeklyHarvestsTab extends ConsumerWidget {
     for (final e in entries) {
       final local = e.createdAt.toLocal();
       final day = DateTime(local.year, local.month, local.day);
-      sums[day] = (sums[day] ?? 0) + computeMoodScore(e.mood, e.intensity).value;
+      sums[day] =
+          (sums[day] ?? 0) + computeMoodScore(e.mood, e.intensity).value;
       counts[day] = (counts[day] ?? 0) + 1;
     }
     DateTime? best;
@@ -232,12 +237,18 @@ class WeeklyHarvestsTab extends ConsumerWidget {
   static String _month(int m) => _months[(m - 1).clamp(0, 11)];
 
   static const _weekdays = <String>[
-    'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun',
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thu',
+    'Fri',
+    'Sat',
+    'Sun',
   ];
   static String _weekday(int w) => _weekdays[(w - 1).clamp(0, 6)];
 }
 
-/// View model backing a single harvest card — shared by the live
+/// View model backing a single harvest card - shared by the live
 /// in-progress card and the archived (locked) cards.
 class _HarvestVm {
   const _HarvestVm({
@@ -290,7 +301,7 @@ class _IntroBlurb extends StatelessWidget {
   }
 }
 
-/// Responsive grid wrapper — one column on phone widths, two columns on
+/// Responsive grid wrapper - one column on phone widths, two columns on
 /// tablet+ widths. Only archived (locked) cards are tappable; the live
 /// in-progress card (always index 0 when present) has no archive to open.
 class _HarvestGrid extends StatelessWidget {
@@ -382,7 +393,7 @@ class _HarvestCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Mini garden snapshot — per-tier sky + ground + the SAME
+          // Mini garden snapshot - per-tier sky + ground + the SAME
           // mini-plant strip the home SkyHeader uses (one cluster per
           // day, no labels), so the harvest garden reads consistently
           // with the live home garden.

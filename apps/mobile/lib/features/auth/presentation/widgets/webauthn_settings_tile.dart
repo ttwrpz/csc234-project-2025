@@ -21,9 +21,9 @@ import '../../domain/entities/webauthn_register_failure.dart';
 ///   tile in a disabled "preview" state with copy explaining the
 ///   feature is staged for a future release once a production origin
 ///   is provisioned. The tap is a no-op + snackbar.
-/// * **Flag on, not web** → renders disabled with "Web only — open
+/// * **Flag on, not web** → renders disabled with "Web only - open
 ///   MoodBloom in Chrome / Edge / Safari to register a security key."
-/// * **Flag on, web, no credential** → "Set up a security key" — tap
+/// * **Flag on, web, no credential** → "Set up a security key" - tap
 ///   invokes [RegisterWebauthnUseCase], handling each failure mode
 ///   distinctly (notProvisioned snackbar, pinRequired routes to
 ///   `/privacy/setup`, userCanceled is silent, anything else surfaces a
@@ -125,7 +125,7 @@ class _WebauthnSettingsTileState extends ConsumerState<WebauthnSettingsTile> {
     ScaffoldMessengerState messenger,
   ) {
     if (failure.isUserCanceled) {
-      // User dismissed the browser prompt — silent.
+      // User dismissed the browser prompt - silent.
       return;
     }
     if (failure.isPinRequired) {
@@ -137,16 +137,16 @@ class _WebauthnSettingsTileState extends ConsumerState<WebauthnSettingsTile> {
       return;
     }
     if (failure.isNotProvisioned) {
-      // Deploy-guard snackbar — server-side fence per ADR-0014 §F.
+      // Deploy-guard snackbar - server-side fence per ADR-0014 §F.
       messenger.showSnackBar(SnackBar(content: Text(failure.message)));
       return;
     }
-    // network / verificationFailed / unknown — generic compact error.
+    // network / verificationFailed / unknown - generic compact error.
     messenger.showSnackBar(SnackBar(content: Text(failure.message)));
   }
 
   void _onRemovePlaceholder() {
-    // Remove is deferred to v1.5.1 — the assertion ceremony is required
+    // Remove is deferred to v1.5.1 - the assertion ceremony is required
     // before we can safely retire a credential (we have to confirm the
     // user owns the key they're trying to remove, and the CF surface
     // for that lands with the assertion path). For v1.5 the user can

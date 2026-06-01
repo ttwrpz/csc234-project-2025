@@ -2,7 +2,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:uuid/uuid.dart';
 
 /// Thin wrapper over `FirebaseFunctions.httpsCallable('analyzeMoodText')`. The
-/// repository converts the raw payload to domain types — this layer just owns
+/// repository converts the raw payload to domain types - this layer just owns
 /// transport (request ID generation, region pinning, exception mapping).
 class AiAnalysisFunctionsDatasource {
   AiAnalysisFunctionsDatasource(this._functions, {Uuid? uuid})
@@ -52,7 +52,7 @@ class AiAnalysisFunctionsDatasource {
 }
 
 /// Typed exceptions the repository unwraps into `AiAnalysisFailure` variants.
-/// Scoped to the data layer — the domain never sees these. Public (not
+/// Scoped to the data layer - the domain never sees these. Public (not
 /// underscore-prefixed) so the repository in a sibling file can pattern-match
 /// against the sealed hierarchy.
 sealed class AiAnalysisDatasourceException implements Exception {

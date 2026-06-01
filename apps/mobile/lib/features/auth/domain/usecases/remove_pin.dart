@@ -7,7 +7,7 @@ import '../repositories/pin_repository.dart';
 /// random hash over the existing doc. Used by the PRIVACY toggle's
 /// OFF branch in Settings.
 ///
-/// Does NOT also reset the "user has opted in" SharedPreferences flag —
+/// Does NOT also reset the "user has opted in" SharedPreferences flag -
 /// that is the controller's responsibility. The use case is purely
 /// the data-side invalidation.
 class RemovePinUseCase {

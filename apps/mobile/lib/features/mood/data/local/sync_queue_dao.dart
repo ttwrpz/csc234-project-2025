@@ -22,7 +22,7 @@ class SyncQueueDao extends DatabaseAccessor<MoodDatabase>
 
   /// Coalescing-aware enqueue:
   ///   - a new `update` for a pending entry replaces the pending payload
-  ///     (idempotent — N saves from one user gesture become 1 mutation);
+  ///     (idempotent - N saves from one user gesture become 1 mutation);
   ///   - a new `delete` drops every pending mutation for the same `entry_id`
   ///     and inserts a single `delete` row (creates that never made it to the
   ///     server become no-ops);

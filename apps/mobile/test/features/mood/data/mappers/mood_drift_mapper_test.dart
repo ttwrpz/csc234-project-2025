@@ -10,7 +10,7 @@ import 'package:moodbloom/features/mood/domain/mood_failure.dart';
 void main() {
   const mapper = MoodDriftMapper();
 
-  // 2026-04-29 14:00 UTC — far enough back to test UTC stability across DST.
+  // 2026-04-29 14:00 UTC - far enough back to test UTC stability across DST.
   final createdAt = DateTime.utc(2026, 4, 29, 14);
   final updatedAt = DateTime.utc(2026, 4, 29, 15);
 

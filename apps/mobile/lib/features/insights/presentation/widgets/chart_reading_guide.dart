@@ -50,7 +50,7 @@ class ChartReadingGuide extends StatelessWidget {
     }
 
     return MbCard(
-      // ExpansionTile draws its own padding — strip the card's default
+      // ExpansionTile draws its own padding - strip the card's default
       // so the tile fills the card cleanly.
       padding: EdgeInsets.zero,
       child: Theme(

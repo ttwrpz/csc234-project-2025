@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/auth/domain/auth_failure.dart';
 
 void main() {
-  group('AuthFailure variants — construction smoke tests', () {
+  group('AuthFailure variants - construction smoke tests', () {
     test('invalidEmail', () {
       const f = AuthFailure.invalidEmail();
       expect(f.message, contains('email'));

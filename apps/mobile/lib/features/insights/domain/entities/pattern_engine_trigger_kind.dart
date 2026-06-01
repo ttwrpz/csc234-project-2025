@@ -11,7 +11,7 @@
 /// 3-consecutive (deterministic) > z-score (single-day anomaly) >
 /// CUSUM (sustained shift).
 ///
-/// Pure-Dart enum — no Flutter / Firebase imports per the domain-purity
+/// Pure-Dart enum - no Flutter / Firebase imports per the domain-purity
 /// rule in CLAUDE.md. Lives next to the sibling [DailyInsight] entity.
 enum PatternEngineTriggerKind {
   /// Mann-Kendall Z_trend < -1.96 over the 14-day window → Tier 1.

@@ -6,7 +6,7 @@ import '../repositories/webauthn_repository.dart';
 
 /// Register a new WebAuthn authenticator (ADR-0014 Decision D).
 ///
-/// Thin orchestration over [WebauthnRepository.register] — the
+/// Thin orchestration over [WebauthnRepository.register] - the
 /// repository owns the four-step CF + browser-API ceremony. The use
 /// case exists for symmetry with the PIN family (`SetupPinUseCase`,
 /// `VerifyPinUseCase`) so controllers consume use cases, never

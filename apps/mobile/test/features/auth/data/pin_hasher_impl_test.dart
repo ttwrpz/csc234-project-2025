@@ -18,7 +18,7 @@ void main() {
     });
 
     test('newSalt is non-deterministic across calls', () {
-      // Probabilistic — collision probability is 2^-128, well below
+      // Probabilistic - collision probability is 2^-128, well below
       // CI noise. If this test ever flakes the universe is broken.
       final hasher = PinHasherImpl();
       final a = hasher.newSalt();
@@ -120,7 +120,7 @@ void main() {
       expect(hasher.constantTimeEquals([0, 1], [0, 1, 2]), isFalse);
     });
 
-    test('RFC 6070 test vector — sanity check the PBKDF2 wiring', () {
+    test('RFC 6070 test vector - sanity check the PBKDF2 wiring', () {
       // RFC 6070 §2 vector for PBKDF2-HMAC-SHA1 doesn't directly help
       // here (we use SHA-256), so we use a known PBKDF2-HMAC-SHA256
       // vector from RFC 7914 §11 / NIST:
@@ -131,7 +131,7 @@ void main() {
       // The implementation requires iterations >= 100 000 and a
       // 16-byte salt by ADR-0013 contract, so we can't directly run
       // the canonical vector. Instead: confirm that for a known
-      // (pin, salt, iter) triple, we get a stable 32-byte output —
+      // (pin, salt, iter) triple, we get a stable 32-byte output -
       // any future tweak that changes the output bytes will trip
       // this test.
       final hasher = PinHasherImpl(random: Random(42));
@@ -142,7 +142,7 @@ void main() {
         iterations: PinHasher.minIterations,
       );
       expect(out, hasLength(32));
-      // Stable golden — recorded from the first green run on this
+      // Stable golden - recorded from the first green run on this
       // hasher implementation. A change here means the PBKDF2 wiring
       // moved, which is a security-relevant change and needs
       // reviewer sign-off.

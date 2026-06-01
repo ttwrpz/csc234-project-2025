@@ -1,4 +1,4 @@
-# Sprint 4 Redesign Audit — Pre-flight Triage
+# Sprint 4 Redesign Audit - Pre-flight Triage
 
 **Date:** 2026-05-09
 **Author:** architect
@@ -8,16 +8,16 @@
 
 ## Context
 
-The professor approved a late redesign of Sprints 4–5 between v1.6 wrap and the May 12 demo. The previously-shipped *intensity-split visual taxonomy* — flowers for positive entries, **wilting plants** for negative intensity 1–3, **rain clouds** for negative intensity 4–5 — is replaced by an ecosystem model in which **plants are NEVER destroyed in any state**, every mood is *weather*, and the garden is held together by an EWMA-smoothed *Garden Health* score plus a separate *Daily Atmosphere* overlay. The Pattern Engine grows from two simple rules to five academic-grade algorithms (Mann-Kendall, sliding 5-of-7, 3-consecutive S ≤ -0.6, Z-score, CUSUM), all running client-side as pure-Dart functions.
+The professor approved a late redesign of Sprints 4–5 between v1.6 wrap and the May 12 demo. The previously-shipped *intensity-split visual taxonomy* - flowers for positive entries, **wilting plants** for negative intensity 1–3, **rain clouds** for negative intensity 4–5 - is replaced by an ecosystem model in which **plants are NEVER destroyed in any state**, every mood is *weather*, and the garden is held together by an EWMA-smoothed *Garden Health* score plus a separate *Daily Atmosphere* overlay. The Pattern Engine grows from two simple rules to five academic-grade algorithms (Mann-Kendall, sliding 5-of-7, 3-consecutive S ≤ -0.6, Z-score, CUSUM), all running client-side as pure-Dart functions.
 
 The team had already implemented most of the OLD S4–S5 design (commits up to `52f98a6`). This audit is therefore the **Day-0 0.5-day spike** the kickoff prompt asked for: re-walk every existing surface that touches mood scoring, garden visualisation, pattern detection, intervention dispatch, theme handling, or the Firestore data model, and triage each into one of five buckets:
 
-- **KEEP** — conforms to the new spec; no changes required this sprint.
-- **REVISE** — partially conforms; needs targeted edits.
-- **REPLACE** — design contradicts the new spec; rewrite from scratch.
-- **PAUSE** — code remains in-tree but is gated off until S5 wires it back in.
-- **DELETE** — non-compliant artefact whose existence is itself the bug; remove and replace.
-- **GREENFIELD** — no existing code; build new.
+- **KEEP** - conforms to the new spec; no changes required this sprint.
+- **REVISE** - partially conforms; needs targeted edits.
+- **REPLACE** - design contradicts the new spec; rewrite from scratch.
+- **PAUSE** - code remains in-tree but is gated off until S5 wires it back in.
+- **DELETE** - non-compliant artefact whose existence is itself the bug; remove and replace.
+- **GREENFIELD** - no existing code; build new.
 
 The full Sprint 4 plan that this audit feeds is at `C:\Users\user\.claude\plans\groovy-jumping-puddle.md`.
 
@@ -37,7 +37,7 @@ The full Sprint 4 plan that this audit feeds is at `C:\Users\user\.claude\plans\
 
 | Surface | Path | Bucket | Action |
 |---|---|---|---|
-| `GardenState` entity (positiveCount/wiltingCount/rainCloudCount/streak/last7Days, `DayBloomKind`) | `apps/mobile/lib/features/garden/domain/entities/garden_state.dart` | **REPLACE** | Old shape encodes "wilting" + "rainCloud" enum values; both contradict the new spec's plants-never-die rule. New entity holds `gardenHealth: double` (H_t), `plantTier: PlantTier` (5-value: Flourishing/Thriving/Resting/Weathering/StormSeason — all alive), `atmosphere: Atmosphere` (4-value: calmSunny/brightSunny/lightRain/storm), and `last7Days: List<DayScore>` (each cell carries a per-day numeric score, not a kind enum). |
+| `GardenState` entity (positiveCount/wiltingCount/rainCloudCount/streak/last7Days, `DayBloomKind`) | `apps/mobile/lib/features/garden/domain/entities/garden_state.dart` | **REPLACE** | Old shape encodes "wilting" + "rainCloud" enum values; both contradict the new spec's plants-never-die rule. New entity holds `gardenHealth: double` (H_t), `plantTier: PlantTier` (5-value: Flourishing/Thriving/Resting/Weathering/StormSeason - all alive), `atmosphere: Atmosphere` (4-value: calmSunny/brightSunny/lightRain/storm), and `last7Days: List<DayScore>` (each cell carries a per-day numeric score, not a kind enum). |
 | `ComputeGardenStateUseCase` (counts + streak) | `apps/mobile/lib/features/garden/domain/usecases/compute_garden_state.dart` | **REPLACE** | New use case folds entries → per-day mood-score aggregates → today's `avg_S_today` (drives Atmosphere) and a 7-day series (folded by EWMA into H_t, then mapped to PlantTier). Reuses `localMidnight` from `packages/core/lib/src/date_utils.dart`. |
 | `GardenHealthEwma` service | (none) | **GREENFIELD** | New pure-Dart fold: `H_t = 0.15·S_day + 0.85·H_{t-1}`, `H_0 = 0` resets weekly. |
 | `Atmosphere` service | (none) | **GREENFIELD** | New pure-Dart: `avg_S_today` → 1 of 4 weather states; resets midnight. |
@@ -52,7 +52,7 @@ The full Sprint 4 plan that this audit feeds is at `C:\Users\user\.claude\plans\
 
 | Surface | Path | Bucket | Action |
 |---|---|---|---|
-| `pattern_detector.dart` (5-of-7 + 3-consec heavy + 48h cooldown + 10-day escalation) | `apps/mobile/lib/features/garden/domain/pattern_detector.dart` | **REPLACE** | Move to `features/pattern_engine/domain/legacy_pattern_detector.dart`, mark `@Deprecated('Replaced by RunPatternEngineUseCase — see ADR-0011')`, retain test file as a regression baseline tagged `@Tags(['legacy'])`. The new engine subsumes both rules and adds three more (Mann-Kendall, Z-score, CUSUM). |
+| `pattern_detector.dart` (5-of-7 + 3-consec heavy + 48h cooldown + 10-day escalation) | `apps/mobile/lib/features/garden/domain/pattern_detector.dart` | **REPLACE** | Move to `features/pattern_engine/domain/legacy_pattern_detector.dart`, mark `@Deprecated('Replaced by RunPatternEngineUseCase - see ADR-0011')`, retain test file as a regression baseline tagged `@Tags(['legacy'])`. The new engine subsumes both rules and adds three more (Mann-Kendall, Z-score, CUSUM). |
 | 5 algorithm functions | (none) | **GREENFIELD** | New under `features/pattern_engine/domain/algorithms/`: `mann_kendall.dart`, `sliding_5_of_7.dart`, `three_consecutive.dart`, `z_score.dart`, `cusum.dart`. |
 | `RunPatternEngineUseCase` orchestrator | (none) | **GREENFIELD** | Runs all 5 algorithms over the user's mood history, returns a `PatternResult` Freezed entity with every output + `triggeredTier`. Persists to `users/{uid}/patterns/{yyyy-mm-dd}` (idempotent by date id). |
 | `PatternResult` entity | (none) | **GREENFIELD** | Freezed: `mannKendallZ`, `slidingNegCount`, `consecutiveHighIntensity`, `zScoreToday`, `cusumC`, `triggeredTier`. |
@@ -60,7 +60,7 @@ The full Sprint 4 plan that this audit feeds is at `C:\Users\user\.claude\plans\
 | `cheerUpEvents` collection + datasource + rule | `firebase/firestore.rules:65–81`, `cheer_up_events_*.dart` | **KEEP** | Append-only audit log; S5 will write per-tier events with the new reason codes. No S4 schema change. |
 | `cheer_up_controller.dart` (banner dispatch path) | `apps/mobile/lib/features/garden/presentation/controllers/cheer_up_controller.dart` | **PAUSE** | Wrap dispatch in a Remote Config flag `interventionDispatchEnabled` (default `false` in v1.0). S5 flips the flag once the new dispatcher reads `patterns/{date}.triggeredTier`. |
 | `cheer_up_banner.dart` widget | `apps/mobile/lib/features/garden/presentation/widgets/cheer_up_banner.dart` | **PAUSE** | Surfaces nothing in v1.0 because the controller is gated off. |
-| `sendCheerUpPush` Cloud Function | `functions/src/sendCheerUpPush.ts` | **PAUSE** | Deployed but quiescent in v1.0 — the client-side gate prevents the upstream `cheerUpEvents` write that triggers it. |
+| `sendCheerUpPush` Cloud Function | `functions/src/sendCheerUpPush.ts` | **PAUSE** | Deployed but quiescent in v1.0 - the client-side gate prevents the upstream `cheerUpEvents` write that triggers it. |
 | `analyzePatterns` Cloud Function | `functions/src/analyzePatterns.ts` | **REVISE** | Stays deployed for the existing Insights surface, but role narrows to *insights only* (no longer drives interventions). `NEGATIVE_MOOD_CODES.has('okay')` removed atomically with the client `MoodType.okay` flip. |
 
 ### Harvest / tokens / theme
@@ -82,7 +82,7 @@ The full Sprint 4 plan that this audit feeds is at `C:\Users\user\.claude\plans\
 | `users/{uid}/cheerUpEvents/{evtId}` rule | `firebase/firestore.rules:65–81` | **KEEP** | Append-only audit log unchanged. |
 | `users/{uid}/interventionState/current` rule | `firebase/firestore.rules:88–116` | **KEEP** | S4 retains single-doc shape; S5 adds parallel `cooldowns/{type}` collection. |
 | `users/{uid}/settings/notifications` rule | `firebase/firestore.rules:123–148` | **KEEP** | FCM-token-list shape unchanged. |
-| `users/{uid}` doc — top-level fields | `firebase/firestore.rules:9–10` | **REVISE** | Current rule is `allow read, write: if isOwner(uid)` (overly permissive). Replace with field-level validation for new top-level fields: `tokenBalance` (monotonic-up except skin-spend), `tokensEarnedToday`, `lastTokenEarnedDate`, `unlockedSkins` (map<emotion, [skinId]>), `gardenSettings.dayNightMode` (enum), `insightsDisclaimerAcked` (false→true once). |
+| `users/{uid}` doc - top-level fields | `firebase/firestore.rules:9–10` | **REVISE** | Current rule is `allow read, write: if isOwner(uid)` (overly permissive). Replace with field-level validation for new top-level fields: `tokenBalance` (monotonic-up except skin-spend), `tokensEarnedToday`, `lastTokenEarnedDate`, `unlockedSkins` (map<emotion, [skinId]>), `gardenSettings.dayNightMode` (enum), `insightsDisclaimerAcked` (false→true once). |
 | `users/{uid}/weeklyGardens/{weekId}` | (none) | **GREENFIELD** | Write-once-on-archive, then read-only. Doc shape: `{weekStart, weekEnd, entries[], healthHistory[double], summary, archivedAt}`. |
 | `users/{uid}/patterns/{date}` | (none) | **GREENFIELD** | Idempotent by date id (`yyyy-MM-dd`). Doc shape: `{mannKendallZ, slidingNegCount, consecutiveHighIntensity, zScoreToday, cusumC, triggeredTier, schemaV: 1}`. **Carries no mood text** (PII guard). |
 | `users/{uid}/interventions/{id}` | (none) | **GREENFIELD-S5** | Rule stub adds `allow read: if isOwner(uid); allow write: if false;` so the collection is reserved without exposing it to client writes in S4. |
@@ -98,9 +98,9 @@ The full Sprint 4 plan that this audit feeds is at `C:\Users\user\.claude\plans\
 | ADR-0005 *Conflict resolution last-write-wins* | `docs/adr/0005-conflict-resolution-last-write-wins.md` | **KEEP** | Sync semantics unchanged. |
 | ADR-0006 *Compassionate Reframing (Wilting + Rain Cloud)* | `docs/adr/0006-compassionate-reframing.md` | **SUPERSEDE** | Header edit: `Status: Superseded by ADR-0010 (2026-05-09)`. The decision is preserved as a record of *why we changed*, not as live design. |
 | ADR-0007 *Pattern-Analysis Fallback (CF statistical primary)* | `docs/adr/0007-pattern-analysis-fallback.md` | **SUPERSEDE** | Header edit: `Status: Superseded by ADR-0011 (2026-05-09)`. |
-| ADR-0008 *Intervention Cooldown Persistence* | `docs/adr/0008-intervention-cooldown-persistence.md` | **KEEP** | Doc shape generalises to per-tier in S5 by indexing under `cooldowns/{tier}` — no contradiction. |
+| ADR-0008 *Intervention Cooldown Persistence* | `docs/adr/0008-intervention-cooldown-persistence.md` | **KEEP** | Doc shape generalises to per-tier in S5 by indexing under `cooldowns/{tier}` - no contradiction. |
 | ADR-0009 *Account-Deletion Topology* | `docs/adr/0009-account-deletion-topology.md` | **KEEP** | Account lifecycle is orthogonal to the ecosystem redesign. |
-| ADR-0010 *Ecosystem Model — Plants Never Die* | (new) | **CREATE** | Authored Day 1. Cites Neff 2003/2023, Linehan 1993, Hayes 1999, White & Epston 1990, Smit et al. 2022, Kroenke et al. 2001. |
+| ADR-0010 *Ecosystem Model - Plants Never Die* | (new) | **CREATE** | Authored Day 1. Cites Neff 2003/2023, Linehan 1993, Hayes 1999, White & Epston 1990, Smit et al. 2022, Kroenke et al. 2001. |
 | ADR-0011 *Client-Side Pattern Engine* | (new) | **CREATE** | Authored Day 1. Cites Mann 1945, Kendall 1975, Page 1954, Kroenke et al. 2001, Nahum-Shani et al. 2018. |
 
 ### Tests

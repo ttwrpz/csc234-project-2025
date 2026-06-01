@@ -2,7 +2,7 @@
   "name": "moodbloom-functions",
   "version": "0.1.0",
   "private": true,
-  "description": "MoodBloom Cloud Functions — Gemini AI proxy and pattern analysis (S3+).",
+  "description": "MoodBloom Cloud Functions - Gemini AI proxy and pattern analysis (S3+).",
   "type": "module",
   "main": "lib/index.js",
   "packageManager": "pnpm@10.18.0",

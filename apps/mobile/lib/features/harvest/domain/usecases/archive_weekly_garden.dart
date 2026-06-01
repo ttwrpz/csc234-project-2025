@@ -9,14 +9,14 @@ import 'compute_weekly_summary.dart';
 /// Archives the week containing [weekStart].
 ///
 /// Pure-Dart use case; the I/O contract is delegated to [HarvestRepository].
-/// The use case does NOT mutate the flat `users/{uid}/moods/` collection —
+/// The use case does NOT mutate the flat `users/{uid}/moods/` collection -
 /// the harvest is purely additive (a new doc at
 /// `users/{uid}/weeklyGardens/{weekId}`), so the Pattern Engine's
 /// 14-day Mann-Kendall and 30-day Z-score / CUSUM windows are unaffected
 /// across week boundaries.
 ///
 /// Internal flow:
-///  1. Reject empty weeks with [HarvestFailure.noEntries] — there's
+///  1. Reject empty weeks with [HarvestFailure.noEntries] - there's
 ///     nothing to summarise yet.
 ///  2. Compute `weekId = '${year}-W${isoWeekNumber.padLeft(2, '0')}'`
 ///     using ISO-8601 week semantics (Mon = day 1; week 1 of a year is
@@ -25,7 +25,7 @@ import 'compute_weekly_summary.dart';
 ///  4. Build [WeeklyGarden] with `weekEnd = weekStart + 7d` and
 ///     `archivedAt = now`.
 ///  5. Forward to the repository's `archive`. The repo enforces
-///     write-once via the Firestore rule — collisions surface as
+///     write-once via the Firestore rule - collisions surface as
 ///     [HarvestFailure.alreadyArchived].
 class ArchiveWeeklyGardenUseCase {
   const ArchiveWeeklyGardenUseCase({
@@ -69,7 +69,7 @@ class ArchiveWeeklyGardenUseCase {
     return _repository.archive(userId: userId, garden: garden);
   }
 
-  /// Public for testability — the repository impl uses the same id format
+  /// Public for testability - the repository impl uses the same id format
   /// when round-tripping through `getByWeekId`.
   ///
   /// `'YYYY-Www'` (zero-padded week ordinal). Visible for tests so the
@@ -94,7 +94,7 @@ class ArchiveWeeklyGardenUseCase {
   }
 
   /// ISO-8601 week-numbering year (the year that owns the ISO week,
-  /// which can differ from `date.year` near year boundaries — e.g.
+  /// which can differ from `date.year` near year boundaries - e.g.
   /// 2026-01-01 is in ISO week 2026-W01 but 2027-01-01 is in 2026-W53).
   static int isoWeekYear(DateTime date) {
     return _isoWeekThursday(date).year;

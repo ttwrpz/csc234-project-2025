@@ -16,7 +16,7 @@ import '../datasources/interventions_firestore_datasource.dart';
 /// **Idempotency.** Same-millisecond duplicate dispatches collide on the
 /// deterministic `dispatchId` (`${tier.name}-${epochMs}` per
 /// [TieredInterventionDispatcher]). The second `set` fails with
-/// `already-exists`, which we treat as success — that IS the idempotent
+/// `already-exists`, which we treat as success - that IS the idempotent
 /// path. Mirrors the [CheerUpEventsRepositoryImpl] approach.
 ///
 /// **No PII logging.** `record.quoteId` is a stable curated-pool index or
@@ -54,7 +54,7 @@ class InterventionRepositoryImpl implements InterventionRepository {
       return const Ok(null);
     } on FirebaseException catch (e) {
       if (e.code == 'already-exists') {
-        // Idempotent path — the same (uid, dispatchId) tuple has already
+        // Idempotent path - the same (uid, dispatchId) tuple has already
         // been written. Success from the caller's perspective.
         return const Ok(null);
       }
@@ -86,7 +86,7 @@ class InterventionRepositoryImpl implements InterventionRepository {
       if (e.code == 'not-found') {
         // The doc was never written (likely the audit write failed on
         // the previous render-then-persist hop). Mark this as success
-        // anyway — the controller has already cleared its pending state
+        // anyway - the controller has already cleared its pending state
         // and the user's intent is honoured locally. Defense-in-depth
         // against a race the rule cannot prevent.
         return const Ok(null);

@@ -51,13 +51,13 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Claude Code — track project artifacts (agents, briefs, hooks, prompts, CLAUDE.md);
+# Claude Code - track project artifacts (agents, briefs, hooks, prompts, CLAUDE.md);
 # only ignore user-local permission overrides + runtime state.
 .claude/settings.local.json
 # Runtime lock used by the scheduler / parallel-agent coordinator.
 .claude/scheduled_tasks.lock
 # Per-developer skill packages installed locally via the `/skills` flow.
-# These are workstation-specific — the canonical source is the skill
+# These are workstation-specific - the canonical source is the skill
 # author's package, not a snapshot in this repo.
 .claude/skills/
 skills-lock.json
@@ -93,7 +93,7 @@ skills-lock.json
 .vscode/.ai/
 .vscode-ai/
 
-# Node — Firestore rules test harness (firebase/test/) and Cloud Functions
+# Node - Firestore rules test harness (firebase/test/) and Cloud Functions
 **/node_modules/
 firebase/test/coverage/
 *.tsbuildinfo
@@ -116,14 +116,14 @@ functions/.runtimeconfig.json
 # ios/ skeletons here. The skeletons are useless (no Gradle config, no
 # Xcode project) but git would happily track them on the next `git add`.
 #
-# `/android/` and `/ios/` are anchored — they only ignore the dirs at the
+# `/android/` and `/ios/` are anchored - they only ignore the dirs at the
 # repo root. The real apps/mobile/android/ and apps/mobile/ios/ keep being
 # tracked.
 /android/
 /ios/
 
 # Claude Code agent worktrees (harness-managed, isolated checkouts).
-# Per S5 retro §6.2 — file-mutating agents run with isolation:"worktree"
+# Per S5 retro §6.2 - file-mutating agents run with isolation:"worktree"
 # which materialises temporary trees here. They're harness state, not
 # repo content.
 /.claude/worktrees/

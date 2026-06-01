@@ -7,7 +7,7 @@ part 'ai_suggestion.freezed.dart';
 /// Outcome of an `analyzeMoodText` Cloud Function call once the wire DTO has
 /// been validated and mapped into the six-mood domain enum.
 ///
-/// Pure-Dart entity — imports only `freezed_annotation` (annotation-only) and
+/// Pure-Dart entity - imports only `freezed_annotation` (annotation-only) and
 /// the sibling `mood_type.dart`. No Flutter / Firebase / cloud_functions
 /// imports per CLAUDE.md domain-purity rule.
 ///
@@ -47,7 +47,7 @@ abstract class AiSuggestionAlternative with _$AiSuggestionAlternative {
   }) = _AiSuggestionAlternative;
 }
 
-/// Safety flags raised by the model. Currently only `selfHarm` — when set the
+/// Safety flags raised by the model. Currently only `selfHarm` - when set the
 /// AI suggestion pill is hidden entirely. Keep the enum open for future flag
 /// additions without a schema version bump.
 enum AiSafetyFlag { selfHarm }

@@ -28,10 +28,10 @@ void main() {
       expect(FlowerSpecies.forMood(MoodType.calm), FlowerSpecies.lavender);
     });
 
-    test('mapping is exhaustive — every MoodType maps to a distinct species, '
+    test('mapping is exhaustive - every MoodType maps to a distinct species, '
         'and all six species are reachable', () {
       final reached = MoodType.values.map(FlowerSpecies.forMood).toSet();
-      // All six species reachable — no mood collapses onto another's
+      // All six species reachable - no mood collapses onto another's
       // species.
       expect(reached, FlowerSpecies.values.toSet());
       expect(reached.length, 6);

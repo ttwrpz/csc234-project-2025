@@ -9,7 +9,7 @@ import '../../domain/auth_failure.dart';
 const _log = Logger('auth.firebase');
 
 /// Thin wrapper around `FirebaseAuth` and `google_sign_in`. This is the
-/// boundary between Firebase types and the rest of the app — no domain types
+/// boundary between Firebase types and the rest of the app - no domain types
 /// here, no widgets here. Methods either return the raw `firebase_auth.User`
 /// (mapped upstream by [AppUserMapper]) or throw an [AuthDatasourceException]
 /// carrying a sealed [AuthFailure].
@@ -17,7 +17,7 @@ const _log = Logger('auth.firebase');
 /// google_sign_in 7.x: the plugin is now a singleton accessed via
 /// `GoogleSignIn.instance`, initialised once in `main.dart` before
 /// `runApp`. The constructor's `googleSignIn` parameter has been
-/// removed — tests can no longer inject a fake; instead they should
+/// removed - tests can no longer inject a fake; instead they should
 /// override `firebaseAuthDatasourceProvider` directly with a fake
 /// datasource. (No existing tests inject a `GoogleSignIn` so this is
 /// a no-op test-side migration.)
@@ -30,7 +30,7 @@ class FirebaseAuthDatasource {
   /// On platforms that don't support a combined flow, the hint is ignored
   /// and authentication proceeds without scope authorization. This app
   /// only needs `idToken` (passed to `GoogleAuthProvider.credential`),
-  /// so we never call `authorizationClient.authorizeScopes(...)` —
+  /// so we never call `authorizationClient.authorizeScopes(...)` -
   /// avoiding a second round-trip and a second consent screen.
   static const List<String> _scopeHint = <String>['email'];
 
@@ -130,7 +130,7 @@ class FirebaseAuthDatasource {
       );
       // 7.x's `authentication` is a synchronous getter (not a Future
       // like 6.x). Returns `GoogleSignInAuthentication { idToken }`.
-      // We deliberately don't request an `accessToken` — Firebase's
+      // We deliberately don't request an `accessToken` - Firebase's
       // `GoogleAuthProvider.credential` only needs `idToken`, and
       // skipping the authorization round-trip removes a second consent
       // screen on first sign-in.
@@ -154,17 +154,17 @@ class FirebaseAuthDatasource {
       // Always log the code + description before mapping so future
       // "Google sign-in was cancelled" reports can be diagnosed without
       // re-adding instrumentation. PII rule: `description` is the
-      // plugin's diagnostic text — never the user's email.
+      // plugin's diagnostic text - never the user's email.
       _log.warn(
         'GoogleSignInException',
         data: 'code=${e.code.name} description=${e.description ?? '<none>'}',
       );
       switch (e.code) {
-        // Genuine user cancellation — back button / outside-tap.
+        // Genuine user cancellation - back button / outside-tap.
         case GoogleSignInExceptionCode.canceled:
           throw AuthDatasourceException(const AuthFailure.googleCancelled());
         // System killed the flow OR network issue. Surfacing this as a
-        // cancellation was misleading — users see "cancelled" when in
+        // cancellation was misleading - users see "cancelled" when in
         // fact a retry would succeed.
         case GoogleSignInExceptionCode.interrupted:
           throw AuthDatasourceException(const AuthFailure.network());
@@ -231,7 +231,7 @@ class FirebaseAuthDatasource {
   /// Reauthenticates the locally-signed-in user with [email]/[password].
   /// Required by Firebase Auth to refresh the recent-login window before
   /// destructive operations like `currentUser.delete()`. Maps Firebase
-  /// codes to sealed [AuthFailure] variants — no `FirebaseAuthException`
+  /// codes to sealed [AuthFailure] variants - no `FirebaseAuthException`
   /// crosses the data/domain boundary.
   Future<void> reauthenticateWithPassword({
     required String email,
@@ -280,7 +280,7 @@ class FirebaseAuthDatasource {
 
   /// Updates the locally-signed-in user's `displayName`. After the
   /// Firebase update we call `reload()` so the in-memory user object
-  /// reflects the new value — without it `authStateChanges()` does NOT
+  /// reflects the new value - without it `authStateChanges()` does NOT
   /// re-emit (the underlying token isn't rotated by a profile update).
   Future<void> updateDisplayName(String name) async {
     final user = _auth.currentUser;
@@ -302,12 +302,12 @@ class FirebaseAuthDatasource {
   /// Deletes the locally-signed-in Firebase Auth user record. Called by
   /// [AuthRepositoryImpl.deleteCurrentUser] AFTER the server cascade
   /// has run (the CF deletes data, the client deletes the Auth user).
-  /// No-ops when the user is already null (idempotent — matches the
+  /// No-ops when the user is already null (idempotent - matches the
   /// use case's "Ok if already gone" contract).
   ///
   /// Maps `requires-recent-login` to [AuthFailure.requiresRecentLogin] so
   /// the caller can distinguish the recoverable case from a hard
-  /// failure. Other Firebase codes map to [AuthFailure.unknown] —
+  /// failure. Other Firebase codes map to [AuthFailure.unknown] -
   /// `currentUser.delete()` is otherwise documented to succeed once
   /// reauth has run.
   Future<void> deleteCurrentUser() async {

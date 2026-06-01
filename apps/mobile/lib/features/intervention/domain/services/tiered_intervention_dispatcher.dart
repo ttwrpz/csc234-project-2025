@@ -12,7 +12,7 @@ import '../repositories/quote_library.dart';
 import 'quote_safety_filter.dart';
 
 /// Composes [QuoteLibrary], [AIQuoteRepository], and [QuoteSafetyFilter] into
-/// a single per-tier dispatch decision. Pure-Dart — no I/O of its own, no
+/// a single per-tier dispatch decision. Pure-Dart - no I/O of its own, no
 /// Firebase, no Flutter.
 ///
 /// Tier-3 invariant:
@@ -33,7 +33,7 @@ import 'quote_safety_filter.dart';
 ///     is the canonical sieve, but the curated fallback is the safety net
 ///     under the sieve.
 ///
-/// The dispatcher does NOT write the audit record itself — that's the
+/// The dispatcher does NOT write the audit record itself - that's the
 /// `DispatchInterventionUseCase` (and the data-layer impl behind it). The
 /// dispatcher returns a pure-Dart [InterventionDispatch]; persistence is
 /// the use case's job.
@@ -67,13 +67,13 @@ class TieredInterventionDispatcher {
       final now = _now();
       final Quote quote;
       if (tier == Tier.three) {
-        // Tier 3 is curated-only — do NOT pass through the AI repo or
+        // Tier 3 is curated-only - do NOT pass through the AI repo or
         // the Safety Filter. This branch returns before any AI-adjacent
         // type is referenced.
         quote = _quoteLibrary.pickTier3(seed: now);
       } else {
         // Tier 1 / Tier 2. `AiAllowedTier.fromTier` is unreachable for
-        // Tier 3 thanks to the branch above — belt-and-suspenders.
+        // Tier 3 thanks to the branch above - belt-and-suspenders.
         final allowed = AiAllowedTier.fromTier(tier);
         quote = await _runHybridPath(allowed, context, now);
       }

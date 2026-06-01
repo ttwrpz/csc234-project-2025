@@ -1,4 +1,4 @@
-// webauthnLoginFinish — UNAUTHENTICATED cold-boot sign-in, ceremony leg 2.
+// webauthnLoginFinish - UNAUTHENTICATED cold-boot sign-in, ceremony leg 2.
 //
 // Verifies a usernameless assertion produced by webauthnLoginStart and,
 // on success, mints a Firebase custom token so the client can call
@@ -14,7 +14,7 @@
 //   4. ATOMICALLY claim (read + delete in one transaction) the single-use
 //      GLOBAL challenge at webauthnLoginChallenges/{challengeId}. Claiming
 //      before verification means two concurrent finishes can never both
-//      consume the same challenge — closing the assertion-replay race that
+//      consume the same challenge - closing the assertion-replay race that
 //      would otherwise let one captured assertion mint two tokens.
 //   5. Read the uid's registered credential (single-credential v1.5).
 //      Honour the per-credential lockout ladder (failedAttempts /
@@ -27,7 +27,7 @@
 //      admin.createCustomToken(uid).
 //   9. On failure: bump failedAttempts + set lockedUntil on threshold.
 //
-// Privacy: pre-auth surface, so failure codes are deliberately OPAQUE —
+// Privacy: pre-auth surface, so failure codes are deliberately OPAQUE -
 // no_credential / credential_mismatch / bad-signature all collapse to
 // `verification_failed`, and the per-credential lockout time is never
 // returned to the unauthenticated caller (it would leak account
@@ -225,7 +225,7 @@ export async function handleWebauthnLoginFinish(
       outcome: 'no_credential',
       latencyMs: Date.now() - startMs,
     });
-    // Opaque on the wire — do not reveal account existence pre-auth.
+    // Opaque on the wire - do not reveal account existence pre-auth.
     return { ok: false, code: 'verification_failed' };
   }
   const credData = credDoc.data() as {
@@ -239,14 +239,14 @@ export async function handleWebauthnLoginFinish(
 
   const lockedUntilMs = toMillis(credData.lockedUntil);
   if (lockedUntilMs !== null && lockedUntilMs > Date.now()) {
-    // Locked — surface only the coarse code, never the unlock time (would
+    // Locked - surface only the coarse code, never the unlock time (would
     // leak account-existence + lockout timing to an unauthenticated caller).
     return { ok: false, code: 'rate_limited' };
   }
 
   const credentialId =
     typeof credData.credentialId === 'string' ? credData.credentialId : credDoc.id;
-  // Bind the assertion to the stored credential — reject an assertion that
+  // Bind the assertion to the stored credential - reject an assertion that
   // names a different credential id than the one we hold for this uid.
   const assertedId = typeof assertion.id === 'string' ? assertion.id : null;
   if (assertedId !== null && assertedId !== credentialId) {
@@ -302,7 +302,7 @@ export async function handleWebauthnLoginFinish(
       outcome: 'verification_failed',
       latencyMs: Date.now() - startMs,
     });
-    // Coarse code only — no lockout time on the wire.
+    // Coarse code only - no lockout time on the wire.
     return {
       ok: false,
       code: next.lockedUntilMs !== null ? 'rate_limited' : 'verification_failed',
@@ -338,7 +338,7 @@ export async function handleWebauthnLoginFinish(
   );
 
   // Confirm the resolved uid is a live Firebase Auth account before minting
-  // — guards against a stale credential doc for a deleted user being able
+  // - guards against a stale credential doc for a deleted user being able
   // to mint a token for an orphaned uid.
   try {
     await getAuth().getUser(uid);

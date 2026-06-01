@@ -26,7 +26,7 @@ class _Pbkdf2Args {
 /// Top-level (required by `compute`) PBKDF2 entry point. Inlines the
 /// algorithm so the worker isolate doesn't need to construct a
 /// `PinHasherImpl` (its `Random` field is fine to construct in any
-/// isolate but is irrelevant for derive — derive is stateless).
+/// isolate but is irrelevant for derive - derive is stateless).
 List<int> _pbkdf2InIsolate(_Pbkdf2Args args) {
   final passwordBytes = utf8.encode(args.pinDigits);
   final hmac = Hmac(sha256, passwordBytes);
@@ -50,12 +50,12 @@ List<int> _pbkdf2InIsolate(_Pbkdf2Args args) {
 
 /// Production [PinHasher] backed by `package:crypto`'s `Hmac<Sha256>`.
 ///
-/// PBKDF2-HMAC-SHA256 is hand-rolled here — `crypto` provides the HMAC
+/// PBKDF2-HMAC-SHA256 is hand-rolled here - `crypto` provides the HMAC
 /// primitive but not a one-call PBKDF2 helper. The implementation
 /// follows RFC 2898 §5.2: the derived key is the concatenation of T_1,
 /// T_2, ... T_l where T_i = U_1 XOR U_2 XOR ... XOR U_c and each U_k
 /// is HMAC-SHA256(password, U_{k-1}). For a 32-byte output and SHA-256
-/// (32-byte block) the loop is l=1 — single T_1 of 32 bytes.
+/// (32-byte block) the loop is l=1 - single T_1 of 32 bytes.
 ///
 /// Choice rationale: `pointycastle` is NOT in `flutter pub deps`, only
 /// `crypto` (transitive via `uuid`, promoted to a direct dep in
@@ -119,7 +119,7 @@ class PinHasherImpl implements PinHasher {
     return t;
   }
 
-  /// Production override — pushes PBKDF2 onto a Flutter `compute()`
+  /// Production override - pushes PBKDF2 onto a Flutter `compute()`
   /// worker isolate so the main isolate stays responsive while the
   /// 100 000-iteration loop runs (~1–3 s on mid-range Android).
   /// Validation lives here too so the worker isolate never sees bad
@@ -161,7 +161,7 @@ class PinHasherImpl implements PinHasher {
 
   @override
   bool constantTimeEquals(List<int> a, List<int> b) {
-    // Comparing differing lengths in constant time is impossible — the
+    // Comparing differing lengths in constant time is impossible - the
     // length itself is the side channel. But a length-mismatch on the
     // derived key means a programmer error upstream (the derive params
     // are fixed), so returning early here is acceptable: an attacker

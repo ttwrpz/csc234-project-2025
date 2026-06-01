@@ -69,7 +69,7 @@ void main() {
     );
 
     test('4. multiple negative entries on same day count once for 5-of-7', () {
-      // 4 distinct days, but yesterday has THREE entries — should NOT
+      // 4 distinct days, but yesterday has THREE entries - should NOT
       // count as 5 days. Triggers should NOT fire.
       final yesterday = daysAgo(1);
       final entries = [

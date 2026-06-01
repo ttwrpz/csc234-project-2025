@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'chart_mood_category.dart';
 
 /// Visual theme for [MoodLineChart]. Lives in `packages/analytics` so the
-/// chart widget can render without depending on `packages/design_system` —
+/// chart widget can render without depending on `packages/design_system` -
 /// callers (the analytics screen) pass MoodBloom palette colors in.
 class MoodLineChartTheme {
   const MoodLineChartTheme({
@@ -47,7 +47,7 @@ class MoodLineChartTheme {
   /// Optional gradient (expected `[topColor, bottomColor]` plus stops) to
   /// shade the area beneath every category line. The chart draws this with
   /// `LineChartBarData.belowBarData`. When `null`, lines render without
-  /// area fill — preserves the existing visual for callers that don't
+  /// area fill - preserves the existing visual for callers that don't
   /// opt in to the prototype look.
   final List<Color>? areaFillBelowGradient;
 
@@ -58,6 +58,6 @@ class MoodLineChartTheme {
   /// Background color for the hover tooltip bubble. Default is a near-black
   /// slate that gives WCAG AA contrast against white tooltip text in light
   /// mode. Callers in dark mode should pass a light value (e.g. `mb.card`)
-  /// — `MoodLineChart` auto-picks text color by luminance.
+  /// - `MoodLineChart` auto-picks text color by luminance.
   final Color tooltipBgColor;
 }

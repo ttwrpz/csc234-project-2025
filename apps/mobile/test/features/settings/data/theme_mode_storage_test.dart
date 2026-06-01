@@ -65,7 +65,7 @@ void main() {
     group('backward-compat: legacy Sprint-3 strings on disk', () {
       // Sprint-3 storage wrote literal `'system' / 'light' / 'dark'`.
       // Existing users on those values must keep getting the matching
-      // new enum value after the upgrade — no flash-of-system, no
+      // new enum value after the upgrade - no flash-of-system, no
       // forced re-pick.
       test("legacy 'system' decodes to ThemeModePreference.system", () async {
         SharedPreferences.setMockInitialValues({

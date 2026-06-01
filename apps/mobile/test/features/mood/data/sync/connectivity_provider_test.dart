@@ -4,12 +4,12 @@ import 'package:moodbloom/features/mood/data/sync/connectivity_provider.dart';
 
 // We unit-test the pure mapping helper [isOnlineFromResults] rather than the
 // `connectivityProvider` itself. Riverpod's StreamProvider is a one-line wrapper
-// (`.map(isOnlineFromResults).distinct()`) — exercising it would require
+// (`.map(isOnlineFromResults).distinct()`) - exercising it would require
 // mocking the `connectivity_plus` MethodChannel, which is fiddly across
 // platforms and adds zero coverage over the helper. Documented choice.
 
 void main() {
-  group('isOnlineFromResults — connectivity_plus 6.x/7.x list semantics', () {
+  group('isOnlineFromResults - connectivity_plus 6.x/7.x list semantics', () {
     test('empty list → offline (defensive default)', () {
       expect(isOnlineFromResults(const <ConnectivityResult>[]), isFalse);
     });

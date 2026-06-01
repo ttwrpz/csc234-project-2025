@@ -7,18 +7,18 @@ import '../../../mood/presentation/widgets/mood_kind_adapter.dart';
 import '../../domain/entities/flower_species.dart';
 import 'flower_sprite.dart';
 
-/// Bottom-sheet preview of a single mood entry — opens when the user
+/// Bottom-sheet preview of a single mood entry - opens when the user
 /// taps a flower in the garden canvas.
 ///
 /// Shows:
 ///   * The species sprite at a generous size (60 dp).
 ///   * Mood label + intensity dots row.
 ///   * Date / time the entry was logged.
-///   * A 3-line clamped excerpt of the entry text (or "—" when empty).
+///   * A 3-line clamped excerpt of the entry text (or "-" when empty).
 ///   * "Open entry" CTA that routes to `/history/<id>` for the full
 ///     editable detail.
 ///
-/// Deliberately lightweight — the full mood-entry detail experience
+/// Deliberately lightweight - the full mood-entry detail experience
 /// (edit, delete, media gallery) already lives on `EntryDetailScreen`
 /// at `/history/<id>`. This modal is a tap-preview surface that lets
 /// the user identify a flower without losing their place on the home
@@ -57,7 +57,7 @@ class PerFlowerDetailModal extends StatelessWidget {
 
   /// Dialog max-width on desktop. 560 dp comfortably holds the
   /// sprite + title row at top and the 3-line note card below without
-  /// padding the columns out — this modal carries less information than
+  /// padding the columns out - this modal carries less information than
   /// the skin grid, so it doesn't need the grid's wider 640 dp cap.
   static const double _desktopDialogMaxWidth = 560;
 
@@ -66,11 +66,11 @@ class PerFlowerDetailModal extends StatelessWidget {
   static const double _tabletDialogMaxWidth = 480;
 
   /// Cap the dialog at 80% of the viewport so the home page underneath
-  /// stays peeking through — same compositional cue the phone bottom
+  /// stays peeking through - same compositional cue the phone bottom
   /// sheet gives via its mainAxisSize.min Column.
   static const double _dialogMaxHeightFraction = 0.8;
 
-  /// Responsive launcher — bottom sheet on phone, centered dialog on
+  /// Responsive launcher - bottom sheet on phone, centered dialog on
   /// tablet + desktop. Picks presentation off `MediaQuery.sizeOf` at the
   /// call site so a window-resize before the tap closes is respected.
   static Future<void> show(
@@ -153,7 +153,7 @@ class PerFlowerDetailModal extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (isPhoneWidth) ...[
-            // Handle — only meaningful in the bottom-sheet idiom.
+            // Handle - only meaningful in the bottom-sheet idiom.
             Center(
               child: Container(
                 width: 38,

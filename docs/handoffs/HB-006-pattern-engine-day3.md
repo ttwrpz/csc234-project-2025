@@ -1,4 +1,4 @@
-# Handoff Brief — Pattern Engine Day 3 (algos 3–5 + orchestrator + data layer + dispatcher gate)
+# Handoff Brief - Pattern Engine Day 3 (algos 3–5 + orchestrator + data layer + dispatcher gate)
 
 **WBS:** 5.3 (continued from HB-004 / Day-2 Track B)
 **Sprint:** S4 (Day 3, May 11)
@@ -14,7 +14,7 @@ Three sub-tracks, each a separate commit on the same branch. Sub-tracks B and C 
 
 ---
 
-## Sub-track A — Algorithms 3–5 + RunPatternEngineUseCase + PatternRepositoryImpl
+## Sub-track A - Algorithms 3–5 + RunPatternEngineUseCase + PatternRepositoryImpl
 
 ### Algorithm 3: `three_consecutive.dart`
 
@@ -22,7 +22,7 @@ Three sub-tracks, each a separate commit on the same branch. Sub-tracks B and C 
 
 ```dart
 /// Returns the count of trailing consecutive days (ending today) where
-/// `avgScore <= -0.6`. Maxes at 3 — caller compares against `>= 3` for
+/// `avgScore <= -0.6`. Maxes at 3 - caller compares against `>= 3` for
 /// Tier 3. A missing day in the trailing 3-day window breaks the streak
 /// (returns 0, 1, or 2). Today's score is counted only if today exists
 /// in `history`; otherwise 0. See HB-004 algorithm 3 + spec §2.4.
@@ -59,7 +59,7 @@ Tests at `apps/mobile/test/features/pattern_engine/domain/algorithms/three_conse
 /// standard deviation is below `sigmaEpsilon` (division-by-zero guard).
 ///
 /// Caller compares the result against `< -2.5` for Tier 3 (and against
-/// `|z| > 2` for the looser "extreme" flag — not used as a tier trigger
+/// `|z| > 2` for the looser "extreme" flag - not used as a tier trigger
 /// but logged on PatternResult).
 ///
 /// Note: this Z is NOT the same as Mann-Kendall's Z. Same letter,
@@ -78,12 +78,12 @@ Algorithm:
 3. Build the baseline: `history.where((s) => s.day != today && today.difference(s.day) <= Duration(days: baselineDays))`.
 4. If `baseline.length < 14`, return null (warm-up period).
 5. Compute `mu = mean(baseline.map((s) => s.avgScore))`.
-6. Compute `sigma = sqrt(mean(baseline.map((s) => pow(s.avgScore - mu, 2))))` (population stddev — sample stddev with `n-1` divisor is acceptable too; document the choice in the function docstring; population is closer to the spec's framing). Use `n` divisor.
+6. Compute `sigma = sqrt(mean(baseline.map((s) => pow(s.avgScore - mu, 2))))` (population stddev - sample stddev with `n-1` divisor is acceptable too; document the choice in the function docstring; population is closer to the spec's framing). Use `n` divisor.
 7. If `sigma < sigmaEpsilon`, return null.
 8. Return `(todayScore.avgScore - mu) / sigma`.
 
 Tests at `apps/mobile/test/features/pattern_engine/domain/algorithms/z_score_test.dart`:
-- TC-28 worked example: baseline mean +0.3, today's score -0.9, with a constructed baseline whose σ produces `z_day < -2.5`. Construction: 14 days at avgScore = +0.3 (μ=0.3, σ=0). σ=0 returns null — bad construction. Better: 14 days = `[0.5, 0.4, 0.3, 0.2, 0.1, 0.4, 0.3, 0.2, 0.5, 0.3, 0.3, 0.3, 0.2, 0.4]` → μ ≈ +0.314, σ ≈ 0.115. Today = -0.9 → `z = (-0.9 - 0.314) / 0.115 ≈ -10.56`. Run the implementation to verify the exact Z and adjust the baseline series until `z < -2.5` clearly. Document the chosen series in the test as an inline comment.
+- TC-28 worked example: baseline mean +0.3, today's score -0.9, with a constructed baseline whose σ produces `z_day < -2.5`. Construction: 14 days at avgScore = +0.3 (μ=0.3, σ=0). σ=0 returns null - bad construction. Better: 14 days = `[0.5, 0.4, 0.3, 0.2, 0.1, 0.4, 0.3, 0.2, 0.5, 0.3, 0.3, 0.3, 0.2, 0.4]` → μ ≈ +0.314, σ ≈ 0.115. Today = -0.9 → `z = (-0.9 - 0.314) / 0.115 ≈ -10.56`. Run the implementation to verify the exact Z and adjust the baseline series until `z < -2.5` clearly. Document the chosen series in the test as an inline comment.
 - σ ≈ 0 (15 identical baseline days) → null.
 - baseline.length = 13 → null.
 - `today` not in history → null.
@@ -160,7 +160,7 @@ Internal flow per HB-004 §"RunPatternEngineUseCase":
    - `final z = zScoreToday(dailyScores, now: now);`
    - `final c = cusumC(dailyScores, now: now);`
 4. **Resolve `triggeredTier`** (highest wins):
-   - If `consec >= 3` OR `(z != null && z < -2.5)` OR `c > 4 * sigma_30(...)` → Tier.three. (Computing σ_30 here to compare against `h` is wasteful; **simpler**: have CUSUM expose a companion function `cusumThreshold(history, now)` returning `4 × σ_30`, OR have CUSUM return a tuple `(c, threshold)`. Pick one — orchestrator default: add `cusumThreshold(history, now)` as a sibling pure function in `cusum.dart`.)
+   - If `consec >= 3` OR `(z != null && z < -2.5)` OR `c > 4 * sigma_30(...)` → Tier.three. (Computing σ_30 here to compare against `h` is wasteful; **simpler**: have CUSUM expose a companion function `cusumThreshold(history, now)` returning `4 × σ_30`, OR have CUSUM return a tuple `(c, threshold)`. Pick one - orchestrator default: add `cusumThreshold(history, now)` as a sibling pure function in `cusum.dart`.)
    - Else if `negCount >= 5` → Tier.two.
    - Else if `mkZ != null && mkZ < -1.96` → Tier.one.
    - Else null.
@@ -176,23 +176,23 @@ Tests at `apps/mobile/test/features/pattern_engine/domain/usecases/run_pattern_e
 
 ### `PatternRepositoryImpl` + `PatternsFirestoreDatasource`
 
-Per HB-004 §"Data shape" — concrete implementations of the abstract `PatternRepository` from Day 2:
+Per HB-004 §"Data shape" - concrete implementations of the abstract `PatternRepository` from Day 2:
 
-- `apps/mobile/lib/features/pattern_engine/data/datasources/patterns_firestore_datasource.dart` — `upsertPatternResult({userId, result})` writes `users/{userId}/patterns/{result.dateId}` via `set(merge: false)`. `watchPatternResult({userId, dateId})` streams a single doc. Use a DTO (`pattern_result_dto.dart`) if cleaner; pure JSON round-trip via Freezed's `fromJson`/`toJson` is acceptable too.
-- `apps/mobile/lib/features/pattern_engine/data/repositories/pattern_repository_impl.dart` — wires the datasource + Riverpod provider scaffolding (`@riverpod patternRepository`).
+- `apps/mobile/lib/features/pattern_engine/data/datasources/patterns_firestore_datasource.dart` - `upsertPatternResult({userId, result})` writes `users/{userId}/patterns/{result.dateId}` via `set(merge: false)`. `watchPatternResult({userId, dateId})` streams a single doc. Use a DTO (`pattern_result_dto.dart`) if cleaner; pure JSON round-trip via Freezed's `fromJson`/`toJson` is acceptable too.
+- `apps/mobile/lib/features/pattern_engine/data/repositories/pattern_repository_impl.dart` - wires the datasource + Riverpod provider scaffolding (`@riverpod patternRepository`).
 - DTO (if used): `apps/mobile/lib/features/pattern_engine/data/dtos/pattern_result_dto.dart` with Freezed + json_serializable.
 
 Tests:
-- `apps/mobile/test/features/pattern_engine/data/datasources/patterns_firestore_datasource_test.dart` — round-trip with `fake_cloud_firestore`. Idempotency on the same `dateId` (overwrite semantics).
-- `apps/mobile/test/features/pattern_engine/data/repositories/pattern_repository_impl_test.dart` — `Result<void, PatternFailure>` mapping for happy + permission-denied + network paths.
+- `apps/mobile/test/features/pattern_engine/data/datasources/patterns_firestore_datasource_test.dart` - round-trip with `fake_cloud_firestore`. Idempotency on the same `dateId` (overwrite semantics).
+- `apps/mobile/test/features/pattern_engine/data/repositories/pattern_repository_impl_test.dart` - `Result<void, PatternFailure>` mapping for happy + permission-denied + network paths.
 
 ---
 
-## Sub-track B — Post-save wire-up + legacy detector deprecation
+## Sub-track B - Post-save wire-up + legacy detector deprecation
 
 ### Wire the engine into the mood-save flow
 
-`apps/mobile/lib/features/mood/presentation/controllers/log_mood_submission_controller.dart` — find the post-save success path (after `await usecase(...)` returns `Ok`). Add (best-effort, non-blocking):
+`apps/mobile/lib/features/mood/presentation/controllers/log_mood_submission_controller.dart` - find the post-save success path (after `await usecase(...)` returns `Ok`). Add (best-effort, non-blocking):
 
 ```dart
 // after the existing successful save:
@@ -213,7 +213,7 @@ saveOutcome.fold(
 );
 ```
 
-Use `ref.read` (one-shot), NOT `ref.watch`. Failures are logged and swallowed — they must NOT block the user's mood-save success. Logging emits ONLY `dateId` and the failure type — never `userId`, never `triggeredTier`, never any mood content (CLAUDE.md PII rule).
+Use `ref.read` (one-shot), NOT `ref.watch`. Failures are logged and swallowed - they must NOT block the user's mood-save success. Logging emits ONLY `dateId` and the failure type - never `userId`, never `triggeredTier`, never any mood content (CLAUDE.md PII rule).
 
 Add a controller-level test at `apps/mobile/test/features/mood/presentation/controllers/log_mood_submission_controller_test.dart` (extend the existing one) verifying:
 - On successful mood save, `runPatternEngineUseCaseProvider` is called.
@@ -226,16 +226,16 @@ Add a controller-level test at `apps/mobile/test/features/mood/presentation/cont
 1. `git mv apps/mobile/lib/features/garden/domain/pattern_detector.dart apps/mobile/lib/features/pattern_engine/domain/legacy_pattern_detector.dart`.
 2. Add at the top of the function: `@Deprecated('Replaced by RunPatternEngineUseCase. See ADR-0011.')`.
 3. Update imports in any file that references the old path:
-   - `apps/mobile/lib/features/garden/data/providers.dart` (if it wires the legacy detector — check Day 2 Track A's edits first; Track A may have already removed this).
-   - `apps/mobile/lib/features/garden/presentation/controllers/cheer_up_controller.dart` — keeps using the legacy detector for now; will migrate to read `patterns/{date}.triggeredTier` in S5.
+   - `apps/mobile/lib/features/garden/data/providers.dart` (if it wires the legacy detector - check Day 2 Track A's edits first; Track A may have already removed this).
+   - `apps/mobile/lib/features/garden/presentation/controllers/cheer_up_controller.dart` - keeps using the legacy detector for now; will migrate to read `patterns/{date}.triggeredTier` in S5.
 4. `git mv apps/mobile/test/features/garden/domain/pattern_detector_test.dart apps/mobile/test/features/pattern_engine/domain/legacy_pattern_detector_test.dart`.
-5. Add `@Tags(['legacy'])` annotation at the top of the moved test file. Existing tests still pass — they reference the function which is `@Deprecated` but still callable. CI golden-test-config (`flutter_test_config.dart`) does not need changes; the `@Tags(['legacy'])` is informational unless a separate gate is added.
+5. Add `@Tags(['legacy'])` annotation at the top of the moved test file. Existing tests still pass - they reference the function which is `@Deprecated` but still callable. CI golden-test-config (`flutter_test_config.dart`) does not need changes; the `@Tags(['legacy'])` is informational unless a separate gate is added.
 
 ---
 
-## Sub-track C — Cheer-up dispatcher Remote Config gate
+## Sub-track C - Cheer-up dispatcher Remote Config gate
 
-This sub-track is the **architect's** responsibility per the do-not-do list (`cheer_up_controller.dart` is in `apps/mobile/lib/features/garden/`, which Track A nominally owned — but the dispatcher gate is a feature-flag concern, not a garden-rendering concern). On the same branch, separate commit.
+This sub-track is the **architect's** responsibility per the do-not-do list (`cheer_up_controller.dart` is in `apps/mobile/lib/features/garden/`, which Track A nominally owned - but the dispatcher gate is a feature-flag concern, not a garden-rendering concern). On the same branch, separate commit.
 
 ### Add the flag default
 
@@ -249,7 +249,7 @@ Default `false` for v1.0. Sprint 5 flips the default to `true` once the new disp
 
 ### Gate the dispatcher
 
-`apps/mobile/lib/features/garden/presentation/controllers/cheer_up_controller.dart` — at the top of `onShown` (the dispatch entry point), early-return when the flag is false:
+`apps/mobile/lib/features/garden/presentation/controllers/cheer_up_controller.dart` - at the top of `onShown` (the dispatch entry point), early-return when the flag is false:
 
 ```dart
 Future<void> onShown(...) async {
@@ -268,7 +268,7 @@ The Pattern Engine's `users/{uid}/patterns/{date}` write is **independent** of t
 
 ### Test
 
-`apps/mobile/test/features/garden/presentation/controllers/cheer_up_controller_test.dart` — extend the existing tests with:
+`apps/mobile/test/features/garden/presentation/controllers/cheer_up_controller_test.dart` - extend the existing tests with:
 - When `interventionDispatchEnabled = false`, `onShown` is a no-op (no anchor write, no cheer-up event create, no `Logger` call beyond the skip log).
 - When `interventionDispatchEnabled = true`, behaviour is unchanged from current.
 
@@ -276,13 +276,13 @@ Use Riverpod `featureFlagsProvider.overrideWith(...)` to inject the flag value i
 
 ---
 
-## Sub-track D — Firestore rules
+## Sub-track D - Firestore rules
 
 Architect-owned, separate commit on the same branch.
 
 ### Add `users/{uid}/patterns/{dateId}` rule
 
-`firebase/firestore.rules` — append after the existing `users/{uid}/cheerUpEvents/{evtId}` block, before the closing `}` of the `users/{uid}` match:
+`firebase/firestore.rules` - append after the existing `users/{uid}/cheerUpEvents/{evtId}` block, before the closing `}` of the `users/{uid}` match:
 
 ```
 match /patterns/{dateId} {
@@ -314,7 +314,7 @@ match /patterns/{dateId} {
 }
 ```
 
-Note: `update` is allowed (same-day re-evaluation overwrites the doc cleanly per HB-004 §"Storage shape"). Mood text is **NOT** in the schema — the `affectedKeys().hasOnly(...)` allowlist enforces it.
+Note: `update` is allowed (same-day re-evaluation overwrites the doc cleanly per HB-004 §"Storage shape"). Mood text is **NOT** in the schema - the `affectedKeys().hasOnly(...)` allowlist enforces it.
 
 ### Add S5-stub denials
 
@@ -332,9 +332,9 @@ match /cooldowns/{type} {
 
 ### Emulator tests
 
-`firebase/test/` — extend the existing harness with two new test files:
+`firebase/test/` - extend the existing harness with two new test files:
 
-- `firebase/test/patterns_test.ts` — covers:
+- `firebase/test/patterns_test.ts` - covers:
   - Owner can create with valid schema.
   - Non-owner is denied.
   - Doc id NOT matching `yyyy-MM-dd` is denied.
@@ -345,7 +345,7 @@ match /cooldowns/{type} {
   - Update with same-day id and valid schema succeeds (re-evaluation path).
   - Delete is denied.
 
-- `firebase/test/interventions_cooldowns_test.ts` — covers: read allowed for owner, write denied for owner, read/write denied for non-owner.
+- `firebase/test/interventions_cooldowns_test.ts` - covers: read allowed for owner, write denied for owner, read/write denied for non-owner.
 
 ---
 
@@ -356,21 +356,21 @@ After all four sub-tracks land:
 1. `cd apps/mobile && flutter pub run build_runner build --delete-conflicting-outputs`.
 2. `cd apps/mobile && dart format --set-exit-if-changed lib/ test/`.
 3. `cd apps/mobile && flutter analyze`.
-4. `cd apps/mobile && flutter test test/features/pattern_engine/` — all 5 algorithm tests + orchestrator test + repo + datasource tests pass.
-5. `cd apps/mobile && flutter test test/features/garden/presentation/controllers/cheer_up_controller_test.dart` — gate test passes; legacy paths still green.
-6. `cd apps/mobile && flutter test` — full suite passes.
-7. `cd firebase && firebase emulators:exec --only firestore "pnpm test"` — emulator suite green incl. new patterns + stub-denial tests.
-8. Domain-purity grep — `git grep "package:flutter\|package:firebase_\|package:cloud_firestore" -- "apps/mobile/lib/features/pattern_engine/domain/"` returns empty.
-9. `git grep "interventionDispatchEnabled\|intervention_dispatch_enabled"` — single source of truth in feature_flags.dart; no scattered string literals.
+4. `cd apps/mobile && flutter test test/features/pattern_engine/` - all 5 algorithm tests + orchestrator test + repo + datasource tests pass.
+5. `cd apps/mobile && flutter test test/features/garden/presentation/controllers/cheer_up_controller_test.dart` - gate test passes; legacy paths still green.
+6. `cd apps/mobile && flutter test` - full suite passes.
+7. `cd firebase && firebase emulators:exec --only firestore "pnpm test"` - emulator suite green incl. new patterns + stub-denial tests.
+8. Domain-purity grep - `git grep "package:flutter\|package:firebase_\|package:cloud_firestore" -- "apps/mobile/lib/features/pattern_engine/domain/"` returns empty.
+9. `git grep "interventionDispatchEnabled\|intervention_dispatch_enabled"` - single source of truth in feature_flags.dart; no scattered string literals.
 
-## Acceptance criteria — Day 3 done when
+## Acceptance criteria - Day 3 done when
 
 - [ ] Mann-Kendall, Sliding 5-of-7, 3-consecutive, Z-score, CUSUM all unit-tested with worked examples.
 - [ ] TC-25..TC-30 all pass.
 - [ ] `RunPatternEngineUseCase` returns a `PatternResult` for every entry-list it receives (including empty).
 - [ ] Tier resolution: highest wins; numeric outputs preserved on `PatternResult` regardless of triggered tier.
 - [ ] `users/{uid}/patterns/{date}` writes succeed for the owner; rule rejects extra keys, bad doc ids, and non-owner writes.
-- [ ] Logging a mood writes a `patterns/{date}` doc — verify in Firestore emulator.
+- [ ] Logging a mood writes a `patterns/{date}` doc - verify in Firestore emulator.
 - [ ] Legacy `pattern_detector.dart` is moved + deprecated; `cheer_up_controller` still compiles via the new path.
 - [ ] `interventionDispatchEnabled` Remote Config flag defaults to `false`; when false, the cheer-up banner does NOT surface and the cheer-up event doc is NOT created.
 - [ ] Domain-purity grep clean for `pattern_engine/domain/`.
@@ -378,7 +378,7 @@ After all four sub-tracks land:
 
 ## Open questions
 
-1. **CUSUM threshold exposure** — the orchestrator needs `4 × σ_30` to compare against `cusumC`. Architect default: add a sibling `cusumThreshold(history, now)` in `cusum.dart`. Alternative: change `cusumC`'s return type to `({double c, double threshold})` (Dart record) and inline the comparison. Pick the cleaner of the two.
-2. **Z-score sample stddev divisor (n vs n-1)** — both are defensible; spec doesn't specify. Architect default: `n` (population). If qa-engineer's TC-28 numbers don't match, switch to `n-1` and rerun.
-3. **`PatternResult.fromJson` on the `Tier` enum** — json_serializable usually handles enums via `.name`. If codegen rejects, add a `Tier.fromName / toName` adapter at the file top and `@JsonKey(fromJson: ..., toJson: ...)`. Mirror the same pattern in the rules file by accepting `'one'/'two'/'three'` as strings.
-4. **Legacy detector callers** — the move of `pattern_detector.dart` may surface a stray import in the garden providers or cheer-up controller that Day-2 Track A did not migrate. If so, fix-forward in this Day-3 commit; do not roll back the move.
+1. **CUSUM threshold exposure** - the orchestrator needs `4 × σ_30` to compare against `cusumC`. Architect default: add a sibling `cusumThreshold(history, now)` in `cusum.dart`. Alternative: change `cusumC`'s return type to `({double c, double threshold})` (Dart record) and inline the comparison. Pick the cleaner of the two.
+2. **Z-score sample stddev divisor (n vs n-1)** - both are defensible; spec doesn't specify. Architect default: `n` (population). If qa-engineer's TC-28 numbers don't match, switch to `n-1` and rerun.
+3. **`PatternResult.fromJson` on the `Tier` enum** - json_serializable usually handles enums via `.name`. If codegen rejects, add a `Tier.fromName / toName` adapter at the file top and `@JsonKey(fromJson: ..., toJson: ...)`. Mirror the same pattern in the rules file by accepting `'one'/'two'/'three'` as strings.
+4. **Legacy detector callers** - the move of `pattern_detector.dart` may surface a stray import in the garden providers or cheer-up controller that Day-2 Track A did not migrate. If so, fix-forward in this Day-3 commit; do not roll back the move.

@@ -6,13 +6,13 @@ import '../../domain/entities/weekly_garden.dart';
 /// collection.
 ///
 /// One doc per ISO-8601 week; `weekId` IS the doc id, formatted
-/// `YYYY-Www`. The collection is write-once-on-archive — the firestore
+/// `YYYY-Www`. The collection is write-once-on-archive - the firestore
 /// rule denies update + delete, so [createWeeklyGarden] is the only
 /// permitted mutation. We use `set(merge: false)` (not `add`) so the
 /// caller can pin the doc id to `weekId`, which the rule's regex
 /// validates.
 ///
-/// Uses `WeeklyGarden.toJson()` / `fromJson()` directly — the entity is
+/// Uses `WeeklyGarden.toJson()` / `fromJson()` directly - the entity is
 /// already JSON-serialisable, no separate DTO needed. The Firestore
 /// document shape matches the entity's JSON shape 1:1.
 ///
@@ -29,7 +29,7 @@ class WeeklyGardensFirestoreDatasource {
   /// repository impl translates them to [HarvestFailure].
   ///
   /// Implemented via a transaction that first verifies the doc does
-  /// not already exist — without that pre-check, `set(merge: false)`
+  /// not already exist - without that pre-check, `set(merge: false)`
   /// on a device with relaxed rules would silently overwrite a
   /// previously-archived week. The transaction makes the write-once
   /// semantics enforceable in tests with a fake datasource that
@@ -75,7 +75,7 @@ class WeeklyGardensFirestoreDatasource {
 
   /// One-shot read of a single archived week. Returns `null` when the
   /// doc does not exist (e.g. a deep link to a week the user hasn't
-  /// harvested yet — surfaces as `notFound` in the controller).
+  /// harvested yet - surfaces as `notFound` in the controller).
   Future<WeeklyGarden?> getByWeekId({
     required String userId,
     required String weekId,

@@ -29,7 +29,7 @@ void main() {
       expect(s.updatedAt, isNull);
     });
 
-    test('anyTierEnabled — true when any tier flag is true', () {
+    test('anyTierEnabled - true when any tier flag is true', () {
       final s = NotificationsSettings.initial();
       expect(s.anyTierEnabled, isTrue);
       expect(s.copyWith(tier1Enabled: false).anyTierEnabled, isTrue);
@@ -39,7 +39,7 @@ void main() {
       );
     });
 
-    test('anyTierEnabled — false only when ALL three are false', () {
+    test('anyTierEnabled - false only when ALL three are false', () {
       final s = NotificationsSettings.initial().copyWith(
         tier1Enabled: false,
         tier2Enabled: false,
@@ -49,7 +49,7 @@ void main() {
     });
 
     test(
-      'withTier1Enabled — keeps cheer-up shim true while another tier is on',
+      'withTier1Enabled - keeps cheer-up shim true while another tier is on',
       () {
         final s = NotificationsSettings.initial().withTier1Enabled(false);
         expect(s.tier1Enabled, isFalse);
@@ -87,7 +87,7 @@ void main() {
       expect(reEnabled.cheerUpEnabled, isTrue);
     });
 
-    test('copyWith — new tier flags round-trip independently', () {
+    test('copyWith - new tier flags round-trip independently', () {
       final s = NotificationsSettings.initial().copyWith(
         tier1Enabled: false,
         tier2Enabled: true,
@@ -96,18 +96,18 @@ void main() {
       expect(s.tier1Enabled, isFalse);
       expect(s.tier2Enabled, isTrue);
       expect(s.tier3Enabled, isFalse);
-      // Direct copyWith bypasses the `withTierN` shim re-derivation —
+      // Direct copyWith bypasses the `withTierN` shim re-derivation -
       // by design, so callers (e.g. the migration helper) can write a
       // legacy-mirrored snapshot without the helper inferring a stale
       // shim from the partially-built state.
     });
 
-    test('withToken — appends a new token', () {
+    test('withToken - appends a new token', () {
       final s = NotificationsSettings.initial().withToken(t1Old);
       expect(s.tokens, [t1Old]);
     });
 
-    test('withToken — same-token re-register replaces, does not duplicate', () {
+    test('withToken - same-token re-register replaces, does not duplicate', () {
       final s = NotificationsSettings.initial()
           .withToken(t1Old)
           .withToken(t1Fresh);
@@ -116,13 +116,13 @@ void main() {
       expect(s.tokens.single.lastSeenAt, t1Fresh.lastSeenAt);
     });
 
-    test('withToken — multi-device: distinct tokens both kept', () {
+    test('withToken - multi-device: distinct tokens both kept', () {
       final s = NotificationsSettings.initial().withToken(t1Old).withToken(t2);
       expect(s.tokens.length, 2);
       expect(s.tokens, containsAll([t1Old, t2]));
     });
 
-    test('withToken — refresh keeps the other device intact', () {
+    test('withToken - refresh keeps the other device intact', () {
       final s = NotificationsSettings.initial()
           .withToken(t1Old)
           .withToken(t2)
@@ -134,7 +134,7 @@ void main() {
       expect(s.tokens.where((t) => t.token == 'token-2').single, t2);
     });
 
-    test('withoutToken — removes the matching token', () {
+    test('withoutToken - removes the matching token', () {
       final s = NotificationsSettings.initial()
           .withToken(t1Old)
           .withToken(t2)
@@ -143,7 +143,7 @@ void main() {
       expect(s.tokens.single.token, 'token-2');
     });
 
-    test('withoutToken — no-op when token not present', () {
+    test('withoutToken - no-op when token not present', () {
       final base = NotificationsSettings.initial().withToken(t1Old);
       final after = base.withoutToken('not-there');
       expect(identical(after, base), isTrue);

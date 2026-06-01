@@ -5,7 +5,7 @@
 /// in terms of [DerivedKey].
 ///
 /// Parameters: 100 000 iterations, 16-byte salt, 32-byte output. The
-/// hasher does NOT generate the salt — that is the repository's
+/// hasher does NOT generate the salt - that is the repository's
 /// responsibility so the same hasher can be re-used with the stored
 /// salt during verification.
 abstract class PinHasher {
@@ -18,7 +18,7 @@ abstract class PinHasher {
   /// with fewer iterations than this.
   static const int minIterations = 100000;
 
-  /// Salt length in bytes. 16 bytes (128 bits) — the OWASP minimum.
+  /// Salt length in bytes. 16 bytes (128 bits) - the OWASP minimum.
   static const int saltLengthBytes = 16;
 
   /// Derived-key length in bytes. 32 bytes (SHA-256 output size).
@@ -33,7 +33,7 @@ abstract class PinHasher {
   /// - [iterations] must be ≥ [minIterations].
   ///
   /// Returns a [derivedKeyLengthBytes]-byte derived key. Throws
-  /// [ArgumentError] on contract violations — these are programmer
+  /// [ArgumentError] on contract violations - these are programmer
   /// errors and must never reach a user.
   List<int> derive({
     required String pinDigits,
@@ -41,7 +41,7 @@ abstract class PinHasher {
     required int iterations,
   });
 
-  /// Async variant of [derive] that production callers MUST prefer —
+  /// Async variant of [derive] that production callers MUST prefer -
   /// PBKDF2 at 100 000 iterations takes ~1–3 seconds on mid-range
   /// Android and blocks the main isolate.
   ///
@@ -49,7 +49,7 @@ abstract class PinHasher {
   /// isolate via `package:flutter/foundation.dart#compute`, which is
   /// what keeps the PIN-verify UI responsive. Tests that need a fake
   /// hasher can provide a trivial implementation that just returns
-  /// `Future.value(derive(...))` — there are no test fakes today, but
+  /// `Future.value(derive(...))` - there are no test fakes today, but
   /// the abstract signature keeps the contract intuitive when one
   /// arrives.
   Future<List<int>> deriveAsync({
@@ -65,7 +65,7 @@ abstract class PinHasher {
   List<int> newSalt();
 
   /// Constant-time byte comparison. **Never** use `==` on base64
-  /// strings or list equality on the derived key — both leak timing
+  /// strings or list equality on the derived key - both leak timing
   /// information that an attacker running an offline brute-force can
   /// exploit.
   ///

@@ -3,11 +3,11 @@ import 'package:core/core.dart';
 /// All failure modes for the bipolar / medical disclaimer ack store.
 ///
 /// Sealed so consumers that switch on the variants get exhaustive-switch
-/// help from the analyzer. Extends [Failure] directly — disclaimer
+/// help from the analyzer. Extends [Failure] directly - disclaimer
 /// failures are conceptually distinct from auth, mood, or harvest
 /// failures.
 ///
-/// Imports only `package:core/core.dart` — domain-purity rule per
+/// Imports only `package:core/core.dart` - domain-purity rule per
 /// CLAUDE.md.
 sealed class DisclaimerFailure extends Failure {
   const DisclaimerFailure({required super.message});

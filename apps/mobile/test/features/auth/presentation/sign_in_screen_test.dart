@@ -120,7 +120,7 @@ void main() {
         );
         await _pumpSignIn(tester, repo: repo);
 
-        // Use OutlinedButton + label text — the GoogleSignInButton uses
+        // Use OutlinedButton + label text - the GoogleSignInButton uses
         // OutlinedButton.icon under the hood.
         await tester.tap(find.text('Continue with Google'));
         await tester.pumpAndSettle();

@@ -38,7 +38,7 @@ extension on HistoryFilter {
   }
 }
 
-/// History screen — surface for the list / calendar / harvests swap.
+/// History screen - surface for the list / calendar / harvests swap.
 /// Uses [MbSegmentedToggle] for the view swap, a horizontal-scroll
 /// [MbFilterChip] row, and [MoodEntryTile] rows in [MbCard]s.
 ///
@@ -241,9 +241,9 @@ class _HistoryListViewState extends ConsumerState<_HistoryListView> {
       ),
       data: (entries) {
         final now = DateTime.now();
-        final filtered = entries.where((e) => widget.filter.matches(e, now))
-            .toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        final filtered =
+            entries.where((e) => widget.filter.matches(e, now)).toList()
+              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         if (filtered.isEmpty) {
           return Center(
             child: Padding(
@@ -500,7 +500,7 @@ List<_DaySectionData> _groupAndFillDays(
 ) {
   final today = DateTime(now.year, now.month, now.day);
   // Decide how many trailing days to fill empties for. "All time" never
-  // forces empty placeholders — that would scroll back through the user's
+  // forces empty placeholders - that would scroll back through the user's
   // entire dormant history.
   final fillSpan = switch (filter) {
     HistoryFilter.thisWeek => 7,

@@ -4,7 +4,7 @@ import 'package:moodbloom/features/auth/domain/auth_failure.dart';
 import 'package:moodbloom/features/auth/domain/auth_repository.dart';
 import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
 
-/// Hand-rolled fake. We don't use mockito in S2 — keeps generated code count
+/// Hand-rolled fake. We don't use mockito in S2 - keeps generated code count
 /// low and tests readable.
 class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository({

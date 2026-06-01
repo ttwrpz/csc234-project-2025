@@ -17,7 +17,7 @@ part 'mood_database.g.dart';
 /// step-by-step migrations.
 ///
 /// Connector platform split: `dart.library.io` is used as the conditional
-/// import switch — native targets (Android, iOS, desktop, VM) get the
+/// import switch - native targets (Android, iOS, desktop, VM) get the
 /// FFI-backed `NativeDatabase` from `mood_database_native.dart`; Web gets a
 /// throwing stub from `mood_database_web.dart` (Web ships through the
 /// Firestore-only fallback path, so the stub is never invoked at runtime).
@@ -25,7 +25,7 @@ part 'mood_database.g.dart';
 class MoodDatabase extends _$MoodDatabase {
   MoodDatabase() : super(platform.openConnection());
 
-  /// Test-only constructor — allows passing `NativeDatabase.memory()` so the
+  /// Test-only constructor - allows passing `NativeDatabase.memory()` so the
   /// DAO suite can run in-process without touching the filesystem.
   MoodDatabase.forTesting(super.executor);
 

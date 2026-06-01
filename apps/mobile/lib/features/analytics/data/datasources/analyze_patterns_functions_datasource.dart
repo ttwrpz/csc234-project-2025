@@ -13,7 +13,7 @@ import '../../../mood/domain/entities/mood_type.dart';
 /// each `MoodEntry` before serialising. The Zod `.strict()` schema on
 /// the server will reject payloads containing `text` at any nesting
 /// level, so a regression in the projection produces an `invalid_input`
-/// envelope at runtime — but the unit test on this datasource catches
+/// envelope at runtime - but the unit test on this datasource catches
 /// it at build time first.
 class AnalyzePatternsFunctionsDatasource {
   AnalyzePatternsFunctionsDatasource(this._functions, {Uuid? uuid})
@@ -61,7 +61,7 @@ class AnalyzePatternsFunctionsDatasource {
 
   /// Public so unit tests can assert the projection drops `text` and
   /// `mediaRefs`. **Hard contract**: the returned map must contain
-  /// exactly `{ date, moodCode, intensity }` keys — no `text`, no
+  /// exactly `{ date, moodCode, intensity }` keys - no `text`, no
   /// `mediaRefs`, no anything else.
   static Map<String, Object?> projectEntry(MoodEntry e) {
     return <String, Object?>{

@@ -2,7 +2,7 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
 /// Branded "Continue with Google" button. Always rendered on every
-/// platform — `firebase_auth_datasource.signInWithGoogle()` routes
+/// platform - `firebase_auth_datasource.signInWithGoogle()` routes
 /// internally: native uses the `google_sign_in` plugin's OS-level
 /// account picker, web uses Firebase Auth's `signInWithPopup`. Both
 /// resolve to the same `_auth.currentUser` downstream.

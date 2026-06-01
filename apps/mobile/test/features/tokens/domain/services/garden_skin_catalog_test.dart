@@ -91,7 +91,7 @@ void main() {
       // rich-text source.
       for (final skin in GardenSkinCatalog.all) {
         expect(
-          skin.tagline.contains('—'),
+          skin.tagline.contains('-'),
           isFalse,
           reason:
               '${skin.id} tagline contains an em-dash (U+2014). '

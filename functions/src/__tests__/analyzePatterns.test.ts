@@ -1,7 +1,7 @@
 // 10-case test suite for analyzePatterns. Cases mirror ADR-0007 §"Test plan"
 // and the Sprint 4 plan §"Server tests".
 //
-// Strategy: same harness shape as analyzeMoodText.test.ts —
+// Strategy: same harness shape as analyzeMoodText.test.ts -
 //  - Mock `firebase-functions/logger` so we can assert log payloads.
 //  - Mock `firebase-admin/firestore` with an in-memory rate-limiter store.
 //  - Mock `firebase-functions/v2/https` so handler is callable directly.
@@ -103,7 +103,7 @@ jest.unstable_mockModule('firebase-admin/firestore', () => ({
   getFirestore: () => firestoreMock,
 }));
 
-// Gemini mock — settable per-test via `nextGeminiResponse`. The new
+// Gemini mock - settable per-test via `nextGeminiResponse`. The new
 // `@google/genai` SDK shape: `ai.models.generateContent({ model, contents,
 // config: { abortSignal, ... } })` returns `GenerateContentResponse` with
 // a `.text` getter and `.usageMetadata`.
@@ -284,7 +284,7 @@ describe('analyzePatterns handler', () => {
           date: '2026-04-01',
           moodCode: 'sad',
           intensity: 3,
-          text: 'sneaky text', // forbidden — must be rejected by .strict()
+          text: 'sneaky text', // forbidden - must be rejected by .strict()
         },
       ],
     };
@@ -314,7 +314,7 @@ describe('analyzePatterns handler', () => {
     }
   });
 
-  test('4. statistical happy path — strong Monday bias yields a weekday insight; Gemini supplements', async () => {
+  test('4. statistical happy path - strong Monday bias yields a weekday insight; Gemini supplements', async () => {
     nextGeminiResponse = {
       kind: 'json',
       payload: {
@@ -360,7 +360,7 @@ describe('analyzePatterns handler', () => {
     expect((successLog!.payload as { geminiSkipReason: string | null }).geminiSkipReason).toBeNull();
   });
 
-  test('5. sample-size floor — weekday with n < 10 yields no weekday insight', async () => {
+  test('5. sample-size floor - weekday with n < 10 yields no weekday insight', async () => {
     // Only 5 sad-intensity-5 Mondays in a 60-day window → floor blocks it.
     const start = new Date('2026-01-01T00:00:00Z');
     const history: HistoryItem[] = [];
@@ -471,7 +471,7 @@ describe('analyzePatterns handler', () => {
     expect(res.modelVersion).toBeNull();
   });
 
-  test('10. PII canary — no payload contains a date string from history or insight body text', async () => {
+  test('10. PII canary - no payload contains a date string from history or insight body text', async () => {
     const history: HistoryItem[] = [
       { date: '2026-03-15', moodCode: 'sad', intensity: 5 },
       { date: '2026-03-16', moodCode: 'sad', intensity: 5 },
@@ -485,7 +485,7 @@ describe('analyzePatterns handler', () => {
 
     for (const call of loggerCalls) {
       const serialised = JSON.stringify(call.payload);
-      // Date prefixes — would indicate `history[].date` leaked.
+      // Date prefixes - would indicate `history[].date` leaked.
       expect(serialised).not.toContain('2026-03-15');
       expect(serialised).not.toContain('2026-03-16');
       expect(serialised).not.toContain('2026-03-17');
@@ -598,7 +598,7 @@ describe('analyzePatterns handler', () => {
     expect(gem!.confidence).toBe(0.7);
   });
 
-  test('15. Gemini PII canary — model-emitted insight body is NOT logged', async () => {
+  test('15. Gemini PII canary - model-emitted insight body is NOT logged', async () => {
     const sensitive = 'AaBb_canary_string_should_never_appear_in_logs';
     nextGeminiResponse = {
       kind: 'json',

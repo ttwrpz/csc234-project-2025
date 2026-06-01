@@ -11,13 +11,13 @@ part 'garden_state.freezed.dart';
 /// Flutter / Firebase imports.
 ///
 /// The garden state is composed of two signals on different timescales:
-///   * [gardenHealth] — slow weekly EWMA (`H_t` ∈ [-1, +1]) folded over
+///   * [gardenHealth] - slow weekly EWMA (`H_t` ∈ [-1, +1]) folded over
 ///     per-day mood-score means. Drives [plantTier] (5 alive states).
-///   * [atmosphere] — today-only mean mood-score, mapped to one of 4
+///   * [atmosphere] - today-only mean mood-score, mapped to one of 4
 ///     weather states (calm/bright sun, light rain, storm). Resets
 ///     at local midnight.
 ///
-/// Plants are NEVER destroyed/wilting/dying in any tier — the Storm
+/// Plants are NEVER destroyed/wilting/dying in any tier - the Storm
 /// Season tier renders rain falling AROUND a sheltered garden, not on
 /// the plants themselves.
 @freezed
@@ -61,7 +61,7 @@ abstract class DayScore with _$DayScore {
     required DateTime day,
 
     /// Mean of `MoodScore.value` for entries logged on [day]. Range
-    /// [-1, +1]. `null` when no entry was logged that day — distinct
+    /// [-1, +1]. `null` when no entry was logged that day - distinct
     /// from "neutral 0", which would be a logged Okay×0 (impossible).
     required double? avgScore,
 

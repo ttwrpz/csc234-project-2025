@@ -6,7 +6,7 @@ import 'package:moodbloom/features/insights/domain/entities/daily_insight.dart';
 import 'package:moodbloom/features/insights/presentation/widgets/pattern_marker_band.dart';
 import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
-/// Sprint 5 Day 3 a11y sweep — pattern marker band (S5-new surface).
+/// Sprint 5 Day 3 a11y sweep - pattern marker band (S5-new surface).
 ///
 /// The pattern marker band sits under the InsightsScreen chart and
 /// renders one small badge per Pattern Engine trigger. Each badge MUST
@@ -14,7 +14,7 @@ import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 /// readers announce "Tier 2 trigger on May 11" rather than a bare dot.
 ///
 /// The existing `pattern_marker_band_test.dart` already asserts the
-/// label format — this a11y test duplicates the assertions under the
+/// label format - this a11y test duplicates the assertions under the
 /// a11y-test name pattern so the suite is greppable for "a11y" coverage
 /// (per the Sprint 5 Day 3 brief), and adds two a11y-specific checks:
 ///
@@ -41,7 +41,7 @@ DailyInsight _day(DateTime date, {Tier? tier}) => DailyInsight(
 );
 
 void main() {
-  group('PatternMarkerBand — a11y label format', () {
+  group('PatternMarkerBand - a11y label format', () {
     testWidgets('tier-trigger days announce "Tier N trigger on MMM D"', (
       tester,
     ) async {
@@ -53,7 +53,7 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(PatternMarkerBand(insights: insights)));
 
-      // Duplicated from pattern_marker_band_test.dart — under the a11y
+      // Duplicated from pattern_marker_band_test.dart - under the a11y
       // test name so a future `grep -r a11y` survey lists this surface.
       expect(
         find.bySemanticsLabel(RegExp(r'^Tier 1 trigger on May 10$')),
@@ -80,13 +80,13 @@ void main() {
 
       // A no-trigger day renders a transparent placeholder Container,
       // NOT a Semantics-wrapped Tooltip. Verify the focus stream is
-      // clean — a 30-day window with 1 trigger should produce exactly
+      // clean - a 30-day window with 1 trigger should produce exactly
       // 1 announcement, not 30.
       expect(
         find.bySemanticsLabel(RegExp(r'trigger on')),
         findsNothing,
         reason:
-            'No-trigger days must not produce a "trigger on" label — '
+            'No-trigger days must not produce a "trigger on" label - '
             'placeholder dots are decorative.',
       );
     });
@@ -114,7 +114,7 @@ void main() {
           tooltips.first.message,
           equals('Tier 1 · May 10'),
           reason:
-              'Tooltip message format is "Tier N · MMM D" — keeps the '
+              'Tooltip message format is "Tier N · MMM D" - keeps the '
               'sighted long-press affordance in lockstep with the '
               'screen-reader Semantics label.',
         );

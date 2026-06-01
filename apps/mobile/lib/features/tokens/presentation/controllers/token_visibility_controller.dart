@@ -6,7 +6,7 @@ part 'token_visibility_controller.g.dart';
 /// SharedPreferences-backed controller for the "Show token balance"
 /// Settings toggle. Default `true`.
 ///
-/// Anti-pattern guardrail: visibility is OPTIONAL — the user can hide
+/// Anti-pattern guardrail: visibility is OPTIONAL - the user can hide
 /// the chip without forfeiting tokens. Tokens still accumulate in the
 /// background; only the chip render is suppressed.
 ///
@@ -26,7 +26,7 @@ class TokenVisibility extends _$TokenVisibility {
   @override
   bool build() {
     // Kick off the async hydration from SharedPreferences. We don't
-    // await here because `build()` is synchronous — the first frame
+    // await here because `build()` is synchronous - the first frame
     // renders the default `true`, and once prefs resolve we flip the
     // state to whatever was persisted (no-op if it was true).
     _hydrate();

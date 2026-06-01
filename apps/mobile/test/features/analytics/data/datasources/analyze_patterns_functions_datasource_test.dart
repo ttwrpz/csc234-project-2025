@@ -15,12 +15,12 @@ void main() {
       mediaRefs: const ['gs://bucket/path-1.jpg', 'gs://bucket/path-2.jpg'],
     );
 
-    test('projection drops `text` (PII fence — ADR-0007)', () {
+    test('projection drops `text` (PII fence - ADR-0007)', () {
       final out = AnalyzePatternsFunctionsDatasource.projectEntry(entry);
       expect(out.containsKey('text'), isFalse);
     });
 
-    test('projection drops `mediaRefs` (PII fence — ADR-0007)', () {
+    test('projection drops `mediaRefs` (PII fence - ADR-0007)', () {
       final out = AnalyzePatternsFunctionsDatasource.projectEntry(entry);
       expect(out.containsKey('mediaRefs'), isFalse);
     });

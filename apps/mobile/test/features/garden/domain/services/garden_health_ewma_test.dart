@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/garden/domain/services/garden_health_ewma.dart';
 
 void main() {
-  group('foldGardenHealthEwma — spec §2.3 worked example', () {
+  group('foldGardenHealthEwma - spec §2.3 worked example', () {
     test('empty list → 0.0 (H_0 baseline)', () {
       expect(foldGardenHealthEwma(const []), 0.0);
     });
@@ -34,7 +34,7 @@ void main() {
     });
   });
 
-  group('foldGardenHealthEwma — TC-21..23 boundary cases', () {
+  group('foldGardenHealthEwma - TC-21..23 boundary cases', () {
     test('TC-21: H_0 = 0 (no entries)', () {
       expect(foldGardenHealthEwma(const []), 0.0);
     });
@@ -46,7 +46,7 @@ void main() {
     });
   });
 
-  group('stepGardenHealthEwma — single-step variant', () {
+  group('stepGardenHealthEwma - single-step variant', () {
     test('TC-23 step: H_{t-1}=+0.4 + S=-1.0 today → H_t = +0.19', () {
       // 0.15 × -1.0 + 0.85 × 0.4 = -0.15 + 0.34 = 0.19
       expect(stepGardenHealthEwma(0.4, -1.0), closeTo(0.19, 1e-9));
@@ -57,7 +57,7 @@ void main() {
     });
 
     test('matches the single-element fold (consistency check)', () {
-      // step(0, s) must equal fold([s]) — both implement H_1 from H_0.
+      // step(0, s) must equal fold([s]) - both implement H_1 from H_0.
       const s = -0.42;
       expect(
         stepGardenHealthEwma(0, s),

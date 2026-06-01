@@ -74,7 +74,7 @@ void main() {
     },
   );
 
-  test('clear() cancels pending debounce — no use case call', () async {
+  test('clear() cancels pending debounce - no use case call', () async {
     final ctrl = container.read(aiSuggestionControllerProvider.notifier);
     ctrl.onTextChanged('hello');
     ctrl.clear();

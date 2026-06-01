@@ -27,7 +27,7 @@ import '../entities/daily_score.dart';
 /// Trigger semantics (caller decides):
 ///   * `cusumC > cusumThreshold(history, now)` → Tier 3.
 ///
-/// Pure-Dart function — imports only `dart:math`, `package:core/core.dart`,
+/// Pure-Dart function - imports only `dart:math`, `package:core/core.dart`,
 /// and the sibling [DailyScore] entity.
 ///
 /// Citation: Page (1954), *Continuous Inspection Schemes*, Biometrika 41.
@@ -51,7 +51,7 @@ double cusumC(
   final k = 0.5 * stats.sigma;
 
   // Sort ascending by day so the recursion folds chronologically. We sort a
-  // local copy — we do not mutate the caller's list.
+  // local copy - we do not mutate the caller's list.
   final sorted = [...history]..sort((a, b) => a.day.compareTo(b.day));
 
   var c = 0.0;
@@ -62,7 +62,7 @@ double cusumC(
   return c;
 }
 
-/// Returns `4 × σ_30` — the CUSUM decision threshold the orchestrator
+/// Returns `4 × σ_30` - the CUSUM decision threshold the orchestrator
 /// compares `cusumC` against. Returns `0.0` when the baseline is too
 /// small or too flat to support a defensible σ (matching [cusumC]'s
 /// guards, so a `> threshold` comparison naturally never fires while the

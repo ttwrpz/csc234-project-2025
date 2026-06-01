@@ -12,21 +12,21 @@ import '../services/cooldown_guard.dart';
 import '../services/tiered_intervention_dispatcher.dart';
 
 /// Orchestrates one tier triggering:
-///   1. Run [CooldownGuard.check] — if blocked, return early.
+///   1. Run [CooldownGuard.check] - if blocked, return early.
 ///   2. Build the [InterventionDispatch] via [TieredInterventionDispatcher].
 ///   3. Persist the audit record + advance the cooldown anchor (best-effort
-///      — a write failure is logged but does not invalidate the in-memory
+///      - a write failure is logged but does not invalidate the in-memory
 ///      dispatch the controller renders).
 ///
 /// The order is intentional: render-then-persist is more robust than
 /// persist-then-render because a Firestore-write failure should not block
 /// the user from seeing their banner. The next successful dispatch read
 /// from the anchor will reconcile; if the anchor write also failed, the
-/// 48h gate may surface a duplicate dispatch tomorrow — acceptable
+/// 48h gate may surface a duplicate dispatch tomorrow - acceptable
 /// degradation, much better than a missing intervention at the user's
 /// hardest moment.
 ///
-/// Pure-Dart use case — no Flutter, no Firebase. Composition is wired by
+/// Pure-Dart use case - no Flutter, no Firebase. Composition is wired by
 /// the Riverpod provider in `data/providers.dart`.
 class DispatchInterventionUseCase {
   const DispatchInterventionUseCase({
@@ -66,7 +66,7 @@ class DispatchInterventionUseCase {
       );
     }
 
-    // Best-effort persistence — the user-visible banner is the in-memory
+    // Best-effort persistence - the user-visible banner is the in-memory
     // payload; the audit row and anchor write are background bookkeeping.
     final record = InterventionRecord(
       dispatchId: payload.dispatchId,

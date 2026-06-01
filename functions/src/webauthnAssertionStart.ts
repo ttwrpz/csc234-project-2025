@@ -1,14 +1,14 @@
-// webauthnAssertionStart — Cloud Function callable for the assertion
+// webauthnAssertionStart - Cloud Function callable for the assertion
 // ceremony's first leg.
 //
 // Flow:
 //   1. Auth check (HttpsError unauthenticated if no uid).
-//   2. Provisioning guard — refuse to issue a challenge when the
+//   2. Provisioning guard - refuse to issue a challenge when the
 //      production origin / RPID are unset.
 //   3. Rate-limit consume via rateLimits.webauthn/{uid}.
 //   4. Read the user's registered credential (single, v1.5); if absent,
 //      return { ok: false, code: 'no_credential' }.
-//   5. Honour `lockedUntil` from the credential doc — assertion is
+//   5. Honour `lockedUntil` from the credential doc - assertion is
 //      gated by the rate-limit anchor mirroring the PIN ladder.
 //   6. Call generateAuthenticationOptions with allowCredentials populated.
 //   7. Persist the challenge at users/{uid}/webauthnChallenges/
@@ -17,7 +17,7 @@
 //
 // PII discipline: logs include uid + outcome + latencyMs only. The
 // credentialId is intentionally NOT logged (per ADR-0014 §"Logging
-// schema" — the full id is treated as PII-adjacent).
+// schema" - the full id is treated as PII-adjacent).
 //
 // CF posture: region asia-southeast1, 256MiB, 30s timeout,
 // enforceAppCheck: false (matches the existing CF suite).
@@ -77,7 +77,7 @@ export async function handleWebauthnAssertionStart(
     return { ok: false, code: 'webauthn_not_provisioned' };
   }
 
-  // Rate-limit consume BEFORE reading the credential — denies a noisy
+  // Rate-limit consume BEFORE reading the credential - denies a noisy
   // attacker from hammering Firestore reads for free.
   let rl;
   try {
@@ -109,7 +109,7 @@ export async function handleWebauthnAssertionStart(
     };
   }
 
-  // Read the registered credential — v1.5 ships single-credential, so
+  // Read the registered credential - v1.5 ships single-credential, so
   // the first doc is the only doc.
   const credSnap = await db.collection(`users/${uid}/webauthn`).limit(1).get();
   const credDoc = credSnap.docs[0];
@@ -128,7 +128,7 @@ export async function handleWebauthnAssertionStart(
     lockedUntil?: { toMillis(): number } | Date | null;
   };
 
-  // Per-credential rate-limit anchor — distinct from the per-uid rate
+  // Per-credential rate-limit anchor - distinct from the per-uid rate
   // window above. Mirrors the PIN ladder ("5 failures → 60s, 10/hour →
   // 30min") which lives at the same doc on the PIN side.
   const lockedUntil = credData.lockedUntil;

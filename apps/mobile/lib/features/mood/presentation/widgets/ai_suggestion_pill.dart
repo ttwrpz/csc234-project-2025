@@ -7,7 +7,7 @@ import '../controllers/ai_suggestion_controller.dart';
 import '../controllers/log_mood_controller.dart';
 import 'mood_kind_adapter.dart';
 
-/// AI suggestion card — debounced result of `analyzeMoodText`. Renders five
+/// AI suggestion card - debounced result of `analyzeMoodText`. Renders five
 /// states:
 ///
 ///   - loading        → typing-dots row with "AI reading your note…"
@@ -15,7 +15,7 @@ import 'mood_kind_adapter.dart';
 ///   - data(suggest)  → mood chip + intensity + confidence badge + Accept /
 ///                       Dismiss pill buttons
 ///   - data(suggest)  → SizedBox.shrink WHEN safetyFlag == selfHarm
-///   - error          → "Couldn't analyze — pick manually." copy
+///   - error          → "Couldn't analyze - pick manually." copy
 ///
 /// Surface is a tinted [MbCard] with `mb.aiBg` background and `mb.aiBd`
 /// border, leading 28×28 r8 sparkle avatar (linear primary→amber gradient).

@@ -8,32 +8,32 @@ part of 'log_mood_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Controller for `LogMoodScreen`. State is [MoodDraft] directly — it is the
+/// Controller for `LogMoodScreen`. State is [MoodDraft] directly - it is the
 /// canonical in-progress entry shape and does not need a wrapper.
 ///
 /// Transient submission state (`isSubmitting`, `errorMessage`) lives on the
 /// sibling [LogMoodSubmissionController]. Navigation on success is performed
-/// by the screen, not this controller — keeps the controller free of
+/// by the screen, not this controller - keeps the controller free of
 /// `BuildContext` and `package:go_router` imports.
 
 @ProviderFor(LogMoodController)
 final logMoodControllerProvider = LogMoodControllerProvider._();
 
-/// Controller for `LogMoodScreen`. State is [MoodDraft] directly — it is the
+/// Controller for `LogMoodScreen`. State is [MoodDraft] directly - it is the
 /// canonical in-progress entry shape and does not need a wrapper.
 ///
 /// Transient submission state (`isSubmitting`, `errorMessage`) lives on the
 /// sibling [LogMoodSubmissionController]. Navigation on success is performed
-/// by the screen, not this controller — keeps the controller free of
+/// by the screen, not this controller - keeps the controller free of
 /// `BuildContext` and `package:go_router` imports.
 final class LogMoodControllerProvider
     extends $NotifierProvider<LogMoodController, MoodDraft> {
-  /// Controller for `LogMoodScreen`. State is [MoodDraft] directly — it is the
+  /// Controller for `LogMoodScreen`. State is [MoodDraft] directly - it is the
   /// canonical in-progress entry shape and does not need a wrapper.
   ///
   /// Transient submission state (`isSubmitting`, `errorMessage`) lives on the
   /// sibling [LogMoodSubmissionController]. Navigation on success is performed
-  /// by the screen, not this controller — keeps the controller free of
+  /// by the screen, not this controller - keeps the controller free of
   /// `BuildContext` and `package:go_router` imports.
   LogMoodControllerProvider._()
     : super(
@@ -64,12 +64,12 @@ final class LogMoodControllerProvider
 
 String _$logMoodControllerHash() => r'd60696ccfac6ddcfa09b8b518f9e6128e4759dcb';
 
-/// Controller for `LogMoodScreen`. State is [MoodDraft] directly — it is the
+/// Controller for `LogMoodScreen`. State is [MoodDraft] directly - it is the
 /// canonical in-progress entry shape and does not need a wrapper.
 ///
 /// Transient submission state (`isSubmitting`, `errorMessage`) lives on the
 /// sibling [LogMoodSubmissionController]. Navigation on success is performed
-/// by the screen, not this controller — keeps the controller free of
+/// by the screen, not this controller - keeps the controller free of
 /// `BuildContext` and `package:go_router` imports.
 
 abstract class _$LogMoodController extends $Notifier<MoodDraft> {

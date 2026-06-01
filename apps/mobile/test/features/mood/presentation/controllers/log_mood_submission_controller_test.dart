@@ -25,7 +25,7 @@ import 'package:moodbloom/features/tokens/domain/entities/token_balance.dart';
 import 'package:moodbloom/features/tokens/domain/repositories/token_repository.dart';
 import 'package:moodbloom/features/tokens/domain/token_failure.dart';
 
-/// HB-006 sub-track B verification — the post-save Pattern Engine
+/// HB-006 sub-track B verification - the post-save Pattern Engine
 /// wire-up in `LogMoodController._runPatternEngine`. We use a
 /// `WidgetTester` (not a bare `ProviderContainer`) so `pumpAndSettle`
 /// flushes the microtask chain (auth-stream → mood-stream → engine →
@@ -49,7 +49,7 @@ class _StubMoodRepository implements MoodRepository {
   late final StreamController<List<MoodEntry>> _controller =
       StreamController<List<MoodEntry>>.broadcast(
         onListen: () {
-          // Buffer the first emission until something subscribes — this is
+          // Buffer the first emission until something subscribes - this is
           // the production Firestore stream contract.
           Future<void>.microtask(() => _controller.add(history));
         },
@@ -216,7 +216,7 @@ void main() {
       patternRepo = _FakePatternRepo();
       engine = _RecordingUseCase();
       // tokenRepo is constructed at the top of setUp so each test
-      // starts with an empty call list — avoids cross-test bleed.
+      // starts with an empty call list - avoids cross-test bleed.
     });
 
     /// Pumps a minimal widget tree that subscribes to all the providers
@@ -240,7 +240,7 @@ void main() {
             tokenRepositoryProvider.overrideWithValue(tokenRepo),
           ],
           // Watch all the upstream providers so they're subscribed before
-          // we call `save()` — otherwise the first emission could be
+          // we call `save()` - otherwise the first emission could be
           // missed by a not-yet-listening provider.
           child: Consumer(
             builder: (context, ref, _) {
@@ -252,7 +252,7 @@ void main() {
           ),
         ),
       );
-      // pumpAndSettle drains microtasks/timers until everything is idle —
+      // pumpAndSettle drains microtasks/timers until everything is idle -
       // the auth stream + mood stream first emissions land here.
       await tester.pumpAndSettle();
       return container;
@@ -303,7 +303,7 @@ void main() {
     );
 
     testWidgets(
-      'failure log surface — dateId + failure runtimeType only, zero PII',
+      'failure log surface - dateId + failure runtimeType only, zero PII',
       (tester) async {
         patternRepo.nextFailure = const PatternFailure.network();
         final container = await pumpHarness(tester);
@@ -314,7 +314,7 @@ void main() {
         // the logger.
         expect(patternRepo.calls.single.result.dateId, isNotEmpty);
         // The result the logger sees has NO mood text, NO userId, NO
-        // email — `PatternResult.toJson` keys are the rule allowlist
+        // email - `PatternResult.toJson` keys are the rule allowlist
         // and nothing else. Defense-in-depth.
         final json = patternRepo.calls.single.result.toJson();
         expect(json.containsKey('text'), isFalse);
@@ -323,7 +323,7 @@ void main() {
       },
     );
 
-    // ── HB-005 Track 6.2 — token award post-save wire-up ──
+    // ── HB-005 Track 6.2 - token award post-save wire-up ──
 
     testWidgets(
       'tokenRepository.awardForLog is called after a successful save',
@@ -345,7 +345,7 @@ void main() {
         final container = await pumpHarness(tester);
         final saved = await doSave(container);
         await tester.pumpAndSettle();
-        // Mood save still completes successfully — token failure is
+        // Mood save still completes successfully - token failure is
         // best-effort, never blocks the user-facing success surface.
         expect(saved, isNotNull);
         expect(tokenRepo.calls, hasLength(1));

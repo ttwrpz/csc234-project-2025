@@ -13,7 +13,7 @@ import '../../domain/services/day_night_strategy.dart';
 /// hot value on the very first build. No flash-of-light, no
 /// AsyncValue flicker.
 ///
-/// The provider intentionally throws if not overridden — `main.dart`
+/// The provider intentionally throws if not overridden - `main.dart`
 /// must seed it via `overrideWith(() => ThemeModeController(...))`
 /// after `SharedPreferences.getInstance()` resolves. Tests can
 /// override the same way with a fake storage.
@@ -22,7 +22,7 @@ import '../../domain/services/day_night_strategy.dart';
 /// a concrete [ThemeMode] by [currentThemeModeProvider], which is what
 /// `MaterialApp.themeMode` consumes in `bootstrap.dart`. Keeping the
 /// resolve step OUT of this notifier means the persisted preference
-/// is the only stateful surface — the resolved theme is a pure
+/// is the only stateful surface - the resolved theme is a pure
 /// function of `(preference, now)`.
 class ThemeModeController extends Notifier<ThemeModePreference> {
   ThemeModeController({required ThemeModeStorage storage}) : _storage = storage;
@@ -42,7 +42,7 @@ class ThemeModeController extends Notifier<ThemeModePreference> {
 }
 
 /// Notifier provider for the persisted theme preference. MUST be
-/// overridden in `main.dart` — see [ThemeModeController]'s class doc.
+/// overridden in `main.dart` - see [ThemeModeController]'s class doc.
 final themeModeControllerProvider =
     NotifierProvider<ThemeModeController, ThemeModePreference>(() {
       throw UnimplementedError(

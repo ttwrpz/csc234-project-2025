@@ -12,23 +12,23 @@ import 'package:flutter/material.dart';
 /// active [MbColors] theme extension so the art recolours cleanly between
 /// light and dark mode.
 enum OnboardingArtKind {
-  /// Slide 0 — single brand bloom rising from soft ground, sun in
+  /// Slide 0 - single brand bloom rising from soft ground, sun in
   /// upper-right, two distant hill bands.
   welcome,
 
-  /// Slide 1 — six mood cards (3×2 grid) with the "happy" cell
+  /// Slide 1 - six mood cards (3×2 grid) with the "happy" cell
   /// selected, plus a 1–5 intensity slider mock-up at the bottom.
   logMoods,
 
-  /// Slide 2 — a row of five small plants in mixed moods rising from
+  /// Slide 2 - a row of five small plants in mixed moods rising from
   /// the ground band, sun + drifting cloud in the sky.
   gardenGrowth,
 
-  /// Slide 3 — bell glyph inside a soft-green disc with a coral badge,
+  /// Slide 3 - bell glyph inside a soft-green disc with a coral badge,
   /// three sound-wave arcs to either side, scattered sparkles.
   notifications,
 
-  /// Slide 4 — coral-stroked shield with a soft-green inner face and
+  /// Slide 4 - coral-stroked shield with a soft-green inner face and
   /// the brand seed heart at its centre. Compassionate, not clinical.
   disclaimer,
 }
@@ -71,13 +71,13 @@ class OnboardingArt extends StatelessWidget {
 // Shared painter scaffolding
 // ---------------------------------------------------------------------------
 
-/// Base painter — handles the sky-gradient rounded backdrop that every
+/// Base painter - handles the sky-gradient rounded backdrop that every
 /// slide shares (`ArtFrame` in the prototype). Concrete painters override
 /// [paintContent] to layer their slide-specific shapes on top of it.
 abstract class _OnboardingArtPainter extends CustomPainter {
   const _OnboardingArtPainter({required this.mb});
 
-  /// Active surface palette — supplies sky gradient stops, ground band
+  /// Active surface palette - supplies sky gradient stops, ground band
   /// colors, sun tones, and the dimmer "line" stroke used by frames.
   final MbColors mb;
 
@@ -120,7 +120,7 @@ abstract class _OnboardingArtPainter extends CustomPainter {
 }
 
 // ---------------------------------------------------------------------------
-// Slide 0 — Welcome (sun + two hill bands + central brand bloom)
+// Slide 0 - Welcome (sun + two hill bands + central brand bloom)
 // ---------------------------------------------------------------------------
 
 class _WelcomeArtPainter extends _OnboardingArtPainter {
@@ -131,7 +131,7 @@ class _WelcomeArtPainter extends _OnboardingArtPainter {
     const w = _OnboardingArtPainter._vbW;
     const h = _OnboardingArtPainter._vbH;
 
-    // Sun — soft halo + solid core in the upper-right quadrant.
+    // Sun - soft halo + solid core in the upper-right quadrant.
     final sunCenter = Offset(w * 0.78, h * 0.28);
     canvas.drawCircle(
       sunCenter,
@@ -140,7 +140,7 @@ class _WelcomeArtPainter extends _OnboardingArtPainter {
     );
     canvas.drawCircle(sunCenter, 18, Paint()..color = mb.sun1);
 
-    // Distant hill band — softer tone, behind the foreground band.
+    // Distant hill band - softer tone, behind the foreground band.
     final hill = Path()
       ..moveTo(0, h * 0.72)
       ..quadraticBezierTo(w * 0.3, h * 0.62, w * 0.6, h * 0.7)
@@ -150,7 +150,7 @@ class _WelcomeArtPainter extends _OnboardingArtPainter {
       ..close();
     canvas.drawPath(hill, Paint()..color = mb.ground.withValues(alpha: 0.5));
 
-    // Foreground ground band — full-opacity ground tone.
+    // Foreground ground band - full-opacity ground tone.
     final ground = Path()
       ..moveTo(0, h * 0.82)
       ..quadraticBezierTo(w * 0.4, h * 0.76, w, h * 0.8)
@@ -159,7 +159,7 @@ class _WelcomeArtPainter extends _OnboardingArtPainter {
       ..close();
     canvas.drawPath(ground, Paint()..color = mb.ground2);
 
-    // Central brand bloom — rises from the ground band.
+    // Central brand bloom - rises from the ground band.
     canvas.save();
     canvas.translate(w / 2, h * 0.55);
 
@@ -232,7 +232,7 @@ void _drawRotatedOval(
 }
 
 // ---------------------------------------------------------------------------
-// Slide 1 — Log moods (3×2 mood grid + 5-step intensity slider mock-up)
+// Slide 1 - Log moods (3×2 mood grid + 5-step intensity slider mock-up)
 // ---------------------------------------------------------------------------
 
 class _LogMoodsArtPainter extends _OnboardingArtPainter {
@@ -244,7 +244,7 @@ class _LogMoodsArtPainter extends _OnboardingArtPainter {
     const h = _OnboardingArtPainter._vbH;
 
     // 3×2 grid of mood cells. First cell ("happy") is the selected
-    // state — tinted background + matching coloured border.
+    // state - tinted background + matching coloured border.
     const cellW = 60.0;
     const cellH = 50.0;
     const gap = 8.0;
@@ -269,7 +269,7 @@ class _LogMoodsArtPainter extends _OnboardingArtPainter {
       final y = gy + row * (cellH + gap);
       final selected = i == 0;
 
-      // Background — tinted swatch for the selected cell, plain card
+      // Background - tinted swatch for the selected cell, plain card
       // tone for the rest.
       final cellRect = RRect.fromRectAndRadius(
         Rect.fromLTWH(x, y, cellW, cellH),
@@ -300,7 +300,7 @@ class _LogMoodsArtPainter extends _OnboardingArtPainter {
       canvas.restore();
     }
 
-    // Intensity slider mock-up — 132-wide rail centred under the grid,
+    // Intensity slider mock-up - 132-wide rail centred under the grid,
     // filled to the third tick (3/5). Thumb sits at the same position
     // and uses the happy mood colour to match the selected cell.
     final railY = gy + cellH * 2 + gap + 22;
@@ -316,7 +316,7 @@ class _LogMoodsArtPainter extends _OnboardingArtPainter {
     );
     canvas.drawRRect(fillRect, Paint()..color = MoodBloomColors.moodHappy);
 
-    // 5 tick dots — filled white-ish for the first three (within the
+    // 5 tick dots - filled white-ish for the first three (within the
     // filled portion), dim grey for the last two.
     for (var i = 0; i < 5; i++) {
       final tx = cx - 66 + (i * 33.0);
@@ -471,28 +471,14 @@ void _drawMoodGlyph(Canvas canvas, MbMoodKind kind, Color color) {
       for (var i = 0; i < 3; i++) {
         final dy = i * 4.0;
         final yShift = -2 + dy * -0.5;
-        _drawRotatedOval(
-          canvas,
-          Offset(-3, yShift),
-          1.6,
-          2.6,
-          -25,
-          paint,
-        );
-        _drawRotatedOval(
-          canvas,
-          Offset(3, yShift),
-          1.6,
-          2.6,
-          25,
-          paint,
-        );
+        _drawRotatedOval(canvas, Offset(-3, yShift), 1.6, 2.6, -25, paint);
+        _drawRotatedOval(canvas, Offset(3, yShift), 1.6, 2.6, 25, paint);
       }
   }
 }
 
 // ---------------------------------------------------------------------------
-// Slide 2 — Garden growth (5 small plants of mixed moods on a hill band)
+// Slide 2 - Garden growth (5 small plants of mixed moods on a hill band)
 // ---------------------------------------------------------------------------
 
 class _GardenGrowthArtPainter extends _OnboardingArtPainter {
@@ -569,7 +555,14 @@ class _GardenGrowthArtPainter extends _OnboardingArtPainter {
       final colour = colors[plantMoods[i]] ?? MoodBloomColors.moodOkay;
       canvas.save();
       canvas.translate(x - plantW / 2, baseY - plantH);
-      _drawOnboardingPlant(canvas, plantMoods[i], colour, mb.grass, plantW, plantH);
+      _drawOnboardingPlant(
+        canvas,
+        plantMoods[i],
+        colour,
+        mb.grass,
+        plantW,
+        plantH,
+      );
       canvas.restore();
     }
   }
@@ -665,22 +658,8 @@ void _drawOnboardingPlant(
       // Paired leaves at three heights + bud at apex.
       final leafPaint = Paint()..color = grass.withValues(alpha: 0.92);
       for (final y in const <double>[0.72, 0.55, 0.4]) {
-        _drawRotatedOval(
-          canvas,
-          Offset(cx - 5, h * y),
-          4.5,
-          2,
-          -32,
-          leafPaint,
-        );
-        _drawRotatedOval(
-          canvas,
-          Offset(cx + 5, h * y),
-          4.5,
-          2,
-          32,
-          leafPaint,
-        );
+        _drawRotatedOval(canvas, Offset(cx - 5, h * y), 4.5, 2, -32, leafPaint);
+        _drawRotatedOval(canvas, Offset(cx + 5, h * y), 4.5, 2, 32, leafPaint);
       }
       canvas.drawOval(
         Rect.fromCenter(center: Offset(cx, stemTop - 1), width: 6, height: 10),
@@ -722,7 +701,7 @@ void _drawOnboardingPlant(
 }
 
 // ---------------------------------------------------------------------------
-// Slide 3 — Notifications (bell + halo + sound waves + sparkles)
+// Slide 3 - Notifications (bell + halo + sound waves + sparkles)
 // ---------------------------------------------------------------------------
 
 class _NotificationsArtPainter extends _OnboardingArtPainter {
@@ -751,7 +730,7 @@ class _NotificationsArtPainter extends _OnboardingArtPainter {
         ..strokeWidth = 1,
     );
 
-    // Bell — rounded silhouette using a cubic outline. Centred on the
+    // Bell - rounded silhouette using a cubic outline. Centred on the
     // halo, with a small clapper below and a coral notification badge
     // tucked into the upper-right.
     canvas.save();
@@ -792,7 +771,7 @@ class _NotificationsArtPainter extends _OnboardingArtPainter {
     );
     canvas.restore();
 
-    // Sound-wave arcs — two pairs (close + distant) flanking the bell
+    // Sound-wave arcs - two pairs (close + distant) flanking the bell
     // on both sides. Drawn as open quadratic strokes.
     final wavePaint = Paint()
       ..color = MoodBloomColors.seed.withValues(alpha: 0.5)
@@ -821,7 +800,7 @@ class _NotificationsArtPainter extends _OnboardingArtPainter {
     canvas.drawPath(right1, wavePaint);
     canvas.drawPath(right2, waveFainter);
 
-    // Scattered sparkle dots — small filled circles in mood-happy,
+    // Scattered sparkle dots - small filled circles in mood-happy,
     // coral, and seed colours at low opacity.
     canvas.drawCircle(
       Offset(w * 0.18, h * 0.22),
@@ -842,7 +821,7 @@ class _NotificationsArtPainter extends _OnboardingArtPainter {
 }
 
 // ---------------------------------------------------------------------------
-// Slide 4 — Disclaimer (shield outline + soft inner face + heart at centre)
+// Slide 4 - Disclaimer (shield outline + soft inner face + heart at centre)
 // ---------------------------------------------------------------------------
 
 class _DisclaimerArtPainter extends _OnboardingArtPainter {
@@ -856,7 +835,7 @@ class _DisclaimerArtPainter extends _OnboardingArtPainter {
     canvas.save();
     canvas.translate(w / 2, h / 2 - 4);
 
-    // Outer shield — card-toned fill, line-toned stroke. Lines bend
+    // Outer shield - card-toned fill, line-toned stroke. Lines bend
     // inward at the top to give "rounded shoulders" rather than a
     // sharp point.
     final outer = Path()
@@ -874,7 +853,7 @@ class _DisclaimerArtPainter extends _OnboardingArtPainter {
         ..strokeWidth = 2,
     );
 
-    // Inner soft-green face — slightly smaller, semi-transparent so
+    // Inner soft-green face - slightly smaller, semi-transparent so
     // the outer card tone shows through.
     final inner = Path()
       ..moveTo(0, -58)
@@ -887,7 +866,7 @@ class _DisclaimerArtPainter extends _OnboardingArtPainter {
       Paint()..color = MoodBloomColors.softGreen.withValues(alpha: 0.7),
     );
 
-    // Heart at centre — the warm payload of the shield. Two cubics
+    // Heart at centre - the warm payload of the shield. Two cubics
     // shape the lobes, closed back to the bottom point. The heart
     // alone carries the compassionate intent; the prototype's tiny
     // supportive cross above-left was dropped per design review (it

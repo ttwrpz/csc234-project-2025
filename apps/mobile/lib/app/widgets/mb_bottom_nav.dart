@@ -100,7 +100,7 @@ class MbBottomNav extends StatelessWidget {
     // On web, CanvasKit allocates a live offscreen WebGL surface per
     // BackdropFilter and leaks them across hot restarts ("Too many active
     // WebGL contexts"). The nav fill (mb.navBg) is already ~90% opaque, so
-    // the frosted blur adds little — skip it on web, keep it on native.
+    // the frosted blur adds little - skip it on web, keep it on native.
     final bar = kIsWeb
         ? barContent
         : ClipRect(

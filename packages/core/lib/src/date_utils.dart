@@ -1,4 +1,4 @@
-/// Date utilities shared across features. Pure Dart — no Flutter, no
+/// Date utilities shared across features. Pure Dart - no Flutter, no
 /// Firebase. Domain layers are allowed to import this.
 library;
 

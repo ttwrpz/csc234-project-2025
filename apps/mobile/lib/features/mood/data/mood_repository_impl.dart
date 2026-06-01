@@ -19,7 +19,7 @@ import 'sync/mood_sync_manager.dart';
 /// When [offlineFirstEnabled] returns `true` (the default), reads stream from
 /// Drift and writes go to Drift + the sync queue, with the `MoodSyncManager`
 /// draining the queue to Firestore. The cloud is never the UI's source of
-/// truth on this path — the user always sees their own writes instantly, and
+/// truth on this path - the user always sees their own writes instantly, and
 /// offline writes succeed.
 ///
 /// When the flag is `false`, the implementation falls back to the
@@ -138,7 +138,7 @@ class MoodRepositoryImpl implements MoodRepository {
   @override
   Future<Result<MoodEntry, MoodFailure>> save(MoodEntry entry) async {
     // Defence-in-depth: the entity factory blocks invalid values, but the data
-    // layer guards anyway — a hand-built entity instance from a non-factory
+    // layer guards anyway - a hand-built entity instance from a non-factory
     // call site shouldn't reach Drift unchecked.
     if (entry.intensity < 1 || entry.intensity > 5) {
       return Err(MoodFailure.invalidIntensity(entry.intensity));
@@ -208,7 +208,7 @@ class MoodRepositoryImpl implements MoodRepository {
   }
 
   // ---------------------------------------------------------------------------
-  // delete — lock guard applies to BOTH paths.
+  // delete - lock guard applies to BOTH paths.
   // ---------------------------------------------------------------------------
 
   @override

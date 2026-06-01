@@ -6,7 +6,7 @@
 // empty string. The four `webauthn*` CFs read these constants and, when
 // the production origin is empty AND the caller's origin is not in the
 // staging allow-list, reject every call with
-// `{ ok: false, code: 'webauthn_not_provisioned' }` — the server-side
+// `{ ok: false, code: 'webauthn_not_provisioned' }` - the server-side
 // safety net for the client kill-switch.
 //
 // All three params are env-var driven:
@@ -25,7 +25,7 @@ import { defineString } from 'firebase-functions/params';
  * The HTTPS origin of the production deployment, exact-match against
  * `clientDataJSON.origin` from the browser ceremony.
  *
- * Empty default — when this is empty AND the caller's origin is not in
+ * Empty default - when this is empty AND the caller's origin is not in
  * the staging allow-list, registration / assertion CFs reject with
  * `webauthn_not_provisioned`.
  */
@@ -47,9 +47,9 @@ export const WEBAUTHN_STAGING_ORIGINS = defineString(
 );
 
 /**
- * The RPID (Relying Party id) — typically the host portion of the
+ * The RPID (Relying Party id) - typically the host portion of the
  * production origin (no scheme, no port). Per FIDO2 spec the RPID must
- * be a registrable domain (eTLD+1 minimum). Empty default — same dark
+ * be a registrable domain (eTLD+1 minimum). Empty default - same dark
  * posture as the production origin.
  */
 export const WEBAUTHN_RPID = defineString('WEBAUTHN_RPID', { default: '' });
@@ -70,7 +70,7 @@ export function resolveExpectedOrigins(): string[] {
 }
 
 /**
- * Resolve the RPID. Returns `null` when unset — callers should treat
+ * Resolve the RPID. Returns `null` when unset - callers should treat
  * `null` as "not provisioned" and short-circuit before issuing a
  * challenge.
  */
@@ -86,7 +86,7 @@ export function resolveExpectedRpId(): string | null {
  *
  * Why staging origins now count: a dev or staging deploy with a
  * configured staging allow-list is a legitimate, fully-verifiable
- * environment — the ceremony's `expectedOrigin` check still pins each
+ * environment - the ceremony's `expectedOrigin` check still pins each
  * assertion to one of those origins, so the security boundary is
  * unchanged. Previously the gate refused staging-only setups, which made
  * WebAuthn impossible to exercise before a production origin existed.

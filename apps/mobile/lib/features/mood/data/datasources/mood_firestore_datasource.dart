@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../dtos/mood_entry_dto.dart';
 
-/// Thin Firestore wrapper. No domain types here — this is the boundary
+/// Thin Firestore wrapper. No domain types here - this is the boundary
 /// between cloud_firestore and the rest of the app.
 class MoodFirestoreDatasource {
   const MoodFirestoreDatasource(this._firestore);

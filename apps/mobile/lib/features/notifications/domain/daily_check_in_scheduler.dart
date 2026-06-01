@@ -3,7 +3,7 @@
 /// Abstract so the presentation controller depends on the behaviour, not
 /// the `flutter_local_notifications` plugin. The data layer provides the
 /// real platform-bound implementation; widget/unit tests inject a fake
-/// recorder so no platform channel is touched. Pure-Dart by design — no
+/// recorder so no platform channel is touched. Pure-Dart by design - no
 /// Flutter or Firebase imports.
 abstract class DailyCheckInScheduler {
   /// Requests OS notification permission (Android 13+ POST_NOTIFICATIONS),

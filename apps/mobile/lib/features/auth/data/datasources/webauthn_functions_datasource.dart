@@ -7,7 +7,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 /// and any base64url decoding.
 ///
 /// All four CFs use the `result-typed { ok, code }` discriminated
-/// union — `unauthenticated` short-circuits to a thrown
+/// union - `unauthenticated` short-circuits to a thrown
 /// `FirebaseFunctionsException`; every business-level reject arrives
 /// as `{ ok: false, code: '<reason>' }`.
 class WebauthnFunctionsDatasource {
@@ -65,9 +65,11 @@ class WebauthnFunctionsDatasource {
     required String challengeId,
     required Map<String, Object?> response,
   }) async {
-    final result = await _functions
-        .httpsCallable('webauthnLoginFinish')
-        .call({'v': 1, 'challengeId': challengeId, 'response': response});
+    final result = await _functions.httpsCallable('webauthnLoginFinish').call({
+      'v': 1,
+      'challengeId': challengeId,
+      'response': response,
+    });
     return Map<String, Object?>.from(result.data as Map);
   }
 }

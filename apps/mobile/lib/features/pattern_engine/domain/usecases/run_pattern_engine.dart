@@ -14,7 +14,7 @@ import '../entities/tier.dart';
 /// Runs the 5-algorithm Pattern Engine over a user's mood history and
 /// returns the per-day [PatternResult] for "today" (anchored on `now`).
 ///
-/// Stateless and pure — no I/O, no Firebase, no Flutter, no Riverpod
+/// Stateless and pure - no I/O, no Firebase, no Flutter, no Riverpod
 /// (the Riverpod provider lives in `data/providers.dart` to keep the
 /// domain layer pure per CLAUDE.md). The post-save wire-up calls this
 /// from `LogMoodController` after every successful mood log; the result
@@ -46,7 +46,7 @@ class RunPatternEngineUseCase {
     //
     // Tier 1 + 2 thresholds were relaxed in v1.5.1 to make Insights
     // surface earlier (gentle nudges should arrive sooner). Tier 3
-    // (3-consecutive, z<-2.5, CUSUM) is unchanged — those are
+    // (3-consecutive, z<-2.5, CUSUM) is unchanged - those are
     // safety-critical and stay on their academic anchors.
     Tier? tier;
     if (consec >= 3 || (z != null && z < -2.5) || c > h) {

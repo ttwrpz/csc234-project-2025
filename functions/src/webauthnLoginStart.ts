@@ -1,4 +1,4 @@
-// webauthnLoginStart — UNAUTHENTICATED cold-boot sign-in, ceremony leg 1.
+// webauthnLoginStart - UNAUTHENTICATED cold-boot sign-in, ceremony leg 1.
 //
 // Unlike webauthnAssertionStart (which re-authenticates an ALREADY
 // signed-in user for the Privacy Lock), this handler runs before any
@@ -9,7 +9,7 @@
 // bytes set at registration) so the finish leg can resolve the user.
 //
 // Flow:
-//   1. Provisioning guard — refuse when the production origin / RPID are
+//   1. Provisioning guard - refuse when the production origin / RPID are
 //      unset (server-side fence mirroring the client kill-switch).
 //   2. Rate-limit consume keyed by caller IP (there is no uid yet) so a
 //      noisy client cannot spam the global challenge store.
@@ -90,7 +90,7 @@ export async function handleWebauthnLoginStart(
     return { ok: false, code: 'webauthn_not_provisioned' };
   }
 
-  // Rate-limit by caller IP BEFORE issuing a challenge — the only
+  // Rate-limit by caller IP BEFORE issuing a challenge - the only
   // identifier available pre-auth. Fail closed when the IP is unknown.
   const key = callerKey(request);
   if (key === null) {

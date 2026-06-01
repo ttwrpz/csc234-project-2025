@@ -12,7 +12,7 @@ class _FakeDatasource implements CheerUpEventsFirestoreDatasource {
   final List<({String uid, String evtId, String reason, String dayUtc})> calls =
       [];
 
-  /// Optional override — when non-null, the next `createEvent` throws
+  /// Optional override - when non-null, the next `createEvent` throws
   /// the supplied exception. Used to test the impl's mapping of
   /// `already-exists` → success and `permission-denied` → permission.
   Object? throwOnNext;
@@ -42,7 +42,7 @@ void main() {
     });
 
     test(
-      'happy path — passes (uid, dayUtc-now, reason) to the datasource',
+      'happy path - passes (uid, dayUtc-now, reason) to the datasource',
       () async {
         final repo = CheerUpEventsRepositoryImpl(
           datasource: ds,
@@ -74,7 +74,7 @@ void main() {
       final now = DateTime.utc(2026, 5, 13, 12, 0);
       await repo.createEvent(reason: '3_consecutive_high_intensity', now: now);
 
-      // SAME regex as `firebase/firestore.rules` — if this fails the
+      // SAME regex as `firebase/firestore.rules` - if this fails the
       // rule WILL deny the write.
       final pattern = RegExp(
         r'^\d{4}-\d{2}-\d{2}-(5_of_7_negative|3_consecutive_high_intensity)$',
@@ -83,7 +83,7 @@ void main() {
     });
 
     test(
-      'unknown reason short-circuits with Err(unknown) — never round-trips',
+      'unknown reason short-circuits with Err(unknown) - never round-trips',
       () async {
         final repo = CheerUpEventsRepositoryImpl(
           datasource: ds,

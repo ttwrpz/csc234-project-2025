@@ -42,14 +42,14 @@ Verified green against:
 - `beforeEach` calls `testEnv.clearFirestore()` so cases never pollute each
   other. Storage objects auto-discard with the test env.
 - `withSecurityRulesDisabled` is used to seed pre-existing fixtures (e.g. an
-  entry created 25h ago for the lock-window cases) bypassing rules — exactly
+  entry created 25h ago for the lock-window cases) bypassing rules - exactly
   what the API is designed for.
 - Lock-window cases use `firebase.firestore.Timestamp.fromMillis(...)` to
   control `createdAt`; rules compare against `request.time` (server clock),
   which the emulator sets to the actual current time on each RPC.
 - A benign `NullPointerException` may be logged from
   `com.google.firebase.rules.tools.local.server.Server` on emulator shutdown
-  — this is upstream and unrelated to test results.
+  - this is upstream and unrelated to test results.
 
 ## Adding a case
 

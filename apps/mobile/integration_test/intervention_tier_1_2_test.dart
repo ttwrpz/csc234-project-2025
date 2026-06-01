@@ -28,20 +28,20 @@ import 'app_harness.dart';
 import 'fakes.dart';
 import 'intervention_fakes.dart';
 
-/// WBS 8.3 Test 5 — Tier 1 + Tier 2 hybrid path.
+/// WBS 8.3 Test 5 - Tier 1 + Tier 2 hybrid path.
 ///
 /// Both tiers route through `AIQuoteRepository → QuoteSafetyFilter →
 /// curated fallback`. The integration assertion exercises three
 /// sub-flows:
 ///
-///   * **Tier 1 happy path** — `suggestQuote` mock returns a safe phrase,
+///   * **Tier 1 happy path** - `suggestQuote` mock returns a safe phrase,
 ///     the Safety Filter accepts, the banner renders the Gemini body +
 ///     disclaimer footer.
-///   * **Tier 1 Safety Filter reject** — `suggestQuote` mock returns an
+///   * **Tier 1 Safety Filter reject** - `suggestQuote` mock returns an
 ///     off-script phrase (contains "should"), the production filter
 ///     rejects, the banner shows a CURATED Tier 1 phrase. The rejection
-///     happens silently — no UI difference vs the happy path.
-///   * **Tier 2** — same hybrid path but with `Tier.two`; banner Open
+///     happens silently - no UI difference vs the happy path.
+///   * **Tier 2** - same hybrid path but with `Tier.two`; banner Open
 ///     navigates to `JournalingPromptScreen`.
 ///
 /// **Test rig:** the production [InterventionController] is run live in a
@@ -51,7 +51,7 @@ import 'intervention_fakes.dart';
 ///     [PatternResult] with `triggeredTier: Tier.one|.two` on demand.
 ///   * A recording [AIQuoteRepository] that returns the test-seeded
 ///     suggestion (safe or off-script per sub-flow).
-///   * The PRODUCTION [QuoteLibraryImpl] + [QuoteSafetyFilterImpl] —
+///   * The PRODUCTION [QuoteLibraryImpl] + [QuoteSafetyFilterImpl] -
 ///     these are the subjects under test.
 ///   * Fakes for the surrounding [InterventionStateRepository] +
 ///     [InterventionRepository] + notifications settings so the
@@ -65,7 +65,7 @@ import 'intervention_fakes.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Intervention Tier 1/2 hybrid path (WBS 8.3 — Test 5)', () {
+  group('Intervention Tier 1/2 hybrid path (WBS 8.3 - Test 5)', () {
     late IntegrationAuthRepository authRepo;
     late IntegrationMoodRepository moodRepo;
     late _ControllablePatternRepository patternRepo;
@@ -142,7 +142,7 @@ void main() {
       (tester) async {
         // Seed the AI mock with a phrase that's safely inside the
         // Tier 1 approved vocabulary. Lift one of the curated tier-1
-        // phrases as the "AI suggestion" — same vocabulary → guaranteed
+        // phrases as the "AI suggestion" - same vocabulary → guaranteed
         // to pass the production filter.
         aiRepo.nextSuggestion = QuoteLibraryImpl.tier1Pool[2];
 
@@ -150,7 +150,7 @@ void main() {
         await emitPatternAndSettle(tester, Tier.one);
 
         // The banner is mounted via `InterventionBannerHost` in
-        // bootstrap.dart — it sits on every screen as a Positioned
+        // bootstrap.dart - it sits on every screen as a Positioned
         // child of a Stack. Confirm the banner widget appeared.
         expect(
           find.byType(InterventionBanner),
@@ -174,7 +174,7 @@ void main() {
         expect(
           aiRepo.calls.first.tier,
           AiAllowedTier.one,
-          reason: 'Tier 1 dispatches use AiAllowedTier.one — ADR-0012 §2',
+          reason: 'Tier 1 dispatches use AiAllowedTier.one - ADR-0012 §2',
         );
 
         // The audit doc + cooldown anchor were written exactly once.
@@ -208,13 +208,13 @@ void main() {
         await pump(tester);
         await emitPatternAndSettle(tester, Tier.one);
 
-        // Banner still appears — the user-visible signal is the same
+        // Banner still appears - the user-visible signal is the same
         // whether the filter accepted or fell back to curated.
         expect(
           find.byType(InterventionBanner),
           findsOneWidget,
           reason:
-              'Filter reject is silent — the user still sees a banner, '
+              'Filter reject is silent - the user still sees a banner, '
               'just sourced from the curated pool instead of Gemini',
         );
 
@@ -228,7 +228,7 @@ void main() {
               'rejects after the call returns',
         );
 
-        // The cooldown anchor was still advanced — the user got a
+        // The cooldown anchor was still advanced - the user got a
         // banner (curated fallback), so the 48h gate fires.
         expect(
           stateRepo.writeLastCalls,
@@ -241,7 +241,7 @@ void main() {
     );
 
     testWidgets(
-      'Tier 2: hybrid path with Tier.two — AiAllowedTier.two reaches the AI, '
+      'Tier 2: hybrid path with Tier.two - AiAllowedTier.two reaches the AI, '
       'banner renders with the journaling-CTA semantic key',
       (tester) async {
         // Use a tier-2 curated phrase as the AI suggestion so the
@@ -266,7 +266,7 @@ void main() {
           aiRepo.calls.first.tier,
           AiAllowedTier.two,
           reason:
-              'Tier 2 dispatches use AiAllowedTier.two — the AiAllowedTier '
+              'Tier 2 dispatches use AiAllowedTier.two - the AiAllowedTier '
               'enum prevents Tier 3 from reaching this path at the type '
               'level (ADR-0012 §2)',
         );
@@ -279,7 +279,7 @@ void main() {
 
     testWidgets(
       'every Tier 1/2 dispatch body carries DisclaimerCopy.notificationFooter '
-      '— TC-38 at the integration level',
+      '- TC-38 at the integration level',
       (tester) async {
         aiRepo.nextSuggestion = QuoteLibraryImpl.tier1Pool[5];
 
@@ -288,7 +288,7 @@ void main() {
 
         // The banner is rendered, the controller has a pending
         // dispatch. The dispatch.body composition is the load-bearing
-        // surface — read it off the controller state.
+        // surface - read it off the controller state.
         final element = tester.element(find.byType(InterventionBanner));
         final container = ProviderScope.containerOf(element);
         final controllerState = container.read(interventionControllerProvider);
@@ -307,7 +307,7 @@ void main() {
           contains(DisclaimerCopy.notificationFooter),
           reason:
               'TC-38: every Tier 1/2/3 dispatch body must end with '
-              'DisclaimerCopy.notificationFooter — the dispatcher appends '
+              'DisclaimerCopy.notificationFooter - the dispatcher appends '
               'it once, the renderer never adds another',
         );
         // The body is exactly `${quote.text}\n\n${footer}` per the
@@ -318,7 +318,7 @@ void main() {
           isTrue,
           reason:
               'the disclaimer footer must be the suffix, not a substring '
-              'in the middle — guards against future edits that splice '
+              'in the middle - guards against future edits that splice '
               'the footer into the quote body',
         );
       },
@@ -333,7 +333,7 @@ void main() {
         await emitPatternAndSettle(tester, Tier.one);
 
         expect(find.byType(InterventionBanner), findsOneWidget);
-        // Tap "Open" — banner.dart maps Tier.one → 'intervention.breathing'.
+        // Tap "Open" - banner.dart maps Tier.one → 'intervention.breathing'.
         await tester.tap(find.text('Open'));
         await tester.pumpAndSettle();
 
@@ -341,7 +341,7 @@ void main() {
           find.byType(BreathingView),
           findsOneWidget,
           reason:
-              'Tier 1 banner Open must open the breathing modal — the '
+              'Tier 1 banner Open must open the breathing modal - the '
               '2-minute paced-breathing therapeutic dose',
         );
         // The breathing screen renders the dispatched body verbatim
@@ -372,7 +372,7 @@ void main() {
         find.byType(JournalingPromptScreen),
         findsOneWidget,
         reason:
-            'Tier 2 banner Open must route to JournalingPromptScreen — '
+            'Tier 2 banner Open must route to JournalingPromptScreen - '
             'the gentle-journal therapeutic dose',
       );
     });

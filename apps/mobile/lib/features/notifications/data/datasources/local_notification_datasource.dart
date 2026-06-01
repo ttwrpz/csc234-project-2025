@@ -44,7 +44,7 @@ class LocalNotificationDatasource {
 
 /// Provider exposing a fresh `FlutterLocalNotificationsPlugin` wrapped in
 /// the debug datasource. The plugin is a thin handle around the platform
-/// channel — constructing a new instance is cheap and avoids coupling
+/// channel - constructing a new instance is cheap and avoids coupling
 /// the debug surface to `main.dart`'s channel-registration plugin.
 final localNotificationDatasourceProvider =
     Provider<LocalNotificationDatasource>(

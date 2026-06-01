@@ -7,7 +7,7 @@
 /// Used by [AuthRepository.reauthenticate] to refresh the user's
 /// recent-login window before destructive operations like
 /// `currentUser.delete()`. Reauth is the security gate for account
-/// deletion — the server-cascade via admin SDK CF requires a fresh
+/// deletion - the server-cascade via admin SDK CF requires a fresh
 /// ID token.
 sealed class AuthCredentials {
   const AuthCredentials();
@@ -26,7 +26,7 @@ sealed class AuthCredentials {
   const factory AuthCredentials.google({required String idToken}) =
       GoogleCredentials;
 
-  /// Biometric reauth — the data layer reads the platform-keystore-
+  /// Biometric reauth - the data layer reads the platform-keystore-
   /// cached Firebase Auth credential and reauthenticates via that. No
   /// payload is required at the domain boundary because the credential
   /// is held by the platform, not the caller.

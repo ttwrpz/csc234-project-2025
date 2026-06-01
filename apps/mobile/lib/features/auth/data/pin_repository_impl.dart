@@ -55,7 +55,7 @@ class PinRepositoryImpl implements PinRepository {
     } on FirebaseException catch (e) {
       // Rate-limit gate rejection surfaces as permission-denied at the
       // rules layer. The Settings "PIN set?" read should never hit that
-      // — only verify reads do, because the lock is on resource.data —
+      // - only verify reads do, because the lock is on resource.data -
       // so we treat a denial here as a real error and return null
       // (callers see "no PIN" rather than crash).
       _logger.warn('pin read failed: ${e.code}');
@@ -111,7 +111,7 @@ class PinRepositoryImpl implements PinRepository {
     } on FirebaseException catch (e) {
       // permission-denied during a verify read most likely means the
       // rule-level rate-limit (lockedUntil > now) is in effect. We
-      // can't read the doc to confirm — surface the locked failure
+      // can't read the doc to confirm - surface the locked failure
       // with the lower bound (now + soft lock) so the UI still shows
       // a sensible countdown. The actual remaining lock time is read
       // on the next attempt that succeeds.
@@ -146,7 +146,7 @@ class PinRepositoryImpl implements PinRepository {
 
     final salt = base64.decode(stored.saltBase64);
     final expectedHash = base64.decode(stored.hashBase64);
-    // Off-main-isolate PBKDF2 — without this, verify() pins the UI
+    // Off-main-isolate PBKDF2 - without this, verify() pins the UI
     // thread for the full 100 000-iteration loop (~1–3 s on mid-range
     // Android). With `deriveAsync` the spinner stays smooth and the
     // user can still hit back / cancel during verify.
@@ -157,7 +157,7 @@ class PinRepositoryImpl implements PinRepository {
     );
 
     if (_hasher.constantTimeEquals(computed, expectedHash)) {
-      // Success — reset the rate-limit anchor.
+      // Success - reset the rate-limit anchor.
       try {
         await _firestore.clearFailures(userId: userId);
       } on FirebaseException catch (e) {
@@ -182,7 +182,7 @@ class PinRepositoryImpl implements PinRepository {
       );
     } on FirebaseException catch (e) {
       _logger.warn('pin bumpFailure failed: ${e.code}');
-      // The user still entered the wrong PIN — surface that with the
+      // The user still entered the wrong PIN - surface that with the
       // best-effort remaining count even if the bump didn't land.
     }
 
@@ -201,7 +201,7 @@ class PinRepositoryImpl implements PinRepository {
     // The Firestore rule denies client delete. "Remove" is therefore
     // implemented as a write of a random unrecoverable hash. The salt
     // is fresh random bytes and
-    // the derived key is also random — there is no PIN that derives
+    // the derived key is also random - there is no PIN that derives
     // to this hash, so future verify attempts always fail (and the
     // owner can re-run setup, which overwrites this sentinel).
     try {

@@ -11,7 +11,7 @@ part of 'token_visibility_controller.dart';
 /// SharedPreferences-backed controller for the "Show token balance"
 /// Settings toggle. Default `true`.
 ///
-/// Anti-pattern guardrail: visibility is OPTIONAL — the user can hide
+/// Anti-pattern guardrail: visibility is OPTIONAL - the user can hide
 /// the chip without forfeiting tokens. Tokens still accumulate in the
 /// background; only the chip render is suppressed.
 ///
@@ -31,7 +31,7 @@ final tokenVisibilityProvider = TokenVisibilityProvider._();
 /// SharedPreferences-backed controller for the "Show token balance"
 /// Settings toggle. Default `true`.
 ///
-/// Anti-pattern guardrail: visibility is OPTIONAL — the user can hide
+/// Anti-pattern guardrail: visibility is OPTIONAL - the user can hide
 /// the chip without forfeiting tokens. Tokens still accumulate in the
 /// background; only the chip render is suppressed.
 ///
@@ -49,7 +49,7 @@ final class TokenVisibilityProvider
   /// SharedPreferences-backed controller for the "Show token balance"
   /// Settings toggle. Default `true`.
   ///
-  /// Anti-pattern guardrail: visibility is OPTIONAL — the user can hide
+  /// Anti-pattern guardrail: visibility is OPTIONAL - the user can hide
   /// the chip without forfeiting tokens. Tokens still accumulate in the
   /// background; only the chip render is suppressed.
   ///
@@ -94,7 +94,7 @@ String _$tokenVisibilityHash() => r'ed8c2c8cece9af7c5ade8affd6962b7cb6389df9';
 /// SharedPreferences-backed controller for the "Show token balance"
 /// Settings toggle. Default `true`.
 ///
-/// Anti-pattern guardrail: visibility is OPTIONAL — the user can hide
+/// Anti-pattern guardrail: visibility is OPTIONAL - the user can hide
 /// the chip without forfeiting tokens. Tokens still accumulate in the
 /// background; only the chip render is suppressed.
 ///

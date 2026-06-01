@@ -81,7 +81,7 @@ void main() {
     });
 
     test(
-      'isEmpty(userId) — true for fresh DB, false after one insert',
+      'isEmpty(userId) - true for fresh DB, false after one insert',
       () async {
         expect(await dao.isEmpty(userA), isTrue);
         await dao.upsertFromLocal(sampleRow(id: 'm1'));
@@ -122,7 +122,7 @@ void main() {
     });
   });
 
-  group('MoodDao LWW (upsertFromRemote — ADR-0005)', () {
+  group('MoodDao LWW (upsertFromRemote - ADR-0005)', () {
     test(
       'newer remote.updated_at overwrites local; sync_state=synced',
       () async {
@@ -251,7 +251,7 @@ void main() {
       },
     );
 
-    test('remote insert when local is absent — inserts as synced', () async {
+    test('remote insert when local is absent - inserts as synced', () async {
       await dao.upsertFromRemote(
         sampleRow(
           id: 'm1',

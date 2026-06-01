@@ -10,13 +10,13 @@ import 'datasources/suggest_quote_functions_datasource.dart';
 /// Concrete [AIQuoteRepository] backed by the `suggestQuote` Cloud Function.
 ///
 /// The repo's job is "ask Gemini, return the raw string". It does NOT run
-/// the [QuoteSafetyFilterImpl] — the dispatcher composes filter + repo so a
+/// the [QuoteSafetyFilterImpl] - the dispatcher composes filter + repo so a
 /// future refactor can swap one without touching the other.
 ///
 /// **Tier 3 fence:** the method signature accepts [AiAllowedTier], which by
 /// construction excludes [Tier.three]. A Tier 3 dispatch literally cannot
 /// reach this code path. The CF rejects `tier: 3` at the server boundary
-/// too — belt-and-suspenders.
+/// too - belt-and-suspenders.
 ///
 /// **PII fence:** [requestSuggestion] sends only `tier`, `weekId`,
 /// `dailyAvgS`, and `dominantEmotion`. Never `userId`, `email`, raw
@@ -53,7 +53,7 @@ class AIQuoteRepositoryImpl implements AIQuoteRepository {
       }
 
       _logCall(tier: tier, durationMs: _durationMsSince(start), ok: true);
-      // NEVER log `suggested` — the dispatcher will pass it through the
+      // NEVER log `suggested` - the dispatcher will pass it through the
       // Safety Filter, but the raw text could contain off-script content
       // we should not persist in observability.
       return Ok(suggested);
@@ -82,7 +82,7 @@ class AIQuoteRepositoryImpl implements AIQuoteRepository {
 
   /// Wire-level emotion string matching the Cloud Function's allow-list.
   /// `null` collapses to `'okay'` so the CF always sees one of the six
-  /// canonical strings — the CF rejects unknown values.
+  /// canonical strings - the CF rejects unknown values.
   String _emotionWire(MoodType? mood) => switch (mood) {
     null => 'okay',
     MoodType.happy => 'happy',

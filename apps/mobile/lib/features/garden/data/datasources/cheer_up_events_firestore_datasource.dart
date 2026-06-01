@@ -7,7 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 ///
 /// The CF trigger `sendCheerUpPush` listens on document creates here.
 /// This datasource is therefore the seam where the client decides to
-/// fire a push (or not — duplicate same-day writes short-circuit
+/// fire a push (or not - duplicate same-day writes short-circuit
 /// because the doc id collapses two re-evaluations into one).
 class CheerUpEventsFirestoreDatasource {
   const CheerUpEventsFirestoreDatasource(this._firestore);
@@ -35,7 +35,7 @@ class CheerUpEventsFirestoreDatasource {
         .doc(evtId);
 
     // Use `set` rather than `add` so the deterministic id is preserved.
-    // Per the rule, `createdAt` MUST equal `request.time` — so it must
+    // Per the rule, `createdAt` MUST equal `request.time` - so it must
     // be a server timestamp, not a client clock.
     await ref.set(<String, Object?>{
       'reason': reason,

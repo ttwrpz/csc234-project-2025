@@ -7,7 +7,7 @@ import '../../data/providers.dart';
 import '../../domain/ai_analysis_failure.dart';
 import '../../domain/entities/ai_suggestion.dart';
 
-/// 600ms debounce on text changes — coalesces rapid typing into one Cloud
+/// 600ms debounce on text changes - coalesces rapid typing into one Cloud
 /// Function call. Tunable via [aiSuggestionDebounceWindowProvider]; longer
 /// feels laggy, shorter wastes quota.
 const Duration _kDefaultDebounceWindow = Duration(milliseconds: 600);
@@ -15,7 +15,7 @@ const Duration _kDefaultDebounceWindow = Duration(milliseconds: 600);
 /// Minimum trimmed character count before the AI analyse fires. Below
 /// this threshold the controller treats the text as empty (no
 /// suggestion shown, no Cloud Function call). 12 chars is roughly
-/// "I feel sad" — long enough to imply intent without firing Gemini on
+/// "I feel sad" - long enough to imply intent without firing Gemini on
 /// 2-3 char drafts like "ok" / "sad".
 const int _kDefaultMinChars = 12;
 
@@ -51,7 +51,7 @@ class AiSuggestionController extends Notifier<AsyncValue<AiSuggestion?>> {
     return const AsyncValue.data(null);
   }
 
-  /// Pump text into the controller. Debounced — only the latest call within
+  /// Pump text into the controller. Debounced - only the latest call within
   /// the configured window survives. Texts shorter than [_minChars] are
   /// treated as empty and clear any prior suggestion (no Gemini call).
   void onTextChanged(String text) {

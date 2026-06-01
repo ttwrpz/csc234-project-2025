@@ -1,4 +1,4 @@
-# Sprint 3 Retrospective — v0.2 Beta: AI Detection + Offline-First + Security
+# Sprint 3 Retrospective - v0.2 Beta: AI Detection + Offline-First + Security
 
 **Sprint window:** April 29 – April 30, 2026 (compressed; original plan was 5 working days)
 **Demo readiness:** April 30, 2026
@@ -30,18 +30,18 @@
 
 Plus 2 architect handoff briefs (`security-rules.md`, `gemini-detection.md` under `.claude/briefs/sprint-3/`), 3 ADRs (`docs/adr/0003-gemini-cloud-function-contract.md`, `0004-drift-offline-first-schema.md`, `0005-conflict-resolution-last-write-wins.md`), 2 security audits (one for the Drift chain, one for the Cloud Function), 1 merge playbook (`docs/sprint-3-merge-plan.md`).
 
-## Sprint 3 acceptance criteria — checklist
+## Sprint 3 acceptance criteria - checklist
 
 - [x] User types "ugh today was so long" → AI suggests mood + intensity + confidence → user can accept or override with one tap (Lin's US-Lin-2)
 - [x] User logs a mood with airplane mode on → save succeeds immediately from local Drift → enables connectivity → entry appears in Firestore within 10 seconds (manual demo path; integration test deferred to S4)
 - [x] User edits a mood from today → edit saves. User tries to edit a 2-day-old entry → sees the lock failure (`MoodFailure.locked`)
-- [x] User tries to delete a 2-day-old entry → sees the lock failure (NEW in PR-3 — closed the long-standing S2 gap at `mood_repository_impl.dart:102`)
+- [x] User tries to delete a 2-day-old entry → sees the lock failure (NEW in PR-3 - closed the long-standing S2 gap at `mood_repository_impl.dart:102`)
 - [x] Firestore emulator test suite passes: 17 tests covering per-user isolation, `createdAt` immutability, `updatedAt == request.time`, 24h delete guard, field-level rules, storage RBAC + size + content-type allowlist
 - [x] Crashlytics receives a test crash from the debug-only "Crash now (debug)" button in Settings (manual; gated to `kDebugMode`)
 - [x] Analytics screen shows a line chart with 7/30/90-day window toggle and real data (97.4% domain coverage)
 - [x] Calendar view shows colored mood dots; tap → entry detail (100% domain coverage)
 - [x] Biometric sign-in works on Android with `local_auth` + opt-in toggle in Settings; cancellation routes back to `/sign-in` and signs out (100% auth-domain coverage)
-- [x] Domain unit test coverage ≥80% on `domain/` (verified by `dart run apps/mobile/tool/check_domain_coverage.dart` — overall 94.6%)
+- [x] Domain unit test coverage ≥80% on `domain/` (verified by `dart run apps/mobile/tool/check_domain_coverage.dart` - overall 94.6%)
 - [x] No HIGH or CRITICAL `npm audit` findings in `functions/`
 - [x] Tag `v0.3-beta` pushed (after the integration PR squash-merged to main)
 
@@ -69,7 +69,7 @@ Full per-feature breakdown in `docs/test-reports/sprint-3-test-report.md`.
 
 ## Open hardening items by Sprint 4
 
-From the two security-reviewer audits — items that didn't block the v0.3-beta tag but must be addressed before any production deploy:
+From the two security-reviewer audits - items that didn't block the v0.3-beta tag but must be addressed before any production deploy:
 
 | ID | Severity | Source | Owner | What |
 |---|---|---|---|---|
@@ -87,10 +87,10 @@ From the two security-reviewer audits — items that didn't block the v0.3-beta 
 ## What went well
 
 - **Architect's three ADRs (0003 / 0004 / 0005) front-loaded the contract** so each implementation agent had no design questions during build. The Cloud Function wire format, the Drift schema, and the LWW conflict rule all stayed stable from spike to ship.
-- **Security audits caught two CRITICAL findings** that would have shipped silent privacy bugs: R-1 (cross-user queue drain — UserA's plaintext mood text replaying under UserB's auth context after sign-in/sign-out cycle) and R-2 (Firestore `add()` discarding the client UUID, producing duplicate Drift rows on every offline-saved entry). Both fixed in-PR before merge. The audit pattern (security-reviewer ↔ flutter-engineer round-trip on the same branch) is worth keeping for any S4 work that touches identity, persistence, or rules.
+- **Security audits caught two CRITICAL findings** that would have shipped silent privacy bugs: R-1 (cross-user queue drain - UserA's plaintext mood text replaying under UserB's auth context after sign-in/sign-out cycle) and R-2 (Firestore `add()` discarding the client UUID, producing duplicate Drift rows on every offline-saved entry). Both fixed in-PR before merge. The audit pattern (security-reviewer ↔ flutter-engineer round-trip on the same branch) is worth keeping for any S4 work that touches identity, persistence, or rules.
 - **The 3-PR Drift chain** (PR-1 schema → PR-2 sync manager → PR-3 cutover) was deliberately reviewable in isolation. Each PR shipped without affecting UI behavior; only PR-3 actually flipped the read/write path. Pattern works for any future risky migration.
 - **Domain test coverage organically hit ≥80%** on every feature without a forced top-up sweep at the end. Authors wrote tests with their feature; the QA top-up only added ~20 cases on the auth feature (biometric variants weren't constructable in any path before the top-up).
-- **Single-PR integration approach** (Option A — `chore/sprint-3-integration` with all 13 merges) gave the team one review surface instead of 13. The merge train resolved ~25 conflicts on shared files (`pubspec.yaml`, `providers.dart`, `firebase.json`, `log_mood_screen.dart`); each was additive — preserved both branches' contributions wholesale.
+- **Single-PR integration approach** (Option A - `chore/sprint-3-integration` with all 13 merges) gave the team one review surface instead of 13. The merge train resolved ~25 conflicts on shared files (`pubspec.yaml`, `providers.dart`, `firebase.json`, `log_mood_screen.dart`); each was additive - preserved both branches' contributions wholesale.
 - **Manual conflict-resolution playbook** in `docs/sprint-3-merge-plan.md` documented every shared-file pattern so the team can audit the integration without re-deriving each decision.
 
 ## What hurt
@@ -108,21 +108,21 @@ From the two security-reviewer audits — items that didn't block the v0.3-beta 
 1. **DevOps:** Address R-M01 (Firestore TTL on rateLimits) and R-M02 (App Check + Secret Manager IAM) before any Cloud Function production deploy.
 2. **DevOps:** Verify firestore.rules actually deployed via `firebase deploy --only firestore:rules` (R-3).
 3. **flutter-engineer:** Address R-4, R-5, R-8, R-12 from the Drift audit in a "Sprint 4 Drift hardening" PR.
-4. **architect:** Decide on encryption-at-rest for Drift (R-6 — `drift_sqlcipher`) before the v0.3-stable release.
+4. **architect:** Decide on encryption-at-rest for Drift (R-6 - `drift_sqlcipher`) before the v0.3-stable release.
 5. **architect + security-reviewer:** Author the ADR-0006 (App Check enforcement + IAM scoping) and ADR-0007 (analyzePatterns Cloud Function for S4 pattern analysis) before WBS work begins.
 6. **architect + security-reviewer:** Approve AndroidManifest changes (`USE_BIOMETRIC` + `FlutterFragmentActivity`) so the manual biometric demo can run on a physical device in S4.
-7. **orchestrator:** Install `gh` CLI in the agent environment for S4. (Carried from S2 retro — must land this time.)
+7. **orchestrator:** Install `gh` CLI in the agent environment for S4. (Carried from S2 retro - must land this time.)
 8. **orchestrator:** Use `git worktree` for parallel agents that need git, OR enforce serial dispatch on file-mutating work.
 9. **qa-engineer:** Author golden tests for Calendar grid (S4 deferred), widget tests for `BiometricGateScreen` and `BiometricSettingsTile` (S4 deferred), and integration tests for the offline-write happy path through `LogMoodScreen` (S4 deferred).
 10. **flutter-engineer:** Generate `drift_dev schema dump` baseline for v1 (R-8) so v2 migrations diff cleanly.
 11. **Theerawat:** Move the surviving S2 hardening items (R-013, R-015, R-016, R-017) into the S4 backlog; some are now resolved by the auth feature reaching 100% domain coverage.
-12. **Team:** Plan S4 with explicit slack for rate-limit recovery — ~30% of S3's wall-clock was orchestrator manually finishing tasks the agents couldn't complete in one session.
+12. **Team:** Plan S4 with explicit slack for rate-limit recovery - ~30% of S3's wall-clock was orchestrator manually finishing tasks the agents couldn't complete in one session.
 
 ## What's NOT in v0.3-beta (out-of-scope per the kickoff)
 
 These are deliberately deferred to S4 and beyond:
 
-- Compassionate reframing — wilting plants for `negativeMild`, rain clouds for `negativeStrong` (S4)
+- Compassionate reframing - wilting plants for `negativeMild`, rain clouds for `negativeStrong` (S4)
 - Pattern detection + AI Insights UI (S4)
 - Cheer-up intervention banner with hotline 1323 footer (S5)
 - Dark mode (S4)

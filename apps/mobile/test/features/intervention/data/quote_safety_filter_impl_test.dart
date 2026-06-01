@@ -6,24 +6,24 @@ import 'package:moodbloom/features/intervention/domain/entities/ai_allowed_tier.
 import 'package:moodbloom/features/intervention/domain/entities/quote.dart';
 import 'package:moodbloom/features/intervention/domain/entities/quote_failure.dart';
 
-/// TC-41 — the canonical safety-filter test. 55 explicit inputs across four
+/// TC-41 - the canonical safety-filter test. 55 explicit inputs across four
 /// rejection categories + 5 known-good positive controls. 100% of the
 /// rejection inputs MUST return `Err`; 100% of the controls MUST return
-/// `Ok`. A single pass-through in the rejection set fails the build —
+/// `Ok`. A single pass-through in the rejection set fails the build -
 /// that is the entire point.
 ///
 /// Test groups:
-///   1. Forbidden-word inputs (25) — at least one input per blacklist term
+///   1. Forbidden-word inputs (25) - at least one input per blacklist term
 ///      (HB-008 §"QuoteSafetyFilter design").
-///   2. Length-violation inputs (15) — > 140 chars, otherwise compassionate.
-///   3. Off-script inputs (10) — random sentences not in the approved set.
-///   4. "Almost-OK" inputs (5) — single forbidden word in valid phrasing.
-///   5. Known-good controls (5) — drawn from the curated tier pools.
+///   2. Length-violation inputs (15) - > 140 chars, otherwise compassionate.
+///   3. Off-script inputs (10) - random sentences not in the approved set.
+///   4. "Almost-OK" inputs (5) - single forbidden word in valid phrasing.
+///   5. Known-good controls (5) - drawn from the curated tier pools.
 void main() {
   const filter = QuoteSafetyFilterImpl();
 
   // ──────────────────────────────────────────────────────────────────
-  // Category 1 — 25 forbidden-word inputs. Spread across the blacklist;
+  // Category 1 - 25 forbidden-word inputs. Spread across the blacklist;
   // each forbidden term appears in at least one input. Verbatim from
   // HB-008's blacklist:
   //   depression, anxiety disorder, bipolar, diagnose, diagnosis,
@@ -44,7 +44,7 @@ void main() {
     // medication
     'Your medication regime aside, a gentle breath helps.',
     // prescribe
-    'We prescribe nothing — only a kind moment.',
+    'We prescribe nothing - only a kind moment.',
     // therapy
     'Outside of therapy, a short pause is welcome.',
     // therapist
@@ -62,29 +62,29 @@ void main() {
     // fix yourself
     'A quiet breath might fix yourself in a moment.',
     // get better
-    'A short pause to get better — try a breath.',
+    'A short pause to get better - try a breath.',
     // overcome
     'Try to overcome this with a slow breath.',
-    // depression — second instance to round out the spread
+    // depression - second instance to round out the spread
     'A short walk in the garden helps with depression.',
-    // bipolar — second instance
+    // bipolar - second instance
     'Even bipolar weather can soften with a pause.',
-    // should — second instance
+    // should - second instance
     'A slow breath: you should try one now.',
-    // diagnose — second instance
+    // diagnose - second instance
     'No one will diagnose you here; just a gentle breath.',
-    // medication — second instance
+    // medication - second instance
     'Even on medication a short breath can help.',
-    // therapy — second instance
+    // therapy - second instance
     'Beyond therapy, a soft pause is welcome.',
-    // overcome — second instance
+    // overcome - second instance
     'A breath can help you overcome the moment.',
-    // must — second instance
+    // must - second instance
     'A slow breath you must try if it helps.',
   ];
 
   // ──────────────────────────────────────────────────────────────────
-  // Category 2 — 15 over-length inputs (> 140 chars). Compassionate
+  // Category 2 - 15 over-length inputs (> 140 chars). Compassionate
   // phrasing padded with filler so the FORBIDDEN gate would PASS and
   // the WHITELIST gate would likely pass too; only the LENGTH gate
   // should fire.
@@ -108,7 +108,7 @@ void main() {
   ];
 
   // ──────────────────────────────────────────────────────────────────
-  // Category 3 — 10 off-script inputs. Random sentences not in the
+  // Category 3 - 10 off-script inputs. Random sentences not in the
   // approved vocabulary. None contain forbidden terms, none exceed 140
   // chars; only the WHITELIST gate should fire.
   // ──────────────────────────────────────────────────────────────────
@@ -126,20 +126,20 @@ void main() {
   ];
 
   // ──────────────────────────────────────────────────────────────────
-  // Category 4 — 5 "almost-OK" inputs. Single forbidden word embedded
-  // in otherwise valid phrasing. These are the trick cases — the filter
+  // Category 4 - 5 "almost-OK" inputs. Single forbidden word embedded
+  // in otherwise valid phrasing. These are the trick cases - the filter
   // MUST catch them.
   // ──────────────────────────────────────────────────────────────────
   const almostOkInputs = <String>[
-    'Maybe a short breathing exercise would help — you should try it.',
+    'Maybe a short breathing exercise would help - you should try it.',
     'A gentle pause might help; you must breathe slowly for a moment.',
-    'Soft breaths can be kind — you have to give it a try.',
+    'Soft breaths can be kind - you have to give it a try.',
     'A quiet breath would be welcome now if it helps.',
     'Writing a few lines could help you overcome the weather.',
   ];
 
   // ──────────────────────────────────────────────────────────────────
-  // Positive controls — 5 known-good curated phrases drawn from the
+  // Positive controls - 5 known-good curated phrases drawn from the
   // tier pools. These MUST pass; failure here means the filter is
   // mis-aligned with the pool vocabulary.
   // ──────────────────────────────────────────────────────────────────
@@ -151,7 +151,7 @@ void main() {
     (QuoteLibraryImpl.tier2Pool[11], AiAllowedTier.two),
   ];
 
-  group('QuoteSafetyFilterImpl — TC-41 (55 inputs, 100% rejection)', () {
+  group('QuoteSafetyFilterImpl - TC-41 (55 inputs, 100% rejection)', () {
     test('Category 1: 25 forbidden-word inputs all reject', () {
       expect(forbiddenInputs, hasLength(25));
       for (final input in forbiddenInputs) {
@@ -226,7 +226,7 @@ void main() {
           final result = filter.gate(input, tier: AiAllowedTier.one);
           if (result is Ok<Quote, QuoteFailure>) {
             passThroughs++;
-            fail('Filter let through: "$input" — gave ${result.value.text}');
+            fail('Filter let through: "$input" - gave ${result.value.text}');
           }
         }
         expect(
@@ -238,7 +238,7 @@ void main() {
     );
   });
 
-  group('QuoteSafetyFilterImpl — positive controls', () {
+  group('QuoteSafetyFilterImpl - positive controls', () {
     test('5 curated phrases pass their tier filter', () {
       for (final (phrase, tier) in positiveControls) {
         final result = filter.gate(phrase, tier: tier);
@@ -255,7 +255,7 @@ void main() {
     });
   });
 
-  group('QuoteSafetyFilterImpl — edge cases', () {
+  group('QuoteSafetyFilterImpl - edge cases', () {
     test('exactly 140 chars passes the length gate', () {
       // 140 chars exactly, using only approved Tier 1 vocabulary.
       // 'a gentle breath ' is 16 chars; 8 repeats = 128 chars; add a
@@ -299,7 +299,7 @@ void main() {
       // distinct token after lowercasing + tokenisation) must NOT
       // hit `forbidden:diagnose`. Whether the sentence ultimately
       // passes or rejects on whitelist ratio depends on the rest of
-      // the vocabulary — we only assert the forbidden-gate behaviour.
+      // the vocabulary - we only assert the forbidden-gate behaviour.
       const withDiagnosing = 'A breath while diagnosing the moment.';
       final r2 = filter.gate(withDiagnosing, tier: AiAllowedTier.one);
       if (r2 is Err<Quote, QuoteFailure> && r2.failure is FilterReject) {

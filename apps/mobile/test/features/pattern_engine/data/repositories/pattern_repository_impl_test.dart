@@ -108,7 +108,7 @@ void main() {
       );
       final outcome = await repo.save(userId: 'uid-1', result: _result);
       expect(outcome, isA<Err<void, PatternFailure>>());
-      // The runtimeType is the post-save logger's signal — confirm we get
+      // The runtimeType is the post-save logger's signal - confirm we get
       // the `_PermissionDenied` private subtype, distinct from network /
       // unknown for downstream debug visibility.
       outcome.fold(

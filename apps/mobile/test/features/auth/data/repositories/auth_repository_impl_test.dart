@@ -8,7 +8,7 @@ import 'package:moodbloom/features/auth/domain/auth_failure.dart';
 
 /// Hand-rolled fake of [FirebaseAuthDatasource] that covers only the
 /// surface area exercised by these tests. The mapper / sign-in / Google
-/// flows aren't tested here — those need a real `firebase_auth.User`,
+/// flows aren't tested here - those need a real `firebase_auth.User`,
 /// which would pull in the platform plugin. The brief calls out
 /// `deleteCurrentUser` only, so this is intentionally narrow.
 class _FakeFirebaseAuthDatasource implements FirebaseAuthDatasource {
@@ -16,7 +16,7 @@ class _FakeFirebaseAuthDatasource implements FirebaseAuthDatasource {
   /// the typed envelope the real datasource raises.
   AuthDatasourceException? deleteCurrentUserThrows;
 
-  /// Set to `false` to mimic "no current user" — the real datasource
+  /// Set to `false` to mimic "no current user" - the real datasource
   /// short-circuits to a no-op in that case.
   bool hasCurrentUser = true;
 
@@ -31,7 +31,7 @@ class _FakeFirebaseAuthDatasource implements FirebaseAuthDatasource {
     }
   }
 
-  // Every other public method is unused — fall through to noSuchMethod
+  // Every other public method is unused - fall through to noSuchMethod
   // so the test compiles without re-implementing the full surface.
   @override
   // ignore: unused_element
@@ -71,14 +71,14 @@ void main() {
       );
     });
 
-    test('happy path — datasource succeeds → Ok(null)', () async {
+    test('happy path - datasource succeeds → Ok(null)', () async {
       final result = await repo.deleteCurrentUser();
       expect(result, isA<Ok<void, AuthFailure>>());
       expect(fakeAuth.deleteCurrentUserCalls, equals(1));
     });
 
     test(
-      'no current user — datasource no-ops → Ok(null) (idempotent contract)',
+      'no current user - datasource no-ops → Ok(null) (idempotent contract)',
       () async {
         fakeAuth.hasCurrentUser = false;
         final result = await repo.deleteCurrentUser();
@@ -90,7 +90,7 @@ void main() {
     );
 
     test(
-      'requires-recent-login — surfaces AuthFailure.requiresRecentLogin '
+      'requires-recent-login - surfaces AuthFailure.requiresRecentLogin '
       'so the use case can branch into the "proceed to signOut" arm',
       () async {
         fakeAuth.deleteCurrentUserThrows = AuthDatasourceException(
@@ -106,7 +106,7 @@ void main() {
       },
     );
 
-    test('other FirebaseAuthException — maps to AuthFailure.unknown via '
+    test('other FirebaseAuthException - maps to AuthFailure.unknown via '
         'the datasource envelope', () async {
       fakeAuth.deleteCurrentUserThrows = AuthDatasourceException(
         AuthFailure.unknown(
@@ -116,7 +116,7 @@ void main() {
       final result = await repo.deleteCurrentUser();
       expect(result, isA<Err<void, AuthFailure>>());
       final failure = (result as Err<void, AuthFailure>).failure;
-      // Not the requires-recent-login sentinel — it's the unknown
+      // Not the requires-recent-login sentinel - it's the unknown
       // variant with an embedded cause.
       expect(
         identical(failure, const AuthFailure.requiresRecentLogin()),

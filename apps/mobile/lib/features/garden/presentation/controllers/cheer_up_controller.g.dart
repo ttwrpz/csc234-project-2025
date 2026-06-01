@@ -26,10 +26,10 @@ part of 'cheer_up_controller.dart';
 ///
 /// Failure independence: the anchor write and the event-doc create are
 /// independent. If the anchor write fails (network), the event-doc
-/// create still attempts — the CF only needs the event doc to fire its
+/// create still attempts - the CF only needs the event doc to fire its
 /// trigger, the anchors live elsewhere. If the event-doc create fails
 /// on `already-exists`, the impl swallows it and we treat as success
-/// (idempotent path — the trigger already fired earlier today).
+/// (idempotent path - the trigger already fired earlier today).
 
 @ProviderFor(CheerUpController)
 final cheerUpControllerProvider = CheerUpControllerProvider._();
@@ -52,10 +52,10 @@ final cheerUpControllerProvider = CheerUpControllerProvider._();
 ///
 /// Failure independence: the anchor write and the event-doc create are
 /// independent. If the anchor write fails (network), the event-doc
-/// create still attempts — the CF only needs the event doc to fire its
+/// create still attempts - the CF only needs the event doc to fire its
 /// trigger, the anchors live elsewhere. If the event-doc create fails
 /// on `already-exists`, the impl swallows it and we treat as success
-/// (idempotent path — the trigger already fired earlier today).
+/// (idempotent path - the trigger already fired earlier today).
 final class CheerUpControllerProvider
     extends $NotifierProvider<CheerUpController, CheerUpUiState> {
   /// Controller for the cheer-up banner.
@@ -76,10 +76,10 @@ final class CheerUpControllerProvider
   ///
   /// Failure independence: the anchor write and the event-doc create are
   /// independent. If the anchor write fails (network), the event-doc
-  /// create still attempts — the CF only needs the event doc to fire its
+  /// create still attempts - the CF only needs the event doc to fire its
   /// trigger, the anchors live elsewhere. If the event-doc create fails
   /// on `already-exists`, the impl swallows it and we treat as success
-  /// (idempotent path — the trigger already fired earlier today).
+  /// (idempotent path - the trigger already fired earlier today).
   CheerUpControllerProvider._()
     : super(
         from: null,
@@ -127,10 +127,10 @@ String _$cheerUpControllerHash() => r'0b2243c6052216b508540f593254924cc9eabdb1';
 ///
 /// Failure independence: the anchor write and the event-doc create are
 /// independent. If the anchor write fails (network), the event-doc
-/// create still attempts — the CF only needs the event doc to fire its
+/// create still attempts - the CF only needs the event doc to fire its
 /// trigger, the anchors live elsewhere. If the event-doc create fails
 /// on `already-exists`, the impl swallows it and we treat as success
-/// (idempotent path — the trigger already fired earlier today).
+/// (idempotent path - the trigger already fired earlier today).
 
 abstract class _$CheerUpController extends $Notifier<CheerUpUiState> {
   CheerUpUiState build();

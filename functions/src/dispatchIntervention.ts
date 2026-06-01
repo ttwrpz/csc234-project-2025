@@ -8,7 +8,7 @@
 // rate-limit, then sends a LOCKED per-tier notification payload.
 //
 // **Tier 3 fence (server-side).** The notification body is a module-scope
-// constant per tier — there is NO request field for body text, and the
+// constant per tier - there is NO request field for body text, and the
 // CF NEVER reads `dispatch.body` from Firestore for the notification
 // payload. That means even if the audit doc's body has been tampered
 // with (it can't be, per rules), it cannot leak into the push. The
@@ -32,7 +32,7 @@
 //   7. Send multicast with the LOCKED per-tier title/body + channel
 //      `cheer_up`.
 //   8. Prune `registration-token-not-registered` tokens.
-//   9. Allowlisted structured log line — never the body, never tokens.
+//   9. Allowlisted structured log line - never the body, never tokens.
 //
 // CF posture: region `asia-southeast1`, 256MiB, 30s, no App Check
 // (matches the existing CF suite).
@@ -50,7 +50,7 @@ import { consumeToken } from './rateLimit.js';
 
 // -----------------------------------------------------------------------------
 // LOCKED per-tier payloads. Module-scope constants so no caller field
-// can route per-dispatch text into the notification — the Tier 3 fence
+// can route per-dispatch text into the notification - the Tier 3 fence
 // is enforced by the SHAPE of this function. Copy obeys CLAUDE.md rules:
 // no clinical labels, no "you should", no hotline number in the body
 // (Hotline 1323 is the in-app crisis-screen surface, never a push body).
@@ -78,7 +78,7 @@ const PAYLOADS: Readonly<Record<'one' | 'two' | 'three', TierPayload>> = {
   },
 };
 
-// 24h rate limit — at most 1 intervention push per uid per day. Defense
+// 24h rate limit - at most 1 intervention push per uid per day. Defense
 // in depth on top of the client-side 48h cooldown the dispatcher already
 // enforces. Separate collection so it does not interact with
 // `rateLimits.cheerUp`, `rateLimits/{uid}` (analyzeMoodText), or
@@ -110,7 +110,7 @@ interface NotificationsSettings {
 interface InterventionAuditDoc {
   tier?: string;
   optedOut?: boolean;
-  // `body` exists on the audit doc but is INTENTIONALLY UNREAD here —
+  // `body` exists on the audit doc but is INTENTIONALLY UNREAD here -
   // the notification body is a module-scope constant. See the file header.
 }
 
@@ -131,7 +131,7 @@ function isPerTierEnabled(
   // Mirror `sendCheerUpPush`'s `!== true` posture: missing or
   // not-strictly-true is opted-out. The dart side seeds `true` on
   // first write, and the Firestore rule requires all three flags on
-  // create, so a doc that exists will always have the field — but the
+  // create, so a doc that exists will always have the field - but the
   // fail-closed posture protects against schema drift.
   switch (tier) {
     case 'one':
@@ -339,7 +339,7 @@ export const dispatchIntervention = onCall<
       return { ok: true, outcome: 'rate_limited' };
     }
 
-    // 6. Send multicast. LOCKED payload from PAYLOADS[tier] — no
+    // 6. Send multicast. LOCKED payload from PAYLOADS[tier] - no
     // per-dispatch text, no body from the audit doc, no Gemini output.
     // This is the Tier 3 fence: by construction, the only path to a
     // notification body is through this constant.
@@ -353,7 +353,7 @@ export const dispatchIntervention = onCall<
       },
     });
 
-    // 7. Prune dead tokens. Identical pattern to sendCheerUpPush — drop
+    // 7. Prune dead tokens. Identical pattern to sendCheerUpPush - drop
     // the canonical `registration-token-not-registered` returns AND any
     // malformed entries that may have crept in from older clients.
     const dead: string[] = [];

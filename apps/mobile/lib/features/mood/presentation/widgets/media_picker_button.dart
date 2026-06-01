@@ -15,7 +15,7 @@ import '../../domain/repositories/mood_media_repository.dart';
 /// `ImageSource.gallery` to the OS file dialog on web/Windows/macOS, so
 /// surfacing a separate camera button on those platforms is misleading. On
 /// wide desktop windows, two 36×36 icon-only buttons are also hard to spot
-/// in a mouse-driven UI — we promote to a discoverable outlined button.
+/// in a mouse-driven UI - we promote to a discoverable outlined button.
 class MediaPickerButton extends StatelessWidget {
   const MediaPickerButton({
     super.key,
@@ -80,7 +80,7 @@ class MediaPickerButton extends StatelessWidget {
 }
 
 /// Single 36×36 r10 attach button. Card bg, 1 px line border, 18 px icon. Not
-/// exported — only the two-source row above is the public surface.
+/// exported - only the two-source row above is the public surface.
 class _AttachIcon extends StatelessWidget {
   const _AttachIcon({
     required this.icon,

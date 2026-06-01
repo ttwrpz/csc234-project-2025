@@ -6,12 +6,12 @@ import '../../domain/entities/webauthn_credential.dart';
 /// `users/{uid}/webauthn/{credentialId}`.
 ///
 /// Single-credential per account, so the stream emits at most one
-/// entry — the first doc in the collection, or `null` when the
+/// entry - the first doc in the collection, or `null` when the
 /// collection is empty. The Privacy UI status tile and the PIN verify
 /// screen both consume this stream.
 ///
 /// **Field projection note:** the full credential doc carries
-/// `publicKeyBase64`, `counter`, `aaguid`, and `transports` — all
+/// `publicKeyBase64`, `counter`, `aaguid`, and `transports` - all
 /// server-managed and not used by the client. This datasource projects
 /// onto the [WebauthnCredential] subset (credentialId / createdAt /
 /// lastUsedAt / failedAttempts / lockedUntil) so the domain entity

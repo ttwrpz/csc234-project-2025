@@ -3,15 +3,15 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Static cross-site check for the FCM Android notification channel id
-/// `cheer_up`. PR #35 audit R-006 — this literal MUST be byte-identical
+/// `cheer_up`. PR #35 audit R-006 - this literal MUST be byte-identical
 /// at three sites or the cheer-up push pipeline breaks silently:
 ///
-///   1. AndroidManifest.xml meta-data — the system-fallback channel
+///   1. AndroidManifest.xml meta-data - the system-fallback channel
 ///      Android uses if a notification arrives with no client-side
 ///      registration.
-///   2. main.dart channel registration — the real `AndroidNotificationChannel`
+///   2. main.dart channel registration - the real `AndroidNotificationChannel`
 ///      registered at app boot via `flutter_local_notifications`.
-///   3. functions/src/sendCheerUpPush.ts payload — the channelId the CF
+///   3. functions/src/sendCheerUpPush.ts payload - the channelId the CF
 ///      sends in the FCM multicast.
 ///
 /// A typo on any one of the three (`cheerUp`, `cheer-up`, `cheer_Up`)
@@ -85,7 +85,7 @@ void main() {
             'main.dart must construct an AndroidNotificationChannel via '
             'flutter_local_notifications at boot',
       );
-      // RegExp.escape via raw-string + literal — channel id literal must
+      // RegExp.escape via raw-string + literal - channel id literal must
       // be the FIRST positional arg of an AndroidNotificationChannel
       // call. `\\s*'cheer_up'` after the open paren tolerates any
       // amount of formatter-inserted whitespace (newline, indent).
@@ -97,7 +97,7 @@ void main() {
         isTrue,
         reason:
             'main.dart channel id literal must be the first arg of '
-            "AndroidNotificationChannel — exactly '$expectedChannelId'",
+            "AndroidNotificationChannel - exactly '$expectedChannelId'",
       );
     });
 

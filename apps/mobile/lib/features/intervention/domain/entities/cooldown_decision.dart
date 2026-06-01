@@ -6,12 +6,12 @@ sealed class CooldownDecision {
   const CooldownDecision();
 }
 
-/// Gate is open — dispatcher proceeds.
+/// Gate is open - dispatcher proceeds.
 final class Proceed extends CooldownDecision {
   const Proceed();
 }
 
-/// Gate is closed — dispatcher returns early. `reason` is surfaced for logs
+/// Gate is closed - dispatcher returns early. `reason` is surfaced for logs
 /// and the controller's "no banner this time" UX path.
 final class Blocked extends CooldownDecision {
   const Blocked(this.reason);

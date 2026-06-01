@@ -14,7 +14,7 @@ service cloud.firestore {
       // `insightsDisclaimerAcked` is ONE-WAY (false → true). Once a
       // user has acknowledged the bipolar/medical disclaimer (spec §4
       // / ADR-0010), the client cannot revert the ack. The field is
-      // optional on the doc — `get(field, false)` provides a safe
+      // optional on the doc - `get(field, false)` provides a safe
       // default so docs predating this field still update freely as
       // long as no client tries to write a `true → false` transition.
       // Admin SDK paths (e.g. account deletion in S5) bypass these
@@ -49,7 +49,7 @@ service cloud.firestore {
         // Edits and deletes are allowed only on the same UTC calendar
         // day as `createdAt`. (Firestore rules don't expose a local-time
         // helper, so the boundary is UTC midnight here; the client uses
-        // local-midnight in `MoodEntry.isLocked` — close enough given
+        // local-midnight in `MoodEntry.isLocked` - close enough given
         // the user is in Asia/Bangkok with no DST and writes use
         // server-side `request.time` for `createdAt`.)
         allow update: if isOwner(uid)
@@ -76,10 +76,10 @@ service cloud.firestore {
 
       match /insights/{insightId} {
         allow read: if isOwner(uid);
-        allow create, update, delete: if false; // Cloud Function admin SDK only — S4
+        allow create, update, delete: if false; // Cloud Function admin SDK only - S4
       }
 
-      // Per-user cheer-up audit log (HB-003 §5.5b). Append-only —
+      // Per-user cheer-up audit log (HB-003 §5.5b). Append-only -
       // every doc is a single trigger event for the
       // `sendCheerUpPush` Cloud Function. Doc id is
       // `${dayUtc}-${reason}` so the trigger can decode the (day,
@@ -125,7 +125,7 @@ service cloud.firestore {
         // malicious client overwrite it with arbitrary values. Today's
         // CF doesn't read schemaV on this collection, but the moment it
         // does the schema-version invariant must hold. Drop it here
-        // rather than add a type guard — the value is set on create and
+        // rather than add a type guard - the value is set on create and
         // only changes via a deliberate migration (which would land in
         // a Cloud Function under admin SDK, bypassing this rule).
         allow update: if isOwner(uid)
@@ -183,7 +183,7 @@ service cloud.firestore {
              .hasOnly(['cheerUpEnabled','tier1Enabled','tier2Enabled',
                        'tier3Enabled','tokens','updatedAt']);
 
-        // Notification preferences are never deleted from the client —
+        // Notification preferences are never deleted from the client -
         // disabling cheer-up reminders mutates the doc instead. Account
         // deletion (WBS 2.4) uses the admin SDK.
         allow delete: if false;
@@ -194,7 +194,7 @@ service cloud.firestore {
       // (Mann-Kendall, sliding 5-of-7, 3-consecutive S<=-0.6, Z-score,
       // CUSUM) writes one of these per mood log; same-day re-evaluation
       // overwrites the doc cleanly. Mood text is NEVER part of the
-      // schema — affectedKeys().hasOnly() enforces it.
+      // schema - affectedKeys().hasOnly() enforces it.
       match /patterns/{dateId} {
         allow read: if isOwner(uid);
 
@@ -257,7 +257,7 @@ service cloud.firestore {
       //
       // Update is restricted to a SINGLE one-way transition:
       // `optedOut: false → true` (TC-34 "I'm okay" tap). Every other
-      // field is immutable post-create — Tier 3 audit invariant per
+      // field is immutable post-create - Tier 3 audit invariant per
       // ADR-0012. Delete is denied; account-deletion paths use the
       // admin SDK.
       match /interventions/{id} {
@@ -288,7 +288,7 @@ service cloud.firestore {
         allow delete: if false;
       }
 
-      // Per-tier (or global) cooldown doc — HB-007 OQ-B default is
+      // Per-tier (or global) cooldown doc - HB-007 OQ-B default is
       // global ("one anchor across all tiers"). Doc id is the cooldown
       // `type` ('global' for v1; future per-tier values like 'tier_three'
       // remain reachable without rule churn). `lastDispatchedAt` and
@@ -327,12 +327,12 @@ service cloud.firestore {
       //      tampered client cannot bypass the rate limit by skipping
       //      the failure-write.
       //
-      // Delete is denied — PIN reset is a "re-set" (write a fresh
+      // Delete is denied - PIN reset is a "re-set" (write a fresh
       // hash on top), not a one-tap delete. See ADR-0013 §"Reset
       // flow (v1.5)" and the data layer's PinRepositoryImpl.remove()
       // which writes an unrecoverable random hash to "remove."
       //
-      // TODO(security-reviewer): final audit before tag — confirm
+      // TODO(security-reviewer): final audit before tag - confirm
       // the field allow-list matches the data layer's write, confirm
       // the iterations lower bound matches the hasher's constant
       // (PinHasher.minIterations), and exercise the lockedUntil read
@@ -366,17 +366,17 @@ service cloud.firestore {
           && (resource.data.get('lockedUntil', null) == null
               || request.time >= resource.data.lockedUntil);
 
-        // Create (first-time setup) — same shape constraints as
+        // Create (first-time setup) - same shape constraints as
         // update; the doc is `set()` from the client so the same rule
         // covers both paths.
         allow create: if isOwner(uid) && pinShapeValid();
 
         // Update (re-setup, rotate, rate-limit-anchor bump). The
-        // field allow-list is the same — no auxiliary fields land
+        // field allow-list is the same - no auxiliary fields land
         // outside the canonical schema.
         allow update: if isOwner(uid) && pinShapeValid();
 
-        // Delete denied — see header comment.
+        // Delete denied - see header comment.
         allow delete: if false;
       }
 
@@ -389,7 +389,7 @@ service cloud.firestore {
       // failedAttempts, lockedUntil) come through the admin SDK from
       // webauthnRegisterFinish / webauthnAssertionFinish.
       //
-      // The read is gated by the rate-limit lockout — a tampered client
+      // The read is gated by the rate-limit lockout - a tampered client
       // cannot bypass the per-credential lock by skipping the failure
       // write because the read itself fails when lockedUntil > now.
       // Mirrors the PIN block's pattern at the lockedUntil gate.
@@ -397,13 +397,13 @@ service cloud.firestore {
         allow read: if isOwner(uid)
           && (resource.data.get('lockedUntil', null) == null
               || request.time >= resource.data.lockedUntil);
-        // Writes by Admin SDK only — CF surface owns these docs.
+        // Writes by Admin SDK only - CF surface owns these docs.
         allow create, update, delete: if false;
       }
 
       // Per-user in-flight WebAuthn challenges (ADR-0014 Decision C).
       // 5-minute TTL; CF surface owns the docs end-to-end. The client
-      // never reads or writes them — webauthnRegisterStart /
+      // never reads or writes them - webauthnRegisterStart /
       // webauthnAssertionStart return the challenge in the response
       // payload; webauthn*Finish reads + deletes via admin SDK.
       match /webauthnChallenges/{challengeId} {
@@ -418,7 +418,7 @@ service cloud.firestore {
       //
       // Bug fix (v1.0 polish, 2026-05-10): the prior rule omission
       // surfaced as a 403 on `BatchGetDocuments` from the History tab
-      // and the dev-mode "Force harvest now" button — Firestore
+      // and the dev-mode "Force harvest now" button - Firestore
       // denies-by-default when no match block is present. Adding the
       // rule unblocks both the read-side stream
       // (`weeklyGardenHistoryProvider`) and the create-side write.
@@ -433,7 +433,7 @@ service cloud.firestore {
         allow read: if isOwner(uid);
 
         // archivedAt arrives as an ISO-8601 string (json_serializable's
-        // default DateTime serializer) — Firestore does NOT auto-convert
+        // default DateTime serializer) - Firestore does NOT auto-convert
         // unless the client passes a literal `Timestamp` or
         // `FieldValue.serverTimestamp()`. The validation here is
         // therefore string-shape; the use case + the unit tests own
@@ -461,14 +461,14 @@ service cloud.firestore {
     // ceremony runs before any Firebase session exists, so there is no
     // uid to scope it under. webauthnLoginStart writes it and
     // webauthnLoginFinish reads + deletes it, both via the admin SDK.
-    // The client never touches it — it only receives the challenge in
+    // The client never touches it - it only receives the challenge in
     // the CF response payload.
     match /webauthnLoginChallenges/{challengeId} {
       allow read, write: if false; // admin SDK only
     }
 
     // IP-keyed rate-limit anchors for the unauthenticated login-start
-    // ceremony. Admin SDK only — same posture as `rateLimits.webauthn`
+    // ceremony. Admin SDK only - same posture as `rateLimits.webauthn`
     // (which has no client rule and is default-denied); declared
     // explicitly here for clarity.
     match /rateLimits.webauthnLogin/{ipKey} {

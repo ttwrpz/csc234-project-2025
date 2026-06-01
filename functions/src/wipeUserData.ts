@@ -1,22 +1,22 @@
 /**
- * wipeUserData — server-side data cascade for account deletion.
+ * wipeUserData - server-side data cascade for account deletion.
  *
  * Used by:
- *   (a) Settings → Account → Delete account (WBS 2.4 / cb2f623c) — the
+ *   (a) Settings → Account → Delete account (WBS 2.4 / cb2f623c) - the
  *       production user-initiated cascade. The client
  *       (DeleteAccountFunctionsDatasource) invokes this CF, then calls
  *       FirebaseAuth.currentUser.delete() to revoke the Auth record
  *       client-side. See ADR-0009 for the topology rationale.
- *   (b) Settings → Debug → Wipe data (kDebugMode) — developer tool for
+ *   (b) Settings → Debug → Wipe data (kDebugMode) - developer tool for
  *       resetting test accounts without the Auth-side delete.
  *
  * Cascade order (ADR-0009 §"Decision"):
  *   1. Firestore: drain every users/{uid}/** subcollection + reset the
  *      user-profile doc fields. Bypasses the immutability rules via the
- *      admin SDK — this is the only path to delete 24h-locked moods.
+ *      admin SDK - this is the only path to delete 24h-locked moods.
  *   2. Storage: bucket.deleteFiles({prefix: 'users/{uid}/media/'}).
  *   3. Auth: handled CLIENT-SIDE post-CF via currentUser.delete(). Not in
- *      this function — see AuthRepositoryImpl.deleteCurrentUser.
+ *      this function - see AuthRepositoryImpl.deleteCurrentUser.
  *   4. Rate-limit docs: best-effort delete of the four per-uid docs (one
  *      per CF; see rateLimit.ts for the collection-name set).
  *
@@ -61,7 +61,7 @@ const SUBCOLLECTIONS = [
 ] as const;
 
 /**
- * Per-uid rate-limit doc collections — one per Cloud Function that
+ * Per-uid rate-limit doc collections - one per Cloud Function that
  * consumes a token (analyzeMoodText, analyzePatterns, sendCheerUpPush,
  * suggestQuote). The cleanup step delete()s `{collection}/{uid}` on each
  * best-effort. Firestore TTL on `expireAt` would reap these on its own,
@@ -108,7 +108,7 @@ export async function handleWipeUserData(
   const uid = auth.uid;
   const db = getFirestore();
 
-  // Idempotency check — per ADR-0009 §"Decision" line ~16. If the
+  // Idempotency check - per ADR-0009 §"Decision" line ~16. If the
   // user-profile doc is absent AND the moods subcollection is empty,
   // treat as a re-run on a cleaned account and return early. This
   // distinguishes the "first run" log line from the "second invocation,
@@ -127,7 +127,7 @@ export async function handleWipeUserData(
 
   const deleted: Record<string, number> = {};
 
-  // 1. Firestore subcollection drain — batches of 500 (Firestore batch
+  // 1. Firestore subcollection drain - batches of 500 (Firestore batch
   // hard limit). Empty subcollections fall through cheaply. Errors abort
   // the wipe and surface to the client; the partial state is acceptable
   // because the function is idempotent (see check above).
@@ -148,18 +148,18 @@ export async function handleWipeUserData(
     deleted[name] = count;
   }
 
-  // 2. Storage prefix delete — per ADR-0009 §"Decision" cascade order
+  // 2. Storage prefix delete - per ADR-0009 §"Decision" cascade order
   //    (Firestore → Storage → Auth → rate-limit cleanup). The
   //    `bucket.deleteFiles({prefix})` call walks every object under the
   //    prefix in one pass and is best-effort against eventual-consistency
   //    reads (a race between the cascade and a late upload may survive
   //    into the next batch; the function's idempotency contract makes
-  //    this a non-issue — re-run cleans the survivor).
+  //    this a non-issue - re-run cleans the survivor).
   //
   //    `@google-cloud/storage` ^7.x types deleteFiles({prefix}) as
   //    `Promise<void>` (see bucket.d.ts line ~689). To produce a count
   //    for the log we list first via getFiles({prefix}), then delete.
-  //    Cost is acceptable — bounded by user account size.
+  //    Cost is acceptable - bounded by user account size.
   let mediaDeletedCount = 0;
   try {
     const bucket = getStorage().bucket();
@@ -169,8 +169,8 @@ export async function handleWipeUserData(
     await bucket.deleteFiles({ prefix, force: true });
   } catch (e) {
     // Best-effort cleanup. Log without object names (PII-canary
-    // discipline — Storage object paths may include user-selected
-    // identifiers) and continue — Storage SDK errors should not block
+    // discipline - Storage object paths may include user-selected
+    // identifiers) and continue - Storage SDK errors should not block
     // the rest of the cascade. The Auth-side delete happens client-side
     // anyway.
     logger.warn({
@@ -181,7 +181,7 @@ export async function handleWipeUserData(
   }
 
   // 3. Reset the user-profile-doc fields the app populates as the user
-  //    logs moods. Keep displayName / email / photoUrl / createdAt —
+  //    logs moods. Keep displayName / email / photoUrl / createdAt -
   //    those identify the account and survive the wipe. `set(merge:
   //    true)` so we don't clobber any future fields the schema may add.
   //
@@ -202,7 +202,7 @@ export async function handleWipeUserData(
     { merge: true },
   );
 
-  // 4. Rate-limit doc cleanup — per ADR-0009 §"Decision" step 4.
+  // 4. Rate-limit doc cleanup - per ADR-0009 §"Decision" step 4.
   //    Best-effort; the docs have Firestore TTL set in the console so
   //    they'd reap on their own within the window, but inline cleanup is
   //    tidier. The four collections (one per CF) mirror the namespaces
@@ -216,7 +216,7 @@ export async function handleWipeUserData(
       rateLimitDeletedCount++;
     } catch {
       // Not-found is fine; admin SDK delete is idempotent. Other errors
-      // are best-effort — the doc has TTL and will reap on its own.
+      // are best-effort - the doc has TTL and will reap on its own.
     }
   }
 

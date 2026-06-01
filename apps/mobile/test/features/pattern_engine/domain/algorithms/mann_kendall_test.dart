@@ -18,7 +18,7 @@ List<DailyScore> _series(List<double> scores) {
 }
 
 void main() {
-  group('mannKendallZ — sample-size guard', () {
+  group('mannKendallZ - sample-size guard', () {
     test('history.length = 13 → null (insufficient samples)', () {
       final history = _series(List.generate(13, (_) => 0.0));
       expect(mannKendallZ(history), isNull);
@@ -29,7 +29,7 @@ void main() {
     });
   });
 
-  group('mannKendallZ — degenerate series', () {
+  group('mannKendallZ - degenerate series', () {
     test('flat 14-day series (all 0.0) → Z = 0.0 (S = 0)', () {
       final history = _series(List<double>.filled(14, 0.0));
       final z = mannKendallZ(history);
@@ -40,7 +40,7 @@ void main() {
     test('mixed series with no trend → |Z| < 1.96 (no Tier-1 trigger)', () {
       // 14-day alternation starting at +0.5. The pairwise sign sum is small
       // but non-zero (S = -7 due to the parity asymmetry of an even-length
-      // series starting at +; Z ≈ -0.328 — well inside the no-trigger band).
+      // series starting at +; Z ≈ -0.328 - well inside the no-trigger band).
       // The point of the case is to assert the algorithm does NOT cry trend
       // on a stationary, oscillating signal.
       final history = _series([
@@ -53,11 +53,11 @@ void main() {
     });
   });
 
-  group('mannKendallZ — strictly trending series', () {
+  group('mannKendallZ - strictly trending series', () {
     test(
       'strictly ascending 14-day series → Z > +1.96 (encouragement zone)',
       () {
-        // 0.05, 0.10, …, 0.70 — every j>i pair is concordant up.
+        // 0.05, 0.10, …, 0.70 - every j>i pair is concordant up.
         final history = _series(List.generate(14, (i) => (i + 1) * 0.05));
         final z = mannKendallZ(history);
         expect(z, isNotNull);
@@ -77,19 +77,19 @@ void main() {
     });
   });
 
-  group('mannKendallZ — TC-27 (spec §2.4 algorithm 1 worked example)', () {
+  group('mannKendallZ - TC-27 (spec §2.4 algorithm 1 worked example)', () {
     // Spec §7.27 prescribes Z = -2.21 to 2 d.p. for a "steadily declining"
     // 14-day window. Mann-Kendall's S is integer-valued, so the achievable
     // Z values are quantised. With n = 14, V = 333.667 and √V ≈ 18.2665:
     //   * S = -41 → Z = -40/√V ≈ -2.1898
     //   * S = -42 → Z = -41/√V ≈ -2.2445
     // Neither integer-S lands within 0.005 of -2.21. The brief's fallback
-    // (HB-004 §"NEW — Five algorithm functions" algorithm 1) is to assert
+    // (HB-004 §"NEW - Five algorithm functions" algorithm 1) is to assert
     // Tier-1 firing on a clearly declining series and document the deviation.
     //
     // We do BOTH:
     //  (a) assert the Tier-1 trigger condition on a monotone non-increasing
-    //      14-day series — the user-facing behaviour (Z < -1.96);
+    //      14-day series - the user-facing behaviour (Z < -1.96);
     //  (b) pin the closest-achievable Z (-2.1898 from S = -41) using a
     //      brute-found series so a future TC-27 reviewer can see exactly
     //      how close to -2.21 the algorithm gets.
@@ -101,7 +101,7 @@ void main() {
 
     test('clearly declining series fires Tier 1 (Z < -1.96)', () {
       // Monotone non-increasing 14-day series. 10 days at 0.5 followed by
-      // 0.4, 0.4, 0.4, 0.3 — gives S = -43, Z ≈ -2.299, well below the
+      // 0.4, 0.4, 0.4, 0.3 - gives S = -43, Z ≈ -2.299, well below the
       // -1.96 trigger.
       final history = _series([
         0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, //

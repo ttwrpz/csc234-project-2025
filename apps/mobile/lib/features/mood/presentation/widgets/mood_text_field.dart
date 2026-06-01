@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 /// `TextField` inside an [MbCard] (the parent screen wraps in the card and
 /// places the attach buttons + counter below the field).
 ///
-/// Hard-capped at 500 characters — the parent renders the "n/500" counter so
+/// Hard-capped at 500 characters - the parent renders the "n/500" counter so
 /// we keep the field's chrome minimal.
 ///
 /// Stateful so we keep a single [TextEditingController] across rebuilds and
@@ -40,7 +40,7 @@ class _MoodTextFieldState extends State<MoodTextField> {
   void didUpdateWidget(covariant MoodTextField oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Sync only when the upstream value diverges (e.g. draft reset on save).
-    // Avoid clobbering during typing — we are the source of those changes.
+    // Avoid clobbering during typing - we are the source of those changes.
     if (widget.value != _controller.text) {
       _controller.value = TextEditingValue(
         text: widget.value,

@@ -107,7 +107,9 @@ class HarvestMiniGarden extends StatelessWidget {
   static DateTime _mondayOf(DateTime now) {
     final local = now.toLocal();
     final midnight = DateTime(local.year, local.month, local.day);
-    return midnight.subtract(Duration(days: midnight.weekday - DateTime.monday));
+    return midnight.subtract(
+      Duration(days: midnight.weekday - DateTime.monday),
+    );
   }
 
   DateTime _resolveWeekStart() {

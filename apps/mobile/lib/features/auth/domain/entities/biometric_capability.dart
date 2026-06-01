@@ -5,7 +5,7 @@ part 'biometric_capability.freezed.dart';
 /// Snapshot of the device's biometric posture combined with the user's
 /// in-app opt-in.
 ///
-/// All three booleans must be true for the cold-boot biometric gate to run —
+/// All three booleans must be true for the cold-boot biometric gate to run -
 /// see [shouldGate]. The flags are independent so the settings tile can show
 /// distinct messaging (e.g. "no biometric enrolled" vs. "user has opted out").
 @freezed

@@ -87,7 +87,7 @@ void main() {
         // The Semantics(slider: true, value: '4 of 5') node lives one level
         // above the underlying Material Slider. Reading via the
         // IntensitySlider root walks down the merged semantics tree, which
-        // already includes the slider's own announcement — assert the
+        // already includes the slider's own announcement - assert the
         // substring is present.
         final node = tester.getSemantics(find.byType(IntensitySlider));
         expect(

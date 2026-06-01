@@ -8,7 +8,7 @@ import '../../domain/entities/daily_insight.dart';
 import '../../domain/entities/pattern_engine_trigger_kind.dart';
 import 'marker_detail_sheet.dart';
 
-/// Recent triggers — the last 5 days that fired any tier, newest first.
+/// Recent triggers - the last 5 days that fired any tier, newest first.
 ///
 /// Each row reads `MMM D · tier-name · short reason`. Tapping a row
 /// (a) publishes the day index to [insightsFocusedDayIndexProvider] so
@@ -17,7 +17,7 @@ import 'marker_detail_sheet.dart';
 /// mirroring the gesture they would have made on the marker directly.
 ///
 /// If the user has no trigger days yet the card collapses to a one-line
-/// neutral message — no streak-shaming, per CLAUDE.md copy rules.
+/// neutral message - no streak-shaming, per CLAUDE.md copy rules.
 class RecentTriggersCard extends ConsumerWidget {
   const RecentTriggersCard({super.key, required this.insights});
 
@@ -86,7 +86,7 @@ class RecentTriggersCard extends ConsumerWidget {
         hits.add(_TriggerEntry(insight: insights[i], indexInWindow: i));
       }
     }
-    // Newest first — the window is already date-ascending so reverse.
+    // Newest first - the window is already date-ascending so reverse.
     final newestFirst = hits.reversed.toList();
     return newestFirst.take(5).toList();
   }
@@ -172,7 +172,7 @@ class _TriggerRow extends StatelessWidget {
     null => 'quiet day',
   };
 
-  /// Short reason copy — used inline in the row to keep the layout
+  /// Short reason copy - used inline in the row to keep the layout
   /// readable. Mirrors [MarkerDetailSheet]'s plain-English mapping but
   /// trimmed for a ~40-char column.
   static String _reasonShort(PatternEngineTriggerKind? key) {
@@ -225,7 +225,7 @@ class _TriggerRow extends StatelessWidget {
   }
 }
 
-/// The currently focused day index in the chart's window — published by
+/// The currently focused day index in the chart's window - published by
 /// [RecentTriggersCard] taps so [PatternMarkerBand] can scale the
 /// matching dot. Resets to `null` when the window changes or when the
 /// user taps a marker directly.

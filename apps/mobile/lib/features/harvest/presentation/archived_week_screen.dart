@@ -40,7 +40,7 @@ class ArchivedWeekScreen extends StatelessWidget {
           itemBuilder: (context, index) {
             if (index == 0) {
               // Refreshed header per the prototype's archive-detail
-              // treatment — slightly larger Fraunces title (18 w600),
+              // treatment - slightly larger Fraunces title (18 w600),
               // tighter row gap, back chevron retained for in-router
               // navigation.
               return Row(
@@ -96,7 +96,7 @@ class _SummaryHeader extends StatelessWidget {
     final mb = Theme.of(context).extension<MbColors>()!;
     final avg = week.summary.averageMoodScore;
     final entryCount = week.summary.totalEntryCount;
-    // Card body refreshed per the prototype's `HarvestCard` shape —
+    // Card body refreshed per the prototype's `HarvestCard` shape -
     // hero garden snapshot on top, then a stat row separated from the
     // hero by a 1px border-top.
     return MbCard(

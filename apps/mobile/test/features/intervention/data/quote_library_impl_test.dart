@@ -12,14 +12,14 @@ import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 /// - TC-38: every curated pool entry contains a hotline marker for Tier 3
 ///   and stays within the 140-char filter cap for all tiers.
 /// - TC-41 (positive control): every curated entry passes its own tier's
-///   [QuoteSafetyFilterImpl.gate] — the curated phrases are the canonical
+///   [QuoteSafetyFilterImpl.gate] - the curated phrases are the canonical
 ///   "always-allowed" inputs to the filter; failing this would mean the
 ///   filter is mis-aligned with the pool it is supposed to whitelist.
 void main() {
   const filter = QuoteSafetyFilterImpl();
   const lib = QuoteLibraryImpl();
 
-  group('QuoteLibraryImpl — pool sizes (HB-008 authoring rules)', () {
+  group('QuoteLibraryImpl - pool sizes (HB-008 authoring rules)', () {
     test('Tier 1 pool has at least 12 entries', () {
       expect(QuoteLibraryImpl.tier1Pool.length, greaterThanOrEqualTo(12));
     });
@@ -34,7 +34,7 @@ void main() {
     });
   });
 
-  group('QuoteLibraryImpl — pool sanity (TC-41 positive control)', () {
+  group('QuoteLibraryImpl - pool sanity (TC-41 positive control)', () {
     test('every Tier 1 entry stays within the 140-char filter cap', () {
       for (final phrase in QuoteLibraryImpl.tier1Pool) {
         expect(
@@ -103,7 +103,7 @@ void main() {
     );
   });
 
-  group('QuoteLibraryImpl — rotation (ADR-0012 §"Decision" point 5)', () {
+  group('QuoteLibraryImpl - rotation (ADR-0012 §"Decision" point 5)', () {
     test('pickTier3 is deterministic across calls for the same seed', () {
       final seed = DateTime.utc(2026, 5, 15);
       final a = lib.pickTier3(seed: seed);

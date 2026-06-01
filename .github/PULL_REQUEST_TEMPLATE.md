@@ -4,17 +4,17 @@ PR title format: include the WBS ID and a short imperative.
     feat(5.5b): sendCheerUpPush CF + token registry
     fix(2.4): account-deletion CF idempotency on partial-state recovery
     docs(s5-d1): HB-003 + HB-004 + ADR-0008 + ADR-0009
-    chore(s5-d1): carry-over bundle — biometric/FCM manifest + ci.yml gh CLI
+    chore(s5-d1): carry-over bundle - biometric/FCM manifest + ci.yml gh CLI
     test(7.3a): mood_log_history integration flow
 
-Squash merge only. No self-reviews — the agent that writes the code
+Squash merge only. No self-reviews - the agent that writes the code
 is not the agent that approves it (Enterprise R3).
 -->
 
 ## Summary
 
 <!--
-1-3 bullets. Lead with the *why*, not the *what* — well-named
+1-3 bullets. Lead with the *why*, not the *what* - well-named
 identifiers and the diff already describe the what. Cite the WBS row,
 the ADR, or the handoff brief that drove the change.
 -->
@@ -25,13 +25,13 @@ the ADR, or the handoff brief that drove the change.
 
 <!-- Tick all that apply. -->
 
-- [ ] feat — new user-facing behaviour
-- [ ] fix — bug fix
-- [ ] refactor — internal restructure, no behaviour change
-- [ ] test — test-only addition or refactor
-- [ ] docs — documentation only (ADR, brief, retro, runbook, audit)
-- [ ] chore — build, CI, deps, tooling
-- [ ] security — security-impacting change (Firestore rules, Cloud Functions, secrets, auth)
+- [ ] feat - new user-facing behaviour
+- [ ] fix - bug fix
+- [ ] refactor - internal restructure, no behaviour change
+- [ ] test - test-only addition or refactor
+- [ ] docs - documentation only (ADR, brief, retro, runbook, audit)
+- [ ] chore - build, CI, deps, tooling
+- [ ] security - security-impacting change (Firestore rules, Cloud Functions, secrets, auth)
 
 ## Linked work
 
@@ -49,7 +49,7 @@ Reference the artifact that authorised this work. Pick whichever apply.
 
 <!--
 Bulleted checklist of what proves correctness. CI is necessary but not
-sufficient — call out manual + cross-platform steps explicitly.
+sufficient - call out manual + cross-platform steps explicitly.
 -->
 
 - [ ] `cd apps/mobile && flutter analyze` clean
@@ -64,16 +64,16 @@ sufficient — call out manual + cross-platform steps explicitly.
 
 <!-- Mandatory unless N/A. -->
 
-- [ ] **Domain purity** — no `package:flutter/*`, `package:firebase_*/*`, `package:cloud_firestore/*` under `apps/mobile/lib/features/*/domain/` (CI grep enforces; CLAUDE.md "the one rule that cannot break")
-- [ ] **No PII in logs** — logger payloads use the allowlist; no mood text, email, FCM token, or Storage path beyond the user prefix
-- [ ] **Copy rules** — no clinical language ("depression", "diagnosis", "symptom"), no streak-shaming, no fix-your-mood verbs ("improve", "boost", "overcome"); compassionate imperatives only
+- [ ] **Domain purity** - no `package:flutter/*`, `package:firebase_*/*`, `package:cloud_firestore/*` under `apps/mobile/lib/features/*/domain/` (CI grep enforces; CLAUDE.md "the one rule that cannot break")
+- [ ] **No PII in logs** - logger payloads use the allowlist; no mood text, email, FCM token, or Storage path beyond the user prefix
+- [ ] **Copy rules** - no clinical language ("depression", "diagnosis", "symptom"), no streak-shaming, no fix-your-mood verbs ("improve", "boost", "overcome"); compassionate imperatives only
 - [ ] **No `// TODO`** without a linked issue
 - [ ] **No null-assertion `!`** in production Dart code
 
 ## Security review (tick if any apply)
 
 <!--
-CLAUDE.md "do-not-do list" — these paths require security-reviewer
+CLAUDE.md "do-not-do list" - these paths require security-reviewer
 sign-off before merge:
   - firebase/firestore.rules
   - firebase/storage.rules
@@ -107,7 +107,7 @@ Feature flag, revert, hotfix, or runbook reference.
 - [ ] No hand-edits to `*.g.dart` / `*.freezed.dart`
 -->
 
-- [ ] N/A — no codegen outputs touched
+- [ ] N/A - no codegen outputs touched
 - [ ] Codegen ran; generated files committed verbatim
 
 ---

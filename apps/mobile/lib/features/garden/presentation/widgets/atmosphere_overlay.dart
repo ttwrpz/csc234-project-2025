@@ -5,11 +5,11 @@ import '../../domain/entities/atmosphere.dart';
 /// Wraps [child] (typically a [PlantTierGroup]) with a weather treatment
 /// driven by [Atmosphere]. The plant layer is the visual base; this
 /// overlay adds:
-///   * `calmSunny`   — subtle warm gradient, no rain, no clouds.
-///   * `brightSunny` — stronger warm gradient + faint sun rays.
-///   * `lightRain`   — cool blue-grey gradient + a few falling drops;
+///   * `calmSunny`   - subtle warm gradient, no rain, no clouds.
+///   * `brightSunny` - stronger warm gradient + faint sun rays.
+///   * `lightRain`   - cool blue-grey gradient + a few falling drops;
 ///                     plants stay visible underneath.
-///   * `storm`       — deeper grey gradient + heavier drops; rain falls
+///   * `storm`       - deeper grey gradient + heavier drops; rain falls
 ///                     AROUND the plants (the plant tier paints its own
 ///                     shelter so plants are never struck directly).
 ///
@@ -53,7 +53,7 @@ class _AtmosphereOverlayState extends State<AtmosphereOverlay>
   @override
   void didUpdateWidget(covariant AtmosphereOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Ignore atmosphere changes here — gradient swap happens via build.
+    // Ignore atmosphere changes here - gradient swap happens via build.
     if (widget.animate != oldWidget.animate) {
       _ctrl?.dispose();
       _ctrl = widget.animate
@@ -120,8 +120,8 @@ class _AtmosphereLayer extends StatelessWidget {
   }
 
   /// Atmosphere gradient palette. Sunny atmospheres stay deliberately
-  /// soft (warm wash, no drama). Rainy atmospheres land HEAVIER —
-  /// `lightRain` at ~40% alpha + `storm` at ~60% — so the shift is
+  /// soft (warm wash, no drama). Rainy atmospheres land HEAVIER -
+  /// `lightRain` at ~40% alpha + `storm` at ~60% - so the shift is
   /// unambiguous against the SkyHeader's bright sky background.
   static LinearGradient _gradientFor(Atmosphere a) => switch (a) {
     Atmosphere.calmSunny => const LinearGradient(

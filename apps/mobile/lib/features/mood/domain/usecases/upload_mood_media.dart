@@ -9,7 +9,7 @@ import '../repositories/mood_media_repository.dart';
 /// `gs://...` URI on success.
 ///
 /// Pure-Dart use case. Validation (size, MIME) lives inside the repository
-/// implementation — the use case is a thin contract so callers can swap in a
+/// implementation - the use case is a thin contract so callers can swap in a
 /// fake during testing.
 class UploadMoodMediaUseCase {
   const UploadMoodMediaUseCase({required MoodMediaRepository repository})

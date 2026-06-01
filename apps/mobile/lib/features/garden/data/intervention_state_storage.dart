@@ -6,14 +6,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// detector evaluation, written after a trigger fires.
 ///
 /// The detector uses these anchors:
-///  * **last_triggered_at** — drives the 48h cooldown gate (suppress new
+///  * **last_triggered_at** - drives the 48h cooldown gate (suppress new
 ///    triggers within the cooldown window).
-///  * **first_triggered_at** — drives the 10-day escalation flag.
+///  * **first_triggered_at** - drives the 10-day escalation flag.
 ///
 /// **Lifecycle contract**: when 48h+ pass without a trigger evaluation
 /// returning `triggered`, callers MUST clear `firstTriggeredAt` so a
 /// fresh streak starts a new escalation clock. The detector itself is
-/// pure and cannot do this — the provider that orchestrates evaluations
+/// pure and cannot do this - the provider that orchestrates evaluations
 /// enforces it via [maybeClearFirstTriggeredAt].
 class InterventionStateStorage {
   const InterventionStateStorage(this._prefs);

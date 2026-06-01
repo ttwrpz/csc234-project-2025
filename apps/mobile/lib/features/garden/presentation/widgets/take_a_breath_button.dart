@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import '../../../intervention/presentation/screens/breathing_screen.dart';
 
 /// Self-initiated entry point to the 2-minute breathing modal. Standalone
-/// pill so the home page can place it where it fits — between the
+/// pill so the home page can place it where it fits - between the
 /// SkyHeader and the ThisWeeksTierCard on phone, and inside the left
 /// column on tablet / desktop.
 class TakeABreathButton extends StatelessWidget {
   const TakeABreathButton({super.key, this.expand = false});
 
-  /// Stretches the pill to fill its parent's width — used inline on
+  /// Stretches the pill to fill its parent's width - used inline on
   /// phone where the parent is a column-stretched stack.
   final bool expand;
 

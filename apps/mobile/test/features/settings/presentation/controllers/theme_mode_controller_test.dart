@@ -62,7 +62,7 @@ void main() {
     });
 
     test(
-      'setPreference accepts followDeviceTime — the new fourth value',
+      'setPreference accepts followDeviceTime - the new fourth value',
       () async {
         final prefs = await SharedPreferences.getInstance();
         final storage = ThemeModeStorage(prefs);

@@ -8,7 +8,7 @@ part 'token_balance.g.dart';
 /// `tokensEarnedToday`, `lastTokenEarnedDate`.
 ///
 /// Anti-pattern guardrails (Cheng et al. 2019):
-///   * `balance` is monotonic-up — only [awardDailyTokens] increases it,
+///   * `balance` is monotonic-up - only [awardDailyTokens] increases it,
 ///     and only ever by 0..5. Skin purchases use a separate
 ///     `SpendTokensUseCase`.
 ///   * `earnedToday` is capped at 10 (the daily ceiling); the rules also
@@ -17,7 +17,7 @@ part 'token_balance.g.dart';
 ///     earned at least one token. `null` means "never earned" (first
 ///     log of the user's lifetime).
 ///
-/// MOOD-AGNOSTIC by construction — the entity has zero references to
+/// MOOD-AGNOSTIC by construction - the entity has zero references to
 /// any emotion-feature filename or class name. Verifiable by file-
 /// level grep (see `award_daily_tokens_test.dart`).
 @freezed

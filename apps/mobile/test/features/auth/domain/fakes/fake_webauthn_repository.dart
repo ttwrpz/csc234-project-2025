@@ -57,7 +57,8 @@ class FakeWebauthnRepository implements WebauthnRepository {
   @override
   Future<Result<String, WebauthnVerifyFailure>> loginWithSecurityKey() async {
     loginCalls += 1;
-    return _loginResult ?? const Ok<String, WebauthnVerifyFailure>('fake-token');
+    return _loginResult ??
+        const Ok<String, WebauthnVerifyFailure>('fake-token');
   }
 
   @override

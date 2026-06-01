@@ -5,23 +5,23 @@ import 'package:moodbloom/features/insights/domain/entities/daily_insight.dart';
 import 'package:moodbloom/features/insights/presentation/widgets/mood_score_chart.dart';
 import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
-/// Sprint 5 Day 3 a11y sweep — MoodScoreChart wrapper.
+/// Sprint 5 Day 3 a11y sweep - MoodScoreChart wrapper.
 ///
 /// The actual chart implementation lives in `packages/analytics/lib/src/
-/// mood_score_chart.dart` — that package already wraps the rendered
+/// mood_score_chart.dart` - that package already wraps the rendered
 /// `LineChart` in a `Semantics(label: 'Mood score chart for N days. ...')`
 /// (verified at packages/analytics/lib/src/mood_score_chart.dart:58).
 ///
 /// This a11y test verifies the app-side adapter:
 ///   1. The Semantics label from the analytics_pkg wrapper IS reachable
-///      via `find.bySemanticsLabel` — i.e. the adapter doesn't strip /
+///      via `find.bySemanticsLabel` - i.e. the adapter doesn't strip /
 ///      shadow the inner Semantics.
 ///   2. With non-empty data, the label communicates the chart's purpose
 ///      + day-count (so a screen reader knows what was just focused).
 ///   3. With empty data, the chart falls back to the empty-state
 ///      Semantics label so AT users hear "no data for the selected
 ///      window" rather than nothing at all.
-///   4. The 5 tier bands have a non-color affordance — the legend on
+///   4. The 5 tier bands have a non-color affordance - the legend on
 ///      the InsightsScreen carries the textual band names. The chart
 ///      itself MUST NOT rely solely on color to communicate band
 ///      identity. We assert that the chart's render path does NOT
@@ -34,7 +34,7 @@ Widget _wrap(Widget child) => MaterialApp(
 );
 
 void main() {
-  group('MoodScoreChart — semantics wrapper', () {
+  group('MoodScoreChart - semantics wrapper', () {
     testWidgets(
       'non-empty chart announces "Mood score chart for N days" label',
       (tester) async {
@@ -88,7 +88,7 @@ void main() {
     ) async {
       // A 30-day window would mean 30 line-chart dots. If each carried
       // its own semantics label the focus stream would announce them
-      // all on tab traversal — useless and overwhelming. Verify the
+      // all on tab traversal - useless and overwhelming. Verify the
       // chart's single wrapping Semantics node is the only label-
       // carrier within the chart subtree.
       final today = DateTime(2026, 5, 13);
@@ -120,7 +120,7 @@ void main() {
         chartLabels.length,
         equals(1),
         reason:
-            'Exactly one chart Semantics node should exist — per-dot '
+            'Exactly one chart Semantics node should exist - per-dot '
             'announcements would flood the screen-reader focus stream.',
       );
     });
@@ -128,7 +128,7 @@ void main() {
     testWidgets('chart pumps without throwing under the project theme', (
       tester,
     ) async {
-      // Smoke — the chart depends on Theme.of(context).extension<MbColors>()
+      // Smoke - the chart depends on Theme.of(context).extension<MbColors>()
       // for its tier-band colors. A theme missing the extension would
       // crash on build; this test pins the dependency-on-theme contract.
       final today = DateTime(2026, 5, 13);

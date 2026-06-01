@@ -14,12 +14,12 @@ import '../entities/daily_score.dart';
 ///     (division-by-zero guard for a flat baseline).
 ///
 /// Caller compares the result against `< -2.5` for Tier 3 and against
-/// `|z| > 2` for the looser "extreme" flag — not used as a tier trigger
+/// `|z| > 2` for the looser "extreme" flag - not used as a tier trigger
 /// but logged on `PatternResult` for diagnostic surfaces.
 ///
 /// **Variance divisor:** population stddev (`n` divisor), NOT sample
-/// stddev (`n-1`). The baseline is the user's *own* 30 days — they ARE
-/// the population, not a sample drawn from one — so dividing by `n` is
+/// stddev (`n-1`). The baseline is the user's *own* 30 days - they ARE
+/// the population, not a sample drawn from one - so dividing by `n` is
 /// the truer translation. Sample stddev is acceptable (the warm-up gate
 /// hides the divisor distinction at small `n`); flip to `n-1` if
 /// downstream test cases need it.
@@ -27,7 +27,7 @@ import '../entities/daily_score.dart';
 /// Note: this Z is NOT the same as Mann-Kendall's Z (same letter,
 /// different statistic).
 ///
-/// Pure-Dart function — imports only `dart:math`, `package:core/core.dart`
+/// Pure-Dart function - imports only `dart:math`, `package:core/core.dart`
 /// (for `localMidnight`), and the sibling [DailyScore] entity.
 double? zScoreToday(
   List<DailyScore> history, {
@@ -68,7 +68,7 @@ double? zScoreToday(
     final d = v - mu;
     sumSquares += d * d;
   }
-  // Population stddev — divisor `n`, see docstring for rationale.
+  // Population stddev - divisor `n`, see docstring for rationale.
   final sigma = math.sqrt(sumSquares / baseline.length);
 
   if (sigma < sigmaEpsilon) return null;

@@ -1,4 +1,4 @@
-# Plan-Mode Execution Evidence — Portfolio
+# Plan-Mode Execution Evidence - Portfolio
 
 **Generated:** 2026-05-31
 **Source:** `~/.claude/plans/*.md` (saved plan artefacts) + `~/.claude/projects/C--Users-user-Desktop-FlutterProjects-csc234-project-2025/*.jsonl` (session transcripts)
@@ -10,12 +10,12 @@ Six Plan-Mode executions spanning the project lifecycle: feature merge, two full
 
 | # | Plan slug | What it planned | Window | Approved | Lines | Transcript? |
 |---|---|---|---|---|---|---|
-| 01 | `merge-privacy-lock` | Feature merge — unify biometric-gate + history-privacy-lock into one cold-boot Privacy Lock; eliminate FutureProvider race, drop Remote Config flag, force PIN setup | 2026-05-25 (single day) | 2026-05-25 15:04 ICT | 254 | **yes** — full session lifecycle, 99 lines, redacted |
-| 02 | `sprint-4-kickoff` | Sprint kickoff — the v1.0 redesign: compassionate reframing, pattern analysis, test-suite restructure | 2026-05-06 → 2026-05-12 | 2026-05-05 (pre-sprint kickoff) | 411 | — |
-| 03 | `sprint-4-v1-0-orchestration` | Whole-sprint orchestration plan (the architect's day-by-day for Sprint 4 v1.0) | 2026-05-06 → 2026-05-12 | 2026-05-06 09:00 ICT (Day 1 morning) | 776 | — |
-| 04 | `sprint-5-v1-5-release` | Sprint 5 plan — cheer-up FCM, cross-platform QA, final v1.5 release prep | 2026-05-13 → 2026-05-19 | 2026-05-06 (Ultraplan remote session) | 450 | — |
-| 05 | `audit-report-self-plan` | **Self-referential.** The plan that produced this very audit report | 2026-05-20 → 2026-05-30 (report window) | 2026-05-30 | 127 | — |
-| 06 | `v1-6-ui-redesign` | Phone/Tablet/Desktop UI redesign for v1.6 | 2026-05-26 → 2026-05-28 (3-day sweep) | 2026-05-26 | 478 | — |
+| 01 | `merge-privacy-lock` | Feature merge - unify biometric-gate + history-privacy-lock into one cold-boot Privacy Lock; eliminate FutureProvider race, drop Remote Config flag, force PIN setup | 2026-05-25 (single day) | 2026-05-25 15:04 ICT | 254 | **yes** - full session lifecycle, 99 lines, redacted |
+| 02 | `sprint-4-kickoff` | Sprint kickoff - the v1.0 redesign: compassionate reframing, pattern analysis, test-suite restructure | 2026-05-06 → 2026-05-12 | 2026-05-05 (pre-sprint kickoff) | 411 | - |
+| 03 | `sprint-4-v1-0-orchestration` | Whole-sprint orchestration plan (the architect's day-by-day for Sprint 4 v1.0) | 2026-05-06 → 2026-05-12 | 2026-05-06 09:00 ICT (Day 1 morning) | 776 | - |
+| 04 | `sprint-5-v1-5-release` | Sprint 5 plan - cheer-up FCM, cross-platform QA, final v1.5 release prep | 2026-05-13 → 2026-05-19 | 2026-05-06 (Ultraplan remote session) | 450 | - |
+| 05 | `audit-report-self-plan` | **Self-referential.** The plan that produced this very audit report | 2026-05-20 → 2026-05-30 (report window) | 2026-05-30 | 127 | - |
+| 06 | `v1-6-ui-redesign` | Phone/Tablet/Desktop UI redesign for v1.6 | 2026-05-26 → 2026-05-28 (3-day sweep) | 2026-05-26 | 478 | - |
 
 **Totals:** 6 plans · **2,496 lines** of approved planning · 204 KB · 1 redacted transcript.
 
@@ -41,40 +41,40 @@ docs/evidence/plan-mode/
 
 ## What each plan demonstrates
 
-### 01 — Feature merge (smallest, deepest)
+### 01 - Feature merge (smallest, deepest)
 
 The narrowest, most surgical Plan Mode example. The architect agent:
 
 1. Dispatched **3 parallel `Explore` subagents** to read the Biometric system, the Privacy Lock feature, and the app init flow.
 2. Synthesised the findings and identified four mutually-exclusive design questions.
-3. Escalated those four questions to the user via `AskUserQuestion` (Scope / PIN-required / Init strategy / Migration) — not auto-decided.
+3. Escalated those four questions to the user via `AskUserQuestion` (Scope / PIN-required / Init strategy / Migration) - not auto-decided.
 4. After receiving answers, read 9 critical files + ran 3 `Glob` calls to refine the plan against the real codebase.
 5. Submitted via `ExitPlanMode` tool call at `2026-05-25T15:04:35.496Z`.
-6. **SHA-256 of the plan submitted via `ExitPlanMode` is `1406318a8a26`, byte-identical to `01-merge-privacy-lock/plan.md` here** — the strongest possible provenance for a single Plan-Mode artefact.
+6. **SHA-256 of the plan submitted via `ExitPlanMode` is `1406318a8a26`, byte-identical to `01-merge-privacy-lock/plan.md` here** - the strongest possible provenance for a single Plan-Mode artefact.
 
 The transcript (`01-merge-privacy-lock/transcript.txt`) captures the lifecycle in 99 redacted lines.
 
-### 02 — Sprint 4 kickoff (medium, broad)
+### 02 - Sprint 4 kickoff (medium, broad)
 
-A full sprint kickoff plan covering the v1.0 redesign deliverable (compassionate reframing, pattern analysis, test-suite restructure). Demonstrates that Plan Mode isn't just for surgical features — it scales to whole-sprint scope.
+A full sprint kickoff plan covering the v1.0 redesign deliverable (compassionate reframing, pattern analysis, test-suite restructure). Demonstrates that Plan Mode isn't just for surgical features - it scales to whole-sprint scope.
 
-### 03 — Sprint 4 v1.0 orchestration (largest)
+### 03 - Sprint 4 v1.0 orchestration (largest)
 
-776 lines — the day-by-day architect orchestration for Sprint 4. This is the plan the orchestrator hands down to flutter-engineer / qa-engineer / security-reviewer subagents. Captures the dispatch sequence, the WBS mapping, the parallel-vs-serial work shape, and the daily acceptance checkpoints.
+776 lines - the day-by-day architect orchestration for Sprint 4. This is the plan the orchestrator hands down to flutter-engineer / qa-engineer / security-reviewer subagents. Captures the dispatch sequence, the WBS mapping, the parallel-vs-serial work shape, and the daily acceptance checkpoints.
 
-### 04 — Sprint 5 v1.5 release (release-cycle)
+### 04 - Sprint 5 v1.5 release (release-cycle)
 
 The S5 plan covering cheer-up FCM (HB-003 territory), cross-platform QA matrix (Android + Web parity), and the final v1.5 tag. Shows how Plan Mode handles release-cycle work: tag prep, regression sweeps, release-note generation, all planned before any code edit.
 
-### 05 — Audit-report self-plan (meta-evidence)
+### 05 - Audit-report self-plan (meta-evidence)
 
-**The plan that produced this audit report itself.** A grader can read this plan, then read `reports/audit-orchestration.md`, and confirm the report was actually built from the planned approach. The plan's "Phase 2 — Write the report" section maps 1:1 to the report's section headings.
+**The plan that produced this audit report itself.** A grader can read this plan, then read `reports/audit-orchestration.md`, and confirm the report was actually built from the planned approach. The plan's "Phase 2 - Write the report" section maps 1:1 to the report's section headings.
 
 This is the cleanest proof that Plan Mode discipline applies to documentation work, not just code.
 
-### 06 — v1.6 UI redesign (cross-platform)
+### 06 - v1.6 UI redesign (cross-platform)
 
-Phone/Tablet/Desktop UI redesign for v1.6. Demonstrates Plan Mode being used for the responsive-layout pass — multiple breakpoints, design-system token implications, golden-test churn (the very PNGs preserved in `docs/evidence/goldens/` were partly born from this plan).
+Phone/Tablet/Desktop UI redesign for v1.6. Demonstrates Plan Mode being used for the responsive-layout pass - multiple breakpoints, design-system token implications, golden-test churn (the very PNGs preserved in `docs/evidence/goldens/` were partly born from this plan).
 
 ## Cross-reference to the audit report
 
@@ -84,7 +84,7 @@ The session JSONL containing the merge transcript is preserved at:
 
 > `~/.claude/projects/C--Users-user-Desktop-FlutterProjects-csc234-project-2025/1289f0a9-df29-42a2-bf2d-9ea77b86a302.jsonl`
 
-(1.4 MB, full session — `EnterPlanMode` / `ExitPlanMode` tool calls observable on a fresh parse.)
+(1.4 MB, full session - `EnterPlanMode` / `ExitPlanMode` tool calls observable on a fresh parse.)
 
 ## Provenance verification recipe
 
@@ -116,7 +116,7 @@ Anyone with access to the source JSONLs can rebuild this directory:
 
 ## Why not include full transcripts for all six
 
-For most plans, the artefact (the plan text the architect submitted via `ExitPlanMode`) is the rubric-relevant signal — the lifecycle around it (the Explore dispatches, the AskUserQuestion call, the Read pattern) is the same shape every time. Including six transcripts would triple the package size for diminishing returns.
+For most plans, the artefact (the plan text the architect submitted via `ExitPlanMode`) is the rubric-relevant signal - the lifecycle around it (the Explore dispatches, the AskUserQuestion call, the Read pattern) is the same shape every time. Including six transcripts would triple the package size for diminishing returns.
 
 The merge plan transcript is included **as the exemplar** showing the full lifecycle once; the other five plans inherit that shape (they all went through the same Plan Mode tool gate before approval).
 

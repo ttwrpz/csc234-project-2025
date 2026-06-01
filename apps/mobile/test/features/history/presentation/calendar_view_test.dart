@@ -147,7 +147,7 @@ void main() {
     });
 
     testWidgets('tapping a day with no entries does nothing', (tester) async {
-      // No entries this month at all — every day cell is non-interactive.
+      // No entries this month at all - every day cell is non-interactive.
       await _pumpCalendar(tester, entries: const []);
 
       // Find any "Day N, no entries" cell. Day 1 is always present on a
@@ -159,7 +159,7 @@ void main() {
       await tester.tap(blankCell, warnIfMissed: false);
       await tester.pumpAndSettle();
 
-      // Still on the calendar — empty-state copy still visible.
+      // Still on the calendar - empty-state copy still visible.
       expect(
         find.text('No moods this month - tap Log Mood to start.'),
         findsOneWidget,

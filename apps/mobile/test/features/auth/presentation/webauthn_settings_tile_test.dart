@@ -1,4 +1,4 @@
-// Widget tests for [WebauthnSettingsTile] — ADR-0014 Decision D.
+// Widget tests for [WebauthnSettingsTile] - ADR-0014 Decision D.
 //
 // The build-time `kEnableWebauthn` const and `kIsWeb` short-circuit
 // through `webauthnAvailableProvider`. The tests override that provider
@@ -90,7 +90,7 @@ void main() {
       // Drain the async + the GoRouter navigation.
       await tester.pumpAndSettle();
 
-      // The sentinel screen on /privacy/setup must be visible — that
+      // The sentinel screen on /privacy/setup must be visible - that
       // proves `context.go('/privacy/setup')` actually fired.
       expect(find.text('PRIVACY-SETUP'), findsOneWidget);
     });
@@ -105,7 +105,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Snackbar copy from `WebauthnRegisterFailure.userCanceled` is
-      // "Security key setup canceled." — the silent contract means this
+      // "Security key setup canceled." - the silent contract means this
       // text never appears.
       expect(find.textContaining('canceled'), findsNothing);
     });

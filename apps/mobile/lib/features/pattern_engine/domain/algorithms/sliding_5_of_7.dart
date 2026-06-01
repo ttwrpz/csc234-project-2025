@@ -10,9 +10,9 @@ import '../entities/daily_score.dart';
 /// midnight before bucketing; the [DailyScore] entity already carries
 /// local-midnight `day` values per its docstring, so the comparison is direct.
 ///
-/// Empty days (no entry) contribute **0** — they are NOT counted as negative
+/// Empty days (no entry) contribute **0** - they are NOT counted as negative
 /// even if surrounded by negative days. The predicate is calendar-day-based
-/// (`count(S_t < 0 in last 7 calendar days)`), NOT log-frequency-based —
+/// (`count(S_t < 0 in last 7 calendar days)`), NOT log-frequency-based -
 /// mirrors PHQ-9's "more than half the days."
 ///
 /// The strict `< 0` boundary is intentional: a day whose `avgScore` is
@@ -26,7 +26,7 @@ import '../entities/daily_score.dart';
 /// Insights surface sooner. Still above the daily-coin-flip baseline
 /// (3.5/7 = 50%), so we avoid a per-bad-week false-positive carpet.
 ///
-/// Pure-Dart function — imports only `package:core/core.dart` (for
+/// Pure-Dart function - imports only `package:core/core.dart` (for
 /// `localMidnight`) and the sibling [DailyScore] entity. No Flutter /
 /// Firebase imports per CLAUDE.md.
 int slidingNegCount(List<DailyScore> history, {required DateTime now}) {

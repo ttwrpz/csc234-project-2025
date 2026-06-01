@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 /// so the swatch reads as a literal mini-legend of what the user sees on
 /// the chart.
 ///
-/// Copy obeys CLAUDE.md "plants are NEVER destroyed" rule — Storm Season
+/// Copy obeys CLAUDE.md "plants are NEVER destroyed" rule - Storm Season
 /// is "sheltered, never withered", never "wilted", never "dying".
 class TierBandLegend extends StatelessWidget {
   const TierBandLegend({super.key});
@@ -19,7 +19,7 @@ class TierBandLegend extends StatelessWidget {
     final mb = Theme.of(context).extension<MbColors>()!;
     // Mirror the colour map in `mood_score_chart.dart`'s `tierBandColors`
     // so the legend swatches are byte-for-byte the hues the chart paints.
-    // Each tier uses a distinct base colour now — adjacent tiers no
+    // Each tier uses a distinct base colour now - adjacent tiers no
     // longer share a hue at different alphas (which read as
     // indistinguishable washes in light mode).
     final rows = <_LegendEntry>[

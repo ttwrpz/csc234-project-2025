@@ -293,12 +293,11 @@ class _GardenView extends StatelessWidget {
     // Recent moods shows EARLIER days only - today's entries already
     // live in the Today card above, so excluding them here keeps the
     // two cards from duplicating each other.
-    final recentForPreview =
-        allEntries.where((e) {
-          final local = e.createdAt.toLocal();
-          final day = DateTime(local.year, local.month, local.day);
-          return day != today;
-        }).toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final recentForPreview = allEntries.where((e) {
+      final local = e.createdAt.toLocal();
+      final day = DateTime(local.year, local.month, local.day);
+      return day != today;
+    }).toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     final preview = recentForPreview
         .take(_maxRecentRows)
         .toList(growable: false);

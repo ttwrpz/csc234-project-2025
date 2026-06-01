@@ -25,7 +25,7 @@ import 'widgets/onboarding_art.dart';
 ///    backwards through slides via [PopScope]; only slide 0 falls
 ///    through to the OS pop.
 ///  * Slide 3 ("Gentle nudges") calls
-///    `FcmDatasource.requestPermission()` on its CTA — same code path
+///    `FcmDatasource.requestPermission()` on its CTA - same code path
 ///    as the legacy `_NotificationsSlide`.
 ///  * Slide 4 ("Before you start") does **not** ack the bipolar /
 ///    medical disclaimer here. That ack lives behind the Patterns
@@ -47,7 +47,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int _index = 0;
   bool _requestingPermission = false;
 
-  /// Slides — kept top-level as a `const` list so each rebuild reuses
+  /// Slides - kept top-level as a `const` list so each rebuild reuses
   /// the same instance. Strings are verbatim from the v1.6 prototype.
   static const List<_Slide> _slides = <_Slide>[
     _Slide(
@@ -122,7 +122,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (!mounted) return;
     // If a session is already cached (cold boot after a previous
     // install), bypass the auth screen and drop straight into Home.
-    // Otherwise route to /sign-in — the router redirect would do this
+    // Otherwise route to /sign-in - the router redirect would do this
     // for us, but explicitly going there keeps the intent visible.
     final signedIn = ref.read(currentUserStreamProvider).value != null;
     context.go(signedIn ? '/home' : '/sign-in');
@@ -142,7 +142,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   void _back() {
     if (_index == 0) {
-      // Slide 0 has no "Back" — pressing the secondary "Skip intro"
+      // Slide 0 has no "Back" - pressing the secondary "Skip intro"
       // jumps to completion instead.
       // ignore: discarded_futures
       _completeAndRoute();
@@ -160,7 +160,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     try {
       // Call the OS prompt directly. Routing through the higher-level
       // `NotificationsController.setEnabled` would short-circuit here
-      // because no user is signed in yet — see the original
+      // because no user is signed in yet - see the original
       // `_NotificationsSlide` for the full rationale.
       final outcome = await ref.read(fcmDatasourceProvider).requestPermission();
       final granted = outcome == FcmPermissionOutcome.granted;
@@ -244,14 +244,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           onSecondary: () {
                             final slide = _slides[_index];
                             if (_index == 0) {
-                              // "Skip intro" — jump straight to completion.
+                              // "Skip intro" - jump straight to completion.
                               // ignore: discarded_futures
                               _completeAndRoute();
                             } else if (slide.kind ==
                                     _SlideKind.notificationPermission ||
                                 slide.kind == _SlideKind.disclaimer) {
                               // "Not now" / "Read full disclaimer" both just
-                              // advance the deck — the full disclaimer is
+                              // advance the deck - the full disclaimer is
                               // surfaced again at the Patterns ack gate.
                               _next();
                             } else {
@@ -275,7 +275,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 enum _FormFactor { phone, tablet, desktop }
 
 /// Behavioural kind of a slide. Drives which CTA path runs when the
-/// primary button is tapped — the visual layout is the same for all
+/// primary button is tapped - the visual layout is the same for all
 /// slides, so this enum is invisible to the renderer.
 enum _SlideKind { intro, notificationPermission, disclaimer }
 
@@ -303,7 +303,7 @@ class _Slide {
 }
 
 // ---------------------------------------------------------------------------
-// Header — brand bloom + wordmark on the left, slide counter on the right
+// Header - brand bloom + wordmark on the left, slide counter on the right
 // ---------------------------------------------------------------------------
 
 class _Header extends StatelessWidget {
@@ -363,7 +363,7 @@ class _Header extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Slide body — art, eyebrow, title, body
+// Slide body - art, eyebrow, title, body
 // ---------------------------------------------------------------------------
 
 class _SlideBody extends StatelessWidget {
@@ -487,7 +487,7 @@ class _DefaultTimeChip extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Footer — progress dots, primary CTA, optional secondary text button
+// Footer - progress dots, primary CTA, optional secondary text button
 // ---------------------------------------------------------------------------
 
 class _Footer extends StatelessWidget {

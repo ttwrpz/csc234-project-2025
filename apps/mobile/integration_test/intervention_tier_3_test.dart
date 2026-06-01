@@ -30,7 +30,7 @@ import 'app_harness.dart';
 import 'fakes.dart';
 import 'intervention_fakes.dart';
 
-/// WBS 8.3 Test 6 — Tier 3 end-to-end (TC-40 + TC-41 + TC-33 + TC-38).
+/// WBS 8.3 Test 6 - Tier 3 end-to-end (TC-40 + TC-41 + TC-33 + TC-38).
 ///
 /// **This is the highest-stakes test in the project.** ADR-0012 commits
 /// the team to a structural guarantee: Tier 3 dispatches NEVER call
@@ -39,7 +39,7 @@ import 'intervention_fakes.dart';
 /// `apps/mobile/test/features/intervention/domain/services/
 /// tiered_intervention_dispatcher_test.dart` covers the dispatcher in
 /// isolation; this integration test re-asserts the SAME invariant at
-/// the integration boundary — pumping the full app, letting the
+/// the integration boundary - pumping the full app, letting the
 /// production controller dispatch through the production dispatcher
 /// against a recording fake AI repository.
 ///
@@ -59,7 +59,7 @@ import 'intervention_fakes.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Intervention Tier 3 — TC-40 end-to-end (WBS 8.3 — Test 6)', () {
+  group('Intervention Tier 3 - TC-40 end-to-end (WBS 8.3 - Test 6)', () {
     late IntegrationAuthRepository authRepo;
     late IntegrationMoodRepository moodRepo;
     late _ControllablePatternRepository patternRepo;
@@ -128,25 +128,25 @@ void main() {
     }
 
     testWidgets(
-      'TC-40 — Tier 3 dispatch NEVER calls AIQuoteRepository.requestSuggestion '
+      'TC-40 - Tier 3 dispatch NEVER calls AIQuoteRepository.requestSuggestion '
       '(the hard assertion, ADR-0012 §"Decision" point 3)',
       (tester) async {
         await pump(tester);
         await emitTier3AndSettle(tester);
 
-        // The banner is mounted — the controller successfully
+        // The banner is mounted - the controller successfully
         // dispatched Tier 3.
         expect(
           find.byType(InterventionBanner),
           findsOneWidget,
           reason:
-              'Tier 3 emission must surface the InterventionBanner — '
+              'Tier 3 emission must surface the InterventionBanner - '
               'the dispatcher takes the curated branch and the controller '
               'transitions to InterventionPending',
         );
 
         // ────────────────────────────────────────────────────────
-        // THE HARD ASSERTION — TC-40 + ADR-0012 §"Decision" point 3.
+        // THE HARD ASSERTION - TC-40 + ADR-0012 §"Decision" point 3.
         // ────────────────────────────────────────────────────────
         expect(
           aiRepo.calls,
@@ -155,7 +155,7 @@ void main() {
               'ADR-0012 §"Decision" point 1: Tier 3 must NEVER invoke '
               'AIQuoteRepository.requestSuggestion. Real-world harm at '
               "the user's most vulnerable moment is structurally "
-              'impossible — not "very unlikely", not "tested", but '
+              'impossible - not "very unlikely", not "tested", but '
               'unreachable in the call graph. A future refactor that '
               'routes Tier 3 through Gemini (intentionally or accidentally) '
               'fails THIS assertion on the same PR.',
@@ -183,7 +183,7 @@ void main() {
           reason:
               'Tier 3 dispatch body must contain one of the 8 '
               'team-reviewed curated phrases from QuoteLibraryImpl.tier3Pool '
-              '— HB-008 + ADR-0012 §"Decision" point 5 (curated pool '
+              '- HB-008 + ADR-0012 §"Decision" point 5 (curated pool '
               'reviewed aloud)',
         );
 
@@ -193,7 +193,7 @@ void main() {
           contains('Hotline 1323'),
           reason:
               'TC-33: every Tier 3 dispatch body must reference '
-              '"Hotline 1323" — the canonical Thai mental-health line. '
+              '"Hotline 1323" - the canonical Thai mental-health line. '
               'CLAUDE.md "Hotline 1323 footer appears on Tier 3 only"',
         );
 
@@ -210,11 +210,11 @@ void main() {
           body,
           contains(DisclaimerCopy.notificationFooter),
           reason:
-              'disclaimer footer must be present (substring) — '
+              'disclaimer footer must be present (substring) - '
               'defence-in-depth for the suffix assertion above',
         );
 
-        // The Quote source for Tier 3 is always curated — never AI.
+        // The Quote source for Tier 3 is always curated - never AI.
         expect(
           pending.dispatch.tier,
           Tier.three,
@@ -225,14 +225,14 @@ void main() {
           pending.dispatch.ctas,
           contains('open_crisis'),
           reason:
-              'Tier 3 CTAs must contain open_crisis — '
+              'Tier 3 CTAs must contain open_crisis - '
               'HB-007 §"Dispatcher state machine"',
         );
         expect(
           pending.dispatch.ctas,
           contains('opt_out'),
           reason:
-              'every tier must offer an opt-out CTA — '
+              'every tier must offer an opt-out CTA - '
               "CLAUDE.md 'compassionate imperatives'",
         );
       },
@@ -254,7 +254,7 @@ void main() {
           find.byType(CrisisResourcesScreen),
           findsOneWidget,
           reason:
-              'Tier 3 banner Open must route to CrisisResourcesScreen — '
+              'Tier 3 banner Open must route to CrisisResourcesScreen - '
               'the crisis-resources surface anchored on Hotline 1323',
         );
         // The Hotline tile renders "Call Hotline 1323" as its title.
@@ -291,7 +291,7 @@ void main() {
               'iCare Foundation, Emergency services 1669)',
         );
 
-        // TC-38 again — the body inside the screen must carry the
+        // TC-38 again - the body inside the screen must carry the
         // disclaimer footer.
         expect(
           find.textContaining(DisclaimerCopy.notificationFooter),
@@ -303,13 +303,13 @@ void main() {
       },
     );
 
-    testWidgets('TC-41 re-assertion — QuoteSafetyFilterImpl rejects every off-script / '
+    testWidgets('TC-41 re-assertion - QuoteSafetyFilterImpl rejects every off-script / '
         'forbidden / over-length input from inside the running app', (tester) async {
       await pump(tester);
 
       // Resolve the production [QuoteSafetyFilterImpl] from the
       // app's ProviderContainer. We do NOT emit a Tier 3 pattern
-      // here — this sub-flow validates the filter wiring, not the
+      // here - this sub-flow validates the filter wiring, not the
       // dispatcher. The filter is the Tier 1/2 sieve; the unit
       // test in `quote_safety_filter_impl_test.dart` covers the
       // canonical 55 inputs. We re-exercise a 30-input subset
@@ -332,7 +332,7 @@ void main() {
         'We will not diagnose you here, only invite a pause.',
         'A diagnosis is not what you need right now.',
         'Your medication regime aside, a gentle breath helps.',
-        'We prescribe nothing — only a kind moment.',
+        'We prescribe nothing - only a kind moment.',
         'Outside of therapy, a short pause is welcome.',
         'Your therapist might agree a breath is gentle.',
         'You must take a slow breath right now.',
@@ -358,9 +358,9 @@ void main() {
         'Quantum mechanics confuses many graduate students.',
       ];
       const almostOkInputs = <String>[
-        'Maybe a short breathing exercise would help — you should try it.',
+        'Maybe a short breathing exercise would help - you should try it.',
         'A gentle pause might help; you must breathe slowly for a moment.',
-        'Soft breaths can be kind — you have to give it a try.',
+        'Soft breaths can be kind - you have to give it a try.',
         'A quiet breath would be welcome now if it helps.',
         'Writing a few lines could help you overcome the weather.',
       ];
@@ -387,7 +387,7 @@ void main() {
         isA<QuoteSafetyFilterImpl>(),
         reason:
             'quoteSafetyFilterProvider must resolve to '
-            'QuoteSafetyFilterImpl in the integration harness — a '
+            'QuoteSafetyFilterImpl in the integration harness - a '
             'no-op stub would let everything through and silently '
             'pass the rejection-rate test',
       );
@@ -410,7 +410,7 @@ void main() {
         reason:
             'TC-41 invariant: ZERO pass-throughs across the rejection '
             'set. 30/30 inputs must return Err(FilterReject). A single '
-            'pass-through fails the build — that is the entire point.',
+            'pass-through fails the build - that is the entire point.',
       );
     });
   });
@@ -454,7 +454,7 @@ PatternResult _patternForTier3() => PatternResult(
   // 3 consecutive entries at S ≤ -0.6 is the canonical Tier 3 trigger;
   // we set the field to >= 3 here so a future audit reader can see the
   // synthetic shape mirrors the real engine's output. The engine
-  // itself is not in the loop on this test — we are testing the
+  // itself is not in the loop on this test - we are testing the
   // DOWNSTREAM dispatcher path, with Tier 3 already escalated.
   consecutiveHighIntensity: 3,
   zScoreToday: -3.0,

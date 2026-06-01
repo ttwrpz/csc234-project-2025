@@ -74,7 +74,7 @@ void main() {
       );
     });
 
-    test('preserves HarvestArchiveRunning — must not drop in-flight write', () {
+    test('preserves HarvestArchiveRunning - must not drop in-flight write', () {
       controller.forceState(const HarvestArchiveRunning());
       controller.reset();
       expect(

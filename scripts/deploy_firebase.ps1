@@ -31,7 +31,7 @@ Push-Location $repoRoot
 try {
     Write-Host "Deploying to $ProjectId ($Only)" -ForegroundColor Cyan
 
-    # `all` mirrors what firebase.json actually declares — firestore +
+    # `all` mirrors what firebase.json actually declares - firestore +
     # storage rules, the Remote Config template, and functions.
     # Hosting is opt-in because the project doesn't ship a hosting
     # block today; passing `-Only hosting` lights it up once one is
@@ -45,7 +45,7 @@ try {
     # Ensure functions node_modules are in sync with pnpm-lock.yaml
     # before TypeScript build runs in the firebase predeploy step.
     # Otherwise stale or absent transitive deps (@simplewebauthn/server,
-    # etc.) fail tsc with "Cannot find module" — exactly the error that
+    # etc.) fail tsc with "Cannot find module" - exactly the error that
     # blocked v1.6 deploys.
     if ($targets -contains 'functions') {
         Write-Host "→ pnpm install (functions)" -ForegroundColor DarkCyan

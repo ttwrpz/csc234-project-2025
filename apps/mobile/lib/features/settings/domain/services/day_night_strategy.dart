@@ -8,7 +8,7 @@
 // every call site would be pure ceremony with no testability benefit
 // (the enum has no Flutter behaviour, just three named constants). Any
 // other import of `package:flutter/*` under `domain/` remains forbidden
-// — this file is a one-off.
+// - this file is a one-off.
 import 'package:flutter/material.dart' show ThemeMode;
 
 import '../entities/theme_mode_preference.dart';
@@ -22,7 +22,7 @@ import '../entities/theme_mode_preference.dart';
 /// is involved.
 ///
 /// Pure-Dart aside from the [ThemeMode] return type. No I/O, no
-/// platform calls — fully unit-testable by passing a fixed `now`.
+/// platform calls - fully unit-testable by passing a fixed `now`.
 class DayNightStrategy {
   const DayNightStrategy({this.dayStartHour = 7, this.dayEndHour = 19});
 
@@ -45,7 +45,7 @@ class DayNightStrategy {
   ///   `[dayStartHour, dayEndHour)`, dark otherwise.
   ///
   /// [now] is converted to local time before reading the hour, so the
-  /// caller may pass either local or UTC `DateTime` — the result is the
+  /// caller may pass either local or UTC `DateTime` - the result is the
   /// same on the user's device.
   ThemeMode resolve({
     required ThemeModePreference preference,

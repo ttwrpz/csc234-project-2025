@@ -14,7 +14,7 @@
 - ACT "emotions as weather" metaphor (Hayes, Strosahl & Wilson 1999, *ACT*, Guilford; Harris 2008, *The Happiness Trap*)
 - Narrative externalization (White & Epston 1990, *Narrative Means to Therapeutic Ends*, Norton)
 
-In ALL user-facing copy, garden states, animations, and notifications — plants must be alive. The worst tier ("Storm Season") shows plants sheltered under rain, lanterns glowing brighter, never dead/wilting.
+In ALL user-facing copy, garden states, animations, and notifications - plants must be alive. The worst tier ("Storm Season") shows plants sheltered under rain, lanterns glowing brighter, never dead/wilting.
 
 ---
 
@@ -71,7 +71,7 @@ H_t = α × S_t + (1 - α) × H_{t-1}
 H_0 = 0  (resets weekly)
 ```
 
-**Why α=0.15:** ~13-day window via α ≈ 2/(N+1), aligns with PHQ-9's 2-week period. One bad day shifts H by ≤ 0.15 — garden cannot drop more than one tier in a single day.
+**Why α=0.15:** ~13-day window via α ≈ 2/(N+1), aligns with PHQ-9's 2-week period. One bad day shifts H by ≤ 0.15 - garden cannot drop more than one tier in a single day.
 
 **Worked example:**
 - H_0 = 0
@@ -91,7 +91,7 @@ H_0 = 0  (resets weekly)
 
 **Citations:** Smit, Schat & Ceulemans (2022), *Assessment* 30(4), 1354–1376; Kroenke, Spitzer & Williams (2001), *J Gen Intern Med* 16, 606–613.
 
-### 2.4 Pattern Engine — 5 Algorithms
+### 2.4 Pattern Engine - 5 Algorithms
 
 #### Algorithm 1: Mann-Kendall Trend Test
 
@@ -104,7 +104,7 @@ Step 4: |Z_trend| > 1.96 → significant trend (α = 0.05)
         Z_trend > +1.96 → encouragement (no alert)
 ```
 
-Window: 14 days. Two-tailed (1.96) over one-tailed (1.645) — fewer false alarms, less alert fatigue.
+Window: 14 days. Two-tailed (1.96) over one-tailed (1.645) - fewer false alarms, less alert fatigue.
 
 **Citations:** Mann (1945), *Econometrica* 13, 245–259; Kendall (1975), *Rank Correlation Methods*.
 
@@ -173,7 +173,7 @@ No single method covers all five failure modes. Together they form a comprehensi
 - Every notification includes opt-out / "I'm okay" button
 - Tier 3 ALWAYS includes professional help signposting + Hotline 1323
 
-**Citation:** Just-In-Time Adaptive Interventions framework — Nahum-Shani et al. (2018), *Annals of Behavioral Medicine* 52(6), 446–462.
+**Citation:** Just-In-Time Adaptive Interventions framework - Nahum-Shani et al. (2018), *Annals of Behavioral Medicine* 52(6), 446–462.
 
 ### 2.6 Pipeline
 
@@ -194,22 +194,22 @@ Mood entry → Compute S_t → Update H_t (EWMA)
 
 ## 3. Quote Library Architecture
 
-### 3.1 Tier 3 — CURATED ONLY (deterministic safety)
+### 3.1 Tier 3 - CURATED ONLY (deterministic safety)
 
-**No Gemini call ever.** Tier 3 messages come exclusively from the pre-approved curated phrase pool. This is non-negotiable. A bad message at Tier 3 — when the user is at their most vulnerable — could cause real harm. Determinism over personalization.
+**No Gemini call ever.** Tier 3 messages come exclusively from the pre-approved curated phrase pool. This is non-negotiable. A bad message at Tier 3 - when the user is at their most vulnerable - could cause real harm. Determinism over personalization.
 
 **Pre-approved Tier 3 messages (rotate from this fixed pool):**
 1. "We care about you. If it helps to talk, the Thai Mental Health Hotline is free at 1323, 24 hours."
 2. "These feelings can be very heavy. You don't have to face them alone. Hotline 1323 is available any time."
 3. "Reaching out for support is a sign of strength. Hotline 1323 connects to trained listeners, free, 24 hours."
 
-(Team to expand to 8–12 curated entries during S5 implementation. ALL phrasings to be reviewed by the full team before merge — read aloud, sense-check.)
+(Team to expand to 8–12 curated entries during S5 implementation. ALL phrasings to be reviewed by the full team before merge - read aloud, sense-check.)
 
 **Tier 3 footer:** Always includes the disclaimer + Hotline 1323 link.
 
-### 3.2 Tier 1 / Tier 2 — Hybrid (Gemini + Safety Filter)
+### 3.2 Tier 1 / Tier 2 - Hybrid (Gemini + Safety Filter)
 
-Gemini may suggest a quote, but the **Quote Safety Filter** runs first. If the suggestion contains anything off-script — clinical terms ("depression," "bipolar," "diagnosis," "medication," "therapy"), urgency words ("must," "should," "now"), or any language not in the pre-approved tag pool — the filter REJECTS Gemini's output and falls back to a curated phrase from the corresponding tier pool.
+Gemini may suggest a quote, but the **Quote Safety Filter** runs first. If the suggestion contains anything off-script - clinical terms ("depression," "bipolar," "diagnosis," "medication," "therapy"), urgency words ("must," "should," "now"), or any language not in the pre-approved tag pool - the filter REJECTS Gemini's output and falls back to a curated phrase from the corresponding tier pool.
 
 **Filter implementation:**
 - Whitelist-based: phrases must contain ≥80% of words from the tier's approved-word list, OR match a curated template.
@@ -219,7 +219,7 @@ Gemini may suggest a quote, but the **Quote Safety Filter** runs first. If the s
 
 **Tier 1 curated examples:**
 - "It looks like your garden has had some rainy days. Would you like a 2-minute breathing exercise?"
-- "Rainy days happen. A short breath might help — only if you'd like."
+- "Rainy days happen. A short breath might help - only if you'd like."
 
 **Tier 2 curated examples:**
 - "Would you like to write about what's been on your mind?"
@@ -229,7 +229,7 @@ Gemini may suggest a quote, but the **Quote Safety Filter** runs first. If the s
 
 ## 4. Bipolar/Medical Disclaimer
 
-### Wording (canonical — do not paraphrase)
+### Wording (canonical - do not paraphrase)
 
 **Full version (onboarding slide, Settings, Insights ack):**
 > "MoodBloom is not a medical device. It cannot diagnose conditions like bipolar disorder, depression, or anxiety. The patterns and insights it shows are observational only. If you're concerned about your mental health, please consult a qualified professional."
@@ -239,10 +239,10 @@ Gemini may suggest a quote, but the **Quote Safety Filter** runs first. If the s
 
 ### Placement (b + c combined per product decision)
 
-1. **Onboarding slide** — first launch only, dismissible after read.
-2. **Settings → About → Disclaimer** — always available.
-3. **Notification footer** — every Tier 1, 2, 3 intervention notification.
-4. **Insights screen mandatory ack** — first time the user opens Insights / Pattern Detection screen, a non-dismissible dialog appears with the full version. User must tap "I understand" to proceed. State persisted in `users/{uid}.insightsDisclaimerAcked`.
+1. **Onboarding slide** - first launch only, dismissible after read.
+2. **Settings → About → Disclaimer** - always available.
+3. **Notification footer** - every Tier 1, 2, 3 intervention notification.
+4. **Insights screen mandatory ack** - first time the user opens Insights / Pattern Detection screen, a non-dismissible dialog appears with the full version. User must tap "I understand" to proceed. State persisted in `users/{uid}.insightsDisclaimerAcked`.
 
 ---
 
@@ -252,7 +252,7 @@ Gemini may suggest a quote, but the **Quote Safety Filter** runs first. If the s
 - Tokens earned ONLY by daily login + mood log.
 - Daily cap: 5–10 tokens (suggested: first log = 5, additional logs up to 10).
 - Tokens are **NEVER** tied to mood content. Logging "Sad intensity 5" earns the same as "Joy intensity 5."
-- No streak punishment — missed days lose nothing.
+- No streak punishment - missed days lose nothing.
 
 ### Spending rules
 - Spent ONLY on cosmetic flower skins.
@@ -262,13 +262,13 @@ Gemini may suggest a quote, but the **Quote Safety Filter** runs first. If the s
 1. No premium currency, only one currency type.
 2. No FOMO (no expiring items, no limited-time pressure).
 3. No leaderboards, no friend comparison.
-4. No loss aversion — tokens never decay.
-5. Cosmetic only — no mechanical advantage.
-6. Optional visibility — user can hide token UI in Settings.
+4. No loss aversion - tokens never decay.
+5. Cosmetic only - no mechanical advantage.
+6. Optional visibility - user can hide token UI in Settings.
 
 **Citations:**
 - Self-Determination Theory: Deci & Ryan (2000), *American Psychologist* 55, 68–78.
-- Cheng et al. (2019), *JMIR Mental Health* 6(6), e13717 — warning against contingent rewards on mood content.
+- Cheng et al. (2019), *JMIR Mental Health* 6(6), e13717 - warning against contingent rewards on mood content.
 
 ---
 
@@ -284,12 +284,12 @@ Gemini may suggest a quote, but the **Quote Safety Filter** runs first. If the s
 - **ALWAYS use:** harvest, complete, new chapter, fresh week, archived, preserved
 
 **Citations:**
-- White (2007), *Maps of Narrative Practice*, Norton — narrative chapters.
-- Locke & Latham (2002), *American Psychologist* 57, 705–717 — goal cycles.
+- White (2007), *Maps of Narrative Practice*, Norton - narrative chapters.
+- Locke & Latham (2002), *American Psychologist* 57, 705–717 - goal cycles.
 
 ---
 
-## 7. Test Cases (35 — must all pass)
+## 7. Test Cases (35 - must all pass)
 
 ### Token System (5)
 1. User logs mood → receives tokens (5–10, within daily cap).
@@ -334,20 +334,20 @@ Gemini may suggest a quote, but the **Quote Safety Filter** runs first. If the s
 30. Pattern detection works correctly across week boundaries (sliding windows do NOT reset on harvest).
 
 ### Intervention Notifications (5)
-31. Max 1 notification per 24h — second trigger same day suppressed.
+31. Max 1 notification per 24h - second trigger same day suppressed.
 32. After firing, 48h cooldown prevents another.
 33. Tier 3 always includes crisis resources + Hotline 1323 link.
 34. All notifications include "I'm okay" opt-out button.
 35. Intervention features are NEVER locked behind tokens.
 
-### Bipolar Disclaimer (additional — 4)
+### Bipolar Disclaimer (additional - 4)
 36. First Insights screen view shows mandatory ack dialog; user must tap "I understand" to proceed.
 37. Ack state persists across app restarts (`users/{uid}.insightsDisclaimerAcked`).
 38. Every Tier 1/2/3 notification body includes disclaimer footer line.
 39. Settings → About contains the full disclaimer text.
 
-### Tier 3 Determinism (additional — 2)
-40. For any input pattern producing Tier 3, output message is byte-for-byte from the curated pool — NO Gemini call attempted (verify by mocking Gemini and asserting it was not called).
+### Tier 3 Determinism (additional - 2)
+40. For any input pattern producing Tier 3, output message is byte-for-byte from the curated pool - NO Gemini call attempted (verify by mocking Gemini and asserting it was not called).
 41. Quote Safety Filter rejects 100% of test cases containing forbidden terms (depression, bipolar, diagnosis, medication).
 
 ---

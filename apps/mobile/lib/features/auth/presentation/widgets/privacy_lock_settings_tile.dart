@@ -6,12 +6,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/providers.dart';
 
-/// Unified Privacy Lock settings tile — replaces the prior
+/// Unified Privacy Lock settings tile - replaces the prior
 /// `BiometricSettingsTile` + `PrivacySettingsTile` pair.
 ///
 /// One switch with a subtitle that adapts to device + opt-in state:
 ///   - Hardware absent  → "Add a fingerprint or face on your device
-///                          for faster unlock — PIN will be the only
+///                          for faster unlock - PIN will be the only
 ///                          unlock method."
 ///   - Hardware present, disabled → "Use biometric or PIN to unlock
 ///                                   the app."
@@ -23,7 +23,7 @@ import '../../data/providers.dart';
 ///
 /// Toggling ON pushes `/privacy/setup` modal. The setup flow handles
 /// PIN setup AND bundles biometric opt-in in one place (single source
-/// of truth — see [privacy_setup_flow_screen.dart]).
+/// of truth - see [privacy_setup_flow_screen.dart]).
 ///
 /// Toggling OFF persists the opt-out, resets biometric opt-in (so the
 /// next enable goes through a fresh prompt), and invalidates the

@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/pattern_engine/domain/algorithms/three_consecutive.dart';
 import 'package:moodbloom/features/pattern_engine/domain/entities/daily_score.dart';
 
-/// Pinned reference for "today" — mid-morning local time so that
+/// Pinned reference for "today" - mid-morning local time so that
 /// `localMidnight(now)` reduces cleanly.
 final _now = DateTime(2026, 5, 9, 10, 30);
 
@@ -13,7 +13,7 @@ DailyScore _day(DateTime when, double avgScore) =>
 DateTime _ago(int days) => localMidnight(_now).subtract(Duration(days: days));
 
 void main() {
-  group('consecutiveHighIntensityCount — degenerate inputs', () {
+  group('consecutiveHighIntensityCount - degenerate inputs', () {
     test('empty history → 0', () {
       expect(consecutiveHighIntensityCount(const [], now: _now), 0);
     });
@@ -29,7 +29,7 @@ void main() {
     });
   });
 
-  group('consecutiveHighIntensityCount — TC-26 + boundary cases', () {
+  group('consecutiveHighIntensityCount - TC-26 + boundary cases', () {
     test(
       'TC-26: 3 consecutive days at exactly -0.6 → returns 3 (inclusive)',
       () {
@@ -106,9 +106,9 @@ void main() {
     });
   });
 
-  group('consecutiveHighIntensityCount — caller wiring', () {
+  group('consecutiveHighIntensityCount - caller wiring', () {
     test('count >= 3 fires Tier 3 (caller predicate, regression on cap)', () {
-      // Even with 30 consecutive heavy days, the function returns 3 — the
+      // Even with 30 consecutive heavy days, the function returns 3 - the
       // caller's `>= 3` predicate then fires Tier 3 once. Mirrors the
       // contract documented in the function docstring.
       final history = [for (var i = 0; i < 30; i++) _day(_ago(i), -0.9)];

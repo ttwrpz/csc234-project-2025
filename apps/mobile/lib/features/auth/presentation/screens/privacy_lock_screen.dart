@@ -9,7 +9,7 @@ import '../../domain/entities/biometric_capability.dart';
 import '../../domain/entities/pin_verify_failure.dart';
 import '../widgets/pin_keypad.dart';
 
-/// `/privacy-lock` — the unified Privacy Lock verification screen.
+/// `/privacy-lock` - the unified Privacy Lock verification screen.
 ///
 /// Replaces the prior `BiometricGateScreen` (biometric-only cold-boot
 /// gate) and `PinVerifyScreen` (biometric-first + PIN-fallback history
@@ -24,12 +24,12 @@ import '../widgets/pin_keypad.dart';
 ///   2. Always show the PIN keypad fallback. Successful PIN → unlock +
 ///      navigate to `?returnTo=...`.
 ///   3. A "Sign out instead" affordance lives at the bottom so the
-///      cold-boot user always has an exit hatch — there is no app shell
+///      cold-boot user always has an exit hatch - there is no app shell
 ///      to "go back" to before unlock.
 ///
 /// `returnTo` defaults to `/home` when absent: this is the cold-boot
 /// gate, and `/home` is the canonical post-sign-in landing route. There
-/// is no appbar back button — there is nowhere to back-navigate to
+/// is no appbar back button - there is nowhere to back-navigate to
 /// when this screen is the first frame after sign-in.
 class PrivacyLockScreen extends ConsumerStatefulWidget {
   const PrivacyLockScreen({super.key, this.returnTo});
@@ -59,7 +59,7 @@ class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
   void initState() {
     super.initState();
     // Synchronously pre-set `_biometricInProgress = true` when we
-    // already know biometric will fire — this stops the PIN keypad
+    // already know biometric will fire - this stops the PIN keypad
     // from flashing on the first frame before the post-frame callback
     // sets the flag. By the time the user lands on /privacy-lock the
     // capability value is pre-resolved by `main.dart`, so `.value`
@@ -89,7 +89,7 @@ class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
     _biometricTried = true;
     final cap = ref.read(biometricCapabilityProvider).value;
     if (cap == null || !_hasBiometric(cap)) {
-      // No biometric on this device or user hasn't opted in — fall
+      // No biometric on this device or user hasn't opted in - fall
       // straight through to the PIN keypad. Reset the in-progress
       // flag so the keypad is visible on first paint.
       if (mounted) setState(() => _biometricInProgress = false);
@@ -108,7 +108,7 @@ class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
       ok: (_) => _onUnlocked(),
       err: (_) {
         // Don't surface the biometric failure as an error in the PIN
-        // panel — the user may have just declined biometric and now
+        // panel - the user may have just declined biometric and now
         // wants to type their PIN. Silently fall through.
         setState(() {
           _busy = false;
@@ -160,7 +160,7 @@ class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
 
   DateTime? _lockedUntilFrom(PinVerifyFailure failure) => failure.lockedUntil;
 
-  /// "Use security key" tap handler — ADR-0014 Decision D. Runs the
+  /// "Use security key" tap handler - ADR-0014 Decision D. Runs the
   /// WebAuthn assertion ceremony; on success flips the session unlock
   /// flag exactly as the PIN happy-path does and navigates onwards. On
   /// failure surfaces a compact inline error (mirroring the biometric
@@ -186,7 +186,7 @@ class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
       err: (failure) {
         setState(() {
           _busy = false;
-          // userCanceled is silent — the user dismissed the prompt and
+          // userCanceled is silent - the user dismissed the prompt and
           // already knows. Anything else surfaces the failure message.
           _errorText = failure.isUserCanceled ? null : failure.message;
           _lockedUntil = failure.lockedUntil;
@@ -195,7 +195,7 @@ class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
     );
   }
 
-  /// Explicit exit affordance — signs out, clears the session-scoped
+  /// Explicit exit affordance - signs out, clears the session-scoped
   /// unlock flag, and returns to /sign-in. The router's auth gate
   /// then drives the rest of the redirect chain.
   Future<void> _signOutInstead() async {
@@ -207,7 +207,7 @@ class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
     context.go('/sign-in');
   }
 
-  /// Phone / tablet / desktop breakpoints — mirrored from `_AppShell`
+  /// Phone / tablet / desktop breakpoints - mirrored from `_AppShell`
   /// and `OnboardingScreen` so the privacy lock matches the rest of
   /// the app's responsive behaviour.
   static const double _tabletMin = 600;
@@ -233,7 +233,7 @@ class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
         cap.hasEnrolledBiometrics &&
         cap.userOptedIn;
 
-    // ADR-0014 Decision D — the "Use security key" affordance appears
+    // ADR-0014 Decision D - the "Use security key" affordance appears
     // when WebAuthn is reachable on this platform AND the user has
     // registered a credential. On native or pre-flag-flip builds the
     // available flag stays false and the button never shows.
@@ -243,7 +243,7 @@ class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
 
     return Scaffold(
       backgroundColor: mb.bg,
-      // v1.6: no native AppBar — the prototype's PrivacyLockScreen
+      // v1.6: no native AppBar - the prototype's PrivacyLockScreen
       // leads with a centered hero. The "Privacy lock" title moves
       // into the body as a small uppercase eyebrow above the warmer
       // "Welcome back" headline.
@@ -301,7 +301,7 @@ class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
                             '${lockedRemaining.inSeconds + 1}s.',
                             style: MbFonts.nunito(
                               fontSize: 13,
-                              // Theme-aware destructive-text token —
+                              // Theme-aware destructive-text token -
                               // `coralText` is the light-theme binding
                               // (6.04:1 PASS on cream `mb.bg`) but fails
                               // dark AA at ~2.54:1, so prefer the
@@ -322,7 +322,7 @@ class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
                           // While the OS biometric dialog is on screen,
                           // hide the PIN keypad behind a quiet
                           // placeholder. The keypad reappears once
-                          // biometric resolves — success routes away,
+                          // biometric resolves - success routes away,
                           // cancel/failure falls back to PIN. Without
                           // this swap the keypad renders behind the OS
                           // dialog and reads as a second-prompt.
@@ -362,7 +362,7 @@ class _PrivacyLockScreenState extends ConsumerState<PrivacyLockScreen> {
                             label: const Text('Use security key'),
                           ),
                         ),
-                      // Cold-boot exit hatch — the unlock screen is the
+                      // Cold-boot exit hatch - the unlock screen is the
                       // first frame after sign-in, so there's no app
                       // shell to back-navigate to. "Sign out instead"
                       // lets the user explicitly leave the locked state

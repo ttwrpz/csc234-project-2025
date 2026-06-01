@@ -107,7 +107,7 @@ void main() {
 
         expect(repo.writeLastCalls, 1);
         expect(repo.writeFirstIfNullCalls, 1);
-        // 5.5b — event-doc create runs alongside the anchor writes.
+        // 5.5b - event-doc create runs alongside the anchor writes.
         expect(eventsRepo.calls, hasLength(1));
         expect(eventsRepo.calls.single.reason, '5_of_7_negative');
         expect(
@@ -117,7 +117,7 @@ void main() {
       },
     );
 
-    test('onShown() is idempotent — second call is a no-op', () async {
+    test('onShown() is idempotent - second call is a no-op', () async {
       await container
           .read(cheerUpControllerProvider.notifier)
           .onShown(reason: '5_of_7_negative');
@@ -127,7 +127,7 @@ void main() {
 
       expect(repo.writeLastCalls, 1);
       expect(repo.writeFirstIfNullCalls, 1);
-      // Event-doc create also collapses to a single attempt — the
+      // Event-doc create also collapses to a single attempt - the
       // CF would also dedupe via already-exists, but we'd rather not
       // round-trip at all on the second call.
       expect(eventsRepo.calls, hasLength(1));
@@ -149,7 +149,7 @@ void main() {
 
         expect(repo.writeLastCalls, 1);
         expect(repo.writeFirstIfNullCalls, 1);
-        // Event-doc create still attempted — independence is the
+        // Event-doc create still attempted - independence is the
         // contract. CF only needs the event doc.
         expect(eventsRepo.calls, hasLength(1));
         expect(eventsRepo.calls.single.reason, '3_consecutive_high_intensity');
@@ -165,7 +165,7 @@ void main() {
     });
 
     test(
-      'onShown() still flips onShownDispatched even when writes Err — no double-fire on retry attempt',
+      'onShown() still flips onShownDispatched even when writes Err - no double-fire on retry attempt',
       () async {
         repo.nextWriteLast = const Err(InterventionStateFailure.network());
         repo.nextWriteFirstIfNull = const Err(
@@ -180,7 +180,7 @@ void main() {
           container.read(cheerUpControllerProvider).onShownDispatched,
           isTrue,
         );
-        // Subsequent re-render does NOT retry — the impl already mirrored
+        // Subsequent re-render does NOT retry - the impl already mirrored
         // locally, so the cooldown gate is honoured offline. A future
         // read() will reconcile from cloud once it succeeds.
         await container
@@ -205,7 +205,7 @@ void main() {
     });
   });
 
-  group('CheerUpController — interventionDispatchEnabled gate (ADR-0011)', () {
+  group('CheerUpController - interventionDispatchEnabled gate (ADR-0011)', () {
     late _FakeRepo repo;
     late _FakeEventsRepo eventsRepo;
     late ProviderContainer container;
@@ -225,7 +225,7 @@ void main() {
     });
 
     test(
-      'onShown() with the gate disabled writes nothing — no anchor, no event doc',
+      'onShown() with the gate disabled writes nothing - no anchor, no event doc',
       () async {
         await container
             .read(cheerUpControllerProvider.notifier)

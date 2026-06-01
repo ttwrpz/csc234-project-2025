@@ -1,4 +1,4 @@
-# ADR-0004 — Drift Offline-First Schema and Sync Manager
+# ADR-0004 - Drift Offline-First Schema and Sync Manager
 
 **Status:** Accepted
 **Date:** 2026-04-29
@@ -7,7 +7,7 @@
 
 ## Context
 
-At Sprint 2 close, `MoodRepositoryImpl` writes straight to Firestore (`apps/mobile/lib/features/mood/data/mood_repository_impl.dart`). Loss of network = loss of save. The pivot-feature acceptance criterion in Sprint 3 — "log a mood with airplane mode on → save succeeds immediately → reconnect → entry syncs within 10 seconds" — requires a local-first store that becomes the single UI source. The 24-hour immutability invariant requires enforcement at three layers (domain, data, Firestore rules) so a malicious client cannot bypass the guard.
+At Sprint 2 close, `MoodRepositoryImpl` writes straight to Firestore (`apps/mobile/lib/features/mood/data/mood_repository_impl.dart`). Loss of network = loss of save. The pivot-feature acceptance criterion in Sprint 3 - "log a mood with airplane mode on → save succeeds immediately → reconnect → entry syncs within 10 seconds" - requires a local-first store that becomes the single UI source. The 24-hour immutability invariant requires enforcement at three layers (domain, data, Firestore rules) so a malicious client cannot bypass the guard.
 
 The mood-entry domain entity (`apps/mobile/lib/features/mood/domain/entities/mood_entry.dart:37-38`) already exposes `isLocked({DateTime? now})`. The `MoodFailure.locked()` variant already exists at `mood_failure.dart:12,40-43`. The current `update()` enforces it (`mood_repository_impl.dart:81`); `delete()` does **not** (`mood_repository_impl.dart:102-114`). This ADR closes that gap as part of the cutover.
 
@@ -69,7 +69,7 @@ pending → syncing → error → pending     (retry with exponential backoff)
 synced  → pending                       (re-edit within 24h)
 ```
 
-Backoff: `min(2^attempt × 5s, 1h)` with full jitter `(0.5..1.0) × delay`. Cap at 12 attempts; row sits in `error` until manual retry. `permission-denied` is a poison pill (no retry — surfaces to UI immediately).
+Backoff: `min(2^attempt × 5s, 1h)` with full jitter `(0.5..1.0) × delay`. Cap at 12 attempts; row sits in `error` until manual retry. `permission-denied` is a poison pill (no retry - surfaces to UI immediately).
 
 Worker triggers (any wakes the drain loop):
 - App foreground (router shell observer)
@@ -92,7 +92,7 @@ The drain loop is a single `Future` guarded by `package:synchronized`'s `Lock`, 
 2. Same path as `save` with `operation: update`. Coalescing collapses repeated edits to one queue row.
 
 `delete({userId, id})`:
-1. `MoodDao.getById(id)` — if absent, `Err(MoodFailure.notFound(id))`.
+1. `MoodDao.getById(id)` - if absent, `Err(MoodFailure.notFound(id))`.
 2. **Lock guard** (NEW): reconstruct domain entity, `if (entry.isLocked(...)) return Err(MoodFailure.locked())`. This closes the gap at `mood_repository_impl.dart:102`.
 3. Transaction: `MoodDao.softDelete(id, now)` + `SyncQueueDao.enqueue(delete)`.
 4. `syncManager.kick()`.
@@ -113,19 +113,19 @@ The repository never talks to Firestore directly anymore. All cloud I/O passes t
 
 On first launch after S3 ships, `MoodSyncManager.bootstrap(uid)`:
 1. If `MoodDao.isEmpty()` for this user, do a one-shot `MoodFirestoreDatasource.watchAll(uid).first.timeout(10s)`, batch-cursor at 100 entries per Drift transaction, seed via `upsertFromRemote` with `sync_state: synced`. No queue rows.
-2. On timeout/error, attach the live listener anyway — incremental sync handles the backfill.
+2. On timeout/error, attach the live listener anyway - incremental sync handles the backfill.
 3. Marker key `mood.seeded.{uid} = true` in `SharedPreferences`. Idempotent (upsertFromRemote is safe to re-run; partial seeds re-finish on next launch).
 
-### 24h immutability — three-layer enforcement
+### 24h immutability - three-layer enforcement
 
 | Layer | Where | Status |
 |---|---|---|
 | Domain | `MoodEntry.isLocked(now)` at `mood_entry.dart:37-38` | Already shipped |
-| Data — update | `MoodRepositoryImpl.update` at `mood_repository_impl.dart:81` | Already enforced |
-| Data — delete | `MoodRepositoryImpl.delete` at `mood_repository_impl.dart:102` | **NEW: must fetch + check** |
-| Firestore rules | `users/{uid}/moods/{moodId}` allow update/delete | **NEW** — see ADR-0005 §D handoff brief |
+| Data - update | `MoodRepositoryImpl.update` at `mood_repository_impl.dart:81` | Already enforced |
+| Data - delete | `MoodRepositoryImpl.delete` at `mood_repository_impl.dart:102` | **NEW: must fetch + check** |
+| Firestore rules | `users/{uid}/moods/{moodId}` allow update/delete | **NEW** - see ADR-0005 §D handoff brief |
 
-`LockedFailure` placement: keep `MoodFailure.locked()` (already exists, already used). Do NOT hoist a generic `LockedFailure` to `packages/core` — YAGNI until Sprint 5's journal feature introduces a second lockable resource.
+`LockedFailure` placement: keep `MoodFailure.locked()` (already exists, already used). Do NOT hoist a generic `LockedFailure` to `packages/core` - YAGNI until Sprint 5's journal feature introduces a second lockable resource.
 
 ### Files
 
@@ -136,12 +136,12 @@ Create:
 - `apps/mobile/lib/app/providers.dart` additions: `databaseProvider`, `deviceIdProvider` (SharedPreferences key `mood.device_id`)
 
 Modify:
-- `apps/mobile/lib/features/mood/data/mood_repository_impl.dart` — route through DAOs + sync manager; add the missing `delete()` lock guard
-- `apps/mobile/lib/features/mood/data/providers.dart` — add `moodDaoProvider`, `syncQueueDaoProvider`, `moodSyncManagerProvider`; rewire `moodRepositoryProvider`
-- `apps/mobile/pubspec.yaml` — add `drift`, `sqlite3_flutter_libs`, `path_provider`, `path`, `connectivity_plus`, `synchronized`, `uuid`; dev: `drift_dev`
+- `apps/mobile/lib/features/mood/data/mood_repository_impl.dart` - route through DAOs + sync manager; add the missing `delete()` lock guard
+- `apps/mobile/lib/features/mood/data/providers.dart` - add `moodDaoProvider`, `syncQueueDaoProvider`, `moodSyncManagerProvider`; rewire `moodRepositoryProvider`
+- `apps/mobile/pubspec.yaml` - add `drift`, `sqlite3_flutter_libs`, `path_provider`, `path`, `connectivity_plus`, `synchronized`, `uuid`; dev: `drift_dev`
 
 Do not modify (intentional):
-- `MoodEntry`, `MoodFailure`, `MoodEntryDto`, `MoodFirestoreDatasource`, `MoodEntryMapper` — reused as-is.
+- `MoodEntry`, `MoodFailure`, `MoodEntryDto`, `MoodFirestoreDatasource`, `MoodEntryMapper` - reused as-is.
 
 ### Implementation sequencing (3 PRs for reviewability)
 
@@ -161,13 +161,13 @@ Do not modify (intentional):
 
 - Positive: offline saves work instantly; the UI is decoupled from Firestore; sync state is observable for the "pending uploads" badge; the 24h guard now has the missing delete-side enforcement; Drift's stream invalidation gives reactive UI without manual notify calls.
 - Negative: three new abstractions (DAOs, sync manager, mapper) raise the surface area of the data layer; web shims through a different repository implementation; clock skew on a device can show "locked" too early or too late locally (mitigated by server-side rule using `request.time`).
-- Follow-up: ADR-0005 (LWW conflict resolution); ADR-0007 or later (S4) — background isolate sync via WorkManager.
+- Follow-up: ADR-0005 (LWW conflict resolution); ADR-0007 or later (S4) - background isolate sync via WorkManager.
 
 ## Compliance Check
 
-- [ ] CLAUDE.md "Drift (SQLite) for offline-first persistence" — satisfied.
-- [ ] CLAUDE.md "Result<T, Failure> sealed class from repositories" — preserved; `MoodFailure` extended to surface lock + sync errors.
-- [ ] CLAUDE.md "No `print()` in production" — sync manager uses `Logger` from `packages/core`.
-- [ ] CLAUDE.md "Domain layer has zero Flutter/Firebase imports" — Drift code lives in `data/local/`; domain layer untouched.
-- [ ] CLAUDE.md "Generated `*.g.dart` not hand-edited" — `mood_database.g.dart` produced by `build_runner`.
-- [ ] CLAUDE.md "PR title references WBS ID" — PRs target `feat/3.5-drift-offline-first-{schema|sync-manager|cutover}`.
+- [ ] CLAUDE.md "Drift (SQLite) for offline-first persistence" - satisfied.
+- [ ] CLAUDE.md "Result<T, Failure> sealed class from repositories" - preserved; `MoodFailure` extended to surface lock + sync errors.
+- [ ] CLAUDE.md "No `print()` in production" - sync manager uses `Logger` from `packages/core`.
+- [ ] CLAUDE.md "Domain layer has zero Flutter/Firebase imports" - Drift code lives in `data/local/`; domain layer untouched.
+- [ ] CLAUDE.md "Generated `*.g.dart` not hand-edited" - `mood_database.g.dart` produced by `build_runner`.
+- [ ] CLAUDE.md "PR title references WBS ID" - PRs target `feat/3.5-drift-offline-first-{schema|sync-manager|cutover}`.

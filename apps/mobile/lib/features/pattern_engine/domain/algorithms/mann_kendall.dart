@@ -5,13 +5,13 @@ import '../entities/daily_score.dart';
 /// Returns the Z statistic of the Mann-Kendall trend test over the last
 /// `windowDays` (default 14) of `history`.
 ///
-/// Returns `null` when `history.length < 14` — not enough samples for a
+/// Returns `null` when `history.length < 14` - not enough samples for a
 /// defensible Z. A user newly onboarded within the past two weeks therefore
 /// never trips Tier 1, which is the intended "warm-up" semantics.
 ///
-/// Trigger semantics (caller decides — this function returns Z only):
+/// Trigger semantics (caller decides - this function returns Z only):
 ///  * `Z < -1.64` → Tier 1 (gradual worsening, one-tailed α = 0.05).
-///  * `Z > +1.64` → encouragement (no alert — gradual improvement).
+///  * `Z > +1.64` → encouragement (no alert - gradual improvement).
 ///  * |Z| ≤ 1.64  → no signal.
 ///
 /// v1.5.1 note: the original -1.96 (two-tailed α=0.05) was relaxed to
@@ -26,7 +26,7 @@ import '../entities/daily_score.dart';
 ///         = 0              if S = 0
 ///         = (S + 1)/√V if S < 0
 ///
-/// Pure-Dart function — no state, no async, no I/O. Imports only
+/// Pure-Dart function - no state, no async, no I/O. Imports only
 /// `dart:math` and the sibling [DailyScore] entity.
 ///
 /// Citations: Mann (1945), *Econometrica* 13, 245–259;

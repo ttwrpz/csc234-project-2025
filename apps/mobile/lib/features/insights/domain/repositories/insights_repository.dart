@@ -8,9 +8,9 @@ import '../entities/insight_window.dart';
 /// covering the [window] inclusive on both endpoints. The returned list
 /// is always exactly `window.dayCount` items long and ordered by date
 /// ascending (oldest first). Days with no entries become
-/// [DailyInsight.empty] slots — never omitted, never streak-shamed.
+/// [DailyInsight.empty] slots - never omitted, never streak-shamed.
 ///
-/// Pure-Dart contract — imports only sibling domain entities. Domain-purity
+/// Pure-Dart contract - imports only sibling domain entities. Domain-purity
 /// rule per CLAUDE.md.
 abstract class InsightsRepository {
   /// Streams the user's joined insights over [window]. Emits a new list

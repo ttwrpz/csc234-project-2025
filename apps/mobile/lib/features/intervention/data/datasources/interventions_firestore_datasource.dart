@@ -37,7 +37,7 @@ class InterventionsFirestoreDatasource {
   /// Creates the audit doc at the canonical path with the server-time
   /// stamp on `dispatchedAt`. `cooldownUntil` is a plain Firestore
   /// `Timestamp` (the rule asserts `> request.time`, which the dispatcher
-  /// guarantees by construction — it's the dispatch instant + 48h).
+  /// guarantees by construction - it's the dispatch instant + 48h).
   Future<void> createRecord({
     required String uid,
     required InterventionRecord record,
@@ -82,7 +82,7 @@ class InterventionsFirestoreDatasource {
   /// Decodes a Firestore doc back into the domain [InterventionRecord].
   /// Tolerates both `Timestamp` (production) and `null` (transient
   /// pending-server-stamp) on `dispatchedAt`; in the null case we use
-  /// `DateTime.now()` as a placeholder — the next snapshot delivers the
+  /// `DateTime.now()` as a placeholder - the next snapshot delivers the
   /// real value.
   static InterventionRecord _recordFromDoc(
     QueryDocumentSnapshot<Map<String, dynamic>> doc,
@@ -118,7 +118,7 @@ class InterventionsFirestoreDatasource {
     'two' => Tier.two,
     'three' => Tier.three,
     // Defense-in-depth: an unrecognised tier on the wire collapses to
-    // `Tier.three` (the safest read — surface professional resources
+    // `Tier.three` (the safest read - surface professional resources
     // rather than swallow). The rule rejects unknown values on create,
     // so this branch should be unreachable in production.
     _ => Tier.three,

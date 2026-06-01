@@ -144,7 +144,7 @@ void main() {
         findsOneWidget,
       );
 
-      // Tier 3 — must mention Hotline 1323 per the brief.
+      // Tier 3 - must mention Hotline 1323 per the brief.
       expect(find.text('Support reminders'), findsOneWidget);
       expect(find.textContaining('Hotline 1323'), findsOneWidget);
 
@@ -191,7 +191,7 @@ void main() {
     );
 
     testWidgets(
-      'each switch reads its own flag — partial opt-out renders mixed state',
+      'each switch reads its own flag - partial opt-out renders mixed state',
       (tester) async {
         final repo = _FakeRepo()
           ..remoteSeed = const NotificationsSettings(

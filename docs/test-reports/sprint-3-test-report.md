@@ -1,4 +1,4 @@
-# Sprint 3 Test Report — v0.3-beta
+# Sprint 3 Test Report - v0.3-beta
 
 **Tag:** `v0.3-beta` on `main` (squash-commit `92056cf6`, integration branch was `chore/sprint-3-integration`)
 **Test date:** 2026-04-30
@@ -18,7 +18,7 @@ All four must pass for any release tag. **All four green at v0.3-beta:**
 | 1. Correctness | `flutter test` passes; domain ≥80% | **294/294 passing**; **94.6% domain overall** | §3, §4 |
 | 2. Security | `flutter pub deps` no HIGH/CRITICAL; secret scan clean; rules emulator passes | 0 HIGH / 0 CRITICAL on `functions/`; pre-commit secret-scan hook never fired; **17/17 emulator tests** | §5, §6 |
 | 3. Accessibility | Semantics on interactive widgets; WCAG 2.2 AA contrast; dynamic type | Semantics labels present on AISuggestionPill, GardenScreen, AnalyticsScreen, BiometricGateScreen, CalendarView, MediaPickerButton; live regions on loading states; full a11y/TalkBack audit deferred to S4 (qa-engineer) | inline in widgets |
-| 4. Performance | Cold start < 2s mid-range Android; bounded `ListView`s; cached images | All `ListView` usages bounded (no infinite); fl_chart caps at window size (max 90 points); image_picker not yet exercised on real device — performance verification deferred to manual S4 demo | code review |
+| 4. Performance | Cold start < 2s mid-range Android; bounded `ListView`s; cached images | All `ListView` usages bounded (no infinite); fl_chart caps at window size (max 90 points); image_picker not yet exercised on real device - performance verification deferred to manual S4 demo | code review |
 
 ---
 
@@ -26,24 +26,24 @@ All four must pass for any release tag. **All four green at v0.3-beta:**
 
 The tests below ship inside `apps/mobile/test/` under their feature folders, plus `firebase/test/` and `functions/src/__tests__/` for non-Flutter tests.
 
-### apps/mobile/test/ — Flutter tests (294 total on main)
+### apps/mobile/test/ - Flutter tests (294 total on main)
 
 | Feature | Domain unit | Data | Presentation widget | Total |
 |---|---:|---:|---:|---:|
 | auth | 33 | 12 | 7 | **52** |
 | mood | 30 | 26 | 12 | **68** |
-| garden | 14 | — | 8 | **22** |
-| analytics | 13 | — | (deferred S4) | **13** |
-| history | 14 | — | 9 | **23** |
-| app shell | 9 | — | — | **9** |
-| onboarding | (S2 widget tests carry forward) | — | 4 | **4** |
+| garden | 14 | - | 8 | **22** |
+| analytics | 13 | - | (deferred S4) | **13** |
+| history | 14 | - | 9 | **23** |
+| app shell | 9 | - | - | **9** |
+| onboarding | (S2 widget tests carry forward) | - | 4 | **4** |
 | AI client (mood feature) | 11 | 18 | 12 | **41** |
-| Drift offline-first (mood feature) | — | 60 | — | **60** |
+| Drift offline-first (mood feature) | - | 60 | - | **60** |
 | **subtotal** | **124** | **116** | **52** | **292** |
 
 (2-test discrepancy from 294 is auth + mood overlap counted twice in the matrix; full `flutter test` output reports 294 passing.)
 
-### firebase/test/ — Firestore + Storage rules emulator tests (17 total)
+### firebase/test/ - Firestore + Storage rules emulator tests (17 total)
 
 Run via `firebase emulators:exec --only firestore,storage,auth --project moodbloom-rules-test "npm --prefix firebase/test test"`:
 
@@ -66,7 +66,7 @@ Run via `firebase emulators:exec --only firestore,storage,auth --project moodblo
 | 16 | update with client-supplied past `updatedAt` → DENY (R-1 fix) |
 | 17 | update with `text` as a list → DENY (R-2 fix) |
 
-### functions/src/__tests__/ — Cloud Function tests (14 logical / 16 reported)
+### functions/src/__tests__/ - Cloud Function tests (14 logical / 16 reported)
 
 Run via `npm --prefix functions test`:
 
@@ -84,7 +84,7 @@ Run via `npm --prefix functions test`:
 | 10 | Gemini SyntaxError → `parse_error` |
 | 11 | Gemini 6s delay → AbortController fires at 5s → `gemini_unavailable` |
 | 12 | self-harm safety flag → passthrough; client hides pill |
-| 13 | **PII canary** — sentinel `"PII-CANARY-12345"` in input AND in mocked Gemini rationale → asserted absent from every `logger.*` call's serialized payload |
+| 13 | **PII canary** - sentinel `"PII-CANARY-12345"` in input AND in mocked Gemini rationale → asserted absent from every `logger.*` call's serialized payload |
 | 14 | Secret loaded via `defineSecret().value()`; `process.env.GEMINI_API_KEY` never read directly (verified by `process.env` proxy spy) |
 
 ---
@@ -177,12 +177,12 @@ Final rules state has 17 emulator tests covering every clause of the contract.
 
 ## 6. PII handling audit
 
-Per CLAUDE.md "Logging" rule — never log mood text, email, or `uid + text` correlation. Verified:
+Per CLAUDE.md "Logging" rule - never log mood text, email, or `uid + text` correlation. Verified:
 
 - ✅ `Logger` in `packages/core` is the only logging path; no `print()` or `dart:developer.log` direct usage anywhere in `apps/mobile/lib/` (verified by grep).
 - ✅ `Logger.warn` / `error` calls in `mood_repository_impl.dart`, `ai_analysis_repository_impl.dart`, `mood_sync_manager.dart` log `failure.runtimeType.toString()` only, never `failure.message`.
 - ✅ `sync_queue.payload` JSON contains `text` (required for replay) but is never logged. The `last_error` column is 200-char-truncated.
-- ✅ Cloud Function structured logger excludes `text`, `prompt`, model `rationale` — verified by the PII canary test.
+- ✅ Cloud Function structured logger excludes `text`, `prompt`, model `rationale` - verified by the PII canary test.
 - ✅ Drift DB at `getApplicationDocumentsDirectory()/moodbloom.sqlite` is unencrypted at rest. ADR-0004 acceptable for the trust model (device-root defeats most defenses); R-6 in the Drift audit flags S5 evaluation of `drift_sqlcipher`.
 
 ---
@@ -194,16 +194,16 @@ The following 11-step user-facing demo was walked through against the integratio
 | Step | What | Status |
 |---|---|---|
 | 1 | Sign up / sign in (S2 functionality) | ✅ unchanged from v0.2 |
-| 2 | Settings → toggle "Use biometric to unlock" ON | ✅ — toggle disabled when no biometric enrolled (subtitle: "Add a fingerprint or face on your device to enable this.") |
-| 3 | Type "ugh today was so long" → AI suggestion pill appears | ✅ — debounced 600ms; mood + confidence + rationale visible |
-| 4 | Tap "Use this" on the AI suggestion → mood populated | ✅ — `LogMoodController.applyAiSuggestion` updates state.mood; intensity left to user choice |
+| 2 | Settings → toggle "Use biometric to unlock" ON | ✅ - toggle disabled when no biometric enrolled (subtitle: "Add a fingerprint or face on your device to enable this.") |
+| 3 | Type "ugh today was so long" → AI suggestion pill appears | ✅ - debounced 600ms; mood + confidence + rationale visible |
+| 4 | Tap "Use this" on the AI suggestion → mood populated | ✅ - `LogMoodController.applyAiSuggestion` updates state.mood; intensity left to user choice |
 | 5 | Tap Save → entry appears in History (list and calendar tabs) | ✅ |
-| 6 | Toggle airplane mode ON → log a second mood → save succeeds immediately | ✅ — Drift write + `sync_queue` enqueue; UI never blocked |
-| 7 | Toggle airplane mode OFF → entry syncs to Firestore within ~10s | ✅ — connectivity listener triggers `MoodSyncManager.kick()`; queue drains |
-| 8 | Edit today's entry → succeeds. Try to edit a 25h-old entry → returns `MoodFailure.locked()` | ✅ — three-layer guard: domain `isLocked`, data update guard, Firestore rule |
-| 9 | Delete a 25h-old entry → `MoodFailure.locked()` (NEW — closed long-standing gap) | ✅ — was `mood_repository_impl.dart:102` in S2 |
-| 10 | Open Analytics → toggle 7d/30d/90d window → mood-over-time chart updates | ✅ — `fl_chart` line per `MoodCategory` |
-| 11 | Open Calendar tab → today's mood shows colored dot → tap → opens detail | ✅ — `compute_calendar_state` uses local-time midnight; tap routes to `/history/{mostRecentEntryId}` |
+| 6 | Toggle airplane mode ON → log a second mood → save succeeds immediately | ✅ - Drift write + `sync_queue` enqueue; UI never blocked |
+| 7 | Toggle airplane mode OFF → entry syncs to Firestore within ~10s | ✅ - connectivity listener triggers `MoodSyncManager.kick()`; queue drains |
+| 8 | Edit today's entry → succeeds. Try to edit a 25h-old entry → returns `MoodFailure.locked()` | ✅ - three-layer guard: domain `isLocked`, data update guard, Firestore rule |
+| 9 | Delete a 25h-old entry → `MoodFailure.locked()` (NEW - closed long-standing gap) | ✅ - was `mood_repository_impl.dart:102` in S2 |
+| 10 | Open Analytics → toggle 7d/30d/90d window → mood-over-time chart updates | ✅ - `fl_chart` line per `MoodCategory` |
+| 11 | Open Calendar tab → today's mood shows colored dot → tap → opens detail | ✅ - `compute_calendar_state` uses local-time midnight; tap routes to `/history/{mostRecentEntryId}` |
 
 Steps deferred to S4 (require Android Manifest changes the team hasn't approved):
 - Cold-boot biometric gate end-to-end (needs `<uses-permission android:name="android.permission.USE_BIOMETRIC"/>` + `MainActivity` extends `FlutterFragmentActivity`).
@@ -215,12 +215,12 @@ Steps deferred to S4 (require Android Manifest changes the team hasn't approved)
 
 These are tracked in the Sprint 3 retro's "Open hardening items" table; they're called out here so a reviewer doesn't think they were missed:
 
-- **Widget tests for `BiometricGateScreen` and `BiometricSettingsTile`** — agent ran out of context after writing entity + repository tests. Use case + entity coverage at 100%; widget coverage in S4.
-- **Golden tests for the Calendar grid** — qa-engineer follow-up for S4.
-- **Integration test for the full offline-write happy path** through `LogMoodScreen` to Firestore — covered by manual demo (step 6, 7); automated integration test deferred to S4 to avoid the emulator-orchestration overhead in CI.
-- **A11y / Semantics audit against TalkBack/VoiceOver** — labels are present in code (`Semantics(...)` wrappers); manual audit on a real device is S4.
-- **`npm audit fix` for the 2 LOW + 9 MODERATE transitive deps** in `firebase-admin` / `google-cloud-*` — the fix requires a breaking `firebase-admin` major bump; deferred to S4 dep-bump PR.
-- **Performance profiling** (cold-start < 2s on mid-range Android) — code review-only verification at v0.3-beta; physical-device profile at S4.
+- **Widget tests for `BiometricGateScreen` and `BiometricSettingsTile`** - agent ran out of context after writing entity + repository tests. Use case + entity coverage at 100%; widget coverage in S4.
+- **Golden tests for the Calendar grid** - qa-engineer follow-up for S4.
+- **Integration test for the full offline-write happy path** through `LogMoodScreen` to Firestore - covered by manual demo (step 6, 7); automated integration test deferred to S4 to avoid the emulator-orchestration overhead in CI.
+- **A11y / Semantics audit against TalkBack/VoiceOver** - labels are present in code (`Semantics(...)` wrappers); manual audit on a real device is S4.
+- **`npm audit fix` for the 2 LOW + 9 MODERATE transitive deps** in `firebase-admin` / `google-cloud-*` - the fix requires a breaking `firebase-admin` major bump; deferred to S4 dep-bump PR.
+- **Performance profiling** (cold-start < 2s on mid-range Android) - code review-only verification at v0.3-beta; physical-device profile at S4.
 
 None of these block the v0.3-beta tag (the kickoff acceptance criteria are met without them); each is a known follow-up captured in the retro.
 

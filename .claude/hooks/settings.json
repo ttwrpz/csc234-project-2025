@@ -96,7 +96,7 @@
   },
   "mcpServers": {
     "firebase-emulator": {
-      "description": "Reserved for later — MCP server wrapping the Firebase emulator for QA integration tests. Do not enable until S4.",
+      "description": "Reserved for later - MCP server wrapping the Firebase emulator for QA integration tests. Do not enable until S4.",
       "enabled": false
     }
   },

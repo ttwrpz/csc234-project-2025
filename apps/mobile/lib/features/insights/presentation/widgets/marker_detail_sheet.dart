@@ -175,7 +175,7 @@ class MarkerDetailSheet extends ConsumerWidget {
     Tier.three => mb.destructiveText,
   };
 
-  /// Public-facing words for the three tiers — match the dispatcher's
+  /// Public-facing words for the three tiers - match the dispatcher's
   /// surface copy. Tier numbers are engineering jargon and
   /// stay out of the user-facing string.
   static String _tierName(Tier tier) => switch (tier) {
@@ -237,7 +237,7 @@ class MarkerDetailSheet extends ConsumerWidget {
   }
 }
 
-/// One-line affordance link. The widget is private — callers always go
+/// One-line affordance link. The widget is private - callers always go
 /// through [MarkerDetailSheet] so the conditional null-record branch
 /// stays the single rendering decision point.
 class _NextStepLink extends StatelessWidget {

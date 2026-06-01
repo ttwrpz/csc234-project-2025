@@ -312,7 +312,7 @@ mixin _$DayScore {
 /// Local-midnight `DateTime` of the day this cell represents (in the
 /// user's local time zone).
  DateTime get day;/// Mean of `MoodScore.value` for entries logged on [day]. Range
-/// [-1, +1]. `null` when no entry was logged that day — distinct
+/// [-1, +1]. `null` when no entry was logged that day - distinct
 /// from "neutral 0", which would be a logged Okay×0 (impossible).
  double? get avgScore;/// Number of entries logged on [day]. Used by the strip's a11y
 /// label and by callers that want to surface "tap for entries".
@@ -517,7 +517,7 @@ class _DayScore implements DayScore {
 /// user's local time zone).
 @override final  DateTime day;
 /// Mean of `MoodScore.value` for entries logged on [day]. Range
-/// [-1, +1]. `null` when no entry was logged that day — distinct
+/// [-1, +1]. `null` when no entry was logged that day - distinct
 /// from "neutral 0", which would be a logged Okay×0 (impossible).
 @override final  double? avgScore;
 /// Number of entries logged on [day]. Used by the strip's a11y

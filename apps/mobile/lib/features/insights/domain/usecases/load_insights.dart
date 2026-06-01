@@ -7,7 +7,7 @@ import '../repositories/insights_repository.dart';
 /// case exists so controllers depend on a single-method abstraction
 /// instead of the wider repository contract.
 ///
-/// Pure-Dart class — imports only sibling domain types. Domain-purity rule
+/// Pure-Dart class - imports only sibling domain types. Domain-purity rule
 /// per CLAUDE.md.
 class LoadInsightsUseCase {
   const LoadInsightsUseCase({required InsightsRepository repository})

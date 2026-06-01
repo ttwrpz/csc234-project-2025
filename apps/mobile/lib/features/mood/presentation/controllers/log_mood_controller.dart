@@ -18,12 +18,12 @@ import 'log_mood_submission_controller.dart';
 
 part 'log_mood_controller.g.dart';
 
-/// Controller for `LogMoodScreen`. State is [MoodDraft] directly — it is the
+/// Controller for `LogMoodScreen`. State is [MoodDraft] directly - it is the
 /// canonical in-progress entry shape and does not need a wrapper.
 ///
 /// Transient submission state (`isSubmitting`, `errorMessage`) lives on the
 /// sibling [LogMoodSubmissionController]. Navigation on success is performed
-/// by the screen, not this controller — keeps the controller free of
+/// by the screen, not this controller - keeps the controller free of
 /// `BuildContext` and `package:go_router` imports.
 @riverpod
 class LogMoodController extends _$LogMoodController {
@@ -48,7 +48,7 @@ class LogMoodController extends _$LogMoodController {
     ref.invalidate(aiSuggestionControllerProvider);
   }
 
-  /// Hydrate the draft from an existing entry — used by the edit flow
+  /// Hydrate the draft from an existing entry - used by the edit flow
   /// when the screen is opened with `?edit=<id>`. mediaRefs are
   /// preserved so existing attachments survive a re-save; pickedMedia
   /// stays empty (any new picks land alongside the existing refs).
@@ -75,7 +75,7 @@ class LogMoodController extends _$LogMoodController {
 
   void setText(String text) => state = state.copyWith(text: text);
 
-  /// Append a single picked attachment. Order matters — the strip renders
+  /// Append a single picked attachment. Order matters - the strip renders
   /// pickedMedia in insertion order and uploads happen in the same order.
   void addMedia(MoodMedia media) {
     state = state.copyWith(pickedMedia: [...state.pickedMedia, media]);
@@ -89,7 +89,7 @@ class LogMoodController extends _$LogMoodController {
   }
 
   /// Remove the attachment at [index]. Out-of-range indices are silently
-  /// ignored — defense in depth against double-tap on the remove affordance.
+  /// ignored - defense in depth against double-tap on the remove affordance.
   void removeMedia(int index) {
     if (index < 0 || index >= state.pickedMedia.length) return;
     final next = [...state.pickedMedia]..removeAt(index);
@@ -99,7 +99,7 @@ class LogMoodController extends _$LogMoodController {
   /// Remove an already-uploaded attachment from the entry (edit flow only).
   /// We drop the gs:// URI from `mediaRefs`; the next `updateExisting` call
   /// will persist the shorter list. The Storage blob remains until the
-  /// orphan-janitor sweeps it — we accept the temporary leak rather than
+  /// orphan-janitor sweeps it - we accept the temporary leak rather than
   /// firing a delete here, because the user might still cancel the edit
   /// and we'd have already destroyed the file.
   void removeMediaRef(int index) {
@@ -114,17 +114,17 @@ class LogMoodController extends _$LogMoodController {
   ///
   /// Upload sequencing: pick-time uploads are wasteful if the user backs out,
   /// so we upload at save time. Sequential (not parallel) keeps low-bandwidth
-  /// users from saturating their pipe and simplifies error handling — first
+  /// users from saturating their pipe and simplifies error handling - first
   /// failure aborts and the entry is NOT half-written.
   ///
   /// If uploads succeed but the Firestore save fails, the uploaded blobs are
   /// orphaned at `users/{uid}/media/{moodId}/...`. A janitor cron reaps these
-  /// — see [MoodMediaRepositoryImpl] doc.
+  /// - see [MoodMediaRepositoryImpl] doc.
   Future<MoodEntry?> save() async {
     final submission = ref.read(logMoodSubmissionControllerProvider.notifier);
     final user = ref.read(currentUserStreamProvider).value;
     if (user == null) {
-      // Defense in depth — the router already prevents reaching this screen
+      // Defense in depth - the router already prevents reaching this screen
       // unauthenticated.
       submission.fail('You need to be signed in.');
       return null;
@@ -132,7 +132,7 @@ class LogMoodController extends _$LogMoodController {
     submission.begin();
 
     // Upload picked media (if any) before persisting the entry. We use a
-    // pseudo-id "draft" for the path — Firestore allocates the real id on
+    // pseudo-id "draft" for the path - Firestore allocates the real id on
     // save, but uploads need a stable folder up front. Storage rules permit
     // any path under `users/{uid}/media/**`, so this is safe.
     final mediaRefs = <String>[];
@@ -222,19 +222,19 @@ class LogMoodController extends _$LogMoodController {
   MoodEntry _onSaveOk(LogMoodSubmissionController submission, MoodEntry entry) {
     submission.succeed();
     state = MoodDraft.empty();
-    // Drop the AI suggestion alongside the draft — see [reset] for the
+    // Drop the AI suggestion alongside the draft - see [reset] for the
     // rationale. Post-save flow now leaves both surfaces empty.
     ref.invalidate(aiSuggestionControllerProvider);
     // Best-effort post-save Pattern Engine run. Failures are logged
     // (no PII) and swallowed so they cannot block the user's save
     // success surfacing. Both `save()` and `updateExisting()` route
-    // through `_onSaveOk`, so the engine also runs on edits — desired
+    // through `_onSaveOk`, so the engine also runs on edits - desired
     // behaviour: an edited entry can change today's `avgScore` and
     // therefore today's tier.
     unawaited(_runPatternEngine(entry.userId));
-    // Best-effort post-save token award. Mood-agnostic — the
+    // Best-effort post-save token award. Mood-agnostic - the
     // repository's `awardForLog` takes only the userId. Failures are
-    // logged (failure runtimeType only — no userId, no balance, no
+    // logged (failure runtimeType only - no userId, no balance, no
     // award value, no PII) and swallowed so they cannot block the
     // user's save success surfacing.
     unawaited(_awardTokens(entry.userId));
@@ -252,7 +252,7 @@ class LogMoodController extends _$LogMoodController {
   ///
   /// History source: `myMoodsStreamProvider` (the canonical newest-first
   /// stream used by History, Garden, and Analytics). Read once via
-  /// `.future` — the controller doesn't watch the stream because the
+  /// `.future` - the controller doesn't watch the stream because the
   /// engine should reflect the state at save-time, not chase further
   /// emissions.
   Future<void> _runPatternEngine(String userId) async {
@@ -274,7 +274,7 @@ class LogMoodController extends _$LogMoodController {
         ),
       );
     } catch (e) {
-      // Defense in depth — anything thrown by the upstream stream
+      // Defense in depth - anything thrown by the upstream stream
       // (e.g. a transient Firestore unavailability mid-flight) must
       // not bubble out of a fire-and-forget save hook.
       logger.warn('pattern_engine_save_failed failure=${e.runtimeType}');
@@ -283,7 +283,7 @@ class LogMoodController extends _$LogMoodController {
 
   /// Awards tokens for a successful log via the token repository.
   /// Best-effort: failures are logged once with the failure
-  /// runtimeType only (no userId, no balance, no award value — PII
+  /// runtimeType only (no userId, no balance, no award value - PII
   /// + signal-leakage free) and never propagate to the UI surface.
   ///
   /// Mood-agnostic by construction: the repository's `awardForLog`
@@ -301,7 +301,7 @@ class LogMoodController extends _$LogMoodController {
             logger.warn('token_award_failed failure=${failure.runtimeType}'),
       );
     } on TokenFailure catch (failure) {
-      // Defense in depth — the repository is contract-bound to return
+      // Defense in depth - the repository is contract-bound to return
       // `Result`, but a misbehaving fake or partial impl could throw.
       // Log + swallow.
       logger.warn('token_award_failed failure=${failure.runtimeType}');

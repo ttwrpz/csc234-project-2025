@@ -1,4 +1,4 @@
-# Final Reports — Claude Code Generation Prompt
+# Final Reports - Claude Code Generation Prompt
 
 Paste this into Claude Code at the start of the report-writing phase (after May 19, once `v1.5` is tagged). Claude Code will generate every final report in both Markdown and Overleaf LaTeX format.
 
@@ -35,9 +35,9 @@ Each report 1–5 generates as both `.md` and `.tex`, so:
 
 ## Project context (so this prompt works even with thin repo context)
 
-- **Team:** Group 2, KMUTT, Sem 2/2568 — Kraiwich Jaiton, Teerin Kittichaicharoen, Theerawat Patthawee (Lead), Jedsarit Fanpimiy, Napat Chang-ekwong
+- **Team:** Group 2, KMUTT, Sem 2/2568 - Kraiwich Jaiton, Teerin Kittichaicharoen, Theerawat Patthawee (Lead), Jedsarit Fanpimiy, Napat Chang-ekwong
 - **Courses:** CSC231 Agile Software Engineering · CSC234 User-Centric Mobile App Development
-- **Product:** MoodBloom — cross-platform Flutter mood-tracker for Android + Web
+- **Product:** MoodBloom - cross-platform Flutter mood-tracker for Android + Web
 - **Stack:** Flutter / Dart / Riverpod / GoRouter / Freezed / Drift / Firebase (Auth, Firestore, Storage, Functions, FCM, Remote Config, Crashlytics) / Gemini gemini-2.5-flash / fl_chart / GitHub Actions
 - **Sprints:** S1 (agile plan, Apr 21) → S2 walking skeleton (Apr 28) → S3 v0.3-beta (May 5) → S4 v1.0 (May 12) → S5 v1.5 (May 19)
 - **Pivot story:** After Sprint 3, professor feedback drove the Sprint 4–5 ecosystem redesign: plants NEVER die, formal Mood Score formula, EWMA garden health, 5 pattern-detection algorithms, three-tier intervention, token economy, weekly harvest, bipolar disclaimer, personalized quote library (Tier 3 = curated only)
@@ -50,31 +50,31 @@ Each report 1–5 generates as both `.md` and `.tex`, so:
 
 Before writing anything, use the `Read` tool on each of these. Take notes; the reports synthesize from them.
 
-1. `CLAUDE.md` — conventions, 12 features, copy rules, data model
-2. `.claude/specs/sprint-4-5-spec.md` — formulas, all 41 test cases, 37 citations (section 8 — use these as the bibliography)
-3. `.claude/prompts/sprint-{2,3,4,5}-kickoff.md` — sprint plans, what was delivered, retrospectives
-4. `docs/architecture/conceptual.png`, `implementation.png`, `*.md` — Mermaid sources + diagrams
-5. `docs/adr/*.md` — ADRs (architecture decisions): ADR-0001 (Clean Architecture), ADR-0003 (Gemini contract), ADR-0004 (Drift schema), ADR-0005 (sync conflict resolution), ADR-0006 (ecosystem model), ADR-0007 (Tier 3 determinism)
-6. `docs/pm/` — WBS (37 leaves), Backlog (37 items, 75.5 PD), PDM (30 activities, ends day 20), GANTT
-7. `docs/ux/` — Personas (Lin + Som), Journey Maps (Lin's harvest, Som's Tier 1→2→3 escalation)
-8. `docs/qa/` — S5 outputs: android-matrix, web-matrix, a11y-sweep, perf-profile
-9. `docs/retros/` — sprint retrospectives if they exist
-10. `docs/security/` — Security Posture Reports
+1. `CLAUDE.md` - conventions, 12 features, copy rules, data model
+2. `.claude/specs/sprint-4-5-spec.md` - formulas, all 41 test cases, 37 citations (section 8 - use these as the bibliography)
+3. `.claude/prompts/sprint-{2,3,4,5}-kickoff.md` - sprint plans, what was delivered, retrospectives
+4. `docs/architecture/conceptual.png`, `implementation.png`, `*.md` - Mermaid sources + diagrams
+5. `docs/adr/*.md` - ADRs (architecture decisions): ADR-0001 (Clean Architecture), ADR-0003 (Gemini contract), ADR-0004 (Drift schema), ADR-0005 (sync conflict resolution), ADR-0006 (ecosystem model), ADR-0007 (Tier 3 determinism)
+6. `docs/pm/` - WBS (37 leaves), Backlog (37 items, 75.5 PD), PDM (30 activities, ends day 20), GANTT
+7. `docs/ux/` - Personas (Lin + Som), Journey Maps (Lin's harvest, Som's Tier 1→2→3 escalation)
+8. `docs/qa/` - S5 outputs: android-matrix, web-matrix, a11y-sweep, perf-profile
+9. `docs/retros/` - sprint retrospectives if they exist
+10. `docs/security/` - Security Posture Reports
 11. Git history: `git log --oneline --all --graph` for chronology and `git tag -n` for release notes
-12. Test files in `apps/mobile/test/` and `integration_test/` — for evidence and pass/fail counts
+12. Test files in `apps/mobile/test/` and `integration_test/` - for evidence and pass/fail counts
 
-If any path is missing, note it in your plan but proceed with what's available — don't block on missing artifacts.
+If any path is missing, note it in your plan but proceed with what's available - don't block on missing artifacts.
 
 ---
 
 ## Report-by-report structure
 
-### Report 1 — Sprint 4 Demo & Retrospective
+### Report 1 - Sprint 4 Demo & Retrospective
 
 Audience: internal team record (also referenced by CSC231 chapter 8).
 
 Sections:
-1. **What we shipped (v1.0).** Bullet list mapping to backlog IDs: Mood Score (3.6), Garden Health EWMA (4.2), Daily Atmosphere (4.3), Day/Night theme (4.4), Pattern Engine (5.3), Weekly Harvest (6.1), Token system (6.2), Dark mode (7.2), widget+golden tests (8.2). Note: Pattern Engine fires triggers internally; no notifications surface yet — that's S5.
+1. **What we shipped (v1.0).** Bullet list mapping to backlog IDs: Mood Score (3.6), Garden Health EWMA (4.2), Daily Atmosphere (4.3), Day/Night theme (4.4), Pattern Engine (5.3), Weekly Harvest (6.1), Token system (6.2), Dark mode (7.2), widget+golden tests (8.2). Note: Pattern Engine fires triggers internally; no notifications surface yet - that's S5.
 2. **Demo flow on May 12.** The scenario as walked through on stage.
 3. **Test results.** TC-1 to TC-5 (Tokens), TC-11 to TC-30 (Harvest, Atmosphere, EWMA, Pattern). Pass/fail counts. Any deferred test cases.
 4. **What went well.** 3 bullets. Concrete.
@@ -82,17 +82,17 @@ Sections:
 6. **What the human team caught that the agents missed.** Specific examples. This is the most-valuable section for the audit report.
 7. **Going into Sprint 5.** 2–3 lines.
 
-### Report 2 — Sprint 5 Demo & Retrospective
+### Report 2 - Sprint 5 Demo & Retrospective
 
 Same structure as Sprint 4 but for v1.5. Special focus:
-- **TC-40 result** (Tier 3 determinism — Gemini-mock asserted never called)
+- **TC-40 result** (Tier 3 determinism - Gemini-mock asserted never called)
 - **TC-41 result** (Quote Safety Filter rejection rate on 50+ adversarial inputs)
 - **Bipolar disclaimer compliance** (TC-36–39)
 - **Cross-platform parity** (Android vs Chrome)
 - **A11y sweep findings** (WCAG 2.2 AA pass/fail)
 - **Performance profile** (cold start, frame rate, memory)
 
-### Report 3 — CSC231 Final Project Report (Agile SE focus)
+### Report 3 - CSC231 Final Project Report (Agile SE focus)
 
 Required sections (course-aligned):
 
@@ -102,17 +102,17 @@ Required sections (course-aligned):
 - **Chapter 2: Software Engineering Approach.** Agile/Scrum with 5 sprints (S1–S5); multi-agent orchestration via Claude Code; Plan Mode discipline; sprint cadence; 4-agent team charter (architect, flutter-engineer, qa-engineer, security-reviewer).
 - **Chapter 3: Requirements Engineering.** Functional requirements (the 12 pivot features); non-functional requirements mapped to ISO/IEC 25010 (functional suitability, performance efficiency, compatibility, usability, reliability, security, maintainability, portability). Show traceability matrix: feature → requirement → test case.
 - **Chapter 4: Project Planning.** Embed/reference WBS (37 leaves, 8 buckets), Backlog (37 items with PERT estimates, Wideband Delphi method, 75.5 PD vs 80 PD capacity = 94% utilization), PDM (30 activities, critical path A→B→C→G→I→L→R→W→X→Y→AC→AD→AE, ends day 20 of 20), GANTT.
-- **Chapter 5: Software Architecture.** Clean Architecture three-layer rule (presentation/domain/data); domain-layer-zero-imports enforced via Claude Code hook; tech stack rationale; **new Sprint 4–5 Domain Engines** (MoodScore, EWMA, Atmosphere, Pattern Engine, Tiered Dispatcher, Quote Library + Safety Filter, Disclaimer Service, Token Service, Harvest Scheduler) — include both architecture diagrams. Explain why Tier 3 has direct path to QuoteLibrary, never through Gemini.
+- **Chapter 5: Software Architecture.** Clean Architecture three-layer rule (presentation/domain/data); domain-layer-zero-imports enforced via Claude Code hook; tech stack rationale; **new Sprint 4–5 Domain Engines** (MoodScore, EWMA, Atmosphere, Pattern Engine, Tiered Dispatcher, Quote Library + Safety Filter, Disclaimer Service, Token Service, Harvest Scheduler) - include both architecture diagrams. Explain why Tier 3 has direct path to QuoteLibrary, never through Gemini.
 - **Chapter 6: Quality Assurance.** Test strategy (unit / widget / golden / integration / a11y / perf / security); 41 test cases summarized; pass rates from S4 + S5; coverage numbers (target ≥80% domain layer); cross-platform results (Android + Chrome).
 - **Chapter 7: Risk Management.** Risk register from `docs/security/` and the PDM risk section. For each risk: probability, impact, mitigation, was-mitigation-needed?
-- **Chapter 8: Sprint Retrospectives.** Brief recap of each sprint (S2, S3, S4, S5) — what was delivered, what slipped, what the team learned. Pull from `docs/retros/` and the demo retrospectives (Reports 1 + 2).
+- **Chapter 8: Sprint Retrospectives.** Brief recap of each sprint (S2, S3, S4, S5) - what was delivered, what slipped, what the team learned. Pull from `docs/retros/` and the demo retrospectives (Reports 1 + 2).
 - **Chapter 9: Conclusion & Lessons Learned.** What worked about multi-agent dev; what didn't; lessons for future student teams using AI-assisted enterprise workflows.
 - **References.** All 37 entries from spec section 8, APA-formatted in markdown, BibTeX in LaTeX.
 - **Appendix A: ADRs.** List of all architecture decision records with one-sentence summaries.
 - **Appendix B: Plan Mode transcripts.** 1–2 illustrative excerpts (anonymize / abbreviate if long).
 - **Appendix C: Test case manifest.** Full list of 41 TCs with pass/fail.
 
-### Report 4 — CSC234 Final UI/UX Report (User-Centric focus)
+### Report 4 - CSC234 Final UI/UX Report (User-Centric focus)
 
 Required sections:
 
@@ -120,7 +120,7 @@ Required sections:
 - **Executive Summary** (1 page). UI/UX problem framing, design philosophy in one paragraph, what was delivered, evaluation outcome.
 - **Chapter 1: User Research.** Lin + Som personas in full (bio, goals, pain points, quotes). Methodology: how we built them, what real-world inputs grounded them.
 - **Chapter 2: User Journey Mapping.** Lin's "Evening Logging + Weekly Harvest" journey (5 phases). Som's "Tiered Intervention Escalation Tier 1→2→3" journey (5 phases). Each with emotion arc, pain points, ISO 25010 quality risk, fix.
-- **Chapter 3: Design Philosophy — The Ecosystem Model.** Critical chapter. The pivot from "wilting plants" (Sprint 1–3) to "plants never die" (Sprint 4–5). Ground in the four therapeutic frameworks with full citations:
+- **Chapter 3: Design Philosophy - The Ecosystem Model.** Critical chapter. The pivot from "wilting plants" (Sprint 1–3) to "plants never die" (Sprint 4–5). Ground in the four therapeutic frameworks with full citations:
   - Self-compassion (Neff 2003, 2023)
   - DBT validation (Linehan 1993)
   - ACT "emotions as weather" (Hayes 1999; Harris 2008)
@@ -128,15 +128,15 @@ Required sections:
   Include the Mood Score, EWMA, and Atmosphere formulas with worked examples (from spec sections 2.1–2.3).
 - **Chapter 4: Design System.** Tokens (color palette, typography, spacing), shadcn-equivalent components catalog, Material 3 deltas.
 - **Chapter 5: Information Architecture & Navigation.** GoRouter route tree, bottom-nav structure, modal hierarchy, deep-link strategy.
-- **Chapter 6: Key Screens.** Onboarding (with bipolar disclaimer slide), Log Mood (intensity slider + AI suggestion pill), Garden (5 plant tiers + 4 atmospheres — show screenshots of EVERY tier and atmosphere), Insights (with mandatory ack dialog), Settings, History (with archived weeks). One screenshot per screen.
-- **Chapter 7: Gamification Ethics — Token Economy & Skins.** Cite Cheng et al. (2019) on contingent rewards risks; SDT (Deci & Ryan 2000, Ryan & Deci 2017); explain anti-pattern guardrails: mood-agnostic earning, no loss aversion, no FOMO, no leaderboards, cosmetic-only, optional visibility.
+- **Chapter 6: Key Screens.** Onboarding (with bipolar disclaimer slide), Log Mood (intensity slider + AI suggestion pill), Garden (5 plant tiers + 4 atmospheres - show screenshots of EVERY tier and atmosphere), Insights (with mandatory ack dialog), Settings, History (with archived weeks). One screenshot per screen.
+- **Chapter 7: Gamification Ethics - Token Economy & Skins.** Cite Cheng et al. (2019) on contingent rewards risks; SDT (Deci & Ryan 2000, Ryan & Deci 2017); explain anti-pattern guardrails: mood-agnostic earning, no loss aversion, no FOMO, no leaderboards, cosmetic-only, optional visibility.
 - **Chapter 8: Therapeutic Safety.** Tier 3 determinism (no Gemini, curated phrases only); Quote Safety Filter (fail-closed for Tier 1/2); bipolar disclaimer placement (onboarding + Insights ack + every notification footer + Settings); the curated phrase pool (sample entries); cooldown logic; opt-out mechanics.
 - **Chapter 9: Accessibility.** WCAG 2.2 AA contrast results across light + dark themes; Semantics labels coverage; dynamic type at 200%; TalkBack walkthrough notes from S5 sweep.
 - **Chapter 10: Cross-Platform Considerations.** Android-specific (FCM, biometric, keystore); Web-specific (PWA, browser notifications, responsive breakpoints); shared codebase strategy.
 - **Chapter 11: Usability Evaluation.** Heuristic evaluation (Nielsen) results; informal testing notes if any; reflections on persona acceptance criteria coverage.
 - **References.** Same 37 citations.
 
-### Report 5 — Enterprise Audit & Orchestration Report (final submission)
+### Report 5 - Enterprise Audit & Orchestration Report (final submission)
 
 This is the **overall project report** mandated by the Enterprise Term Assignment. Required sections (5–8 pages):
 
@@ -159,7 +159,7 @@ This is the **overall project report** mandated by the Enterprise Term Assignmen
 
 ## LaTeX setup (Overleaf-compatible)
 
-Each `.tex` file must be self-contained — pasteable into a fresh Overleaf project as a single document, with the shared `references.bib` uploaded alongside.
+Each `.tex` file must be self-contained - pasteable into a fresh Overleaf project as a single document, with the shared `references.bib` uploaded alongside.
 
 Use this preamble for every `.tex`:
 
@@ -200,7 +200,7 @@ Use this preamble for every `.tex`:
 
 \pagestyle{fancy}
 \fancyhf{}
-\rhead{MoodBloom — Group 2}
+\rhead{MoodBloom - Group 2}
 \lhead{\leftmark}
 \rfoot{\thepage}
 
@@ -237,9 +237,9 @@ Use this preamble for every `.tex`:
 - Lists: `itemize` for bullets, `enumerate` for numbered, `description` for term-definition
 - Code: `lstlisting` environment with `language=Dart` (or `language={}` for pseudo-code)
 - Math: inline `$S_t = v \cdot i / 5$`, display `\[ H_t = 0.15 S_t + 0.85 H_{t-1} \]`
-- Figures: `\includegraphics[width=0.9\textwidth]{docs/architecture/conceptual.png}` — Claude Code, copy referenced images into `/reports/images/` and reference them as `images/conceptual.png`
+- Figures: `\includegraphics[width=0.9\textwidth]{docs/architecture/conceptual.png}` - Claude Code, copy referenced images into `/reports/images/` and reference them as `images/conceptual.png`
 - Citations: `\cite{russell1980circumplex}` inline; use `\textcite{neff2003}` for "Neff (2003)" style
-- Headings: `\section`, `\subsection`, `\subsubsection` only — no deeper nesting
+- Headings: `\section`, `\subsection`, `\subsubsection` only - no deeper nesting
 
 ### references.bib format
 
@@ -279,28 +279,28 @@ Use cite-key convention `<firstauthor><year><shortword>` (lowercase, no spaces).
 
 ## Tone guidelines
 
-- **Academic** for CSC231 and CSC234 — third person, past tense for completed work, present tense for the product as it exists. Cite every claim that isn't trivially obvious.
-- **Honest and reflective** for sprint retrospectives — first person plural ("we found", "we struggled with") is fine. Show what went wrong, not just what went right. The "what the human team caught that the agents missed" section is gold.
-- **Evidence-based** for the Enterprise Audit — every claim references a commit hash, ADR number, test result file, or screenshot. No vague "we ensured quality" — be specific: "Domain coverage measured at 84.2% via `flutter test --coverage` on commit `a3f1b9c` (May 18, 2026)".
+- **Academic** for CSC231 and CSC234 - third person, past tense for completed work, present tense for the product as it exists. Cite every claim that isn't trivially obvious.
+- **Honest and reflective** for sprint retrospectives - first person plural ("we found", "we struggled with") is fine. Show what went wrong, not just what went right. The "what the human team caught that the agents missed" section is gold.
+- **Evidence-based** for the Enterprise Audit - every claim references a commit hash, ADR number, test result file, or screenshot. No vague "we ensured quality" - be specific: "Domain coverage measured at 84.2% via `flutter test --coverage` on commit `a3f1b9c` (May 18, 2026)".
 
 ---
 
 ## Avoid
 
 - Marketing language ("revolutionary," "industry-leading," "groundbreaking")
-- Overclaiming therapeutic efficacy ("MoodBloom helps users overcome anxiety" — instead: "MoodBloom is designed to support mood awareness, citing Firth et al. 2017 meta-analysis showing small-to-moderate effect sizes (g = 0.38) for mobile mental-health apps")
-- Clinical labels applied to users ("anxious users") — say "users with elevated anxiety states" or just describe the persona
+- Overclaiming therapeutic efficacy ("MoodBloom helps users overcome anxiety" - instead: "MoodBloom is designed to support mood awareness, citing Firth et al. 2017 meta-analysis showing small-to-moderate effect sizes (g = 0.38) for mobile mental-health apps")
+- Clinical labels applied to users ("anxious users") - say "users with elevated anxiety states" or just describe the persona
 - Anything that contradicts the spec copy rules (no "delete/clear/reset" for garden, no "wilting" for plants, no clinical labels)
-- Using the bipolar/medical disclaimer text verbatim more than necessary — reference it once with full text, summarize elsewhere
+- Using the bipolar/medical disclaimer text verbatim more than necessary - reference it once with full text, summarize elsewhere
 
 ---
 
-## Plan Mode — required before writing
+## Plan Mode - required before writing
 
 Enter Plan Mode first. Produce:
 
 1. **Read receipts:** confirm you've Read each input source. List any missing paths.
-2. **File creation order:** which `.md` and `.tex` files you'll create in what order. Suggested: references.bib first (so all .tex can compile), then Sprint 4 + Sprint 5 retros (shortest), then CSC234 + CSC231 (parallel — different content focus), finally Enterprise Audit (depends on all others).
+2. **File creation order:** which `.md` and `.tex` files you'll create in what order. Suggested: references.bib first (so all .tex can compile), then Sprint 4 + Sprint 5 retros (shortest), then CSC234 + CSC231 (parallel - different content focus), finally Enterprise Audit (depends on all others).
 3. **Per-report outlines:** 1 paragraph per chapter, just enough to show you've thought through the structure.
 4. **Risks:** anything that might block you (missing artifacts, ambiguous data, etc.)
 5. **Estimate:** rough time / token / file count.

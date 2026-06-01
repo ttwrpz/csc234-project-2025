@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/intervention/presentation/controllers/intervention_controller.dart';
 import 'package:moodbloom/features/intervention/presentation/widgets/intervention_opt_out_button.dart';
 
-/// Sprint 5 Day 3 a11y sweep — InterventionOptOutButton.
+/// Sprint 5 Day 3 a11y sweep - InterventionOptOutButton.
 ///
 /// The opt-out button is shared by Tier 1 / 2 / 3 screens AND the banner.
 /// It must announce with a meaningful action-context label so screen
@@ -63,7 +63,7 @@ Future<void> _pumpButton(
 }
 
 void main() {
-  group('InterventionOptOutButton — semantics labels', () {
+  group('InterventionOptOutButton - semantics labels', () {
     testWidgets(
       'default label "I\'m okay" → announces with dismiss-context fragment',
       (tester) async {
@@ -72,7 +72,7 @@ void main() {
 
         // The Semantics wrapper around the OutlinedButton composes
         // "$label, dismiss this reminder". Screen readers will read
-        // "I'm okay, dismiss this reminder, button" — explicit about
+        // "I'm okay, dismiss this reminder, button" - explicit about
         // what the tap will do.
         expect(
           find.bySemanticsLabel("I'm okay, dismiss this reminder"),
@@ -108,14 +108,14 @@ void main() {
       await _pumpButton(tester, controller: controller);
 
       // Both the inner OutlinedButton and the wrapping Semantics carry
-      // the button flag. Verify via the visible button text — the
+      // the button flag. Verify via the visible button text - the
       // resolved semantics on the OutlinedButton carries isButton: true.
       final btn = tester.getSemantics(find.byType(OutlinedButton));
       expect(btn.flagsCollection.isButton, isTrue);
     });
   });
 
-  group('InterventionOptOutButton — tap behavior', () {
+  group('InterventionOptOutButton - tap behavior', () {
     testWidgets('tap calls controller.optOut() exactly once + onTapped after', (
       tester,
     ) async {

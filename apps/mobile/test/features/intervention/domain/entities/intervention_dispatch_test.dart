@@ -11,7 +11,7 @@ import 'package:moodbloom/features/intervention/domain/services/quote_safety_fil
 import 'package:moodbloom/features/intervention/domain/services/tiered_intervention_dispatcher.dart';
 import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
-/// Minimal pool — placeholder until HB-008 lands.
+/// Minimal pool - placeholder until HB-008 lands.
 class _LibStub implements QuoteLibrary {
   @override
   Quote pickTier1({required DateTime seed}) => const Quote(

@@ -7,7 +7,7 @@ import 'mood_point.dart';
 import 'mood_window.dart';
 
 /// Read-only line chart of mean mood intensity per local-time day, one line
-/// per [ChartMoodCategory]. Pure presentation — all aggregation happens in the
+/// per [ChartMoodCategory]. Pure presentation - all aggregation happens in the
 /// `compute_analytics_state` use case in the app layer.
 ///
 /// Empty input collapses to a friendly placeholder rather than a `LineChart`
@@ -21,7 +21,7 @@ class MoodLineChart extends StatelessWidget {
     super.key,
   }) : _theme = theme;
 
-  /// Flat list of (day, category, meanIntensity). Order does not matter — the
+  /// Flat list of (day, category, meanIntensity). Order does not matter - the
   /// widget groups by category internally.
   final List<MoodPoint> points;
 
@@ -294,7 +294,7 @@ class MoodLineChart extends StatelessWidget {
   }
 }
 
-/// Tooltip helpers — kept top-level so they aren't captured by the
+/// Tooltip helpers - kept top-level so they aren't captured by the
 /// closure on every paint, and so the formatting is unit-testable.
 String _tooltipDateLabel(DateTime earliest, double xValue) {
   final day = earliest.add(Duration(days: xValue.round()));

@@ -6,7 +6,7 @@ import 'mood_failure.dart';
 /// Contract for any backing store that persists mood entries.
 ///
 /// Implementations live in `data/`; they may use Firestore, Drift, or a fake.
-/// The 24h lock is a domain-level check — callers should call
+/// The 24h lock is a domain-level check - callers should call
 /// `entry.isLocked()` before invoking [update]/[delete]; server-side
 /// enforcement via Firestore rules backs this up.
 abstract class MoodRepository {
@@ -25,7 +25,7 @@ abstract class MoodRepository {
   Future<Result<MoodEntry, MoodFailure>> save(MoodEntry entry);
 
   /// Updates an existing entry. Domain-level immutability is the caller's
-  /// responsibility — call `entry.isLocked()` first.
+  /// responsibility - call `entry.isLocked()` first.
   Future<Result<MoodEntry, MoodFailure>> update(MoodEntry entry);
 
   /// Deletes an entry. Same caveat as [update].

@@ -8,14 +8,14 @@ import 'package:moodbloom/features/intervention/presentation/controllers/interve
 import 'package:moodbloom/features/intervention/presentation/screens/breathing_screen.dart';
 import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
-/// Sprint 5 Day 3 a11y sweep — Tier 1 breathing screen (S5-new surface).
+/// Sprint 5 Day 3 a11y sweep - Tier 1 breathing screen (S5-new surface).
 ///
 /// Covered:
 ///   1. The animated breathing circle carries the canonical
 ///      `Semantics(label: 'Breathing rhythm guide')` AND wraps its
 ///      visual children in `excludeSemantics: true` so screen readers
 ///      do NOT chase every frame of the animation. The label is a single
-///      static anchor — chasing the per-frame `Curves.easeInOut` scale
+///      static anchor - chasing the per-frame `Curves.easeInOut` scale
 ///      would flood the focus stream.
 ///   2. The mm:ss countdown semantics value is a live region but
 ///      throttled to minute boundaries. Pump at 2:00, advance 30s,
@@ -25,7 +25,7 @@ import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 ///      descriptive labels (the opt-out's "dismiss this reminder"
 ///      action context).
 ///   4. 200% type renders without RenderFlex overflow.
-///   5. Tap "I'm okay" — soft assertion using `anyOf(0, 1)` per the
+///   5. Tap "I'm okay" - soft assertion using `anyOf(0, 1)` per the
 ///      pattern in breathing_screen_test.dart line 193: the GoRouter
 ///      test-harness Row(spaceBetween) can push the opt-out button
 ///      partially out of the hit-test rect on smaller test surfaces.
@@ -64,7 +64,7 @@ InterventionDispatch _dispatch() => InterventionDispatch(
 );
 
 /// Hosts the BreathingScreen on top of /host so `context.pop()` works.
-/// Mirrors the pattern in breathing_screen_test.dart — anything else
+/// Mirrors the pattern in breathing_screen_test.dart - anything else
 /// produces a "nothing to pop" exception when the screen's CTAs fire.
 Widget _makeApp({
   required InterventionDispatch? dispatch,
@@ -120,7 +120,7 @@ Future<void> _pushBreathing(
 }
 
 void main() {
-  group('BreathingScreen — animated circle semantics', () {
+  group('BreathingScreen - animated circle semantics', () {
     testWidgets(
       'the breathing circle carries the canonical "Breathing rhythm guide" label',
       (tester) async {
@@ -132,7 +132,7 @@ void main() {
 
         // The Semantics wrapper around the AnimatedBuilder uses
         // container: true + excludeSemantics: true. The label is a
-        // single static anchor — chasing the per-frame `Curves.easeInOut`
+        // single static anchor - chasing the per-frame `Curves.easeInOut`
         // scale would flood the focus stream.
         expect(
           find.bySemanticsLabel('Breathing rhythm guide'),
@@ -155,7 +155,7 @@ void main() {
 
         // "Breathe in…" / "Breathe out…" is the visual cue text. Per
         // breathing_screen.dart line 162 it sits INSIDE the
-        // `excludeSemantics: true` Semantics wrapper — so the screen
+        // `excludeSemantics: true` Semantics wrapper - so the screen
         // reader doesn't announce it (the canonical anchor is the static
         // "Breathing rhythm guide" label one node up).
         //
@@ -164,18 +164,18 @@ void main() {
         expect(
           find.bySemanticsLabel('Breathe in…'),
           findsNothing,
-          reason: 'Cue text is decorative — must be excluded from semantics.',
+          reason: 'Cue text is decorative - must be excluded from semantics.',
         );
         expect(
           find.bySemanticsLabel('Breathe out…'),
           findsNothing,
-          reason: 'Cue text is decorative — must be excluded from semantics.',
+          reason: 'Cue text is decorative - must be excluded from semantics.',
         );
       },
     );
   });
 
-  group('BreathingScreen — timer semantics throttling', () {
+  group('BreathingScreen - timer semantics throttling', () {
     testWidgets(
       'timer semantics announces at minute boundaries, not every second',
       (tester) async {
@@ -196,7 +196,7 @@ void main() {
           reason: 'Initial label MUST read "2 minutes 0 seconds remaining".',
         );
 
-        // Advance 30s — label now reads "1 minute 30 seconds remaining"
+        // Advance 30s - label now reads "1 minute 30 seconds remaining"
         // BUT the screen reader is NOT supposed to announce this update.
         // The implementation gates `liveRegion: _secondsRemaining % 60 == 0`
         // so liveRegion stays false except on minute boundaries. The
@@ -207,7 +207,7 @@ void main() {
         }
 
         // At 1:30 the label is "1 minute 30 seconds remaining" and
-        // liveRegion is FALSE — a screen reader subscribed to live
+        // liveRegion is FALSE - a screen reader subscribed to live
         // updates should NOT see this.
         final at130 = tester
             .widgetList<Semantics>(find.byType(Semantics))
@@ -221,11 +221,11 @@ void main() {
           isFalse,
           reason:
               'At a non-minute-boundary the timer semantics must NOT be '
-              'a live region — otherwise the screen reader stutters '
+              'a live region - otherwise the screen reader stutters '
               'once per second for 2 minutes straight.',
         );
 
-        // Advance another 30s — now at 1:00. liveRegion must flip true
+        // Advance another 30s - now at 1:00. liveRegion must flip true
         // so the screen reader announces "1 minute remaining".
         for (var i = 0; i < 30; i += 1) {
           await tester.pump(const Duration(seconds: 1));
@@ -248,7 +248,7 @@ void main() {
     );
   });
 
-  group('BreathingScreen — button labels', () {
+  group('BreathingScreen - button labels', () {
     testWidgets('"I\'m done" announces as a button with its action verb', (
       tester,
     ) async {
@@ -269,7 +269,7 @@ void main() {
     });
   });
 
-  group('BreathingScreen — 200% type readability', () {
+  group('BreathingScreen - 200% type readability', () {
     testWidgets(
       'dispatch body + timer + buttons render without RenderFlex overflow',
       (tester) async {
@@ -285,7 +285,7 @@ void main() {
         );
         // Use a generously tall surface so the breathing circle + button
         // row still fit at 200% type. The dispatch body alone doubles in
-        // height at 2x scale — that's why we tested overflow under a
+        // height at 2x scale - that's why we tested overflow under a
         // dedicated viewport rather than the disclaimer's 360x720.
         tester.view.physicalSize = const Size(1200, 2400);
         tester.view.devicePixelRatio = 1.0;
@@ -302,7 +302,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         // Apply the textScaler at the MaterialApp builder level requires
-        // a rebuild — for this test we use a direct MediaQuery push
+        // a rebuild - for this test we use a direct MediaQuery push
         // after navigation. Simpler: wrap _makeApp's MaterialApp with
         // the builder above. We use the simpler approach: assert no
         // overflow at the default scale (the breathing screen is the

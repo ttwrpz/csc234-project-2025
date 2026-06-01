@@ -115,7 +115,7 @@ class MoodDao extends DatabaseAccessor<MoodDatabase> with _$MoodDaoMixin {
       final remote = remoteUpdatedAt ?? -1 << 62;
       if (remote < local) return;
       if (remote == local && remoteDeviceId.compareTo(existing.deviceId) >= 0) {
-        // Tie or larger device_id loses — local stays.
+        // Tie or larger device_id loses - local stays.
         return;
       }
 

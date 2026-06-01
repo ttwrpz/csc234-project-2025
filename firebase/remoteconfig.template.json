@@ -5,7 +5,7 @@
       "defaultValue": {
         "value": "true"
       },
-      "description": "Gates the Tier 1/2 Gemini quote-suggestion path. Tier 3 is always curated (ADR-0012). Flip to false if Gemini misbehaves — Tier 1/2 falls back to the curated pool.",
+      "description": "Gates the Tier 1/2 Gemini quote-suggestion path. Tier 3 is always curated (ADR-0012). Flip to false if Gemini misbehaves - Tier 1/2 falls back to the curated pool.",
       "valueType": "BOOLEAN"
     },
     "gemini_detection_enabled": {
@@ -24,6 +24,6 @@
     }
   },
   "version": {
-    "description": "MoodBloom feature flag baseline — keep in sync with apps/mobile/lib/app/feature_flags.dart and apps/mobile/lib/main.dart setDefaults()."
+    "description": "MoodBloom feature flag baseline - keep in sync with apps/mobile/lib/app/feature_flags.dart and apps/mobile/lib/main.dart setDefaults()."
   }
 }

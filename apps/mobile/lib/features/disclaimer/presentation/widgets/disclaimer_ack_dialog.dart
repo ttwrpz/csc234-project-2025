@@ -17,8 +17,8 @@ class DisclaimerAckDialog extends ConsumerWidget {
 
   final String userId;
 
-  /// Convenience opener — drops the dialog onto the navigator and
-  /// returns when the user taps the button. Returns nothing — the
+  /// Convenience opener - drops the dialog onto the navigator and
+  /// returns when the user taps the button. Returns nothing - the
   /// caller observes [disclaimerAckStreamProvider] for the resulting
   /// state change rather than a dialog return value.
   static Future<void> show(BuildContext context, {required String userId}) {
@@ -35,7 +35,7 @@ class DisclaimerAckDialog extends ConsumerWidget {
     return AlertDialog(
       // `scrollable: true` keeps the body + actions readable at 200%
       // dynamic type on a small phone. Barrier-non-dismissible is set
-      // by the launcher in [show] — only the "I understand" button can
+      // by the launcher in [show] - only the "I understand" button can
       // pop the dialog.
       scrollable: true,
       backgroundColor: mb.bg,
@@ -75,7 +75,7 @@ class DisclaimerAckDialog extends ConsumerWidget {
               // Fire-and-forget: the rule is one-way, the stream
               // provider surfaces the resulting `true` to whoever
               // observes it, and the dialog has no "what happens on
-              // failure" affordance — it would re-open the next time
+              // failure" affordance - it would re-open the next time
               // the user visits Insights, which is the correct retry
               // semantics. Failure logging happens in the repo impl
               // (PII-free `code` only).

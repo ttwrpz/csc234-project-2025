@@ -28,7 +28,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///   (d) sign-out resets the session-unlocked flag
 ///
 /// Drives the production [routerProvider] through `MaterialApp.router`
-/// rather than computing redirect strings in isolation — the redirect
+/// rather than computing redirect strings in isolation - the redirect
 /// closure depends on a `refreshListenable` whose value is set by the
 /// `ref.listen` on the auth-state stream, which only runs inside a
 /// container with a real Riverpod scope.
@@ -97,7 +97,7 @@ void main() {
     // Drain the initial frame + the post-build redirect pass. The
     // routed screens (GardenScreen, HistoryScreen, …) may throw during
     // their build because their feature providers aren't overridden in
-    // this rig — we don't care, the assertion is on routing only.
+    // this rig - we don't care, the assertion is on routing only.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
     // Drain any framework error captured during the initial paint so
@@ -108,7 +108,7 @@ void main() {
     return router;
   }
 
-  group('Router — Privacy Lock cold-boot gate', () {
+  group('Router - Privacy Lock cold-boot gate', () {
     testWidgets('(a) signed in + Privacy Lock OFF → /home, no gate', (
       tester,
     ) async {
@@ -138,7 +138,7 @@ void main() {
           router.routerDelegate.currentConfiguration.uri.path,
           '/home',
           reason:
-              'Already-unlocked session must bypass the gate — same session, '
+              'Already-unlocked session must bypass the gate - same session, '
               'no double-prompt.',
         );
       },
@@ -181,7 +181,7 @@ void main() {
     );
   });
 
-  group('Router — sign-out resets the session-unlocked flag', () {
+  group('Router - sign-out resets the session-unlocked flag', () {
     testWidgets(
       '(d) flipping currentUserStreamProvider non-null → null clears the '
       'session-unlocked flag',
@@ -235,7 +235,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
         tester.takeException();
 
-        // Flag started true (via override) — confirm it's observable.
+        // Flag started true (via override) - confirm it's observable.
         expect(container.read(privacyLockUnlockedThisSessionProvider), isTrue);
 
         // Sign out: emit a null user. The router's auth-state listener
@@ -257,7 +257,7 @@ void main() {
   });
 }
 
-/// No-op stand-in for [MoodSyncManager] — the router's auth-state
+/// No-op stand-in for [MoodSyncManager] - the router's auth-state
 /// listener reads `moodSyncManagerProvider` on every sign-in/-out
 /// transition (skipped on web). The bootstrap/shutdown methods are
 /// no-ops because these tests assert on routing behaviour, not on

@@ -10,14 +10,14 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 /// version skew between local dev (Windows / macOS) and CI (Linux).
 ///
 /// `loadAppFonts()` registers Material Icons + the project's custom
-/// font family from pubspec assets — without it, goldens drift on
+/// font family from pubspec assets - without it, goldens drift on
 /// sub-pixel font hinting between platforms.
 ///
 /// The custom comparator allows ≤ 4% pixel difference per golden. The
 /// bar is intentionally wide enough to absorb the documented Skia /
 /// FreeType variance between platforms while still catching every
 /// real visual regression observed in S4 (silhouette swaps, chip-band
-/// re-styling, layout breaks — all ≥ 20% diff).
+/// re-styling, layout breaks - all ≥ 20% diff).
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   await loadAppFonts();
 
@@ -60,7 +60,7 @@ class _TolerantLocalFileComparator extends GoldenFileComparator
 
     final diffPercent = result.diffPercent * 100;
     if (diffPercent <= tolerancePercent) {
-      // Within tolerance — log so reviewers see the drift without a
+      // Within tolerance - log so reviewers see the drift without a
       // hard failure.
       // ignore: avoid_print
       print(

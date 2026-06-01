@@ -1,20 +1,20 @@
-# HB-007 — Tiered Intervention Dispatcher
+# HB-007 - Tiered Intervention Dispatcher
 
 **Author:** architect
 **For:** flutter-engineer
 **Sprint:** 5 (May 13–19, 2026)
 **WBS:** 5.4
-**Related:** ADR-0008 (cooldown persistence); ADR-0011 (client-side pattern engine); ADR-0012 (Tier 3 determinism — required reading); HB-008 (Quote Library + Safety Filter — must be developed in tandem); `.claude/specs/sprint-4-5-spec.md` §2.5 (Tiered Intervention), §7 TC-31..35, TC-38, TC-40
+**Related:** ADR-0008 (cooldown persistence); ADR-0011 (client-side pattern engine); ADR-0012 (Tier 3 determinism - required reading); HB-008 (Quote Library + Safety Filter - must be developed in tandem); `.claude/specs/sprint-4-5-spec.md` §2.5 (Tiered Intervention), §7 TC-31..35, TC-38, TC-40
 
 ## Goal
 
-Wire the Pattern Engine's `Tier?` triggers into user-visible notifications. When the engine emits a non-null `Tier`, dispatch a tier-appropriate response — Tier 1 = 2-minute breathing screen; Tier 2 = journaling prompt screen; Tier 3 = crisis-resources screen + Hotline 1323. Every dispatch records to Firestore for audit and respects a single shared cooldown anchor.
+Wire the Pattern Engine's `Tier?` triggers into user-visible notifications. When the engine emits a non-null `Tier`, dispatch a tier-appropriate response - Tier 1 = 2-minute breathing screen; Tier 2 = journaling prompt screen; Tier 3 = crisis-resources screen + Hotline 1323. Every dispatch records to Firestore for audit and respects a single shared cooldown anchor.
 
 ## Inputs
 
 - `Tier?` from `RunPatternEngineUseCase.run(...)` (Day-3 wiring exists).
 - `InterventionStateRepository.read()` returns the cooldown anchors (`lastTriggeredAt`, `firstTriggeredAt`) per ADR-0008.
-- `NotificationsSettings.{tier1Enabled, tier2Enabled, tier3Enabled}` (new flags this sprint — Day 2 task).
+- `NotificationsSettings.{tier1Enabled, tier2Enabled, tier3Enabled}` (new flags this sprint - Day 2 task).
 - `QuoteLibrary` + `AIQuoteRepository` + `QuoteSafetyFilter` from HB-008. The dispatcher composes them, does not duplicate them.
 - `DisclaimerCopy.notificationFooter` (already canonical at `apps/mobile/lib/features/disclaimer/domain/disclaimer_copy.dart`).
 
@@ -46,7 +46,7 @@ apps/mobile/lib/features/intervention/
     │   └── intervention_controller.dart      (@riverpod)
     ├── widgets/
     │   ├── intervention_banner.dart          (in-app banner; routes to screen on tap)
-    │   └── intervention_opt_out_button.dart  ("I'm okay" — TC-34)
+    │   └── intervention_opt_out_button.dart  ("I'm okay" - TC-34)
     └── screens/
         ├── breathing_screen.dart             (Tier 1, 2-minute timer + animation)
         ├── journaling_prompt_screen.dart     (Tier 2, prompt + textarea + save)
@@ -55,9 +55,9 @@ apps/mobile/lib/features/intervention/
 
 ## Files to extend
 
-- `firebase/firestore.rules` — open writes on `match /users/{uid}/interventions/{id}` (immutable on update; field-level allow-list on create: `tier`, `dispatchedAt`, `quoteId`, `optedOut`, `cooldownUntil`); open writes on `match /users/{uid}/cooldowns/{type}` (allow-list: `lastDispatchedAt`, `cooldownUntil`). **security-reviewer sign-off required** per CLAUDE.md.
-- `apps/mobile/lib/app/router.dart` — add routes `/intervention/breathing`, `/intervention/journal`, `/intervention/crisis`. **architect sign-off required.**
-- `apps/mobile/lib/features/pattern_engine/domain/usecases/run_pattern_engine.dart` — emit `Tier?` to a sink that the dispatcher subscribes to. Keep the use case pure-Dart; sink is a `StreamController` injected by the controller layer.
+- `firebase/firestore.rules` - open writes on `match /users/{uid}/interventions/{id}` (immutable on update; field-level allow-list on create: `tier`, `dispatchedAt`, `quoteId`, `optedOut`, `cooldownUntil`); open writes on `match /users/{uid}/cooldowns/{type}` (allow-list: `lastDispatchedAt`, `cooldownUntil`). **security-reviewer sign-off required** per CLAUDE.md.
+- `apps/mobile/lib/app/router.dart` - add routes `/intervention/breathing`, `/intervention/journal`, `/intervention/crisis`. **architect sign-off required.**
+- `apps/mobile/lib/features/pattern_engine/domain/usecases/run_pattern_engine.dart` - emit `Tier?` to a sink that the dispatcher subscribes to. Keep the use case pure-Dart; sink is a `StreamController` injected by the controller layer.
 
 ## Dispatcher state machine
 
@@ -116,7 +116,7 @@ Reuse `InterventionStateRepository.read()` for anchors. Decision logic:
 - If `lastTriggeredAt != null AND now - lastTriggeredAt < 48h`: `Blocked(reason: cooldown)`. (TC-32)
 - Otherwise: `Proceed`.
 
-When the user taps "I'm okay" (TC-34), set `interventions/{id}.optedOut = true` and call `InterventionStateRepository.writeLastTriggeredAt(now)` — the 48h cooldown applies even after opt-out so the system does not re-nag.
+When the user taps "I'm okay" (TC-34), set `interventions/{id}.optedOut = true` and call `InterventionStateRepository.writeLastTriggeredAt(now)` - the 48h cooldown applies even after opt-out so the system does not re-nag.
 
 ## Acceptance
 
@@ -131,11 +131,11 @@ When the user taps "I'm okay" (TC-34), set `interventions/{id}.optedOut = true` 
 ## Open questions for the engineer
 
 - **OQ-A:** Should the dispatcher emit an in-app banner only, or also fire an FCM push when the app is background? Default: **banner in foreground, FCM push in background**, using the existing `sendCheerUpPush.ts` CF as the per-tier delivery path (the CF decides at message build time; the dispatcher writes the `interventions/{id}` doc which the CF trigger reads). Confirm with architect at start of Day 1.
-- **OQ-B:** Tier-specific cooldown vs. global cooldown? Default: **global** — one anchor across all tiers, matching the spec's "max 1 notification/day" rule. A Tier 1 today blocks a Tier 3 tomorrow if inside 48h. Spec §2.5 supports this read. Flag to architect if the engineer wants per-tier nuance.
+- **OQ-B:** Tier-specific cooldown vs. global cooldown? Default: **global** - one anchor across all tiers, matching the spec's "max 1 notification/day" rule. A Tier 1 today blocks a Tier 3 tomorrow if inside 48h. Spec §2.5 supports this read. Flag to architect if the engineer wants per-tier nuance.
 
 ## Non-goals (do NOT do in this PR)
 
 - Do not edit `pattern_engine/` domain code beyond adding the emit hook. The 5 algorithms are frozen post-S4.
-- Do not edit `DisclaimerCopy` — strings are canonical.
+- Do not edit `DisclaimerCopy` - strings are canonical.
 - Do not build a new cooldown store. Reuse `InterventionStateRepository` (ADR-0008).
 - Do not add a `tokensRepository` dependency. Intervention features are always free (TC-35).

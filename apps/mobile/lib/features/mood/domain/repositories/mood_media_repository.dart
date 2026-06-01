@@ -10,7 +10,7 @@ enum MoodMediaSource { gallery, camera }
 /// storage. Implementations live in `data/`; this interface keeps the domain
 /// layer free of `image_picker` and `firebase_storage` imports.
 ///
-/// Sibling to [MoodRepository] — kept separate so the entry repository can
+/// Sibling to [MoodRepository] - kept separate so the entry repository can
 /// evolve without touching media plumbing.
 abstract class MoodMediaRepository {
   /// Pick one or more images/videos from the device gallery or camera.

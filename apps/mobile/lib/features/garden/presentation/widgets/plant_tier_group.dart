@@ -6,17 +6,17 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/plant_tier.dart';
 
 /// Renders the garden's plants for a given [PlantTier]. Five distinct
-/// scenes — every one renders plants alive, sheltered, and intact even
+/// scenes - every one renders plants alive, sheltered, and intact even
 /// in `stormSeason`. Rain belongs to [AtmosphereOverlay] (the weather
 /// layer above the plants); this widget never paints rain itself.
 ///
 /// Per-tier visual palette (composed from `MoodBloomColors`):
-///   * Flourishing — many large blossoms + butterflies, brightest greens.
-///   * Thriving    — fewer-but-tall blossoms, full leafy stems.
-///   * Resting     — closed buds + small leaves, calm muted palette.
-///   * Weathering  — closed buds + a soft cloud shadow ABOVE (not over)
+///   * Flourishing - many large blossoms + butterflies, brightest greens.
+///   * Thriving    - fewer-but-tall blossoms, full leafy stems.
+///   * Resting     - closed buds + small leaves, calm muted palette.
+///   * Weathering  - closed buds + a soft cloud shadow ABOVE (not over)
 ///                   the plants; vertical stems, leaves intact.
-///   * Storm Season — closed buds + brighter lanterns + an implied
+///   * Storm Season - closed buds + brighter lanterns + an implied
 ///                    shelter; plants vertical, leaves intact, no rain.
 class PlantTierGroup extends StatelessWidget {
   const PlantTierGroup({
@@ -79,7 +79,7 @@ class PlantTierGroup extends StatelessWidget {
 }
 
 /// Single painter for all 5 tiers. Keeps the widget tree shallow and
-/// deterministic for goldens — tier-specific drawing is dispatched in
+/// deterministic for goldens - tier-specific drawing is dispatched in
 /// [paint] via a switch.
 class _PlantTierPainter extends CustomPainter {
   _PlantTierPainter({required this.tier, required this.palette});
@@ -153,7 +153,7 @@ class _PlantTierPainter extends CustomPainter {
       _drawSatellite(canvas, Offset(cx - 12, size.height - h + 14), color);
       _drawSatellite(canvas, Offset(cx + 12, size.height - h + 8), color);
     }
-    // Sun glow in the top-right corner — only Flourishing has it.
+    // Sun glow in the top-right corner - only Flourishing has it.
     canvas.drawCircle(
       Offset(size.width - 18, 16),
       14,
@@ -176,7 +176,7 @@ class _PlantTierPainter extends CustomPainter {
   void _paintThriving(Canvas canvas, Size size) {
     // 5 medium blossoms in peach + dusty-pink, mid-height stems, double
     // leaves on every stem. One butterfly. No sun, no clusters, no
-    // satellites — the visual delta vs Flourishing is clear at a glance
+    // satellites - the visual delta vs Flourishing is clear at a glance
     // (different colors, fewer blooms, no ground decoration).
     const palette = [_bloomThrivingA, _bloomThrivingB];
     final centers = _evenlySpaced(size.width, 5);
@@ -253,11 +253,11 @@ class _PlantTierPainter extends CustomPainter {
 
   void _paintWeathering(Canvas canvas, Size size) {
     // 3 closed buds, leaves intact, soft cloud shadow ABOVE the plants
-    // (NOT covering them) — the cloud floats in the upper third of the
+    // (NOT covering them) - the cloud floats in the upper third of the
     // panel, plants stay vertical and visible underneath.
     final centers = _evenlySpaced(size.width, 3);
 
-    // Soft cloud shadow — single soft ellipse, low alpha.
+    // Soft cloud shadow - single soft ellipse, low alpha.
     final cloudPaint = Paint()
       ..color = palette.textDim.withValues(alpha: 0.22)
       ..style = PaintingStyle.fill;
@@ -299,12 +299,12 @@ class _PlantTierPainter extends CustomPainter {
 
   void _paintStormSeason(Canvas canvas, Size size) {
     // 3 closed buds, plants sheltered + intact. Two lanterns brighter
-    // than usual sit between the plants. Rain is NOT in this widget —
+    // than usual sit between the plants. Rain is NOT in this widget -
     // AtmosphereOverlay paints it. The "shelter" is implied by an
     // arched roof line above the plants.
     final centers = _evenlySpaced(size.width, 3);
 
-    // Implied shelter — a flat arch at the top of the panel.
+    // Implied shelter - a flat arch at the top of the panel.
     final shelterPaint = Paint()
       ..color = palette.textDim.withValues(alpha: 0.18)
       ..strokeWidth = 2
@@ -329,7 +329,7 @@ class _PlantTierPainter extends CustomPainter {
       );
     }
 
-    // Two lanterns — brighter glow than the usual mood swatches so
+    // Two lanterns - brighter glow than the usual mood swatches so
     // they read as a hopeful focal point in the storm tier.
     _drawLantern(canvas, Offset(size.width * 0.20, size.height - 30));
     _drawLantern(canvas, Offset(size.width * 0.80, size.height - 30));

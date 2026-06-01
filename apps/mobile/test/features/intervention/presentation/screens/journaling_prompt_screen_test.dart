@@ -37,7 +37,7 @@ class _RecordingController extends InterventionController {
   }
 }
 
-/// Recording mood repository — the journaling screen invokes
+/// Recording mood repository - the journaling screen invokes
 /// `SaveMoodEntryUseCase`, which in turn invokes
 /// [MoodRepository.save]. Asserting on this layer keeps the test
 /// orthogonal to the use case's internal validation.
@@ -209,7 +209,7 @@ void main() {
         await _pushScreen(tester);
         await tester.enterText(find.byType(TextField), 'I felt heavy today.');
         await tester.tap(find.widgetWithText(FilledButton, 'Save'));
-        // pump() is sufficient — the screen pops back to /host, then the
+        // pump() is sufficient - the screen pops back to /host, then the
         // snackbar lingers but doesn't block subsequent assertions.
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
@@ -219,7 +219,7 @@ void main() {
           repo.saved.first.intensity,
           3,
           reason:
-              'The journaling flow skips the slider step on purpose — '
+              'The journaling flow skips the slider step on purpose - '
               'intensity defaults to 3 (neutral).',
         );
         expect(repo.saved.first.mood, MoodType.sad);
@@ -266,7 +266,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Save'));
       await tester.pump();
       expect(find.textContaining("Couldn't save"), findsAtLeastNWidgets(1));
-      // Screen still mounted — body text still visible.
+      // Screen still mounted - body text still visible.
       expect(find.textContaining('Tier 2 quote.'), findsOneWidget);
     });
 

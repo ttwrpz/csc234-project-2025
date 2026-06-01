@@ -24,7 +24,7 @@ abstract class PinRepository {
   /// the "no PIN set" Settings state without leaking the limit state.
   Future<PinHash?> read({required String userId});
 
-  /// Idempotent — overwrites any existing hash. Used by both first-time
+  /// Idempotent - overwrites any existing hash. Used by both first-time
   /// setup and Change PIN. The data layer is responsible for:
   ///  - Generating a fresh 16-byte salt.
   ///  - Setting `iterations` and `algorithm` to the canonical values.

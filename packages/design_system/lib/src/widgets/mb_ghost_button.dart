@@ -44,7 +44,7 @@ class MbGhostButton extends StatelessWidget {
         backgroundColor: mb.card,
         foregroundColor: fg,
         side: BorderSide(color: borderColor),
-        // Size.fromHeight builds Size(double.infinity, h) — that makes
+        // Size.fromHeight builds Size(double.infinity, h) - that makes
         // the button's minWidth = infinity, which throws when the
         // parent (e.g. a Row's non-flex slot) passes unbounded width.
         // Size(0, h) keeps the height floor without forcing an infinite

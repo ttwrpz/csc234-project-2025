@@ -20,7 +20,7 @@ import '../domain/repositories/insights_repository.dart';
 ///
 /// Composition strategy: a hand-rolled `_LatestCombiner` merges the two
 /// inbound streams without taking a dependency on rxdart (not in
-/// pubspec — adding it for one operator would be heavier than the
+/// pubspec - adding it for one operator would be heavier than the
 /// 30-line helper below). The combiner re-emits whenever either side
 /// updates; it suppresses emission until the first event has landed on
 /// each source so consumers never see a half-joined snapshot.
@@ -31,8 +31,8 @@ import '../domain/repositories/insights_repository.dart';
 ///     on days with zero entries.
 ///   * `gardenHealthH` = EWMA `H_t` folded forward day-by-day, resetting
 ///     to `H_0 = 0` at every Monday boundary (mirrors
-///     `ComputeGardenStateUseCase` — weekly harvest resets H_t). Days
-///     without entries do NOT fold zero — they carry the previous H_t
+///     `ComputeGardenStateUseCase` - weekly harvest resets H_t). Days
+///     without entries do NOT fold zero - they carry the previous H_t
 ///     unchanged.
 ///   * `dominantEmotion` = the most-frequent `mood` on the day; ties
 ///     broken by `MoodType.values` declaration order.
@@ -72,14 +72,14 @@ class InsightsRepositoryImpl implements InsightsRepository {
     ).stream.map((tuple) => joinForTest(window, tuple.$1, tuple.$2));
   }
 
-  /// Pure join function — extracted so it can be unit-tested without
+  /// Pure join function - extracted so it can be unit-tested without
   /// spinning up streams. Public-with-`forTest`-suffix per the project's
   /// existing pattern (see `MoodRepositoryImpl`).
   ///
   /// Folds garden-health EWMA forward day-by-day across [window]. To
   /// correctly seed `H_0 = 0` at every Monday boundary the fold walks
   /// from the most recent Monday on-or-before `window.startDate` rather
-  /// than from `window.startDate` itself — so a 14-day window that opens
+  /// than from `window.startDate` itself - so a 14-day window that opens
   /// on a Wednesday still inherits the right partial-week H_t.
   static List<DailyInsight> joinForTest(
     InsightWindow window,
@@ -92,7 +92,7 @@ class InsightsRepositoryImpl implements InsightsRepository {
       final d = localMidnight(e.createdAt);
       moodsByDay.putIfAbsent(d, () => <MoodEntry>[]).add(e);
     }
-    // 2. Bucket pattern docs by dateId — there is at most one per day.
+    // 2. Bucket pattern docs by dateId - there is at most one per day.
     final patternsByDay = <String, PatternResult>{
       for (final p in patterns) p.dateId: p,
     };
@@ -100,12 +100,12 @@ class InsightsRepositoryImpl implements InsightsRepository {
     // 3. Walk from the Monday on-or-before `window.startDate` up to
     //    `window.endDate`, folding H_t day by day. Reset H_t to 0 each
     //    Monday (matches the weekly harvest cycle). Days
-    //    without entries do NOT fold zero — carry the previous H_t.
+    //    without entries do NOT fold zero - carry the previous H_t.
     final foldStart = _mondayOnOrBefore(window.startDate);
     var h = 0.0;
     // Tracks whether the user has logged at least one entry in the
     // CURRENT week. Reset on every Monday so empty Mondays surface as
-    // null (no signal) rather than carrying Sunday's H forward — which
+    // null (no signal) rather than carrying Sunday's H forward - which
     // would defeat the weekly reset.
     var weekHasEntry = false;
     final hByDay = <DateTime, double?>{};
@@ -125,7 +125,7 @@ class InsightsRepositoryImpl implements InsightsRepository {
         hByDay[d] = h;
       } else {
         // Empty day: carry forward THIS WEEK's H (only if the week
-        // has at least one prior entry). Otherwise null — no signal.
+        // has at least one prior entry). Otherwise null - no signal.
         hByDay[d] = weekHasEntry ? h : null;
       }
     }
@@ -164,7 +164,7 @@ class InsightsRepositoryImpl implements InsightsRepository {
   ///    flag tripped, since each maps to a different copy line. If a
   ///    legacy doc (pre-engine-flags) carries `triggeredTier = three`
   ///    with none of the three Tier-3 flags asserted, return `null`
-  ///    rather than guess — the popover renders without the algorithm
+  ///    rather than guess - the popover renders without the algorithm
   ///    line (graceful degradation).
   static PatternEngineTriggerKind? _reasonFor(PatternResult? pattern) {
     if (pattern == null) return null;
@@ -205,7 +205,7 @@ class InsightsRepositoryImpl implements InsightsRepository {
   }
 
   /// Most-frequent mood across [entries]. Ties broken by `MoodType.values`
-  /// declaration order — iterates the enum once and tracks the highest
+  /// declaration order - iterates the enum once and tracks the highest
   /// count seen so far, picking the FIRST type that hits that count.
   /// Deterministic across renders.
   static MoodType _dominantEmotion(List<MoodEntry> entries) {
@@ -243,7 +243,7 @@ class InsightsRepositoryImpl implements InsightsRepository {
 
 /// Manual two-stream combiner that re-emits the latest tuple whenever
 /// either input pushes. Replicates the subset of rxdart's
-/// `Rx.combineLatest2` we need without taking the dep — see class doc on
+/// `Rx.combineLatest2` we need without taking the dep - see class doc on
 /// [InsightsRepositoryImpl] for the rationale.
 ///
 /// Holds the most recent value from each source. Suppresses emission

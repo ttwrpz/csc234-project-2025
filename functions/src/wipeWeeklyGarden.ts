@@ -12,7 +12,7 @@
 // it deletes that exact doc (or no-ops if it doesn't exist).
 //
 // Why a Cloud Function (not client-side delete):
-// `weeklyGardens/{weekId}` rules are `delete: if false` — the archive
+// `weeklyGardens/{weekId}` rules are `delete: if false` - the archive
 // is meant to be immutable in production. The debug Force-Harvest
 // flow needs to bypass that for replay. Admin SDK on the server
 // bypasses rules cleanly; the client cannot.

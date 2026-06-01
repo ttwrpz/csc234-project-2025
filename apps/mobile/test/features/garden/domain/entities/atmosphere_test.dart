@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/garden/domain/entities/atmosphere.dart';
 
 void main() {
-  group('Atmosphere.fromAverage — boundary cuts (ADR-0010 §5)', () {
+  group('Atmosphere.fromAverage - boundary cuts (ADR-0010 §5)', () {
     test('avg = 0 → calmSunny (zero is non-negative)', () {
       expect(Atmosphere.fromAverage(0), Atmosphere.calmSunny);
     });

@@ -1,10 +1,10 @@
-# HB-008 — Quote Library + Quote Safety Filter
+# HB-008 - Quote Library + Quote Safety Filter
 
 **Author:** architect
-**For:** flutter-engineer (Dart layer) + flutter-engineer (TypeScript CF layer) — same engineer can do both, but the security-reviewer audits the CF independently.
+**For:** flutter-engineer (Dart layer) + flutter-engineer (TypeScript CF layer) - same engineer can do both, but the security-reviewer audits the CF independently.
 **Sprint:** 5 (May 13–19, 2026)
 **WBS:** 5.5
-**Related:** ADR-0003 (CF contract); ADR-0012 (Tier 3 determinism — required reading); HB-007 (dispatcher — composes this); `.claude/specs/sprint-4-5-spec.md` §3 (Quote Library Architecture), §7 TC-40, TC-41
+**Related:** ADR-0003 (CF contract); ADR-0012 (Tier 3 determinism - required reading); HB-007 (dispatcher - composes this); `.claude/specs/sprint-4-5-spec.md` §3 (Quote Library Architecture), §7 TC-40, TC-41
 
 ## Goal
 
@@ -78,20 +78,20 @@ silently let them through.
 ## Curated pool authoring
 
 ```
-QuoteLibrary.tier1Pool — 12 entries
+QuoteLibrary.tier1Pool - 12 entries
   examples:
   "It looks like your garden has had some rainy days. Would you like a
    2-minute breathing exercise?"
-  "Rainy days happen. A short breath might help — only if you'd like."
+  "Rainy days happen. A short breath might help - only if you'd like."
   ...
 
-QuoteLibrary.tier2Pool — 12 entries
+QuoteLibrary.tier2Pool - 12 entries
   examples:
   "Would you like to write about what's been on your mind?"
   "Sometimes putting feelings into words helps. Want to try?"
   ...
 
-QuoteLibrary.tier3Pool — 8 to 12 entries
+QuoteLibrary.tier3Pool - 8 to 12 entries
   examples:
   "We care about you. If it helps to talk, the Thai Mental Health
    Hotline is free at 1323, 24 hours."
@@ -110,7 +110,7 @@ QuoteLibrary.tier3Pool — 8 to 12 entries
 
 ## Rotation
 
-`pickTier3(seed: DateTime)` deterministically picks an index by `seed.toUtc().day % tier3Pool.length`. Same date → same phrase across devices; next day → next phrase. Tier 1/2 use a different seed (`seed.weekId` so phrases vary across weeks but not within a week — the dispatcher hits at most once per 48h, so this is cosmetic).
+`pickTier3(seed: DateTime)` deterministically picks an index by `seed.toUtc().day % tier3Pool.length`. Same date → same phrase across devices; next day → next phrase. Tier 1/2 use a different seed (`seed.weekId` so phrases vary across weeks but not within a week - the dispatcher hits at most once per 48h, so this is cosmetic).
 
 ## suggestQuote.ts Cloud Function spec
 
@@ -122,7 +122,7 @@ QuoteLibrary.tier3Pool — 8 to 12 entries
 // timeout: 30s
 
 input: {
-  tier: 1 | 2,               // NEVER 3 — runtime guard rejects 3 with
+  tier: 1 | 2,               // NEVER 3 - runtime guard rejects 3 with
                              // 'invalid-argument'
   context: {
     weekId: string,          // e.g. "2026-W19"
@@ -143,7 +143,7 @@ system prompt (locked, version-controlled in this file):
    to a {tier=1: breathing exercise | tier=2: journaling prompt}.
    Forbidden words: depression, anxiety disorder, bipolar, diagnose,
    medication, therapy, must, should. Use compassionate language
-   only. Reply with the sentence only — no quotes, no preamble."
+   only. Reply with the sentence only - no quotes, no preamble."
 
 model: gemini-2.5-flash
 temperature: 0.4
@@ -156,7 +156,7 @@ output: { suggestedText: string }
 errors:
   - invalid-argument (tier=3, malformed input)
   - resource-exhausted (rate-limit hit)
-  - internal (Gemini failure — client falls back to curated)
+  - internal (Gemini failure - client falls back to curated)
 ```
 
 ## Acceptance
@@ -175,5 +175,5 @@ errors:
 ## Non-goals
 
 - Do not call Gemini for Tier 3, ever, anywhere in this feature.
-- Do not log raw Gemini output to Crashlytics or the structured logger — only log the post-filter `source` (curated / ai) and the `quoteId`. Raw quote text is fine for in-app display but never for observability.
+- Do not log raw Gemini output to Crashlytics or the structured logger - only log the post-filter `source` (curated / ai) and the `quoteId`. Raw quote text is fine for in-app display but never for observability.
 - Do not bypass the filter "in dev". If Gemini is down in development, the curated fallback is the dev experience too.

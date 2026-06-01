@@ -17,7 +17,7 @@ Widget _harness(Widget child) {
 }
 
 void main() {
-  group('FlowerSprite — renders for each species', () {
+  group('FlowerSprite - renders for each species', () {
     for (final species in FlowerSpecies.values) {
       testWidgets('species=${species.name} → exposes a CustomPaint', (
         tester,
@@ -31,7 +31,7 @@ void main() {
     }
   });
 
-  group('FlowerSprite — semantics label', () {
+  group('FlowerSprite - semantics label', () {
     testWidgets(
       'excludeSemantics: true (default) → sprite is hidden from a11y tree',
       (tester) async {
@@ -72,7 +72,7 @@ void main() {
       expect(find.bySemanticsLabel('fern flower'), findsNothing);
     });
 
-    test('semanticLabelOf is exhaustive — every species has a label', () {
+    test('semanticLabelOf is exhaustive - every species has a label', () {
       for (final s in FlowerSpecies.values) {
         final label = FlowerSprite.semanticLabelOf(s);
         expect(label, isNotEmpty);
@@ -81,7 +81,7 @@ void main() {
     });
   });
 
-  group('FlowerSprite — sizing', () {
+  group('FlowerSprite - sizing', () {
     testWidgets('default size is 24×24', (tester) async {
       await tester.pumpWidget(
         _harness(const FlowerSprite(species: FlowerSpecies.daisy)),

@@ -8,7 +8,7 @@ import '../../data/providers.dart';
 import '../../domain/entities/biometric_capability.dart';
 import 'pin_setup_screen.dart';
 
-/// `/privacy/setup` — the first-time setup orchestration screen for
+/// `/privacy/setup` - the first-time setup orchestration screen for
 /// the History privacy gate.
 ///
 /// Sequences three steps:
@@ -19,7 +19,7 @@ import 'pin_setup_screen.dart';
 ///   - Confirmation: "Privacy lock is on." card with a single "Done"
 ///     button that pops back to Settings.
 ///
-/// Cancellation at any step rewinds the PRIVACY toggle to OFF —
+/// Cancellation at any step rewinds the PRIVACY toggle to OFF -
 /// callers should only flip the toggle ON once this screen returns
 /// `true` via `context.pop(true)`.
 class PrivacySetupFlowScreen extends ConsumerStatefulWidget {
@@ -66,7 +66,7 @@ class _PrivacySetupFlowScreenState
     await result.fold(
       ok: (_) async {
         // Privacy Lock setup is the single source of truth for
-        // opting into biometric — when the user confirms their
+        // opting into biometric - when the user confirms their
         // biometric here, persist the opt-in so the unlock screen
         // fires the OS prompt on future cold boots. The
         // BiometricCapability provider is invalidated so dependent
@@ -179,7 +179,7 @@ class _PinStep extends ConsumerWidget {
     final user = ref.watch(currentUserStreamProvider).value;
     if (user == null) {
       // The setup flow is unreachable when signed out. This branch is
-      // defensive — if it fires we bail back to Settings rather than
+      // defensive - if it fires we bail back to Settings rather than
       // render a half-state.
       WidgetsBinding.instance.addPostFrameCallback((_) => onCancel());
       return const SizedBox.shrink();

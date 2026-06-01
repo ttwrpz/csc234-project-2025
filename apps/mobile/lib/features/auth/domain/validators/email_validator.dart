@@ -1,4 +1,4 @@
-/// Pure-Dart email validation. Intentionally permissive — we do not try to
+/// Pure-Dart email validation. Intentionally permissive - we do not try to
 /// reproduce RFC 5322 here; Firebase and the email server will reject anything
 /// genuinely malformed. We only catch obviously empty / unparseable inputs so
 /// the UI can surface a friendly message before a network round-trip.

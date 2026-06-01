@@ -8,7 +8,7 @@ import '../../../mood/domain/entities/mood_type.dart';
 /// single species so the user can learn the visual vocabulary at a
 /// glance.
 ///
-/// This file is pure Dart on purpose — no `package:flutter` imports —
+/// This file is pure Dart on purpose - no `package:flutter` imports -
 /// so the mapping can be unit-tested without spinning up a widget tree.
 /// The actual painting lives in
 /// `presentation/widgets/flower_sprite.dart`.

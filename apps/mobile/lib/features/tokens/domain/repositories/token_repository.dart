@@ -17,7 +17,7 @@ import '../token_failure.dart';
 /// post-save controller logs the failure but never blocks the user's
 /// log-success surfacing on it.
 ///
-/// Pure-Dart contract — imports only `package:core/core.dart` and
+/// Pure-Dart contract - imports only `package:core/core.dart` and
 /// sibling domain entities. Domain-purity rule per CLAUDE.md.
 abstract class TokenRepository {
   /// Atomically reads the user's current token state, computes the
@@ -38,7 +38,7 @@ abstract class TokenRepository {
   /// `lastTokenEarnedDate`). Exists so QA / reviewers can grant
   /// themselves tokens during testing without manufacturing a week of
   /// mood logs. Production callers MUST gate invocations behind
-  /// `kDebugMode` — the Firestore rule only permits monotonic-up
+  /// `kDebugMode` - the Firestore rule only permits monotonic-up
   /// increments to `tokenBalance`, so the write succeeds in release
   /// builds too, but no production surface should expose this path.
   ///

@@ -26,7 +26,7 @@ void main() {
   const useCase = ComputeGardenStateUseCase();
 
   // Pin "today" to a concrete local date for determinism. Sunday May 3
-  // 2026 is the *end* of the week starting Mon Apr 27 — gives us a full
+  // 2026 is the *end* of the week starting Mon Apr 27 - gives us a full
   // 7-day window to seed the EWMA from inside a single weekly cycle.
   final now = DateTime(2026, 5, 3, 10, 30); // Sun May 3, 10:30 local
   final today = DateTime(2026, 5, 3);
@@ -81,7 +81,7 @@ void main() {
       // is Sad×5 → S=-1.0. Easier path: simulate by passing a list of
       // strongly-positive days that fold to ~+0.4, then add today=Sad×5.
       // For determinism we use a closed-form sequence: 6 Joy×5 days at
-      // S=+1.0 give H ≈ 0.62 — too high. Use 4 Joy×5 days: H ≈ 0.48 —
+      // S=+1.0 give H ≈ 0.62 - too high. Use 4 Joy×5 days: H ≈ 0.48 -
       // closer but not exact. The cleanest reproduction is to seed the
       // recurrence directly via the single-step variant; here we
       // instead pin a hand-computed input that lands at H≈+0.4.
@@ -89,12 +89,12 @@ void main() {
       // Algebraic shortcut: foldGardenHealthEwma([1.0, 1.0, 1.0, 1.0])
       //   = 0.15 × (1 - 0.85^4) / (1 - 0.85) = 0.4780...
       // foldGardenHealthEwma([1.0, 1.0, 1.0]) ≈ 0.3859 (just under 0.4)
-      // foldGardenHealthEwma([1.0, 0.5, 1.0, 0.5, 0.8]) — too fiddly.
+      // foldGardenHealthEwma([1.0, 0.5, 1.0, 0.5, 0.8]) - too fiddly.
       //
       // Use 4 days of Joy×5 so today's H_{t-1} ≈ 0.478. Then today's
       // Sad×5 (S=-1.0) folds to:
       //   H_t = 0.15 × -1 + 0.85 × 0.478 = -0.15 + 0.4063 = 0.2563
-      // Still in the thriving band [+0.1, +0.4) — assertion holds.
+      // Still in the thriving band [+0.1, +0.4) - assertion holds.
       final result = useCase(
         entries: [
           _entry(
@@ -143,7 +143,7 @@ void main() {
         result.plantTier,
         PlantTier.thriving,
         reason:
-            'A single bad day after a strong week stays in thriving — '
+            'A single bad day after a strong week stays in thriving - '
             'the slow EWMA absorbs the dip (TC-23 invariant).',
       );
     });
@@ -281,8 +281,8 @@ void main() {
     // User reported (post-v1.0 polish): "negative mood does not show up
     // on the garden, weather in the garden must depend on avg today
     // mood score (recheck again)". The math below is the contract. If
-    // any of these tests fail, the visual surface — atmosphere overlay
-    // + daily-score strip + plant tier — will mis-render negative
+    // any of these tests fail, the visual surface - atmosphere overlay
+    // + daily-score strip + plant tier - will mis-render negative
     // logs, which is the user-perceived "doesn't show up" failure mode.
 
     group('negative mood visible in garden state (user feedback regression)', () {
@@ -301,7 +301,7 @@ void main() {
         );
         // H_1 = 0.15 × -0.6 = -0.09 → Resting (just inside [-0.1, +0.1)).
         // The plant tier does NOT flip on a single mid-intensity sad
-        // entry — by design (bounded daily delta α=0.15). The
+        // entry - by design (bounded daily delta α=0.15). The
         // atmosphere change is the immediate visual signal.
         expect(result.gardenHealth, closeTo(-0.09, 1e-9));
         expect(result.plantTier, PlantTier.resting);
@@ -398,7 +398,7 @@ void main() {
 
       test(
         'today has no entry but yesterday was negative → atmosphere=calmSunny '
-        '(today-only contract — fast signal resets at midnight)',
+        '(today-only contract - fast signal resets at midnight)',
         () {
           final result = useCase(
             entries: [

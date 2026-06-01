@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MoodMedia {
 
-/// Device-side file URI returned by the picker. Treat as ephemeral —
+/// Device-side file URI returned by the picker. Treat as ephemeral -
 /// callers must upload before the user backgrounds the app for long.
  String get localPath; MoodMediaKind get kind; int get sizeBytes;/// MIME type detected from the picker (`XFile.mimeType`) or, when null,
 /// inferred from the filename via `package:mime`.
@@ -216,7 +216,7 @@ class _MoodMedia implements MoodMedia {
   const _MoodMedia({required this.localPath, required this.kind, required this.sizeBytes, required this.mimeType});
   
 
-/// Device-side file URI returned by the picker. Treat as ephemeral —
+/// Device-side file URI returned by the picker. Treat as ephemeral -
 /// callers must upload before the user backgrounds the app for long.
 @override final  String localPath;
 @override final  MoodMediaKind kind;

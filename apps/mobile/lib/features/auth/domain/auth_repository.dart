@@ -55,25 +55,25 @@ abstract class AuthRepository {
 
   /// Reauthenticates the currently signed-in user against [creds].
   /// Required by Firebase Auth before `currentUser.delete()` will
-  /// accept the operation — the recent-login window guards destructive
+  /// accept the operation - the recent-login window guards destructive
   /// account-level operations. On success the authenticated session
   /// has a fresh sign-in timestamp.
   ///
   /// Returns `AuthFailure.wrongPassword()` for password mismatches,
   /// `AuthFailure.network()` for transport failures, and
   /// `AuthFailure.unknown(cause)` for everything else. Implementations
-  /// must NOT throw — every Firebase error code maps to a sealed
+  /// must NOT throw - every Firebase error code maps to a sealed
   /// variant before crossing the data/domain boundary.
   Future<Result<void, AuthFailure>> reauthenticate(AuthCredentials creds);
 
   /// Calls the admin-SDK Cloud Function that cascades the user's
   /// Firestore + Storage data. **Does not** touch the local Firebase
-  /// Auth user — that's owned by [deleteCurrentUser], which the use
+  /// Auth user - that's owned by [deleteCurrentUser], which the use
   /// case calls right after. Idempotent: a re-run on a uid whose data
   /// is already gone returns `Ok(null)` because the CF returns
   /// `{ ok: true, alreadyDeleted: true }`.
   ///
-  /// Reauth must precede this call — the use case orchestrates that
+  /// Reauth must precede this call - the use case orchestrates that
   /// sequencing via [DeleteAccountUseCase].
   Future<Result<void, AuthFailure>> deleteAccount();
 
@@ -97,7 +97,7 @@ abstract class AuthRepository {
   ///   - `Ok(null)` when the auth user is gone (or was already gone).
   ///   - `Err(AuthFailure.requiresRecentLogin())` when Firebase Auth's
   ///     recent-login window has expired. The caller proceeds to
-  ///     signOut anyway — the local session is the only thing the
+  ///     signOut anyway - the local session is the only thing the
   ///     window guards against, and the server data is already gone.
   ///   - `Err(AuthFailure.unknown(cause))` for any other failure.
   ///

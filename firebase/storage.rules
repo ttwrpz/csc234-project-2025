@@ -4,7 +4,7 @@ service firebase.storage {
     match /users/{uid}/media/{path=**} {
       // Reads only need owner-auth. The previous rule lumped read +
       // write together and required `request.resource.size` /
-      // `.contentType` — both of those are NULL on reads, so every
+      // `.contentType` - both of those are NULL on reads, so every
       // image fetch returned 403 even though the upload had succeeded.
       allow read: if request.auth != null
                   && request.auth.uid == uid;

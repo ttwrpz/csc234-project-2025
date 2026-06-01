@@ -17,7 +17,7 @@ import 'repositories/harvest_repository_impl.dart';
 /// `domain/usecases/`; these providers just expose const instances for
 /// controllers + screens.
 
-/// Pure-Dart [ComputeWeeklySummaryUseCase]. Const instance — safe to
+/// Pure-Dart [ComputeWeeklySummaryUseCase]. Const instance - safe to
 /// `overrideWithValue` in tests with a fake.
 final computeWeeklySummaryUseCaseProvider =
     Provider<ComputeWeeklySummaryUseCase>(

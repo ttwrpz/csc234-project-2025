@@ -7,7 +7,7 @@ part 'mood_draft.freezed.dart';
 
 /// In-progress mood entry held by `LogMoodController`.
 ///
-/// Lives only in memory — never serialized — so it has no JSON support.
+/// Lives only in memory - never serialized - so it has no JSON support.
 ///
 /// `pickedMedia` is the local-device list of attachments the user has chosen
 /// but not yet uploaded. They become `mediaRefs` (`gs://...` URIs) only after

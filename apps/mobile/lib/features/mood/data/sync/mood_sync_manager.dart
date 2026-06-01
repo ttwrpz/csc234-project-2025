@@ -91,8 +91,8 @@ class MoodSyncManager {
   /// Latest connectivity reading. Defaults to `false`: assuming online at boot
   /// would let the first drain fire before the connectivity stream confirms,
   /// wasting an `attempt_count` when the device actually starts offline. The
-  /// `connectivity_plus` listener emits the real state within milliseconds —
-  /// no observable UX regression — and offline-boot now correctly waits for
+  /// `connectivity_plus` listener emits the real state within milliseconds -
+  /// no observable UX regression - and offline-boot now correctly waits for
   /// connectivity.
   bool _isOnline = false;
 
@@ -131,7 +131,7 @@ class MoodSyncManager {
       // clear-cache flow does exactly that) works without a process
       // restart. The original timers + connectivity were torn down by
       // `shutdown`, but their owning streams / providers are still alive
-      // upstream — bootstrap just needs permission to attach again.
+      // upstream - bootstrap just needs permission to attach again.
       _shutdown = false;
     }
     if (_attachedUid == uid && _listenerSub != null) return;
@@ -155,7 +155,7 @@ class MoodSyncManager {
 
     _attachedUid = uid;
 
-    // One-shot bootstrap seed (idempotent — the SharedPreferences flag is
+    // One-shot bootstrap seed (idempotent - the SharedPreferences flag is
     // checked first; `upsertFromRemote` is itself idempotent under LWW).
     final seededKey = 'mood.seeded.$uid';
     if (_prefs.getBool(seededKey) != true) {
@@ -251,13 +251,13 @@ class MoodSyncManager {
         limit: _kDrainBatchSize,
       );
       if (batch.isEmpty) {
-        // Empty queue, attached uid present, online — that IS a successful
+        // Empty queue, attached uid present, online - that IS a successful
         // sync: we just confirmed nothing is pending upload. Stamp the
         // timestamp so the Settings "Last synced" line refreshes after a
         // manual `kick()` (Sync now button) even when there were no
         // pending writes to push. Without this stamp the UI would only
         // update when the Firestore listener pushed a snapshot down or
-        // when there was an actual queue row to drain — meaning Sync
+        // when there was an actual queue row to drain - meaning Sync
         // now appeared inert on an already-clean device.
         await _stampLastSuccessfulSync();
         return;
@@ -291,7 +291,7 @@ class MoodSyncManager {
       if (anySuccess) await _stampLastSuccessfulSync();
 
       // Every row in the batch was either skipped or already in our skipped
-      // set — no further progress is possible this drain pass.
+      // set - no further progress is possible this drain pass.
       if (!madeProgress) return;
     }
   }
@@ -461,7 +461,7 @@ class MoodSyncManager {
     }
     _previousRemoteIds = currentIds;
 
-    // Reaching a clean snapshot from Firestore IS a successful sync —
+    // Reaching a clean snapshot from Firestore IS a successful sync -
     // local Drift now mirrors the cloud. Stamp the timestamp so the
     // Settings UI shows "synced just now" after the listener fires even
     // when there were no pending writes.
@@ -496,7 +496,7 @@ class MoodSyncManager {
   /// Light-weight extraction of just the `userId` from a queue row's payload,
   /// used to enforce the cross-user drain filter without fully reconstructing
   /// the DTO. Returns `null` if the payload is malformed or lacks a `userId`
-  /// field — the caller treats null as "unsafe to replay" and skips the row.
+  /// field - the caller treats null as "unsafe to replay" and skips the row.
   String? _payloadUserId(SyncQueueRow row) {
     try {
       final raw = jsonDecode(row.payload);

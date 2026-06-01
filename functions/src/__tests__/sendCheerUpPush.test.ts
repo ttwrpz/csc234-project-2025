@@ -54,7 +54,7 @@ jest.unstable_mockModule('firebase-functions/v2/https', () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// In-memory Firestore mock — wide enough for both the rate-limit TX
+// In-memory Firestore mock - wide enough for both the rate-limit TX
 // (analyzeMoodText shape) AND the .doc(path).get()/.update() path the
 // CF uses against `users/{uid}/settings/notifications`.
 // ---------------------------------------------------------------------------
@@ -76,7 +76,7 @@ interface DocRefMock {
 
 let txChain: Promise<unknown> = Promise.resolve();
 
-// Test-only escape hatch — when set, the next runTransaction call
+// Test-only escape hatch - when set, the next runTransaction call
 // rejects with this error and the flag is consumed. Used by the
 // `internal/rate_limit_tx_failed` PII canary case (PR #35 audit
 // R-004) to drive the CF's catch branch.
@@ -156,7 +156,7 @@ jest.unstable_mockModule('firebase-admin/firestore', () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// Messaging mock — settable per-test response shape so we can stub
+// Messaging mock - settable per-test response shape so we can stub
 // per-token success / dead-token errors.
 // ---------------------------------------------------------------------------
 
@@ -262,7 +262,7 @@ function lastLog(): { level: string; payload: unknown } | undefined {
 // ---------------------------------------------------------------------------
 
 describe('sendCheerUpPush trigger', () => {
-  test('1. happy-path — 2 tokens, fresh rate limit → multicast sent with locked payload', async () => {
+  test('1. happy-path - 2 tokens, fresh rate limit → multicast sent with locked payload', async () => {
     seedSettings('uid-happy', {
       cheerUpEnabled: true,
       tokens: [
@@ -295,7 +295,7 @@ describe('sendCheerUpPush trigger', () => {
     });
   });
 
-  test('2. opted_out — cheerUpEnabled=false → no FCM call, no rate-limit consumption', async () => {
+  test('2. opted_out - cheerUpEnabled=false → no FCM call, no rate-limit consumption', async () => {
     seedSettings('uid-opt', {
       cheerUpEnabled: false,
       tokens: [{ token: 'tok-X', platform: 'android' }],
@@ -312,8 +312,8 @@ describe('sendCheerUpPush trigger', () => {
     });
   });
 
-  test('2b. opted_out — settings doc missing entirely → no FCM call, no rate-limit consumption', async () => {
-    // No seed — docStore is empty. Doc snapshot exists=false; the CF
+  test('2b. opted_out - settings doc missing entirely → no FCM call, no rate-limit consumption', async () => {
+    // No seed - docStore is empty. Doc snapshot exists=false; the CF
     // must treat this identically to cheerUpEnabled !== true.
     await invoke('uid-no-doc');
 
@@ -322,13 +322,13 @@ describe('sendCheerUpPush trigger', () => {
     expect(lastLog()?.payload).toMatchObject({ outcome: 'opted_out' });
   });
 
-  test('3. no_tokens — cheerUpEnabled=true with empty token list', async () => {
+  test('3. no_tokens - cheerUpEnabled=true with empty token list', async () => {
     seedSettings('uid-empty', { cheerUpEnabled: true, tokens: [] });
 
     await invoke('uid-empty');
 
     expect(sendEachForMulticastMock).not.toHaveBeenCalled();
-    // Rate-limit MUST not be consumed when there's nothing to send —
+    // Rate-limit MUST not be consumed when there's nothing to send -
     // otherwise the user's daily budget could be exhausted by
     // misconfigured devices.
     expect(rateLimitStore.size).toBe(0);
@@ -338,7 +338,7 @@ describe('sendCheerUpPush trigger', () => {
     });
   });
 
-  test('4. rate_limited — second invocation within 24h returns rate_limited with retryAfterSec', async () => {
+  test('4. rate_limited - second invocation within 24h returns rate_limited with retryAfterSec', async () => {
     seedSettings('uid-rate', {
       cheerUpEnabled: true,
       tokens: [{ token: 'tok-1', platform: 'android' }],
@@ -347,7 +347,7 @@ describe('sendCheerUpPush trigger', () => {
     await invoke('uid-rate');
     expect(sendEachForMulticastMock).toHaveBeenCalledTimes(1);
 
-    // Re-invoke — the consumeToken store still has the slot consumed.
+    // Re-invoke - the consumeToken store still has the slot consumed.
     await invoke('uid-rate', '2026-05-13-3_consecutive_high_intensity');
 
     // Still only ONE FCM call across the two invocations.
@@ -364,7 +364,7 @@ describe('sendCheerUpPush trigger', () => {
     expect(payload.rateLimit?.retryAfterSec).toBeGreaterThanOrEqual(1);
   });
 
-  test('5. dead-token pruning — one of two tokens returns registration-token-not-registered', async () => {
+  test('5. dead-token pruning - one of two tokens returns registration-token-not-registered', async () => {
     seedSettings('uid-prune', {
       cheerUpEnabled: true,
       tokens: [
@@ -407,10 +407,10 @@ describe('sendCheerUpPush trigger', () => {
     });
   });
 
-  test('6. PII canary — across all cases, no log payload contains token strings, BODY, or TITLE', async () => {
+  test('6. PII canary - across all cases, no log payload contains token strings, BODY, or TITLE', async () => {
     // Drive each branch once: opted_out, no_tokens, sent,
     // rate_limited, AND internal/rate_limit_tx_failed (PR #35 audit
-    // R-004 — the catch branch around consumeToken logs at level
+    // R-004 - the catch branch around consumeToken logs at level
     // `error` with `cause: e.name`, must still respect the allowlist).
     seedSettings('uid-A', {
       cheerUpEnabled: false,
@@ -440,8 +440,8 @@ describe('sendCheerUpPush trigger', () => {
       tokens: [{ token: 'tok-D1', platform: 'android' }],
     });
     txThrowOnNextCall = new Error(
-      // The error MESSAGE should never reach the log payload — only
-      // the error NAME does — but include the forbidden strings here
+      // The error MESSAGE should never reach the log payload - only
+      // the error NAME does - but include the forbidden strings here
       // so we'd catch a regression that started logging `e.message`.
       "tok-D1 leaked: Noticing you've had a rough stretch. We're here.",
     );
@@ -462,7 +462,7 @@ describe('sendCheerUpPush trigger', () => {
       }
     }
 
-    // Defense-in-depth: confirm the internal branch actually fired —
+    // Defense-in-depth: confirm the internal branch actually fired -
     // a regression that turned the catch into a no-op would silently
     // make the PII canary above vacuous on the new uid.
     const internalErrors = loggerCalls.filter(
@@ -477,7 +477,7 @@ describe('sendCheerUpPush trigger', () => {
     expect(internalErrors).toHaveLength(1);
   });
 
-  test('7. channel-id literal — multicast payload always uses cheer_up exactly', async () => {
+  test('7. channel-id literal - multicast payload always uses cheer_up exactly', async () => {
     seedSettings('uid-channel', {
       cheerUpEnabled: true,
       tokens: [{ token: 'tok-Z', platform: 'android' }],
@@ -489,7 +489,7 @@ describe('sendCheerUpPush trigger', () => {
     const msg = sentMulticasts[0];
     if (!msg) throw new Error('expected a multicast');
     // Defense against typos like 'cheerUp' or 'cheer-up' that would
-    // collapse the whole pipeline silently — the manifest declares
+    // collapse the whole pipeline silently - the manifest declares
     // `cheer_up` and the Dart channel registration uses `cheer_up`,
     // so this MUST match byte-for-byte.
     expect(msg.android?.notification?.channelId).toBe('cheer_up');

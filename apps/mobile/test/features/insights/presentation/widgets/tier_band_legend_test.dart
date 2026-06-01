@@ -13,7 +13,7 @@ void main() {
     testWidgets('renders all five tier rows in order', (tester) async {
       await tester.pumpWidget(_wrap(const TierBandLegend()));
 
-      // Titles top-to-bottom — matches the chart's band stacking
+      // Titles top-to-bottom - matches the chart's band stacking
       // (Flourishing at the top of the score scale, Storm Season at
       // the bottom).
       final titles = [
@@ -29,7 +29,7 @@ void main() {
     });
 
     testWidgets(
-      'Storm Season subtitle reads "sheltered, never withered" — no banned words',
+      'Storm Season subtitle reads "sheltered, never withered" - no banned words',
       (tester) async {
         await tester.pumpWidget(_wrap(const TierBandLegend()));
 
@@ -53,7 +53,7 @@ void main() {
           final data = (w.data ?? '').toLowerCase();
           for (final word in banned) {
             // "withered" appears in the subtitle as part of "never
-            // withered" — that's the compassionate frame and it
+            // withered" - that's the compassionate frame and it
             // explicitly negates the banned word.
             if (word == 'wilted' ||
                 word == 'dying' ||

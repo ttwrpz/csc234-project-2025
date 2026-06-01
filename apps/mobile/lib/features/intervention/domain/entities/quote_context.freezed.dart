@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$QuoteContext {
 
-/// ISO-8601 weekId (`YYYY-Www`) — for log correlation only.
+/// ISO-8601 weekId (`YYYY-Www`) - for log correlation only.
  String get weekId;/// Today's average score `S` in [-1, +1]. Negative = rough day.
  double get dailyAvgS;/// The most-logged mood today, or null if the user has not logged today.
 /// Used by the Cloud Function to pick a template; never echoed back to
@@ -216,7 +216,7 @@ class _QuoteContext implements QuoteContext {
   const _QuoteContext({required this.weekId, required this.dailyAvgS, this.dominantEmotion});
   
 
-/// ISO-8601 weekId (`YYYY-Www`) — for log correlation only.
+/// ISO-8601 weekId (`YYYY-Www`) - for log correlation only.
 @override final  String weekId;
 /// Today's average score `S` in [-1, +1]. Negative = rough day.
 @override final  double dailyAvgS;

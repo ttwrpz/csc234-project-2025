@@ -2,17 +2,17 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
 /// Layout variant for an [OnboardingSlide]. Picked by the parent screen
-/// from the active viewport width — phone stacks vertically, tablet
+/// from the active viewport width - phone stacks vertically, tablet
 /// and desktop use a two-column row (art on the left, copy on the right).
 enum OnboardingLayout { phone, tablet, desktop }
 
 /// One page of the onboarding carousel. Shows a small inline brand
 /// illustration alongside a Fraunces 600 title and a Nunito dim body.
 ///
-///  * `phone`   — vertical stack, title 26 sp.
-///  * `tablet`  — two-column row (art flex 6, copy flex 4), title 28 sp,
+///  * `phone`   - vertical stack, title 26 sp.
+///  * `tablet`  - two-column row (art flex 6, copy flex 4), title 28 sp,
 ///                left-aligned copy.
-///  * `desktop` — two-column row, 50/50, title 30 sp, left-aligned copy.
+///  * `desktop` - two-column row, 50/50, title 30 sp, left-aligned copy.
 class OnboardingSlide extends StatelessWidget {
   const OnboardingSlide({
     super.key,

@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// TC-15 — every `.dart` file under `lib/features/harvest/` is checked
+/// TC-15 - every `.dart` file under `lib/features/harvest/` is checked
 /// for forbidden vocabulary that frames a harvest as destructive.
 ///
 /// CLAUDE.md "Copy rules":
@@ -28,7 +28,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// String extraction uses a deliberately simple regex that catches
 /// `'…'` / `"…"` pairs on a single line. We accept that a multi-line
 /// triple-quoted string inside the harvest feature would be ignored,
-/// but no current file uses one — and adding multi-line awareness
+/// but no current file uses one - and adding multi-line awareness
 /// is well beyond the test's blast radius.
 void main() {
   const forbidden = <String>[
@@ -111,7 +111,7 @@ void main() {
       hits,
       isEmpty,
       reason:
-          'TC-15 failed — forbidden vocabulary found in user-facing copy '
+          'TC-15 failed - forbidden vocabulary found in user-facing copy '
           'under $harvestRoot.\n${hits.join('\n')}',
     );
   });

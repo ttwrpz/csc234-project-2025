@@ -2,7 +2,7 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
 /// Five circular indicators, the first `intensity` of which are filled.
-/// Visual only — excluded from the semantics tree because the slider already
+/// Visual only - excluded from the semantics tree because the slider already
 /// announces the value.
 class IntensityDots extends StatelessWidget {
   const IntensityDots({super.key, required this.intensity});

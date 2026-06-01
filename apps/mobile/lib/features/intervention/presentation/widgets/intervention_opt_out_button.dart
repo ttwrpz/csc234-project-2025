@@ -6,7 +6,7 @@ import '../controllers/intervention_controller.dart';
 /// Reusable "I'm okay" opt-out button.
 ///
 /// Tapping advances the cooldown anchor + marks the audit row opted-out
-/// via [InterventionController.optOut] — so a swipe-out or this tap both
+/// via [InterventionController.optOut] - so a swipe-out or this tap both
 /// route through the controller, which is the only path that may write
 /// `lastTriggeredAt`.
 ///
@@ -14,7 +14,7 @@ import '../controllers/intervention_controller.dart';
 /// host screen can `context.pop()` (or otherwise dismiss) only once the
 /// audit-doc write has been kicked off. The future is awaited inside the
 /// gesture handler to keep the callback ordering deterministic; visual
-/// feedback during the brief await is the default Material ripple — no
+/// feedback during the brief await is the default Material ripple - no
 /// dedicated spinner because the opt-out path is fire-and-forget at the
 /// data layer (`InterventionRepository.markOptedOut` is best-effort and
 /// any write failure is logged, not surfaced to the user).

@@ -12,7 +12,7 @@ import 'image_viewer.dart';
 /// re-fetch.
 ///
 /// Still images only. Videos render as a generic film-strip placeholder
-/// with a "Video" overlay — playing them inline is not yet supported
+/// with a "Video" overlay - playing them inline is not yet supported
 /// (`video_player` is not in pubspec).
 class EntryAttachments extends StatelessWidget {
   const EntryAttachments({super.key, required this.refs});
@@ -58,7 +58,7 @@ class _AttachmentTile extends ConsumerWidget {
     final urlAsync = ref.watch(_attachmentUrlProvider(gsUri));
 
     return GestureDetector(
-      // Tap → full-screen viewer (images only — videos still hit the
+      // Tap → full-screen viewer (images only - videos still hit the
       // placeholder until video_player ships, but we let the gesture
       // through so a future video viewer can hook in here too).
       onTap: () {

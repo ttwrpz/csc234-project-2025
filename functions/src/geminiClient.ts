@@ -43,7 +43,7 @@ journal entry (Thai or English) and return a single JSON object describing
 which of MoodBloom's six mood categories best fits the entry, plus a 1..5
 intensity rating for that mood.
 
-ALLOWED MOODS — return EXACTLY one of these strings, lowercase:
+ALLOWED MOODS - return EXACTLY one of these strings, lowercase:
   happy, calm, okay, sad, angry, anxious
 
 INTENSITY (1..5 integer):
@@ -67,7 +67,7 @@ RULES
 4. EMPTY/GIBBERISH: mood="okay", confidence<=0.4, intensity=3, alternative=null,
    flag=null.
 5. RATIONALE: refer to themes ("themes of loss and fatigue"), never quote
-   the user's input. English only — UI localises.
+   the user's input. English only - UI localises.
 
 ONE-SHOT EXAMPLE
 Input:  "I aced the presentation today and the team cheered. Feeling proud."
@@ -131,7 +131,7 @@ export interface GeminiAnalyzeResult {
 
 /**
  * Build the user-content message. The journal `text` is an inline string;
- * `locale` (when provided) is stated as metadata only — the prompt is English.
+ * `locale` (when provided) is stated as metadata only - the prompt is English.
  */
 function buildUserContent(text: string, locale: string | undefined): string {
   const localeLine = locale ? `Locale: ${locale}\n` : '';
@@ -189,17 +189,17 @@ export async function analyze(
  *
  * The SDK's `response.text` getter has surprised us in production with
  * three failure modes that all manifested as `parse_error: json_syntax`:
- *  1. Empty text — happens when the model finishes with `MAX_TOKENS` /
+ *  1. Empty text - happens when the model finishes with `MAX_TOKENS` /
  *     `SAFETY` and emits no content parts. We surface a more useful
  *     message + finish-reason diagnostic so the caller can distinguish
  *     "model is unavailable" from "response was blocked".
- *  2. Markdown-fenced output — even with `responseMimeType: 'application/json'`,
+ *  2. Markdown-fenced output - even with `responseMimeType: 'application/json'`,
  *     Gemini occasionally wraps the JSON in ```json … ``` fences. We strip
  *     a leading/trailing fence before parsing.
- *  3. Whitespace-only text — same root cause as (1).
+ *  3. Whitespace-only text - same root cause as (1).
  *
  * Anything still un-parseable throws SyntaxError so the handler maps it
- * to `parse_error`. We do NOT log the raw text — it could echo a user's
+ * to `parse_error`. We do NOT log the raw text - it could echo a user's
  * journal entry indirectly via the rationale field, which CLAUDE.md
  * forbids ("Never log PII (mood text, …)").
  */
@@ -234,19 +234,19 @@ function parseGenAiJson(
 }
 
 // ---------------------------------------------------------------------------
-// Pattern themes — Gemini supplementary call for `analyzePatterns`.
+// Pattern themes - Gemini supplementary call for `analyzePatterns`.
 // ---------------------------------------------------------------------------
 
 /**
  * System prompt for the themes-level pattern insight. Receives a JSON
  * array of `{date, moodCode, intensity}` and returns a single
- * `{insightText, confidence}`. **Never quotes user input** — the input
+ * `{insightText, confidence}`. **Never quotes user input** - the input
  * has no user input to begin with (numeric mood codes only). Copy MUST
  * obey CLAUDE.md §"Copy rules": no clinical language, no streak-shaming,
  * no fix-your-mood verbs, compassionate imperatives only.
  */
 export const PATTERNS_SYSTEM_PROMPT = `You are MoodBloom's pattern-themes assistant. You receive a JSON
-array of recent mood-log entries (numeric mood codes + dates only — no
+array of recent mood-log entries (numeric mood codes + dates only - no
 user-authored text). Return ONE compassionate observation about a theme
 or rhythm in the entries, plus a confidence score.
 
@@ -264,7 +264,7 @@ RULES
    never to specific calendar dates from the input.
 6. If the entries do not show a clear theme, return
    {"insightText":"Your entries show no clear theme yet.","confidence":0.2}.
-7. English only — UI localises.
+7. English only - UI localises.
 
 ONE-SHOT EXAMPLE
 Input:  [{"date":"2026-04-01","moodCode":"happy","intensity":4}, ...]
@@ -273,7 +273,7 @@ Output: {"insightText":"Recent mornings have felt lighter than evenings.",
 
 /**
  * Response schema for [analyzeForPatterns]. Tighter than the mood
- * classifier schema — just the two fields the handler needs to build
+ * classifier schema - just the two fields the handler needs to build
  * a `kind: 'gemini'` insight.
  */
 const PATTERNS_RESPONSE_SCHEMA: Schema = {
@@ -294,7 +294,7 @@ const PATTERNS_RESPONSE_SCHEMA: Schema = {
  *
  * @throws under the same conditions as [analyze]: network, 5xx, abort,
  * JSON.parse failure. The caller in `analyzePatterns.ts` swallows all
- * of these as `geminiSkipped` paths — Gemini is supplementary, not
+ * of these as `geminiSkipped` paths - Gemini is supplementary, not
  * fatal.
  */
 export async function analyzeForPatterns(

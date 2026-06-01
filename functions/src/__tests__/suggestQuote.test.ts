@@ -1,14 +1,14 @@
-// suggestQuote — Cloud Function tests (HB-008 §"Acceptance").
+// suggestQuote - Cloud Function tests (HB-008 §"Acceptance").
 //
 // Coverage:
-//   1. Tier-3 server-side guard (TC-40 mirror) — `tier: 3` rejected with
+//   1. Tier-3 server-side guard (TC-40 mirror) - `tier: 3` rejected with
 //      `invalid-argument`; Gemini never called.
-//   2. PII canary — Tier 1 happy path with valid input; intercepting the
+//   2. PII canary - Tier 1 happy path with valid input; intercepting the
 //      Gemini SDK and asserting the outbound prompt body does NOT contain
 //      `userId`, `email`, the calling uid, or any FCM-token-shaped string.
-//   3. Rate limit — 11 calls in succession; 11th returns
+//   3. Rate limit - 11 calls in succession; 11th returns
 //      `resource-exhausted`.
-//   4. Invalid input shapes — `tier: 4`, missing `weekId`, `dailyAvgS: 2.5`,
+//   4. Invalid input shapes - `tier: 4`, missing `weekId`, `dailyAvgS: 2.5`,
 //      unknown `dominantEmotion` → each returns `invalid-argument`.
 //
 // Mock strategy mirrors `analyzeMoodText.test.ts` exactly so the in-memory
@@ -217,7 +217,7 @@ describe('suggestQuote handler', () => {
   // -------------------------------------------------------------------------
   // 1. Tier-3 server-side guard (TC-40 server-side mirror).
   // -------------------------------------------------------------------------
-  describe('Tier 3 guard — ADR-0012 §"Decision" point 1', () => {
+  describe('Tier 3 guard - ADR-0012 §"Decision" point 1', () => {
     test('tier: 3 → HttpsError(invalid-argument); Gemini never called', async () => {
       await expect(
         handleSuggestQuote(call('uid-1', validBody({ tier: 3 })) as never),
@@ -236,9 +236,9 @@ describe('suggestQuote handler', () => {
   });
 
   // -------------------------------------------------------------------------
-  // 2. PII canary — no userId / email / FCM-token-shape in outbound prompt.
+  // 2. PII canary - no userId / email / FCM-token-shape in outbound prompt.
   // -------------------------------------------------------------------------
-  describe('PII canary — HB-008 §"forbidden in payload"', () => {
+  describe('PII canary - HB-008 §"forbidden in payload"', () => {
     test(
       'outbound prompt body contains NONE of: userId, email, calling uid, FCM-token shape',
       async () => {
@@ -262,7 +262,7 @@ describe('suggestQuote handler', () => {
           'userId',
           'email',
           callingUid,
-          // FCM-token shape — Firebase FCM tokens are long base64-ish
+          // FCM-token shape - Firebase FCM tokens are long base64-ish
           // strings, but the canary asserts no field literally NAMED
           // `fcmToken`/`token` leaks AND no string of FCM-token length
           // (≥140 alphanumerics) shows up. A naive contains-check on
@@ -325,7 +325,7 @@ describe('suggestQuote handler', () => {
         for (const c of loggerCalls) {
           const dump = JSON.stringify(c.payload);
           expect(dump).not.toContain('PII-LEAK-CANARY');
-          // dailyAvgS could leak inferences — must not appear in logs.
+          // dailyAvgS could leak inferences - must not appear in logs.
           expect(dump).not.toContain('-0.789');
           expect(dump).not.toContain('-0.78');
         }
@@ -334,9 +334,9 @@ describe('suggestQuote handler', () => {
   });
 
   // -------------------------------------------------------------------------
-  // 3. Rate limit — 10/uid/day.
+  // 3. Rate limit - 10/uid/day.
   // -------------------------------------------------------------------------
-  describe('Rate limit — 10 calls per uid per day', () => {
+  describe('Rate limit - 10 calls per uid per day', () => {
     test('11th call → HttpsError(resource-exhausted)', async () => {
       for (let i = 0; i < 10; i++) {
         const result = await handleSuggestQuote(
@@ -357,7 +357,7 @@ describe('suggestQuote handler', () => {
         handleSuggestQuote(call('uid-a', validBody()) as never),
       ).rejects.toMatchObject({ code: 'resource-exhausted' });
 
-      // Different uid — fresh window.
+      // Different uid - fresh window.
       const result = await handleSuggestQuote(
         call('uid-b', validBody()) as never,
       );
@@ -477,23 +477,23 @@ describe('suggestQuote handler', () => {
   });
 
   // -------------------------------------------------------------------------
-  // 6. Happy path — return shape.
+  // 6. Happy path - return shape.
   // -------------------------------------------------------------------------
   describe('Happy path', () => {
-    test('returns { suggestedText } verbatim — no server-side trim', async () => {
+    test('returns { suggestedText } verbatim - no server-side trim', async () => {
       // Trailing whitespace stays trimmed by the SDK convention; outer
       // whitespace stripping is the only post-process the CF performs
       // (transport hygiene, NOT safety). The 140-char cap is the Dart
       // filter's job.
       nextResponse = {
         kind: 'text',
-        text: 'Maybe a soft breath would help — only if you would like.',
+        text: 'Maybe a soft breath would help - only if you would like.',
       };
       const result = await handleSuggestQuote(
         call('uid-ok', validBody()) as never,
       );
       expect(result).toEqual({
-        suggestedText: 'Maybe a soft breath would help — only if you would like.',
+        suggestedText: 'Maybe a soft breath would help - only if you would like.',
       });
     });
 

@@ -151,7 +151,7 @@ class LocalDailyCheckInScheduler implements DailyCheckInScheduler {
 }
 
 /// Provider exposing the platform-bound scheduler. Constructs a fresh
-/// plugin handle (cheap — it's a thin platform-channel wrapper), mirroring
+/// plugin handle (cheap - it's a thin platform-channel wrapper), mirroring
 /// `localNotificationDatasourceProvider`. Tests override this with a fake
 /// recorder so no platform channel is ever touched.
 final dailyCheckInSchedulerProvider = Provider<DailyCheckInScheduler>(

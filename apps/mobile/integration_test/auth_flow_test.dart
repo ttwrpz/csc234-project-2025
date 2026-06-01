@@ -53,7 +53,7 @@ void main() {
         ],
       );
 
-      // The /sign-in screen is anchored by its email field — any future
+      // The /sign-in screen is anchored by its email field - any future
       // copy change updates this and the SignInScreen widget test in
       // lockstep.
       expect(
@@ -119,7 +119,7 @@ void main() {
       final defaults = await defaultIntegrationOverrides();
       addTearDown(() async => defaults.syncManager.dispose());
 
-      // Wire the next sign-in call to fail with wrong-password — the
+      // Wire the next sign-in call to fail with wrong-password - the
       // production fake repo returns the canned message verbatim.
       authRepo.nextSignInResult = const Err(AuthFailure.wrongPassword());
 

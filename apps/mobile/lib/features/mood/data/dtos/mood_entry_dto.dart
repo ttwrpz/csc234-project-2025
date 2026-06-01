@@ -4,7 +4,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'mood_entry_dto.freezed.dart';
 
 /// Wire-format mirror of the Firestore document at
-/// `users/{uid}/moods/{moodId}`. Lives in `data/` only — domain entities never
+/// `users/{uid}/moods/{moodId}`. Lives in `data/` only - domain entities never
 /// see this type.
 @freezed
 abstract class MoodEntryDto with _$MoodEntryDto {

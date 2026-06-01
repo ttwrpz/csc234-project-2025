@@ -15,7 +15,7 @@ void main() {
       );
     }
 
-    test('shouldGate truth table — all 8 combinations', () {
+    test('shouldGate truth table - all 8 combinations', () {
       // Only the all-true row gates.
       expect(cap(a: true, e: true, o: true).shouldGate, isTrue);
 
@@ -33,7 +33,7 @@ void main() {
       expect(cap(a: false, e: false, o: false).shouldGate, isFalse);
     });
 
-    test('Freezed equality — same values are ==', () {
+    test('Freezed equality - same values are ==', () {
       const a = BiometricCapability(
         isAvailable: true,
         hasEnrolledBiometrics: true,
@@ -48,7 +48,7 @@ void main() {
       expect(a.hashCode, equals(b.hashCode));
     });
 
-    test('Freezed inequality — differing user opt-in is !=', () {
+    test('Freezed inequality - differing user opt-in is !=', () {
       const a = BiometricCapability(
         isAvailable: true,
         hasEnrolledBiometrics: true,
@@ -62,7 +62,7 @@ void main() {
       expect(a, isNot(equals(b)));
     });
 
-    test('copyWith — flips userOptedIn without disturbing other fields', () {
+    test('copyWith - flips userOptedIn without disturbing other fields', () {
       const initial = BiometricCapability(
         isAvailable: true,
         hasEnrolledBiometrics: true,

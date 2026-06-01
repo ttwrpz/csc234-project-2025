@@ -5,7 +5,7 @@ import '../../domain/entities/token_balance.dart';
 import '../../domain/services/award_daily_tokens.dart';
 
 /// Thin Firestore wrapper for the three token-economy fields on the
-/// `users/{userId}` profile document — pivot feature #10 (CLAUDE.md
+/// `users/{userId}` profile document - pivot feature #10 (CLAUDE.md
 /// "Firestore data model").
 ///
 /// NOT a sub-collection. The fields live alongside `displayName`,
@@ -13,15 +13,15 @@ import '../../domain/services/award_daily_tokens.dart';
 /// profile + token state in one round-trip.
 ///
 /// The award path runs inside a Firestore transaction so two devices
-/// logging concurrently never lose an increment — the transaction
+/// logging concurrently never lose an increment - the transaction
 /// re-runs `awardDailyTokens` on each retry against the latest snapshot
 /// of the doc, and the final write commits atomically.
 ///
 /// Field names match the rules in `firebase/firestore.rules` (architect
 /// commit lands the field-level validation):
-///   * `tokenBalance` — int, monotonic-up via this datasource.
-///   * `tokensEarnedToday` — int, 0..10.
-///   * `lastTokenEarnedDate` — Firestore [Timestamp]; null when the
+///   * `tokenBalance` - int, monotonic-up via this datasource.
+///   * `tokensEarnedToday` - int, 0..10.
+///   * `lastTokenEarnedDate` - Firestore [Timestamp]; null when the
 ///     user has never earned (first lifetime log path).
 class TokenBalanceFirestoreDatasource {
   const TokenBalanceFirestoreDatasource(this._firestore);

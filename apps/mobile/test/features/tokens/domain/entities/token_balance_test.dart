@@ -18,7 +18,7 @@ void main() {
       expect(decoded.lastEarnedDate, DateTime.utc(2026, 5, 12));
     });
 
-    test('null lastEarnedDate (fresh user — never earned)', () {
+    test('null lastEarnedDate (fresh user - never earned)', () {
       const original = TokenBalance(
         balance: 0,
         earnedToday: 0,
@@ -36,7 +36,7 @@ void main() {
     test('JSON keys match Firestore field names', () {
       // The datasource writes to `tokenBalance / tokensEarnedToday /
       // lastTokenEarnedDate` directly via `tx.update`, NOT via
-      // `toJson` — but if a future refactor wires JSON through to
+      // `toJson` - but if a future refactor wires JSON through to
       // Firestore, the keys must NOT collide with the user-doc
       // monotonic-up rule (which pins `tokenBalance`). The Freezed-
       // generated keys are the field names, so this acts as a

@@ -3,11 +3,11 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'pin_hash.freezed.dart';
 part 'pin_hash.g.dart';
 
-/// Cryptographic record of a user's PIN — derived once at setup time
+/// Cryptographic record of a user's PIN - derived once at setup time
 /// and verified locally on every unlock attempt.
 ///
 /// Stored under `users/{uid}/security/pin` (sub-document, NOT the root
-/// user doc — the security-sensitive fields keep a narrower rule
+/// user doc - the security-sensitive fields keep a narrower rule
 /// allow-list than the broadly-read profile doc).
 ///
 /// **Never** carries the user's raw PIN. The hash is the output of

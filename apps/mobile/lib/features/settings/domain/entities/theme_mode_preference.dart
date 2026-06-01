@@ -1,7 +1,7 @@
 /// User-facing theme preference persisted to local storage.
 ///
 /// Distinct from Material's `ThemeMode` (which is the OUTPUT consumed by
-/// [MaterialApp.themeMode]) — this enum is what we PERSIST. The value
+/// [MaterialApp.themeMode]) - this enum is what we PERSIST. The value
 /// `followDeviceTime` lets the user auto-flip between light + dark
 /// based on local clock instead of device settings.
 ///

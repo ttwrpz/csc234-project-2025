@@ -16,11 +16,11 @@ import '../../domain/entities/plant_tier.dart';
 /// around a dark navy centre, a fern with 10 alternating pinnae, and a
 /// lavender stalk with 8 stacked bell buds.
 ///
-/// **Empty `entries` paints ground+grass only** — no flowers, no buds,
+/// **Empty `entries` paints ground+grass only** - no flowers, no buds,
 /// nothing.
 ///
 /// Plants are species-driven from the entries' moods (via
-/// [FlowerSpecies.forMood]). Tier modulates AMBIENT extras only —
+/// [FlowerSpecies.forMood]). Tier modulates AMBIENT extras only -
 /// butterflies on flourishing, lanterns on storm season, a soft cloud
 /// shadow on weathering. The plants themselves never change shape per
 /// tier; tier is the weather around them, not damage to them (plants
@@ -41,16 +41,16 @@ class GardenBed extends StatefulWidget {
   /// by `createdAt` desc and takes the first six.
   final List<MoodEntry> entries;
 
-  /// Ambient modifier — adds butterflies, cloud shadow, or lanterns
+  /// Ambient modifier - adds butterflies, cloud shadow, or lanterns
   /// AROUND the plants. Never changes the plants themselves.
   final PlantTier tier;
 
-  /// Logical size of the bed. Default 320×140 — ~40dp taller than the
+  /// Logical size of the bed. Default 320×140 - ~40dp taller than the
   /// prior PlantTierGroup so the tallest species (sunflower at 110dp)
   /// renders without clipping.
   final Size size;
 
-  /// When `false`, the bed renders a single static frame — no animation
+  /// When `false`, the bed renders a single static frame - no animation
   /// controller, no per-frame repaints. Used by:
   /// - Tests (frame-deterministic goldens).
   /// - History thumbnails (many on screen at once; the per-flower sway
@@ -71,7 +71,7 @@ class GardenBed extends StatefulWidget {
   /// default-skin path keeps the existing look exactly; only alternates
   /// shift hue.
   ///
-  /// Past harvested gardens never receive this override — the archive
+  /// Past harvested gardens never receive this override - the archive
   /// rendering surface passes `null` so historical weeks keep their
   /// snapshot look. Only the live home canvas opts in.
   final Map<FlowerSpecies, Color>? speciesAccent;
@@ -177,7 +177,7 @@ class _GardenBedState extends State<GardenBed> with TickerProviderStateMixin {
       // painter (`_PlantPlacement`) so the hit-capsules sit directly
       // over the rendered flowers regardless of canvas width. The hit
       // shape is a tall capsule (StadiumBorder) that hugs the FULL
-      // vertical silhouette of the plant — bloom, stem, leaves — so
+      // vertical silhouette of the plant - bloom, stem, leaves - so
       // tall species (sunflower) and short species (forget-me-not) both
       // get a comfortable, well-aligned tap target.
       final placements = _computeXPositions(shown, widget.size.width);
@@ -186,7 +186,7 @@ class _GardenBedState extends State<GardenBed> with TickerProviderStateMixin {
       // 3-dp gap on each side between adjacent capsules so a tap
       // "between flowers" doesn't accidentally fire either capsule.
       final capsuleWidth = math.max(48.0, math.min(72.0, stride - 6.0));
-      // Capsule covers ~85% of the bed height — top inset matches the
+      // Capsule covers ~85% of the bed height - top inset matches the
       // canvas's sky band (where no flower can be), bottom inset is the
       // grass strip. Adapt the inset to the bed height so taller beds
       // get proportional padding.
@@ -300,7 +300,7 @@ class _GardenBedPainter extends CustomPainter {
   final MbColors palette;
 
   /// 0..1 looped animation phase. Drives the sway / butterfly drift /
-  /// lantern pulse — 0 in tests so goldens stay deterministic.
+  /// lantern pulse - 0 in tests so goldens stay deterministic.
   final double phase;
 
   /// Optional per-species accent override (TC-6 flower skin system).
@@ -357,7 +357,7 @@ class _GardenBedPainter extends CustomPainter {
     // first and front-row plants overlap them (z-order = "closer to
     // the camera").
     final n = entries.length;
-    // Use a back-row pass for n ≥ 8 — gives the bed visual depth
+    // Use a back-row pass for n ≥ 8 - gives the bed visual depth
     // without making single-week views feel sparse. Both rows share
     // the same ground baseline; back-row plants are smaller (0.85×)
     // AND tucked behind the front row (paint order), which is enough
@@ -371,7 +371,7 @@ class _GardenBedPainter extends CustomPainter {
       final jitter = (entry.id.hashCode % 21) - 10;
       final cx = (baseX + jitter).clamp(28.0, size.width - 28.0);
       final isBackRow = useTwoRows && i.isEven;
-      // `depth` is now a paint-order key only — it never offsets the
+      // `depth` is now a paint-order key only - it never offsets the
       // plant's Y position. Back-row plants render first (so the
       // front row visually sits on top of them) but stand on the
       // same ground line.
@@ -382,7 +382,7 @@ class _GardenBedPainter extends CustomPainter {
     // Paint back-row first so front-row plants overlap them.
     placements.sort((a, b) => b.depth.compareTo(a.depth));
 
-    // Per-tier vertical scale. Plants stay alive in every tier — this
+    // Per-tier vertical scale. Plants stay alive in every tier - this
     // is a "growth confidence" modulation, never a wilt. Flourishing
     // bumps the plant 10% larger; Storm Season pulls it back 8% so the
     // bed reads as more contracted/sheltered, but all stems + petals +
@@ -392,7 +392,7 @@ class _GardenBedPainter extends CustomPainter {
     // site so back-row depth scaling composes cleanly.
     final tierScale = _tierScaleFor(tier);
     for (final p in placements) {
-      // Gentle plant sway — each plant has its own phase offset (from
+      // Gentle plant sway - each plant has its own phase offset (from
       // entry id hash) so the bed doesn't oscillate in lockstep.
       final swayPhase =
           (phase + (p.entry.id.hashCode % 100) / 100.0) * 2 * math.pi;
@@ -416,7 +416,7 @@ class _GardenBedPainter extends CustomPainter {
   // ───── ground + grass ─────
 
   void _drawBackdropGrass(Canvas canvas, Size size, double groundY) {
-    // Subtle grass tufts along the ground line — every plant grows
+    // Subtle grass tufts along the ground line - every plant grows
     // out of grass. Faded so they don't compete with the plants.
     final grass = Paint()
       ..color = palette.grass.withValues(alpha: 0.55)
@@ -435,10 +435,10 @@ class _GardenBedPainter extends CustomPainter {
   /// Maps the bed's [PlantTier] (Storm Season → Flourishing) to a 5-step
   /// growth stage 0..4. Lower tiers render at earlier growth stages
   /// (closed bud / small) so a heavy week's garden reads as plants
-  /// taking shelter, not blooming. The species itself never changes —
+  /// taking shelter, not blooming. The species itself never changes -
   /// stage tunes how much of the plant is visible.
   ///
-  /// All stages are visually ALIVE — plants never die. Stage 0 (Storm
+  /// All stages are visually ALIVE - plants never die. Stage 0 (Storm
   /// Season) is a closed bud, never wilted; stage 4 (Flourishing) is
   /// full bloom.
   int get _growthStage => switch (tier) {
@@ -498,7 +498,7 @@ class _GardenBedPainter extends CustomPainter {
   }
 
   /// Applies the per-tier saturation modulation. The factor is bounded
-  /// at 0.78 (Storm Season) so petals never desaturate to grey — even
+  /// at 0.78 (Storm Season) so petals never desaturate to grey - even
   /// the most heavily-weighted tier still renders unambiguously
   /// coloured flowers. Flourishing pushes saturation modestly above
   /// 1.0 by lerping the colour toward a brighter HSL-saturated cousin.
@@ -518,11 +518,11 @@ class _GardenBedPainter extends CustomPainter {
 
   // ───── species 1: sunflower (Joy) ─────
   // Growth stages:
-  //   0 stormSeason  — short stem (50dp), tightly closed green bud
-  //   1 weathering   — stem 70dp, bud showing tip of yellow
-  //   2 resting      — stem 85dp, half-open (8 petals)
-  //   3 thriving     — stem 100dp, mostly open (14 petals)
-  //   4 flourishing  — stem 100dp, full 18-petal bloom + bright disk
+  //   0 stormSeason  - short stem (50dp), tightly closed green bud
+  //   1 weathering   - stem 70dp, bud showing tip of yellow
+  //   2 resting      - stem 85dp, half-open (8 petals)
+  //   3 thriving     - stem 100dp, mostly open (14 petals)
+  //   4 flourishing  - stem 100dp, full 18-petal bloom + bright disk
 
   void _paintSunflower(Canvas canvas, double cx, double groundY, int stage) {
     final stemH = switch (stage) {
@@ -541,7 +541,7 @@ class _GardenBedPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
     canvas.drawLine(Offset(cx, groundY), Offset(cx, groundY - stemH), stem);
 
-    // Leaves — fewer on early stages so the bud reads as young.
+    // Leaves - fewer on early stages so the bud reads as young.
     if (stage >= 1) {
       _drawBroadLeaf(
         canvas,
@@ -577,7 +577,7 @@ class _GardenBedPainter extends CustomPainter {
     }
 
     if (stage == 1) {
-      // Bud opening — tip of yellow visible inside green sepals.
+      // Bud opening - tip of yellow visible inside green sepals.
       final sepal = Paint()..color = _stemGreen;
       for (var i = 0; i < 6; i += 1) {
         canvas.save();
@@ -672,7 +672,7 @@ class _GardenBedPainter extends CustomPainter {
     canvas.translate(cx, headCy);
 
     if (stage == 0) {
-      // Tight closed bud — small white oval inside green sepals.
+      // Tight closed bud - small white oval inside green sepals.
       canvas.drawCircle(Offset.zero, 4, Paint()..color = _stemGreen);
       canvas.drawCircle(Offset.zero, 2.2, Paint()..color = _daisyWhite);
       canvas.restore();
@@ -846,7 +846,7 @@ class _GardenBedPainter extends CustomPainter {
     canvas.translate(cx, headCy);
 
     if (stage == 0) {
-      // Closed teardrop bud — sepal-green outer, hint of red inside.
+      // Closed teardrop bud - sepal-green outer, hint of red inside.
       canvas.drawOval(
         const Rect.fromLTWH(-5, -10, 10, 14),
         Paint()..color = _stemGreen,
@@ -931,7 +931,7 @@ class _GardenBedPainter extends CustomPainter {
     canvas.drawPath(rachisPath, rachis);
 
     if (stage == 0) {
-      // Coiled fiddlehead — small spiral at the tip.
+      // Coiled fiddlehead - small spiral at the tip.
       final fiddlehead = Paint()
         ..color = _ferGreen
         ..style = PaintingStyle.stroke
@@ -1044,7 +1044,7 @@ class _GardenBedPainter extends CustomPainter {
       );
     }
 
-    // Flowering spike — bud count scales with stage.
+    // Flowering spike - bud count scales with stage.
     final budCount = switch (stage) {
       0 => 2,
       1 => 4,
@@ -1128,7 +1128,7 @@ class _GardenBedPainter extends CustomPainter {
     required Offset tip,
     required Color color,
   }) {
-    // Jagged outer edge — two notches along the long side give the
+    // Jagged outer edge - two notches along the long side give the
     // poppy leaf its characteristic deep-lobed look without going
     // full SVG-grade detail.
     final mid = Offset(
@@ -1175,14 +1175,14 @@ class _GardenBedPainter extends CustomPainter {
         );
       case PlantTier.thriving:
       case PlantTier.resting:
-        // Calm baseline — no ambient extras.
+        // Calm baseline - no ambient extras.
         break;
       case PlantTier.weathering:
         // Cloud shadow drifts slowly across the bed.
         final cloudDx = math.sin(phase * 2 * math.pi) * 24;
         _drawCloudShadow(canvas, size, cloudDx);
       case PlantTier.stormSeason:
-        // Lanterns pulse opacity gently — ±0.15 around the base alpha.
+        // Lanterns pulse opacity gently - ±0.15 around the base alpha.
         final pulseA = (math.sin(phase * 2 * math.pi) + 1) / 2;
         final pulseB = (math.sin(phase * 2 * math.pi + math.pi) + 1) / 2;
         _drawLantern(canvas, Offset(size.width * 0.12, groundY - 22), pulseA);
@@ -1203,7 +1203,7 @@ class _GardenBedPainter extends CustomPainter {
   }
 
   void _drawButterfly(Canvas canvas, Offset center, Color color) {
-    // Wing flutter — open / close oscillation at 4× the bed phase so
+    // Wing flutter - open / close oscillation at 4× the bed phase so
     // wings beat faster than the body drifts.
     final flutter = math.sin(phase * 8 * math.pi).abs();
     final wingW = 3.0 + flutter * 1.6; // 3..4.6 dp
@@ -1216,7 +1216,7 @@ class _GardenBedPainter extends CustomPainter {
   void _drawLantern(Canvas canvas, Offset center, double pulse) {
     // Bright amber glow + warm core. Brighter than the mood swatches
     // so the storm tier still reads as hopeful. `pulse` (0..1)
-    // modulates the glow alpha so lanterns flicker gently — never
+    // modulates the glow alpha so lanterns flicker gently - never
     // going fully dark, never blowing out.
     final glowAlpha = 0.25 + pulse * 0.20; // 0.25..0.45
     final glowR = 13.0 + pulse * 3.0; // 13..16 dp

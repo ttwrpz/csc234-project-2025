@@ -18,7 +18,7 @@ import '../repositories/webauthn_repository.dart';
 /// failure surfaces as the matching [WebauthnVerifyFailure]; a token
 /// exchange that fails Firebase-side collapses to
 /// [WebauthnVerifyFailure.network] (the token was valid but the session
-/// couldn't be established — a transient/server condition from the user's
+/// couldn't be established - a transient/server condition from the user's
 /// perspective).
 class SignInWithWebauthnUseCase {
   const SignInWithWebauthnUseCase({

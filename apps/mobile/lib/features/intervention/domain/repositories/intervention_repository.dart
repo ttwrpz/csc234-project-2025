@@ -6,11 +6,11 @@ import '../entities/intervention_record.dart';
 /// Audit-trail repository for dispatched interventions.
 ///
 /// Implementations live in `data/` (Day-2 work). Writes are append-only at
-/// the Firestore-rules level — once a record is created, every field except
+/// the Firestore-rules level - once a record is created, every field except
 /// `optedOut` is immutable. The opt-out toggle is one-way (`false → true`,
 /// see `firestore.rules` `/users/{uid}/interventions/{id}` block).
 ///
-/// Pure-Dart contract — imports only `package:core/core.dart` and sibling
+/// Pure-Dart contract - imports only `package:core/core.dart` and sibling
 /// domain entities. Domain-purity rule per CLAUDE.md.
 abstract class InterventionRepository {
   /// Persists one dispatch row. Best-effort: callers should log the failure

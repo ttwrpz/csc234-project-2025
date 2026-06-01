@@ -17,7 +17,7 @@ class MoodPoint {
   final ChartMoodCategory category;
 
   /// Aggregate intensity, expected to be in `[1, 5]`. The chart does not
-  /// validate this — callers must ensure the input domain.
+  /// validate this - callers must ensure the input domain.
   final double meanIntensity;
 
   @override

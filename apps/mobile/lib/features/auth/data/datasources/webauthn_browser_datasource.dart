@@ -84,13 +84,13 @@ class WebauthnUnsupportedException implements Exception {
 /// `package:web`. The production binding lives in the (web-only)
 /// `webauthn_browser_datasource_web.dart` companion.
 ///
-/// The Dart-side fake used by widget tests implements this directly —
+/// The Dart-side fake used by widget tests implements this directly -
 /// the test passes a `_FakeWebauthnBrowserDatasource` via Riverpod
 /// override so the integration test path never instantiates the real
 /// `package:web` binding.
 ///
 /// **Dark-feature note:** when `kEnableWebauthn` is `false`, this
-/// datasource is never instantiated — the `webauthnAvailableProvider`
+/// datasource is never instantiated - the `webauthnAvailableProvider`
 /// short-circuits at the provider level. The class exists in the repo
 /// so a future flag flip can light it up.
 abstract class WebauthnBrowserDatasource {
@@ -120,7 +120,7 @@ abstract class WebauthnBrowserDatasource {
   );
 }
 
-/// Dark-feature placeholder — every method throws
+/// Dark-feature placeholder - every method throws
 /// [WebauthnUnsupportedException]. The real `package:web` binding is
 /// deferred until `kEnableWebauthn` flips to `true` to keep the build
 /// dependency-light. Today, the providers' `kEnableWebauthn`

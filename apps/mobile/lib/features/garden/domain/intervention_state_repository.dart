@@ -3,9 +3,9 @@ import 'package:core/core.dart';
 /// Abstract contract for the cheer-up cooldown / escalation anchor store.
 ///
 /// Two anchors are persisted per user:
-///  * `lastTriggeredAt` — the most recent moment the detector reported
+///  * `lastTriggeredAt` - the most recent moment the detector reported
 ///    `triggered: true`. Drives the 48h cooldown gate.
-///  * `firstTriggeredAt` — the start of the current escalation window.
+///  * `firstTriggeredAt` - the start of the current escalation window.
 ///    Drives the 10-day in-app hotline-footer escalation. Cleared by the
 ///    detector lifecycle when 48h pass without a re-trigger.
 ///
@@ -17,7 +17,7 @@ abstract class InterventionStateRepository {
   /// Reads the persisted anchors. Result is `Ok(InterventionAnchors())`
   /// (both fields null) when no anchor has ever been written. Never
   /// returns the SharedPreferences mirror as a separate value when the
-  /// Firestore read fails — instead the mirror is consulted as fallback
+  /// Firestore read fails - instead the mirror is consulted as fallback
   /// inside the implementation, and the caller sees a single `Ok(value)`
   /// regardless. If both Firestore and the mirror fail, an `Err` is
   /// returned.
@@ -47,7 +47,7 @@ class InterventionAnchors {
   final DateTime? firstTriggeredAt;
 
   /// Returns a copy with the supplied fields replaced. `null` arguments
-  /// MEAN "no change" — to clear a field, use [clearFirstTriggeredAt] /
+  /// MEAN "no change" - to clear a field, use [clearFirstTriggeredAt] /
   /// dedicated factories. Two-flag pattern (an explicit `clearXxx`
   /// boolean) is overkill for two fields; callers that need to clear use
   /// the named constructor below.

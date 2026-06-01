@@ -3,7 +3,7 @@ import 'package:moodbloom/features/intervention/domain/entities/ai_allowed_tier.
 import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
 void main() {
-  group('AiAllowedTier.fromTier — ADR-0012 §"Decision" point 2', () {
+  group('AiAllowedTier.fromTier - ADR-0012 §"Decision" point 2', () {
     test('Tier.one → AiAllowedTier.one', () {
       expect(AiAllowedTier.fromTier(Tier.one), AiAllowedTier.one);
     });
@@ -12,7 +12,7 @@ void main() {
       expect(AiAllowedTier.fromTier(Tier.two), AiAllowedTier.two);
     });
 
-    test('Tier.three throws StateError — compiler-level fence', () {
+    test('Tier.three throws StateError - compiler-level fence', () {
       // The dispatcher's `if (tier == Tier.three)` arm returns BEFORE
       // reaching this call, so the StateError path is unreachable in
       // production. The throw exists so a future refactor that deletes

@@ -45,7 +45,7 @@ class BiometricRepositoryImpl implements BiometricRepository {
     try {
       return await _datasource.authenticate(reason: reason);
     } on BiometricCancelledException {
-      // User cancellation — not an error path for the repo contract.
+      // User cancellation - not an error path for the repo contract.
       _logger.info('biometric cancelled');
       return false;
     } on BiometricUnavailableException catch (e) {

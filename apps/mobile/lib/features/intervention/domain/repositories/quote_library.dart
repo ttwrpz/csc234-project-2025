@@ -1,7 +1,7 @@
 import '../entities/quote.dart';
 
 /// Deterministic curated phrase library. The Tier 3 arm of the dispatcher
-/// reaches ONLY this interface — never the AI repository, never the Safety
+/// reaches ONLY this interface - never the AI repository, never the Safety
 /// Filter.
 ///
 /// `seed` is the day's timestamp; the implementation derives a stable index

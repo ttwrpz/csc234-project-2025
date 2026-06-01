@@ -69,7 +69,7 @@ final featureFlagSourceProvider = Provider<FeatureFlagSource>((ref) {
 /// [FeatureFlags.defaults] when the source is uninitialised or throws so
 /// callers never have to handle a null/loading state for kill-switches.
 final featureFlagsProvider = Provider<FeatureFlags>((ref) {
-  // The try MUST cover the upstream `ref.watch` too — `featureFlagSourceProvider`
+  // The try MUST cover the upstream `ref.watch` too - `featureFlagSourceProvider`
   // depends on `remoteConfigProvider`, which throws synchronously when
   // Firebase isn't initialised (typical in widget tests that don't override
   // it). Without this guard, the controller's `ref.read(featureFlagsProvider)`

@@ -11,26 +11,26 @@ part 'daily_insight.freezed.dart';
 /// persisted in its own right.
 ///
 /// Field semantics:
-///  * `date` — local-midnight `DateTime` for the day.
-///  * `avgMoodScore` — average `S_t = v × i/5` across every entry on
+///  * `date` - local-midnight `DateTime` for the day.
+///  * `avgMoodScore` - average `S_t = v × i/5` across every entry on
 ///    [date]; null if the user logged nothing that day.
-///  * `gardenHealthH` — EWMA `H_t` for the day (the Pattern Engine
+///  * `gardenHealthH` - EWMA `H_t` for the day (the Pattern Engine
 ///    persists this on the `users/{uid}/patterns/{date}` document);
 ///    null when no pattern document exists yet (gap day).
-///  * `dominantEmotion` — the mood type with the most entries on
+///  * `dominantEmotion` - the mood type with the most entries on
 ///    [date]; null on empty days. Ties resolved by `MoodType.values`
 ///    declaration order.
-///  * `entryCount` — number of mood entries logged on [date].
-///  * `triggeredTier` — Pattern Engine output (null = no algorithm
+///  * `entryCount` - number of mood entries logged on [date].
+///  * `triggeredTier` - Pattern Engine output (null = no algorithm
 ///    fired). Drives the marker band on the chart.
-///  * `triggerReasonKey` — which of the 5 algorithms produced the trigger
+///  * `triggerReasonKey` - which of the 5 algorithms produced the trigger
 ///    (null on no-trigger days). Surfaced to the marker-tap popover so
 ///    the popover can render a plain-English reason without re-running
 ///    the engine. Resolution rule when multiple algorithms fire: highest
-///    tier first, then the strongest within the tier — see
+///    tier first, then the strongest within the tier - see
 ///    [PatternEngineTriggerKind] doc.
 ///
-/// Pure-Dart entity — imports only `freezed_annotation` and sibling
+/// Pure-Dart entity - imports only `freezed_annotation` and sibling
 /// domain enums, per the domain-purity rule in CLAUDE.md.
 @freezed
 abstract class DailyInsight with _$DailyInsight {

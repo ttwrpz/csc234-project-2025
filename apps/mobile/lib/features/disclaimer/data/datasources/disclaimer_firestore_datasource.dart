@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Thin Firestore wrapper for the
 /// `users/{userId}.insightsDisclaimerAcked` boolean field.
 ///
-/// The user doc itself is the carrier — there is no dedicated
+/// The user doc itself is the carrier - there is no dedicated
 /// sub-collection. We use `set(merge: true)` so writing this single
 /// field never clobbers neighbouring profile fields (`displayName`,
 /// `tokenBalance`, `unlockedSkins`, etc.).

@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 /// Compact pill that pairs a flower icon with the user's running token
 /// balance. Used by the garden screen's top bar (anti-pattern guardrail:
 /// visible by default, hideable via the "Show token balance" toggle in
-/// Settings — never forced).
+/// Settings - never forced).
 ///
-/// Icon choice: `Icons.local_florist` — the flower glyph echoes the
+/// Icon choice: `Icons.local_florist` - the flower glyph echoes the
 /// garden metaphor of the wider app and is intentionally NOT a
 /// money/coin glyph (CLAUDE.md "no mood-contingent rewards"; tokens
 /// unlock cosmetic flower skins, not therapeutic features).
 ///
 /// Semantics: the entire chip is announced as
-/// `'<balance> tokens'` — accessibility users get the same signal as
+/// `'<balance> tokens'` - accessibility users get the same signal as
 /// sighted users without needing to read the icon. WCAG 2.2 AA contrast
 /// is inherited from the active `MbColors` theme; light + dark are both
 /// covered without the chip itself picking literals.

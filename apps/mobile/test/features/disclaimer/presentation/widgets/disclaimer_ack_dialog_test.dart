@@ -9,7 +9,7 @@ import 'package:moodbloom/features/disclaimer/domain/disclaimer_failure.dart';
 import 'package:moodbloom/features/disclaimer/domain/repositories/disclaimer_repository.dart';
 import 'package:moodbloom/features/disclaimer/presentation/widgets/disclaimer_ack_dialog.dart';
 
-/// Recording fake — captures every userId passed to [ack] so the test
+/// Recording fake - captures every userId passed to [ack] so the test
 /// can assert the dialog wired the right argument from `widget.userId`.
 class _FakeDisclaimerRepo implements DisclaimerRepository {
   final List<String> ackedUsers = [];
@@ -88,7 +88,7 @@ void main() {
     );
 
     testWidgets(
-      'is barrier-non-dismissible — tapping outside does NOT close it',
+      'is barrier-non-dismissible - tapping outside does NOT close it',
       (tester) async {
         final repo = _FakeDisclaimerRepo();
         await _pumpDialog(tester, repo: repo, userId: 'u-1');

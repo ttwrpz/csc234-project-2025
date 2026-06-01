@@ -15,7 +15,7 @@ import 'mood_score_point.dart';
 /// from the caller via [MoodScoreChartTheme] so this package stays
 /// decoupled from `packages/design_system`.
 ///
-/// Both series accept null per day — those points are skipped, so the
+/// Both series accept null per day - those points are skipped, so the
 /// remaining segments connect across gaps without inventing data.
 class MoodScoreLineChart extends StatelessWidget {
   const MoodScoreLineChart({
@@ -282,7 +282,7 @@ class MoodScoreLineChart extends StatelessWidget {
     return '${weekdays[day.weekday - 1]} · ${months[day.month - 1]} ${day.day}';
   }
 
-  /// Spec §2.3 thresholds — mood score `S` mapped to the user-facing
+  /// Spec §2.3 thresholds - mood score `S` mapped to the user-facing
   /// tier vocabulary so the tooltip reads "Thriving (0.32)" instead of
   /// a bare number.
   static String _scoreTierLabel(double s) {

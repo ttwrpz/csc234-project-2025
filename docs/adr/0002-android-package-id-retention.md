@@ -1,4 +1,4 @@
-# ADR-0002 — Retain `com.cssit.usercentricapp` Android Package ID
+# ADR-0002 - Retain `com.cssit.usercentricapp` Android Package ID
 
 **Status:** Accepted (retroactive; ratified 2026-05-30)
 **Date:** 2026-05-30 (backfill of a Sprint 3 follow-up flagged in ADR-0001)
@@ -14,13 +14,13 @@ ADR-0002 in Sprint 3:
 > "Defer the Android package id rename. Keep `com.cssit.usercentricapp`
 > for Sprint 2. Rename to `com.moodbloom.app` in Sprint 3 alongside a
 > planned `flutterfire configure` re-run, captured in ADR-0002 at that
-> time." — ADR-0001 §Decision
+> time." - ADR-0001 §Decision
 
 The rename never executed. By Sprint 5 `v1.5` the code still ships with:
 
-- `apps/mobile/android/app/build.gradle.kts:12` — `namespace = "com.cssit.usercentricapp"`
-- `apps/mobile/android/app/build.gradle.kts:35` — `applicationId = "com.cssit.usercentricapp"`
-- `apps/mobile/android/app/google-services.json:5` — `"project_id": "csc234-user-centric-mobile-app"` with its `mobilesdk_app_id` keyed off the current `applicationId`
+- `apps/mobile/android/app/build.gradle.kts:12` - `namespace = "com.cssit.usercentricapp"`
+- `apps/mobile/android/app/build.gradle.kts:35` - `applicationId = "com.cssit.usercentricapp"`
+- `apps/mobile/android/app/google-services.json:5` - `"project_id": "csc234-user-centric-mobile-app"` with its `mobilesdk_app_id` keyed off the current `applicationId`
 
 The ADR was never written because the rename was never executed, and the
 audit report (2026-05-30, `docs/audit-orchestration.md`) flagged this as
@@ -72,14 +72,14 @@ Concretely:
 ### B. Rename to a vanity id like `com.kmutt.csc234.moodbloom`
 **Rejected.** Same Firebase / FCM / Play-Store cost as Option A, with the
 extra downside that `com.kmutt.csc234.moodbloom` ties the binary to a
-specific course offering — every semester that re-uses MoodBloom as a
+specific course offering - every semester that re-uses MoodBloom as a
 template would have to rename again. The current id at least reads as
 generic "student-context user-centric app" rather than course-specific.
 
-### C. Status quo — Option chosen (this ADR)
+### C. Status quo - Option chosen (this ADR)
 **Accepted.** No code churn; no Firebase re-provisioning; no FCM token
 invalidation; no Play-Store risk. The trade-off is documented brand-vs-id
-drift — accepted because it's invisible to end-users.
+drift - accepted because it's invisible to end-users.
 
 ## Consequences
 
@@ -100,18 +100,18 @@ drift — accepted because it's invisible to end-users.
 
 ## Compliance Check
 
-- [x] **R2 — Clean Architecture.** Decision sits at the platform-config
+- [x] **R2 - Clean Architecture.** Decision sits at the platform-config
       layer; no domain / presentation / data churn.
-- [x] **R3 — Multi-Agent Workflow.** Architect-authored; orchestrator
+- [x] **R3 - Multi-Agent Workflow.** Architect-authored; orchestrator
       ratified; security-reviewer not required (no Firestore rules /
       Cloud Function / auth flow change).
-- [x] **R5 — Quality Gates.** No tests touched; no CI step changes.
+- [x] **R5 - Quality Gates.** No tests touched; no CI step changes.
 
 ## Note on missing artifacts and out-of-band concerns
 
 This ADR is a **retroactive backfill**. The audit report at
 `docs/audit-orchestration.md` (HEAD `ef2c96ad`, dated 2026-05-30) honestly
-states "ADR-0002 was never written" — that statement was correct at the
+states "ADR-0002 was never written" - that statement was correct at the
 time of the audit. This file was added the same day, after the audit,
 to close the gap. Future audits should treat the audit-report text as
 historical context and this ADR as the canonical record of the decision.

@@ -4,7 +4,7 @@ import 'dart:html' as html;
 
 /// Trigger a browser download for the given URL by appending a hidden
 /// `<a download>` element to the DOM. Works for any URL the browser can
-/// fetch — including the Firebase Storage download URLs we hand out
+/// fetch - including the Firebase Storage download URLs we hand out
 /// from `getDownloadURL()`.
 Future<bool> downloadAttachment(String url, {String? filename}) async {
   final anchor = html.AnchorElement(href: url)
@@ -21,6 +21,6 @@ String _filenameFromUrl(String url) {
   final clean = url.split('?').first;
   final segments = clean.split('/');
   if (segments.isEmpty) return 'attachment';
-  // Firebase Storage paths are URL-encoded — decode for a friendlier name.
+  // Firebase Storage paths are URL-encoded - decode for a friendlier name.
   return Uri.decodeComponent(segments.last);
 }

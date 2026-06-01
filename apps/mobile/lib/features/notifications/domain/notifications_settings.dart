@@ -7,7 +7,7 @@ part 'notifications_settings.freezed.dart';
 enum NotificationPlatform { android, web, iOS }
 
 /// One device registration. Multiple devices per user supported: a
-/// token is stored once per (token) — re-registering the same token
+/// token is stored once per (token) - re-registering the same token
 /// simply refreshes [lastSeenAt].
 class FcmTokenRecord {
   const FcmTokenRecord({
@@ -49,7 +49,7 @@ class FcmTokenRecord {
 /// - [cheerUpEnabled] is the legacy single-channel gate consumed by the
 ///   `sendCheerUpPush` Cloud Function. Kept as a backward-compat shim:
 ///   when ALL three tier flags go off, the shim flips false so the
-///   CF stops firing — matching the previous user-visible behaviour.
+///   CF stops firing - matching the previous user-visible behaviour.
 ///   When any tier remains enabled, the shim stays true.
 /// - [tier1Enabled] / [tier2Enabled] / [tier3Enabled] are the new
 ///   per-tier opt-outs the intervention dispatcher reads. Defaults are
@@ -88,7 +88,7 @@ abstract class NotificationsSettings with _$NotificationsSettings {
   /// [cheerUpEnabled] so it stays `true` while any tier is enabled and
   /// flips `false` only when all three tier flags are off. The
   /// `sendCheerUpPush` CF still reads `cheerUpEnabled` (see
-  /// `functions/src/sendCheerUpPush.ts`) — keeping the field in
+  /// `functions/src/sendCheerUpPush.ts`) - keeping the field in
   /// lock-step preserves its behaviour while the dispatcher feature
   /// flag rolls out.
   NotificationsSettings withTier1Enabled(bool value) {

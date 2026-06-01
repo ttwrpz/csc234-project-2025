@@ -1,4 +1,4 @@
-/// Canonical bipolar / medical disclaimer copy. Locked phrasing —
+/// Canonical bipolar / medical disclaimer copy. Locked phrasing -
 /// any change requires team review (CLAUDE.md "Pre-approved
 /// intervention phrasing"). Tests in `disclaimer_copy_test.dart` assert
 /// each constant byte-for-byte.
@@ -11,7 +11,7 @@ abstract class DisclaimerCopy {
       "insights it shows are observational only. If you're concerned "
       "about your mental health, please consult a qualified professional.";
 
-  /// Short footer text — appended to every Tier 1/2/3 intervention
+  /// Short footer text - appended to every Tier 1/2/3 intervention
   /// notification body.
   static const String notificationFooter =
       'MoodBloom is not a medical device. Not a substitute for '

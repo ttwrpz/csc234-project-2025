@@ -35,14 +35,14 @@ void main() {
       expect(hash.lockedUntil, isNull);
     });
 
-    test('Freezed equality — same values are ==', () {
+    test('Freezed equality - same values are ==', () {
       final a = makeHash();
       final b = makeHash();
       expect(a, equals(b));
       expect(a.hashCode, equals(b.hashCode));
     });
 
-    test('Freezed inequality — differing iterations is !=', () {
+    test('Freezed inequality - differing iterations is !=', () {
       final a = makeHash(iterations: 100000);
       final b = makeHash(iterations: 200000);
       expect(a, isNot(equals(b)));

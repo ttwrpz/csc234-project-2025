@@ -7,7 +7,7 @@ import '../repositories/mood_media_repository.dart';
 /// Asks the [MoodMediaRepository] for one or more media items.
 ///
 /// Pure-Dart use case (no Flutter / Firebase imports). The Riverpod provider
-/// for this class lives in `mood/data/providers.dart` — see CLAUDE.md "Use
+/// for this class lives in `mood/data/providers.dart` - see CLAUDE.md "Use
 /// cases" section.
 class PickMoodMediaUseCase {
   const PickMoodMediaUseCase({required MoodMediaRepository repository})

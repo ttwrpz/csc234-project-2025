@@ -92,7 +92,7 @@ void main() {
       );
     });
 
-    test('upsertToken — writes a new token row', () async {
+    test('upsertToken - writes a new token row', () async {
       final result = await repo.upsertToken(uid: uid);
       expect(result, isA<Ok<void, NotificationFailure>>());
       expect(firestore.docs[uid]!.tokens.length, 1);
@@ -100,7 +100,7 @@ void main() {
     });
 
     test(
-      'upsertToken — re-running with same token dedups (no duplicate row)',
+      'upsertToken - re-running with same token dedups (no duplicate row)',
       () async {
         await repo.upsertToken(uid: uid);
         await repo.upsertToken(uid: uid);
@@ -109,7 +109,7 @@ void main() {
       },
     );
 
-    test('upsertToken — multi-device: distinct tokens both stored', () async {
+    test('upsertToken - multi-device: distinct tokens both stored', () async {
       fcm.token = 'token-A';
       fcm.platform = NotificationPlatform.android;
       await repo.upsertToken(uid: uid);
@@ -125,7 +125,7 @@ void main() {
       });
     });
 
-    test('upsertToken — permissionDenied outcome surfaces failure', () async {
+    test('upsertToken - permissionDenied outcome surfaces failure', () async {
       fcm.permissionOutcome = FcmPermissionOutcome.denied;
       final result = await repo.upsertToken(uid: uid);
       expect(result, isA<Err<void, NotificationFailure>>());
@@ -135,7 +135,7 @@ void main() {
       expect(firestore.docs.containsKey(uid), isFalse);
     });
 
-    test('upsertToken — null token returns tokenUnavailable', () async {
+    test('upsertToken - null token returns tokenUnavailable', () async {
       fcm.token = null;
       final result = await repo.upsertToken(uid: uid);
       expect(result, isA<Err<void, NotificationFailure>>());
@@ -143,7 +143,7 @@ void main() {
     });
 
     test(
-      'upsertToken — empty uid returns tokenUnavailable without calling fcm',
+      'upsertToken - empty uid returns tokenUnavailable without calling fcm',
       () async {
         final result = await repo.upsertToken(uid: '');
         expect(result, isA<Err<void, NotificationFailure>>());
@@ -151,7 +151,7 @@ void main() {
       },
     );
 
-    test('setEnabled(false) — flips Firestore flag and local mirror', () async {
+    test('setEnabled(false) - flips Firestore flag and local mirror', () async {
       // Seed with a token + cheer-up enabled.
       await repo.upsertToken(uid: uid);
       expect(firestore.docs[uid]!.cheerUpEnabled, isTrue);
@@ -165,7 +165,7 @@ void main() {
       expect(firestore.docs[uid]!.tokens.length, 1);
     });
 
-    test('setEnabled(true) — flips flag back on', () async {
+    test('setEnabled(true) - flips flag back on', () async {
       await repo.setEnabled(uid: uid, enabled: false);
       expect(firestore.docs[uid]!.cheerUpEnabled, isFalse);
 
@@ -176,7 +176,7 @@ void main() {
     });
 
     test(
-      'setEnabled — Firebase exception maps to NotificationFailure.network',
+      'setEnabled - Firebase exception maps to NotificationFailure.network',
       () async {
         firestore.mutateThrows = FirebaseException(plugin: 'cloud_firestore');
         final result = await repo.setEnabled(uid: uid, enabled: true);
@@ -184,11 +184,11 @@ void main() {
       },
     );
 
-    test('watchSettings — returns null for empty uid', () {
+    test('watchSettings - returns null for empty uid', () {
       expect(repo.watchSettings(uid: ''), isNull);
     });
 
-    test('watchSettings — emits the current doc state', () async {
+    test('watchSettings - emits the current doc state', () async {
       await repo.upsertToken(uid: uid);
       final stream = repo.watchSettings(uid: uid)!;
       final settings = await stream.first;

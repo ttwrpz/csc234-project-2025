@@ -6,7 +6,7 @@ import 'package:moodbloom/features/garden/presentation/widgets/atmosphere_overla
 import '../../../../helpers/pump_app.dart';
 
 void main() {
-  group('AtmosphereOverlay — smoke (one per state)', () {
+  group('AtmosphereOverlay - smoke (one per state)', () {
     Future<void> pump(WidgetTester tester, Atmosphere a) async {
       await pumpApp(
         tester,
@@ -22,7 +22,7 @@ void main() {
           ),
         ),
       );
-      // Single pump — animate:false means no controller is running.
+      // Single pump - animate:false means no controller is running.
       await tester.pump();
     }
 

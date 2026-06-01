@@ -14,7 +14,7 @@ import 'recent_triggers_card.dart' show insightsFocusedDayIndexProvider;
 /// aligned with the chart's date ticks.
 ///
 /// Each tier-trigger dot is a tap target. Tapping opens
-/// [MarkerDetailSheet] — phone shows a modal bottom sheet, tablet and
+/// [MarkerDetailSheet] - phone shows a modal bottom sheet, tablet and
 /// desktop show a centred dialog. The popover surfaces the date, tier
 /// name, plain-English reason, and (optionally) a link to the matching
 /// intervention surface. Untriggered placeholder dots are NOT tappable.
@@ -50,7 +50,7 @@ class PatternMarkerBand extends ConsumerWidget {
                   onTap: insights[i].triggeredTier == null
                       ? null
                       : () {
-                          // The user picked this dot directly — clear
+                          // The user picked this dot directly - clear
                           // any stale focus from the Recent Triggers
                           // list so the next tap on a list row still
                           // animates.

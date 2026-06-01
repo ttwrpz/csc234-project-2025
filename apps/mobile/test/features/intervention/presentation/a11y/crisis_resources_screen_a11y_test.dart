@@ -12,7 +12,7 @@ import 'package:moodbloom/features/intervention/presentation/screens/crisis_reso
 import 'package:moodbloom/features/intervention/presentation/widgets/intervention_opt_out_button.dart';
 import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 
-/// Sprint 5 Day 3 a11y sweep — Tier 3 crisis resources screen.
+/// Sprint 5 Day 3 a11y sweep - Tier 3 crisis resources screen.
 ///
 /// CRITICAL contrast check: the Hotline tile is the load-bearing
 /// affordance for the highest-acuity tier. The tile MUST pass WCAG 2.2
@@ -156,7 +156,7 @@ void main() {
         );
   });
 
-  group('CrisisResourcesScreen — Hotline 1323 contrast (WCAG 2.2 AA)', () {
+  group('CrisisResourcesScreen - Hotline 1323 contrast (WCAG 2.2 AA)', () {
     testWidgets('Hotline tile title contrast ≥ 4.5:1 on light theme', (
       tester,
     ) async {
@@ -165,7 +165,7 @@ void main() {
 
       // Read the resolved theme colors directly. The Hotline tile uses
       // primaryContainer for its background and onPrimaryContainer for
-      // its text — verified at crisis_resources_screen.dart line 244.
+      // its text - verified at crisis_resources_screen.dart line 244.
       final ctx = tester.element(find.byType(CrisisResourcesScreen));
       final scheme = Theme.of(ctx).colorScheme;
       final ratio = _contrastRatio(
@@ -176,7 +176,7 @@ void main() {
         ratio,
         greaterThanOrEqualTo(4.5),
         reason:
-            'Hotline 1323 tile (light) — onPrimaryContainer vs '
+            'Hotline 1323 tile (light) - onPrimaryContainer vs '
             'primaryContainer contrast is $ratio:1, WCAG AA requires ≥4.5:1. '
             'This is the Tier 3 load-bearing affordance.',
       );
@@ -203,13 +203,13 @@ void main() {
         ratio,
         greaterThanOrEqualTo(4.5),
         reason:
-            'Hotline 1323 tile (dark) — onPrimaryContainer vs '
+            'Hotline 1323 tile (dark) - onPrimaryContainer vs '
             'primaryContainer contrast is $ratio:1, WCAG AA requires ≥4.5:1.',
       );
     });
   });
 
-  group('CrisisResourcesScreen — semantics labels', () {
+  group('CrisisResourcesScreen - semantics labels', () {
     testWidgets(
       'Hotline tile is announced with a call-action label including "1323"',
       (tester) async {
@@ -270,9 +270,9 @@ void main() {
         await _pushCrisis(tester);
 
         // The dialog has 2 actions: TextButton("Stay") + FilledButton("Close").
-        // Trigger via the navigator's pop attempt — PopScope intercepts.
+        // Trigger via the navigator's pop attempt - PopScope intercepts.
         final ctx = tester.element(find.byType(CrisisResourcesScreen));
-        // The PopScope's onPopInvokedWithResult is async — we call it
+        // The PopScope's onPopInvokedWithResult is async - we call it
         // directly to skip the platform-channel pop simulation.
         await Navigator.of(ctx).maybePop();
         await tester.pump();
@@ -297,7 +297,7 @@ void main() {
     );
   });
 
-  group('CrisisResourcesScreen — 200% type readability', () {
+  group('CrisisResourcesScreen - 200% type readability', () {
     testWidgets(
       'dispatch body + Hotline tile + 3 cards + opt-out render without overflow',
       (tester) async {

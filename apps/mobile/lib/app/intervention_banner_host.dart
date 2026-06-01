@@ -7,12 +7,12 @@ import '../features/intervention/presentation/widgets/intervention_banner.dart';
 /// App-level wrapper that overlays the [InterventionBanner] above the
 /// active route's content. Attached at `MaterialApp.router(builder:)` in
 /// `bootstrap.dart` so the banner can appear regardless of which tab
-/// the user is on (Garden / History / Patterns / Settings — all four
+/// the user is on (Garden / History / Patterns / Settings - all four
 /// host the banner once the controller reaches [InterventionPending]).
 ///
 /// The banner is anchored at the bottom of the screen, inside the
 /// safe-area-aware [InterventionBanner] widget. It sits in a [Stack]
-/// above the routed `child` — when the controller is idle, the banner
+/// above the routed `child` - when the controller is idle, the banner
 /// collapses to `SizedBox.shrink()` (zero hit area) so the user
 /// interacts with the underlying screen normally.
 ///

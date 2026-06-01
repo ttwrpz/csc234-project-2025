@@ -24,7 +24,7 @@ MoodEntry _entry(
 }
 
 void main() {
-  group('GardenBed — smoke', () {
+  group('GardenBed - smoke', () {
     Future<void> pump(
       WidgetTester tester, {
       required List<MoodEntry> entries,
@@ -41,7 +41,7 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('empty entries renders ground+grass only — no flowers', (
+    testWidgets('empty entries renders ground+grass only - no flowers', (
       tester,
     ) async {
       await pump(tester, entries: const [], tier: PlantTier.resting);

@@ -47,7 +47,7 @@ void main() {
       repo = BiometricRepositoryImpl(datasource: ds, preference: prefDs);
     });
 
-    test('capability — device unsupported reports isAvailable=false', () async {
+    test('capability - device unsupported reports isAvailable=false', () async {
       ds.deviceSupported = false;
       ds.canCheck = false;
       final cap = await repo.capability();
@@ -56,13 +56,13 @@ void main() {
       expect(cap.userOptedIn, isFalse);
     });
 
-    test('capability — enrolled biometrics flagged true', () async {
+    test('capability - enrolled biometrics flagged true', () async {
       final cap = await repo.capability();
       expect(cap.isAvailable, isTrue);
       expect(cap.hasEnrolledBiometrics, isTrue);
     });
 
-    test('capability — empty enrolled list flagged false', () async {
+    test('capability - empty enrolled list flagged false', () async {
       ds.enrolled = const [];
       final cap = await repo.capability();
       expect(cap.hasEnrolledBiometrics, isFalse);
@@ -77,17 +77,17 @@ void main() {
       expect(cap.userOptedIn, isTrue);
     });
 
-    test('authenticate — true on datasource success', () async {
+    test('authenticate - true on datasource success', () async {
       ds.authenticateReturns = true;
       expect(await repo.authenticate(reason: 'r'), isTrue);
     });
 
-    test('authenticate — false on BiometricCancelledException', () async {
+    test('authenticate - false on BiometricCancelledException', () async {
       ds.authenticateThrows = const BiometricCancelledException();
       expect(await repo.authenticate(reason: 'r'), isFalse);
     });
 
-    test('authenticate — rethrows BiometricFailedException on '
+    test('authenticate - rethrows BiometricFailedException on '
         'BiometricUnavailableException', () async {
       ds.authenticateThrows = const BiometricUnavailableException();
       expect(

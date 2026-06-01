@@ -1,7 +1,7 @@
 import 'package:local_auth/local_auth.dart';
 
 /// Thin wrapper around `LocalAuthentication`. This is the boundary between
-/// `package:local_auth` and the rest of the app — no domain types, no
+/// `package:local_auth` and the rest of the app - no domain types, no
 /// widgets. Methods either return primitives or throw a typed exception
 /// from this file (mapped upstream by [BiometricRepositoryImpl]).
 class BiometricDatasource {
@@ -23,7 +23,7 @@ class BiometricDatasource {
 
   /// Show the OS biometric prompt. Returns true on success.
   ///
-  /// `biometricOnly: true` is critical — it prevents the OS from falling
+  /// `biometricOnly: true` is critical - it prevents the OS from falling
   /// back to a device PIN/passcode, which is NOT what we want for a biometric
   /// gate. `persistAcrossBackgrounding: true` keeps the prompt alive across
   /// config changes (replaces `stickyAuth` from local_auth 2.x).
@@ -67,7 +67,7 @@ class BiometricCancelledException implements Exception {
 }
 
 /// Catch-all for hardware/config errors that aren't user cancellation.
-/// Carries only the platform error code — never the message — to avoid
+/// Carries only the platform error code - never the message - to avoid
 /// leaking user-identifying diagnostics into logs.
 class BiometricFailedException implements Exception {
   const BiometricFailedException(this.code);

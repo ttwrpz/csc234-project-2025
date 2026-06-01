@@ -39,7 +39,7 @@ class NotificationsFirestoreDatasource {
       if (NotificationsSettingsDto.needsTierMigration(data)) {
         // Fire-and-forget the repair write; the stream still yields the
         // migrated entity immediately so the UI never sees the legacy
-        // shape. `.set(merge: true)` is idempotent — a concurrent
+        // shape. `.set(merge: true)` is idempotent - a concurrent
         // mutate() that lands first will simply re-overwrite the same
         // four flags.
         final migrated = NotificationsSettingsDto.migratedFromLegacy(data!);
@@ -72,7 +72,7 @@ class NotificationsFirestoreDatasource {
   /// If the existing doc is in the legacy shape, [mutate] sees the
   /// migrated entity (tier flags mirrored from `cheerUpEnabled`) and
   /// the merge-write writes the full four-flag schema. This keeps the
-  /// migration in lock-step with any caller-initiated mutation — a user
+  /// migration in lock-step with any caller-initiated mutation - a user
   /// who toggles cheer-up off as their first post-update action gets
   /// the schema repaired in the same transaction.
   Future<void> mutate(

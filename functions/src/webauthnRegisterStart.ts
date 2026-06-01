@@ -1,12 +1,12 @@
-// webauthnRegisterStart — Cloud Function callable for the registration
+// webauthnRegisterStart - Cloud Function callable for the registration
 // ceremony's first leg.
 //
 // Flow:
 //   1. Auth check (HttpsError unauthenticated if no uid).
-//   2. PIN guard — read users/{uid}/security/pin; if absent, reject with
+//   2. PIN guard - read users/{uid}/security/pin; if absent, reject with
 //      { ok: false, code: 'pin_required' }. WebAuthn cannot be enabled
 //      without a PIN (the PIN is the recovery factor).
-//   3. Provisioning guard — if WEBAUTHN_PRODUCTION_ORIGIN is empty AND no
+//   3. Provisioning guard - if WEBAUTHN_PRODUCTION_ORIGIN is empty AND no
 //      RPID is set, reject with { ok: false, code: 'webauthn_not_provisioned' }.
 //      Server-side safety net for the client kill-switch.
 //   4. Rate-limit consume via rateLimits.webauthn/{uid}.
@@ -17,7 +17,7 @@
 //
 // PII canary: log payload includes uid + outcome + latencyMs only.
 // Never log the challenge, the RP id, or any field from the options
-// payload (the user-handle in particular is the uid bytes — already in
+// payload (the user-handle in particular is the uid bytes - already in
 // the allowlisted `uid` field, but no need to log it twice).
 //
 // CF posture: region asia-southeast1, 256MiB, 30s timeout,
@@ -63,7 +63,7 @@ export async function handleWebauthnRegisterStart(
   const startMs = Date.now();
   const db = getFirestore();
 
-  // PIN guard — WebAuthn cannot be enabled without a PIN (Decision E).
+  // PIN guard - WebAuthn cannot be enabled without a PIN (Decision E).
   const pinSnap = await db.doc(`users/${uid}/security/pin`).get();
   if (!pinSnap.exists) {
     logger.info({
@@ -75,7 +75,7 @@ export async function handleWebauthnRegisterStart(
     return { ok: false, code: 'pin_required' };
   }
 
-  // Provisioning guard — server-side fence.
+  // Provisioning guard - server-side fence.
   if (!isProvisioned()) {
     logger.info({
       event: 'webauthnRegisterStart',
@@ -125,7 +125,7 @@ export async function handleWebauthnRegisterStart(
     return { ok: false, code: 'webauthn_not_provisioned' };
   }
 
-  // Build creation options. `attestationType: 'none'` — attestation is
+  // Build creation options. `attestationType: 'none'` - attestation is
   // not verified here; revisit if the project moves to enterprise
   // authentication.
   const options = await generateRegistrationOptions({
@@ -173,7 +173,7 @@ export const webauthnRegisterStart = onCall(
     timeoutSeconds: 30,
     memory: '256MiB',
     enforceAppCheck: false,
-    // ADR-0014 §Origin handling — the constants are read at runtime via
+    // ADR-0014 §Origin handling - the constants are read at runtime via
     // defineString; declaring them here gives Firebase Functions the
     // wiring it needs to resolve the params at deploy time.
     secrets: [],

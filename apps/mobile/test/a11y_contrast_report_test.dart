@@ -3,7 +3,7 @@
 // Prints the resolved-theme contrast ratios used by the
 // docs/test-reports/sprint-5-a11y-report.md table. Skipped by default
 // (`skip: false` to regenerate). Keeps the WCAG-math + colour
-// resolution in lockstep — the test framework's `tester.element`
+// resolution in lockstep - the test framework's `tester.element`
 // resolves `Theme.of(context).colorScheme` and `MbColors` via the same
 // path the runtime uses, so the report's numbers are not a separate
 // computation.
@@ -39,7 +39,7 @@ String row(String pair, double ratio, {double aa = 4.5}) {
 
 void main() {
   testWidgets(
-    'a11y contrast report — prints values to stdout (skipped by default)',
+    'a11y contrast report - prints values to stdout (skipped by default)',
     (tester) async {
       // Pump both themes side-by-side under a single MaterialApp via
       // a Theme widget swap so the resolved ColorSchemes are distinct
@@ -88,7 +88,7 @@ void main() {
       final dmb = darkMb!;
 
       // Print a copy-pasteable markdown table. The test always passes
-      // — the output is the artifact.
+      // - the output is the artifact.
       print('\n=== Sprint 5 a11y contrast report ===');
       print('');
       print('| Pair | Ratio | AA (4.5:1) |');
@@ -184,7 +184,7 @@ void main() {
         ),
       );
       print('=== end ===\n');
-      // No assertions — this test exists to print the artifact. Keep it
+      // No assertions - this test exists to print the artifact. Keep it
       // green so the runner doesn't fail on a CI rerun.
       expect(true, isTrue);
     },

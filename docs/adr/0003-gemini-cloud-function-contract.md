@@ -1,4 +1,4 @@
-# ADR-0003 — `analyzeMoodText` Cloud Function Contract
+# ADR-0003 - `analyzeMoodText` Cloud Function Contract
 
 **Status:** Accepted
 **Date:** 2026-04-29
@@ -7,11 +7,11 @@
 
 ## Context
 
-Sprint 3 introduces AI-assisted mood logging (US-Lin-2). The Flutter client must never call Gemini directly — the API key would ship in app bundles, request shaping would scatter across platforms, and there would be no enforcement seam for rate limits or PII handling. CLAUDE.md mandates a Cloud Functions proxy. This ADR specifies the wire contract, error taxonomy, prompt template, validation pipeline, logging schema, and test plan that govern that proxy.
+Sprint 3 introduces AI-assisted mood logging (US-Lin-2). The Flutter client must never call Gemini directly - the API key would ship in app bundles, request shaping would scatter across platforms, and there would be no enforcement seam for rate limits or PII handling. CLAUDE.md mandates a Cloud Functions proxy. This ADR specifies the wire contract, error taxonomy, prompt template, validation pipeline, logging schema, and test plan that govern that proxy.
 
-The function is on the critical path of the Sprint 3 demo (the AI suggestion pill) but it is *not* on the critical path of saving a mood entry — manual mood selection must always work, and a Gemini outage cannot block the user. This shapes both the contract (result-typed responses, explicit error variants) and the UX requirements downstream.
+The function is on the critical path of the Sprint 3 demo (the AI suggestion pill) but it is *not* on the critical path of saving a mood entry - manual mood selection must always work, and a Gemini outage cannot block the user. This shapes both the contract (result-typed responses, explicit error variants) and the UX requirements downstream.
 
-The mood enum has six values: `happy, calm, okay, sad, angry, anxious` (apps/mobile/lib/features/mood/domain/entities/mood_type.dart:3-9). The Sprint 3 kickoff prompt mistakenly says "seven" — the contract here uses six.
+The mood enum has six values: `happy, calm, okay, sad, angry, anxious` (apps/mobile/lib/features/mood/domain/entities/mood_type.dart:3-9). The Sprint 3 kickoff prompt mistakenly says "seven" - the contract here uses six.
 
 ## Decision
 
@@ -37,13 +37,13 @@ interface AnalyzeMoodTextRequest {
   v: 1;                // schema version
 }
 
-// Response — discriminated union
+// Response - discriminated union
 type AnalyzeMoodTextResponse = AnalyzeMoodTextSuccess | AnalyzeMoodTextError;
 
 interface AnalyzeMoodTextSuccess {
   ok: true; v: 1; requestId: string;
   mood: 'happy' | 'calm' | 'okay' | 'sad' | 'angry' | 'anxious';
-  confidence: number;                                     // [0.0, 1.0] — clamped
+  confidence: number;                                     // [0.0, 1.0] - clamped
   alternative: { mood: ...; confidence: number } | null;  // for override UX
   rationale: string;                                      // <=80 chars; theme-level, no PII echo
   flag?: 'self_harm_safety';                              // S3: hide pill; S4: gentle banner
@@ -60,7 +60,7 @@ interface AnalyzeMoodTextError {
 }
 ```
 
-Result-shaped responses (rather than throwing `HttpsError` for every error) map cleanly onto Dart's `Result<AiSuggestion, AiAnalysisFailure>` pattern. The exception is `unauthenticated` — that *does* throw `HttpsError('unauthenticated')` because it must short-circuit before we trust any payload. The Dart datasource maps `FirebaseFunctionsException.code === 'unauthenticated'` to `AiAnalysisFailure.unauthenticated`; everything else comes back as `{ok: false, code}`.
+Result-shaped responses (rather than throwing `HttpsError` for every error) map cleanly onto Dart's `Result<AiSuggestion, AiAnalysisFailure>` pattern. The exception is `unauthenticated` - that *does* throw `HttpsError('unauthenticated')` because it must short-circuit before we trust any payload. The Dart datasource maps `FirebaseFunctionsException.code === 'unauthenticated'` to `AiAnalysisFailure.unauthenticated`; everything else comes back as `{ok: false, code}`.
 
 ### Validation order (short-circuit; first failure wins)
 
@@ -107,7 +107,7 @@ You are MoodBloom's mood classifier. You receive one short user-authored
 journal entry (Thai or English) and return a single JSON object describing
 which of MoodBloom's six mood categories best fits the entry.
 
-ALLOWED MOODS — return EXACTLY one of these strings, lowercase:
+ALLOWED MOODS - return EXACTLY one of these strings, lowercase:
   happy, calm, okay, sad, angry, anxious
 
 RULES
@@ -120,7 +120,7 @@ RULES
    The app handles that downstream.
 4. EMPTY/GIBBERISH: mood="okay", confidence<=0.4, alternative=null, flag=null.
 5. RATIONALE: refer to themes ("themes of loss and fatigue"), never quote
-   the user's input. English only — UI localises.
+   the user's input. English only - UI localises.
 
 ONE-SHOT EXAMPLE
 Input:  "I aced the presentation today and the team cheered. Feeling proud."
@@ -134,7 +134,7 @@ Output: {"mood":"happy","confidence":0.92,
 
 Allowed fields: `event, requestId, uid, outcome, textLen, locale, model, latencyTotalMs, latencyGeminiMs, promptTokens, completionTokens, classification.{mood, confidence, safetyFlag}, rateLimit.{remaining, retryAfterSec}, errorReason`.
 
-Forbidden fields: raw `text`, full assembled `prompt`, model `rationale` string. The rationale is sent to the client (it's part of the success response) but not to logs — the prompt rule says "no PII echo" but the model is the rule's enforcer, and a hallucinated rationale could quote the input. Treat as PII-adjacent.
+Forbidden fields: raw `text`, full assembled `prompt`, model `rationale` string. The rationale is sent to the client (it's part of the success response) but not to logs - the prompt rule says "no PII echo" but the model is the rule's enforcer, and a hallucinated rationale could quote the input. Treat as PII-adjacent.
 
 ### Files (server)
 
@@ -168,13 +168,13 @@ apps/mobile/lib/features/mood/
     └── repositories/ai_analysis_repository_impl.dart
 ```
 
-`AiAnalysisFailure` extends `Failure` (the abstract base in `packages/core/lib/src/failure.dart`) directly — *not* `MoodFailure` — because AI failures are conceptually distinct from mood-entity failures and may be reused by Sprint 4's pattern-analysis function.
+`AiAnalysisFailure` extends `Failure` (the abstract base in `packages/core/lib/src/failure.dart`) directly - *not* `MoodFailure` - because AI failures are conceptually distinct from mood-entity failures and may be reused by Sprint 4's pattern-analysis function.
 
 ## Alternatives Considered
 
 - **Throw `HttpsError` for every error** (idiomatic Firebase pattern). Rejected: forces try/catch around every `.call()` on the Dart side and loses the `retryAfterSec` structured field. Result-typed responses produce cleaner state-machine UI.
 - **Server-generated `requestId`**. Rejected: breaks idempotency-on-retry semantics. A client retrying a flaky call should pass the same `requestId` so the rate limiter can see it as one logical request (future enhancement; S3 just uses it for log correlation).
-- **Memorystore / Redis for rate limits**. Rejected: adds infra. Firestore at 10 req/min/uid is ~$0.20/hr at 1000 active users — well within budget.
+- **Memorystore / Redis for rate limits**. Rejected: adds infra. Firestore at 10 req/min/uid is ~$0.20/hr at 1000 active users - well within budget.
 - **No `responseSchema` enum constraint** (parse Gemini's free-text response). Rejected: structured-output mode collapses the `parse_error` class to a rare exception rather than the norm. Belt-and-braces Zod re-check defends against schema drift.
 - **Direct Gemini call from Flutter via the public REST endpoint with per-user OAuth**. Rejected: GeminiAPI key is a server credential; Cloud Functions proxy is the locked architecture per CLAUDE.md.
 
@@ -182,12 +182,12 @@ apps/mobile/lib/features/mood/
 
 - Positive: AI failures degrade gracefully (manual mood pick always works); rate limit + auth bound abuse without App Check; PII never crosses log boundary; the wire format is stable enough that Sprint 4's compassionate-banner UX swap-in needs no protocol change.
 - Negative: Cost of a Cloud Function call per user-keystroke-burst (debounced 600ms) is non-zero; if user-base grows the daily quota guard (open question §7 in the plan) becomes mandatory.
-- Follow-up: ADR-0006 (Sprint 4) — App Check enforcement and `analyzePatterns` function for pattern detection. The wire format here is forward-compatible with `v: 2` if the prompt or response shape evolves.
+- Follow-up: ADR-0006 (Sprint 4) - App Check enforcement and `analyzePatterns` function for pattern detection. The wire format here is forward-compatible with `v: 2` if the prompt or response shape evolves.
 
 ## Compliance Check
 
-- [ ] CLAUDE.md "Gemini via Cloud Functions proxy, never direct from app" — satisfied.
-- [ ] CLAUDE.md "Never log PII (mood text, email, uid-with-text)" — satisfied (`text`, `prompt`, `rationale` excluded from logs; PII canary test #13).
-- [ ] CLAUDE.md "Field-level security via `diff().affectedKeys()`" — N/A here; addressed in §D handoff brief for `firestore.rules`.
-- [ ] CLAUDE.md feature-flag rollback (`ai_pattern_analysis_enabled`) — N/A here (pattern analysis is S4); but the `featureFlagsProvider` from D1.6 is the seam.
-- [ ] Domain layer purity (`apps/mobile/lib/features/mood/domain/`) — `AiSuggestion` and `AiAnalysisFailure` import only `package:core/core.dart`; no Flutter or Firebase imports.
+- [ ] CLAUDE.md "Gemini via Cloud Functions proxy, never direct from app" - satisfied.
+- [ ] CLAUDE.md "Never log PII (mood text, email, uid-with-text)" - satisfied (`text`, `prompt`, `rationale` excluded from logs; PII canary test #13).
+- [ ] CLAUDE.md "Field-level security via `diff().affectedKeys()`" - N/A here; addressed in §D handoff brief for `firestore.rules`.
+- [ ] CLAUDE.md feature-flag rollback (`ai_pattern_analysis_enabled`) - N/A here (pattern analysis is S4); but the `featureFlagsProvider` from D1.6 is the seam.
+- [ ] Domain layer purity (`apps/mobile/lib/features/mood/domain/`) - `AiSuggestion` and `AiAnalysisFailure` import only `package:core/core.dart`; no Flutter or Firebase imports.

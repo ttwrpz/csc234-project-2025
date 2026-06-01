@@ -47,7 +47,7 @@ class _RecordingQuoteLibrary implements QuoteLibrary {
   }
 }
 
-/// Recording fake of [AIQuoteRepository] — the ADR-0012 invariant subject.
+/// Recording fake of [AIQuoteRepository] - the ADR-0012 invariant subject.
 /// TC-40 asserts `calls.isEmpty` after a Tier 3 dispatch.
 ///
 /// The codebase does not use `mocktail`; this hand-written fake is the
@@ -74,7 +74,7 @@ class _RecordingAIQuoteRepository implements AIQuoteRepository {
   }
 }
 
-/// Permissive filter — accepts any text by default. Override [rejectAll] to
+/// Permissive filter - accepts any text by default. Override [rejectAll] to
 /// flip to a fail-closed path so the fallback-to-curated branch is testable.
 class _FakeSafetyFilter implements QuoteSafetyFilter {
   _FakeSafetyFilter({this.rejectAll = false});
@@ -103,7 +103,7 @@ void main() {
   DateTime nowFn() => now;
   const ctx = QuoteContext(weekId: '2026-W19', dailyAvgS: -0.7);
 
-  group('TieredInterventionDispatcher — Tier 3 determinism (TC-40)', () {
+  group('TieredInterventionDispatcher - Tier 3 determinism (TC-40)', () {
     test(
       'Tier.three dispatch NEVER calls AIQuoteRepository.requestSuggestion',
       () async {
@@ -136,7 +136,7 @@ void main() {
         expect(lib.tier3Seeds.first, equals(now));
 
         // Invariant 4: returned body carries one of the real curated
-        // Tier 3 phrases + the disclaimer footer — TC-38 for Tier 3 in
+        // Tier 3 phrases + the disclaimer footer - TC-38 for Tier 3 in
         // one shot. With the Day-2 wire-up, `lib` now serves the real
         // [QuoteLibraryImpl.tier3Pool], so the body must contain one of
         // those 8 team-reviewed strings verbatim.
@@ -161,7 +161,7 @@ void main() {
     );
   });
 
-  group('TieredInterventionDispatcher — Tier 1 hybrid path', () {
+  group('TieredInterventionDispatcher - Tier 1 hybrid path', () {
     test('happy path: AI suggestion + filter accept → AI quote', () async {
       final lib = _RecordingQuoteLibrary();
       final ai = _RecordingAIQuoteRepository(suggestion: 'gemini-safe-phrase');
@@ -206,7 +206,7 @@ void main() {
       expect(ai.calls, hasLength(1)); // attempted
       expect(filter.calls, isEmpty); // never reached
       expect(lib.tier1Seeds, hasLength(1));
-      // Real Tier 1 pool now serves the fallback — body must contain
+      // Real Tier 1 pool now serves the fallback - body must contain
       // one of the team-reviewed phrases.
       expect(
         QuoteLibraryImpl.tier1Pool.any(
@@ -246,7 +246,7 @@ void main() {
     });
   });
 
-  group('TieredInterventionDispatcher — Tier 2 hybrid path', () {
+  group('TieredInterventionDispatcher - Tier 2 hybrid path', () {
     test(
       'Tier.two → AIQuoteRepository called with AiAllowedTier.two',
       () async {

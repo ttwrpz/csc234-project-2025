@@ -106,7 +106,9 @@ void main() {
         aiRepo: FakeAiAnalysisRepository(),
       );
       expect(
-        find.text('Keep tending your garden - patterns bloom here as the days fill in.'),
+        find.text(
+          'Keep tending your garden - patterns bloom here as the days fill in.',
+        ),
         findsOneWidget,
       );
     });
@@ -185,7 +187,9 @@ void main() {
         aiRepo: aiRepo,
       );
       expect(
-        find.text('Keep tending your garden - patterns bloom here as the days fill in.'),
+        find.text(
+          'Keep tending your garden - patterns bloom here as the days fill in.',
+        ),
         findsOneWidget,
       );
     });

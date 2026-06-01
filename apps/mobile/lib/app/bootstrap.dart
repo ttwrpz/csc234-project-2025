@@ -15,7 +15,7 @@ class MoodBloomApp extends ConsumerWidget {
     // `currentThemeModeProvider` resolves the persisted
     // ThemeModePreference (system / light / dark / followDeviceTime)
     // into a concrete ThemeMode. Rebuilds whenever the user changes
-    // the preference OR — for `followDeviceTime` — when the
+    // the preference OR - for `followDeviceTime` - when the
     // 07:00 / 19:00 ticker inside the provider fires.
     final themeMode = ref.watch(currentThemeModeProvider);
     return MaterialApp.router(
@@ -33,7 +33,7 @@ class MoodBloomApp extends ConsumerWidget {
       // The intervention banner host wraps every route so the Tier 1/2/3
       // banner can surface from any tab (Garden / History / Patterns /
       // Settings) once the [interventionControllerProvider] reaches
-      // [InterventionPending]. The host is a transparent Stack — when
+      // [InterventionPending]. The host is a transparent Stack - when
       // the controller is idle, the banner collapses to `SizedBox.shrink()`
       // and the routed `child` interacts normally.
       builder: (context, child) =>

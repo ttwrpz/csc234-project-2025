@@ -17,7 +17,7 @@ void main() {
     });
 
     test('Intervention dispatch defaults to FALSE in v1.0 (ADR-0011 §4)', () {
-      // Engine on, dispatcher off — see CLAUDE.md "The pivot features"
+      // Engine on, dispatcher off - see CLAUDE.md "The pivot features"
       // and ADR-0011 §4. S5 flips this to true.
       final flags = FeatureFlags.defaults();
       expect(flags.interventionDispatchEnabled, isFalse);

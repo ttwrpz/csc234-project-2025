@@ -14,21 +14,21 @@ import '../../../disclaimer/domain/disclaimer_copy.dart';
 /// the body as `"${quote.text}\n\n${notificationFooter}"`; we mirror that
 /// here.
 ///
-/// These strings are NEVER substituted into the wire-level audit doc —
+/// These strings are NEVER substituted into the wire-level audit doc -
 /// they exist only for the screen renderer's null-safety branch.
 abstract class DispatchSafeDefaults {
-  /// Tier 1 fallback body — pre-approved Tier 1 quote + disclaimer footer.
+  /// Tier 1 fallback body - pre-approved Tier 1 quote + disclaimer footer.
   static const String tier1 =
       'It looks like your garden has had some rainy days. '
       'Would you like a 2-minute breathing exercise?\n\n'
       '${DisclaimerCopy.notificationFooter}';
 
-  /// Tier 2 fallback body — pre-approved Tier 2 quote + disclaimer footer.
+  /// Tier 2 fallback body - pre-approved Tier 2 quote + disclaimer footer.
   static const String tier2 =
       'Would you like to write about what has been on your mind?\n\n'
       '${DisclaimerCopy.notificationFooter}';
 
-  /// Tier 3 fallback body — byte-for-byte equal to
+  /// Tier 3 fallback body - byte-for-byte equal to
   /// `QuoteLibraryImpl.tier3Pool[0]` + footer. The literal "1323" marker
   /// MUST survive any edit: the crisis screen's defense-in-depth test
   /// asserts the rendered body contains "1323".

@@ -9,19 +9,19 @@ import 'quote_library_impl.dart';
 
 /// Concrete fail-closed [QuoteSafetyFilter]. The implementation lives in
 /// `data/` (not `domain/`) because it imports [QuoteLibraryImpl]'s approved
-/// word sets — the same vocabulary that informs the curated phrases informs
+/// word sets - the same vocabulary that informs the curated phrases informs
 /// what Gemini is allowed to echo.
 ///
 /// Three gates, in order:
-///   1. **Length** — `text.length > 140` → `FilterReject`.
-///   2. **Forbidden-word blacklist** — case-insensitive whole-word match
+///   1. **Length** - `text.length > 140` → `FilterReject`.
+///   2. **Forbidden-word blacklist** - case-insensitive whole-word match
 ///      across [_forbiddenWords]. Whole-word means "diagnose" rejects but
 ///      "diagnosing" does not.
-///   3. **Whitelist ratio** — ≥80% of tokenised words must appear in the
+///   3. **Whitelist ratio** - ≥80% of tokenised words must appear in the
 ///      tier's approved-word set.
 ///
 /// Tokenisation is delegated to [QuoteLibraryImpl.tokenise] so the curated
-/// pool's own tokens are byte-identical to what the filter sees — the
+/// pool's own tokens are byte-identical to what the filter sees - the
 /// sanity-check test depends on this.
 ///
 /// The filter is exclusively on the Tier 1/2 hybrid path. Tier 3 never
@@ -37,12 +37,12 @@ class QuoteSafetyFilterImpl implements QuoteSafetyFilter {
   /// Minimum fraction of tokens that must be in the tier's approved set.
   static const double approvedRatioThreshold = 0.80;
 
-  /// Case-insensitive forbidden-word blacklist. Whole-word match only —
+  /// Case-insensitive forbidden-word blacklist. Whole-word match only -
   /// "diagnose" matches but "diagnosing" does not. Additions require team
   /// review.
   ///
   /// Entries with whitespace (e.g. "anxiety disorder", "fix yourself")
-  /// match as a phrase — the gate falls back to a case-insensitive
+  /// match as a phrase - the gate falls back to a case-insensitive
   /// substring check after asserting that the surrounding context is a
   /// word boundary on either side.
   static const Set<String> _forbiddenWords = {
@@ -67,14 +67,14 @@ class QuoteSafetyFilterImpl implements QuoteSafetyFilter {
 
   @override
   Result<Quote, QuoteFailure> gate(String text, {required AiAllowedTier tier}) {
-    // Gate 1 — length cap.
+    // Gate 1 - length cap.
     if (text.length > maxLength) {
       return Err(
         QuoteFailure.filterReject(snippet: _snippet(text, reason: 'length')),
       );
     }
 
-    // Gate 2 — forbidden-word blacklist. Whole-word check.
+    // Gate 2 - forbidden-word blacklist. Whole-word check.
     final blacklistHit = _containsForbiddenTerm(text);
     if (blacklistHit != null) {
       return Err(
@@ -84,10 +84,10 @@ class QuoteSafetyFilterImpl implements QuoteSafetyFilter {
       );
     }
 
-    // Gate 3 — whitelist ratio. Tokenise + check membership.
+    // Gate 3 - whitelist ratio. Tokenise + check membership.
     final tokens = QuoteLibraryImpl.tokenise(text);
     if (tokens.isEmpty) {
-      // No semantic content — fail closed.
+      // No semantic content - fail closed.
       return Err(
         QuoteFailure.filterReject(snippet: _snippet(text, reason: 'empty')),
       );
@@ -153,7 +153,7 @@ class QuoteSafetyFilterImpl implements QuoteSafetyFilter {
     return '[$reason] $clipped';
   }
 
-  /// Stable-ish id for the analytics audit trail. Not cryptographic —
+  /// Stable-ish id for the analytics audit trail. Not cryptographic -
   /// just enough to distinguish two different bodies in a structured log
   /// when the body itself is too sensitive to log.
   String _stableHashId(String text) {

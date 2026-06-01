@@ -7,7 +7,7 @@ import 'package:core/core.dart';
 /// AI failures are conceptually distinct from mood-entity failures and
 /// downstream AI-analysis callers reuse this taxonomy.
 ///
-/// Imports only `package:core/core.dart` — domain-purity rule per CLAUDE.md.
+/// Imports only `package:core/core.dart` - domain-purity rule per CLAUDE.md.
 sealed class AiAnalysisFailure extends Failure {
   const AiAnalysisFailure({required super.message});
 

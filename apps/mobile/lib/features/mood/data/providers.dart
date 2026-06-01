@@ -51,7 +51,7 @@ final moodDriftMapperProvider = Provider<MoodDriftMapper>(
   (ref) => const MoodDriftMapper(),
 );
 
-/// Feature flag for the offline-first path. Default `!kIsWeb` — native
+/// Feature flag for the offline-first path. Default `!kIsWeb` - native
 /// targets get the Drift-first read/write path; Web routes through the
 /// Firestore-only fallback because Drift's native connector pulls
 /// `dart:ffi` which is not available on Web. Override in tests or via
@@ -98,7 +98,7 @@ final moodRepositoryProvider = Provider<MoodRepository>((ref) {
   );
 });
 
-// Use case providers — domain classes themselves are pure Dart; only the
+// Use case providers - domain classes themselves are pure Dart; only the
 // Riverpod providers (which need flutter_riverpod) live here.
 
 final saveMoodEntryUseCaseProvider = Provider<SaveMoodEntryUseCase>((ref) {
@@ -109,7 +109,7 @@ final watchMyMoodsUseCaseProvider = Provider<WatchMyMoodsUseCase>((ref) {
   return WatchMyMoodsUseCase(repository: ref.watch(moodRepositoryProvider));
 });
 
-// Media — picker + Storage upload. Sibling to the entry repository so mood
+// Media - picker + Storage upload. Sibling to the entry repository so mood
 // storage can evolve without touching media plumbing.
 
 final imagePickerDatasourceProvider = Provider<ImagePickerDatasource>((ref) {
@@ -166,7 +166,7 @@ final moodEntryByIdProvider = FutureProvider.family<MoodEntry?, String>((
   };
 });
 
-// AI analysis providers — `analyzeMoodText` proxy. Region must match the
+// AI analysis providers - `analyzeMoodText` proxy. Region must match the
 // function's deploy target (asia-southeast1).
 
 final firebaseFunctionsProvider = Provider<FirebaseFunctions>(

@@ -8,11 +8,11 @@ import 'package:moodbloom/features/mood/presentation/widgets/media_picker_button
 /// Pumps [MediaPickerButton] inside a minimal [MaterialApp]. The platform
 /// is forced via [debugDefaultTargetPlatformOverride] so we can exercise
 /// the desktop / mobile branches deterministically. `kIsWeb` itself is a
-/// compile-time constant and cannot be overridden — the macOS path below
+/// compile-time constant and cannot be overridden - the macOS path below
 /// stands in for "desktop-like" (web + Windows + macOS + Linux).
 ///
 /// Note on platform restoration: Flutter's `_verifyInvariants` runs at
-/// the end of the test body — BEFORE `tearDown` and `addTearDown`
+/// the end of the test body - BEFORE `tearDown` and `addTearDown`
 /// callbacks. Setting `debugDefaultTargetPlatformOverride = null` from
 /// either of those hooks is therefore too late and trips the
 /// "value of a foundation debug variable was changed" assertion. Each
@@ -54,7 +54,7 @@ Future<void> _withPlatform(
 
 void main() {
   group('MediaPickerButton', () {
-    group('mobile (Android) — camera + gallery icon row', () {
+    group('mobile (Android) - camera + gallery icon row', () {
       testWidgets('narrow layout: shows BOTH camera and gallery icons', (
         tester,
       ) async {
@@ -101,7 +101,7 @@ void main() {
       });
     });
 
-    group('desktop-like (macOS stand-in) — single source only', () {
+    group('desktop-like (macOS stand-in) - single source only', () {
       testWidgets('narrow layout: hides the camera icon, keeps gallery only', (
         tester,
       ) async {
@@ -113,7 +113,7 @@ void main() {
             findsNothing,
             reason:
                 'on desktop / web image_picker maps both sources to the '
-                'OS file dialog — surfacing camera is misleading',
+                'OS file dialog - surfacing camera is misleading',
           );
           // Either the photo_library icon (legacy mobile gallery glyph)
           // OR the image_outlined glyph used by the desktop variant. The

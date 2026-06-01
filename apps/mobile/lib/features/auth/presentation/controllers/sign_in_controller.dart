@@ -9,7 +9,7 @@ part 'sign_in_controller.g.dart';
 /// Controller for [SignInScreen]. Holds form state, drives the use cases,
 /// and surfaces a friendly error message on failure.
 ///
-/// Navigation on success is handled by the router's `refreshListenable` —
+/// Navigation on success is handled by the router's `refreshListenable` -
 /// the controller does NOT call `context.go`. When auth state flips to
 /// non-null, the router redirects from `/sign-in` to `/home` automatically.
 @riverpod

@@ -18,17 +18,17 @@ sealed class WebauthnRegisterFailure extends Failure {
   bool get isUserCanceled => false;
 
   /// The user has no PIN set. Per ADR-0014 Decision E, WebAuthn cannot
-  /// be enabled without a PIN — the PIN is the recovery factor.
+  /// be enabled without a PIN - the PIN is the recovery factor.
   const factory WebauthnRegisterFailure.pinRequired() = _PinRequired;
 
-  /// The server returned `webauthn_not_provisioned` — the production
+  /// The server returned `webauthn_not_provisioned` - the production
   /// origin is unset AND the caller's origin is not in the staging
   /// allow-list. This is the v1.5-dark safety net (ADR-0014 §"Origin
   /// handling").
   const factory WebauthnRegisterFailure.notProvisioned() = _NotProvisioned;
 
   /// The user dismissed the browser's WebAuthn prompt. No retry banner
-  /// — the user knows what they did.
+  /// - the user knows what they did.
   const factory WebauthnRegisterFailure.userCanceled() = _UserCanceled;
 
   /// `webauthnRegisterFinish` returned `verification_failed`. The

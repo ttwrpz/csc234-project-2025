@@ -53,7 +53,7 @@ import 'widgets/delete_account_dialog.dart';
 ///
 /// All controllers (theme, notifications, FCM, sync manager, account
 /// deletion, debug overrides) are preserved verbatim from the v1.5
-/// implementation — this redesign refreshes visual treatment only.
+/// implementation - this redesign refreshes visual treatment only.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -112,7 +112,7 @@ class SettingsScreen extends ConsumerWidget {
                     // of one of the two columns on desktop, leaving the
                     // other column visibly shorter). Rendering it AFTER
                     // the layout lets it span full width on tablet/desktop
-                    // and slot to the bottom on phone — its natural place.
+                    // and slot to the bottom on phone - its natural place.
                     if (kDebugMode) ...[
                       const SizedBox(height: MoodBloomSpacing.lg),
                       const _DebugSection(),
@@ -178,7 +178,7 @@ class SettingsScreen extends ConsumerWidget {
 /// Responsive layout for the ordered section list. Phone (`<600`)
 /// returns a vertical Column. Tablet+ flows into a 2-column layout that
 /// distributes sections across left/right buckets in declaration order
-/// — `i.isEven` to left, `i.isOdd` to right — so the visual order
+/// - `i.isEven` to left, `i.isOdd` to right - so the visual order
 /// roughly mirrors the linear declaration while keeping the columns
 /// balanced.
 class _SectionsLayout extends StatelessWidget {
@@ -227,7 +227,7 @@ class _SectionsLayout extends StatelessWidget {
 }
 
 /// One section = `MbSectionLabel` + an [MbCard] body. Shared chrome so
-/// every settings cluster reads the same shape — uppercase label, a
+/// every settings cluster reads the same shape - uppercase label, a
 /// 6 dp gap, then a single bordered card.
 class _Section extends StatelessWidget {
   const _Section({required this.label, required this.child});
@@ -359,7 +359,7 @@ class _PrivacySection extends StatelessWidget {
       child: Column(
         children: [
           const PrivacyLockSettingsTile(),
-          // WebAuthn is web-only — keep the tile on web, drop it (and
+          // WebAuthn is web-only - keep the tile on web, drop it (and
           // the divider) on native where biometric already covers the
           // same affordance.
           if (kIsWeb) ...const [Divider(height: 1), WebauthnSettingsTile()],
@@ -566,7 +566,7 @@ class _DisclaimerSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
     // Soft-coral / AI-tint background per the prototype's DISCLAIMER
-    // section. Locked copy — the `DisclaimerCopy.notificationFooter` is
+    // section. Locked copy - the `DisclaimerCopy.notificationFooter` is
     // the canonical short form referenced in CLAUDE.md and pinned by
     // the disclaimer tests.
     return Column(
@@ -710,7 +710,7 @@ class _DebugSection extends StatelessWidget {
 }
 
 /// Single radio tile in the theme picker. Uses the post-3.32
-/// RadioListTile API — `groupValue` / `onChanged` come from a
+/// RadioListTile API - `groupValue` / `onChanged` come from a
 /// [RadioGroup] ancestor in `_ThemeSection`, not from per-tile
 /// parameters.
 class _ThemeRadioTile extends StatelessWidget {
@@ -767,7 +767,7 @@ class _ThemeRadioTile extends StatelessWidget {
 /// Sync state surface. Renders "Last synced X" + a "Sync now" button
 /// for the offline-first Drift queue. Subscribes to the manager's
 /// `ValueListenable<DateTime?>` so the timestamp updates live when the
-/// drain loop or the live Firestore listener completes a pass — no
+/// drain loop or the live Firestore listener completes a pass - no
 /// router refresh required.
 ///
 /// Hidden on web (Drift sync is native-only) and when signed out; the
@@ -781,7 +781,7 @@ class _SyncCluster extends ConsumerWidget {
     // to be initialised. In environments where those are unavailable
     // (notably widget tests that don't go through the full bootstrap
     // path) we self-hide rather than crashing the entire Settings
-    // screen — the cluster is an advanced affordance, not load-bearing.
+    // screen - the cluster is an advanced affordance, not load-bearing.
     final MoodSyncManager manager;
     try {
       manager = ref.watch(moodSyncManagerProvider);
@@ -832,7 +832,7 @@ class _SyncCluster extends ConsumerWidget {
     );
   }
 
-  /// "Just now" / "4 minutes ago" / "2 hours ago" / "May 18, 11:42" —
+  /// "Just now" / "4 minutes ago" / "2 hours ago" / "May 18, 11:42" -
   /// a compact relative-time renderer that doesn't need the `intl`
   /// package (deliberately kept dependency-free at this depth).
   static String _describeLastSync(DateTime? lastSync) {

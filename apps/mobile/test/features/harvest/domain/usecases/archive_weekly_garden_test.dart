@@ -67,7 +67,7 @@ MoodEntry _entry({
 );
 
 void main() {
-  group('ArchiveWeeklyGardenUseCase — happy path', () {
+  group('ArchiveWeeklyGardenUseCase - happy path', () {
     test('TC-11: archive returns the persisted WeeklyGarden + repository was '
         'called once with the same userId', () async {
       final repo = _FakeHarvestRepository();
@@ -159,7 +159,7 @@ void main() {
       },
     );
 
-    test('TC-13: entries preserved post-archive — getByWeekId returns the same '
+    test('TC-13: entries preserved post-archive - getByWeekId returns the same '
         'list the use case wrote', () async {
       final repo = _FakeHarvestRepository();
       final useCase = ArchiveWeeklyGardenUseCase(
@@ -196,7 +196,7 @@ void main() {
     });
   });
 
-  group('ArchiveWeeklyGardenUseCase — error paths', () {
+  group('ArchiveWeeklyGardenUseCase - error paths', () {
     test(
       'empty week returns Err(noEntries) and never calls the repo',
       () async {
@@ -247,7 +247,7 @@ void main() {
     });
   });
 
-  group('formatWeekId — ISO 8601 semantics', () {
+  group('formatWeekId - ISO 8601 semantics', () {
     test('ordinary mid-year week → YYYY-Www padded', () {
       // Mon 2026-05-04 is in ISO week 19 of 2026.
       expect(

@@ -1,20 +1,20 @@
-# Handoff Brief — Pattern Engine (5 algorithms + orchestrator)
+# Handoff Brief - Pattern Engine (5 algorithms + orchestrator)
 
 **WBS:** 5.3
 **Sprint:** S4 (Day 2 May 10 → Day 3 May 11)
 **Target branch:** `feat/5.3-pattern-engine`
 **Depends on:** WBS 3.6 (Mood Score `MoodScore.compute`), `MoodEntry` entity (S2), `localMidnight` helper in `packages/core/lib/src/date_utils.dart` (S3), `Result<T,F>` in `packages/core/lib/src/result.dart` (S2)
-**Authority:** ADR-0011 (Client-Side Pattern Engine) + `.claude/specs/sprint-4-5-spec.md` §2.4 + ADR-0010 (Ecosystem Model — for sign mapping)
+**Authority:** ADR-0011 (Client-Side Pattern Engine) + `.claude/specs/sprint-4-5-spec.md` §2.4 + ADR-0010 (Ecosystem Model - for sign mapping)
 
 ## Summary
 
-Sprint 4 lands the engine that watches a user's mood history for five different signs of distress and emits a single `PatternResult` per local-midnight day. The engine **does not surface notifications in v1.0** — that's S5. The result document lives at `users/{uid}/patterns/{yyyy-MM-dd}` with one doc per day, idempotent on the date id. The S5 dispatcher will read this document and decide whether to fan out a Tier 1 / 2 / 3 push; in v1.0 the engine simply writes and is silent.
+Sprint 4 lands the engine that watches a user's mood history for five different signs of distress and emits a single `PatternResult` per local-midnight day. The engine **does not surface notifications in v1.0** - that's S5. The result document lives at `users/{uid}/patterns/{yyyy-MM-dd}` with one doc per day, idempotent on the date id. The S5 dispatcher will read this document and decide whether to fan out a Tier 1 / 2 / 3 push; in v1.0 the engine simply writes and is silent.
 
 The five algorithms (Mann-Kendall trend test, sliding 5-of-7, 3-consecutive S ≤ -0.6, Z-score anomaly, CUSUM change-point) all reduce to arithmetic over the per-day signed mood-score series `{S_day}`. They run client-side as pure-Dart functions. No Cloud Function is involved on the trigger path; `functions/src/analyzePatterns.ts` continues to ship the Insights surface only.
 
 ## Domain shape
 
-### NEW — `MoodScore` (depends on WBS 3.6, may already exist when you start this brief)
+### NEW - `MoodScore` (depends on WBS 3.6, may already exist when you start this brief)
 
 `apps/mobile/lib/features/mood/domain/services/mood_score.dart`. Pure-Dart top-level function and Freezed value type. Authored on Day 1 alongside the `MoodType.okay` sign flip; you can rely on it.
 
@@ -33,7 +33,7 @@ MoodScore computeMoodScore(MoodType mood, int intensity);
 //   sign  = mood.category == MoodCategory.positive ? +1 : -1
 ```
 
-### NEW — `DailyScore` (small, public)
+### NEW - `DailyScore` (small, public)
 
 `apps/mobile/lib/features/pattern_engine/domain/entities/daily_score.dart`. The unit each algorithm consumes.
 
@@ -48,7 +48,7 @@ class DailyScore with _$DailyScore {
 }
 ```
 
-### NEW — `Tier`
+### NEW - `Tier`
 
 `apps/mobile/lib/features/pattern_engine/domain/entities/tier.dart`. Closed enum.
 
@@ -68,7 +68,7 @@ The mapping algorithm-output → tier is:
 
 When multiple algorithms fire the same day, the **highest tier** wins (three > two > one). When none fire, `triggeredTier` is null.
 
-### NEW — `PatternResult`
+### NEW - `PatternResult`
 
 `apps/mobile/lib/features/pattern_engine/domain/entities/pattern_result.dart`. Freezed + json_serializable (used by the data layer's Firestore mapper).
 
@@ -91,7 +91,7 @@ class PatternResult with _$PatternResult {
 }
 ```
 
-### NEW — Five algorithm functions (one file each)
+### NEW - Five algorithm functions (one file each)
 
 `apps/mobile/lib/features/pattern_engine/domain/algorithms/`. Each is a pure-Dart top-level function with **no class wrapper**. Each must compile with zero Flutter / Firebase imports. Tests (under `test/features/pattern_engine/domain/algorithms/...`) target every worked example in spec §2.4.
 
@@ -112,7 +112,7 @@ Algorithm (spec §2.4 algorithm 1):
 3. `V = n(n-1)(2n+5) / 18`.
 4. `Z = (S - 1)/√V` if `S > 0`; `0` if `S = 0`; `(S + 1)/√V` if `S < 0`.
 
-**TC-27 worked example:** a steadily declining 5-day window does NOT have enough samples (n < 14) — the test that asserts Z = -2.21 in spec §7.27 must construct a 14-day series with the declining pattern at the tail. Use the same numerics as spec §2.4 (a fully monotone descending series) and assert Z to 2 decimal places.
+**TC-27 worked example:** a steadily declining 5-day window does NOT have enough samples (n < 14) - the test that asserts Z = -2.21 in spec §7.27 must construct a 14-day series with the declining pattern at the tail. Use the same numerics as spec §2.4 (a fully monotone descending series) and assert Z to 2 decimal places.
 
 #### 2. `sliding_5_of_7.dart`
 
@@ -122,13 +122,13 @@ Algorithm (spec §2.4 algorithm 1):
 int slidingNegCount(List<DailyScore> history, {required DateTime now});
 ```
 
-Spec §2.4 algorithm 2: `negDays = count(S_t < 0 in last 7 days); negDays ≥ 5 → Tier 2`. Empty days are counted as 0 (no entry), not as negative — only days with at least one entry contribute. Distinct local-midnight days per `localMidnight(now)`.
+Spec §2.4 algorithm 2: `negDays = count(S_t < 0 in last 7 days); negDays ≥ 5 → Tier 2`. Empty days are counted as 0 (no entry), not as negative - only days with at least one entry contribute. Distinct local-midnight days per `localMidnight(now)`.
 
 #### 3. `three_consecutive.dart`
 
 ```dart
 /// Returns the count of trailing consecutive days (ending today) where
-/// `avgScore ≤ -0.6`. Maxes at 3 — caller compares against >= 3.
+/// `avgScore ≤ -0.6`. Maxes at 3 - caller compares against >= 3.
 int consecutiveHighIntensityCount(
   List<DailyScore> history, {
   required DateTime now,
@@ -142,7 +142,7 @@ Spec §2.4 algorithm 3: `S_{t-2} ≤ -0.6 ∧ S_{t-1} ≤ -0.6 ∧ S_t ≤ -0.6 
 ```dart
 /// Returns the z-score of today's score against the user's personal 30-day
 /// baseline. Returns `null` when `n_baseline < 14` OR `σ_30 ≈ 0` (per spec
-/// §2.4 algorithm 4 — division-by-zero guard).
+/// §2.4 algorithm 4 - division-by-zero guard).
 double? zScoreToday(
   List<DailyScore> history, {
   required DateTime now,
@@ -151,7 +151,7 @@ double? zScoreToday(
 });
 ```
 
-Spec §2.4 algorithm 4: `z_day = (S_t - μ_30) / σ_30; z_day < -2.5 → Tier 3`. **Important:** this is **not** the same as Mann-Kendall's Z. They share a letter; the comments in your file must call this out (it's the most common reading error in the spec). Baseline is the 30 days *prior to today* — exclude today's score from μ and σ.
+Spec §2.4 algorithm 4: `z_day = (S_t - μ_30) / σ_30; z_day < -2.5 → Tier 3`. **Important:** this is **not** the same as Mann-Kendall's Z. They share a letter; the comments in your file must call this out (it's the most common reading error in the spec). Baseline is the 30 days *prior to today* - exclude today's score from μ and σ.
 
 #### 5. `cusum.dart`
 
@@ -175,7 +175,7 @@ Spec §2.4 algorithm 5:
 
 Trigger: `C_t > h → Tier 3`. The function returns `C_t`; the orchestrator (below) compares against `h`. Baseline rules same as Z-score: `n_baseline < 14` returns 0.0 and never triggers.
 
-### NEW — `RunPatternEngineUseCase`
+### NEW - `RunPatternEngineUseCase`
 
 `apps/mobile/lib/features/pattern_engine/domain/usecases/run_pattern_engine.dart`. The orchestrator.
 
@@ -198,13 +198,13 @@ Internal flow:
 
 1. **Aggregate.** Bucket `entries` by `localMidnight(entry.createdAt)`; for each bucket, compute `avgScore = mean(MoodScore.compute(e.mood, e.intensity).value)`. Sort the resulting `List<DailyScore>` ascending by `day`. This is the input to every algorithm.
 2. **Run all five algorithms** synchronously (they are pure arithmetic; `Future.wait` would be unnecessary ceremony).
-3. **Resolve `triggeredTier`** as the highest tier any algorithm flagged — three > two > one > null.
+3. **Resolve `triggeredTier`** as the highest tier any algorithm flagged - three > two > one > null.
 4. **Build `dateId`** from `localMidnight(now)` formatted as `yyyy-MM-dd`.
 5. **Return `PatternResult`** carrying every algorithm's output plus the resolved tier.
 
 **Important:** the use case does NOT write to Firestore. The data-layer datasource (below) handles the write. Domain stays pure.
 
-Pure-Dart invariants (qa-engineer test targets — TC-25..TC-30 from spec §7):
+Pure-Dart invariants (qa-engineer test targets - TC-25..TC-30 from spec §7):
 
 - TC-25: 5 of last 7 days `avgScore < 0` → `triggeredTier == Tier.two` (when no higher-tier algorithm fires).
 - TC-26: 3 consecutive `avgScore ≤ -0.6` → `triggeredTier == Tier.three`.
@@ -215,14 +215,14 @@ Pure-Dart invariants (qa-engineer test targets — TC-25..TC-30 from spec §7):
 
 ### Reused (no changes)
 
-- `apps/mobile/lib/features/mood/domain/entities/mood_entry.dart` — `MoodEntry` (id, mood, intensity, text, createdAt, ...).
-- `apps/mobile/lib/features/mood/domain/entities/mood_type.dart` — six-value enum + `MoodCategory` (after the Day-1 `okay → positive` flip).
-- `apps/mobile/lib/features/mood/domain/services/mood_score.dart` — `computeMoodScore`, `MoodScore`. Authored Day 1.
-- `packages/core/lib/src/date_utils.dart` — `DateTime localMidnight(DateTime dt)`.
+- `apps/mobile/lib/features/mood/domain/entities/mood_entry.dart` - `MoodEntry` (id, mood, intensity, text, createdAt, ...).
+- `apps/mobile/lib/features/mood/domain/entities/mood_type.dart` - six-value enum + `MoodCategory` (after the Day-1 `okay → positive` flip).
+- `apps/mobile/lib/features/mood/domain/services/mood_score.dart` - `computeMoodScore`, `MoodScore`. Authored Day 1.
+- `packages/core/lib/src/date_utils.dart` - `DateTime localMidnight(DateTime dt)`.
 
 ## Data shape
 
-### NEW — `PatternsFirestoreDatasource`
+### NEW - `PatternsFirestoreDatasource`
 
 `apps/mobile/lib/features/pattern_engine/data/datasources/patterns_firestore_datasource.dart`.
 
@@ -245,13 +245,13 @@ class PatternsFirestoreDatasource {
 }
 ```
 
-`upsertPatternResult` writes to `users/{userId}/patterns/{result.dateId}` via `set(merge: false)` — same-day re-evaluations replace the doc cleanly. `watchPatternResult` streams a single document for the dispatcher (S5 read path).
+`upsertPatternResult` writes to `users/{userId}/patterns/{result.dateId}` via `set(merge: false)` - same-day re-evaluations replace the doc cleanly. `watchPatternResult` streams a single document for the dispatcher (S5 read path).
 
-### NEW — `PatternRepositoryImpl`
+### NEW - `PatternRepositoryImpl`
 
 `apps/mobile/lib/features/pattern_engine/data/repositories/pattern_repository_impl.dart` implementing the abstract `PatternRepository` (next file). Wires the datasource + provider scaffolding (`@riverpod patternRepository`).
 
-### NEW — abstract `PatternRepository`
+### NEW - abstract `PatternRepository`
 
 `apps/mobile/lib/features/pattern_engine/domain/repositories/pattern_repository.dart`. Domain layer; no Flutter / Firebase imports.
 
@@ -271,11 +271,11 @@ abstract class PatternRepository {
 
 ### Sealed failure type
 
-`apps/mobile/lib/features/pattern_engine/domain/pattern_failure.dart`. Match the existing `MoodFailure` shape — Freezed with cases `unknown(String message)`, `network()`, `permissionDenied()`. Keep narrow; v1.0 only needs surface for "the write failed and the next render should not assume it succeeded."
+`apps/mobile/lib/features/pattern_engine/domain/pattern_failure.dart`. Match the existing `MoodFailure` shape - Freezed with cases `unknown(String message)`, `network()`, `permissionDenied()`. Keep narrow; v1.0 only needs surface for "the write failed and the next render should not assume it succeeded."
 
 ### Firestore rules
 
-`firebase/firestore.rules` — append (the architect lands the rules edit on the same Sprint-4 redesign branch; flutter-engineer should NOT edit `firestore.rules` directly):
+`firebase/firestore.rules` - append (the architect lands the rules edit on the same Sprint-4 redesign branch; flutter-engineer should NOT edit `firestore.rules` directly):
 
 ```
 match /users/{uid}/patterns/{dateId} {
@@ -308,7 +308,7 @@ The Pattern Engine **does NOT use Drift in v1.0.** Reasons: (a) the engine is re
 
 ```dart
 // in apps/mobile/lib/features/mood/presentation/controllers/log_mood_submission_controller.dart
-// (or a sibling controller — flutter-engineer's call which file)
+// (or a sibling controller - flutter-engineer's call which file)
 //
 // after save() returns Ok:
 final entries = await ref.read(myMoodHistoryProvider.future);
@@ -323,9 +323,9 @@ await ref.read(patternRepositoryProvider).save(
 // don't surface anything: dispatch is gated until S5 (interventionDispatchEnabled = false)
 ```
 
-The save path is **best-effort.** A failed `patternRepositoryProvider.save` is logged via `packages/core/lib/src/logger.dart` (no PII — log only the failure type and the dateId) but does NOT block the user's mood-save success. Treat the engine as a passive watcher in v1.0.
+The save path is **best-effort.** A failed `patternRepositoryProvider.save` is logged via `packages/core/lib/src/logger.dart` (no PII - log only the failure type and the dateId) but does NOT block the user's mood-save success. Treat the engine as a passive watcher in v1.0.
 
-`cheer_up_controller` continues to exist in v1.0 but its dispatch path is gated behind a Remote Config flag `interventionDispatchEnabled` (default `false`). The architect adds the flag to `firebase_remote_config_defaults` and wires the gate in `cheer_up_controller.dart`. Flutter-engineer SHOULD not modify `cheer_up_controller.dart` in this brief — that work is on the same branch but a separate commit owned by the architect.
+`cheer_up_controller` continues to exist in v1.0 but its dispatch path is gated behind a Remote Config flag `interventionDispatchEnabled` (default `false`). The architect adds the flag to `firebase_remote_config_defaults` and wires the gate in `cheer_up_controller.dart`. Flutter-engineer SHOULD not modify `cheer_up_controller.dart` in this brief - that work is on the same branch but a separate commit owned by the architect.
 
 ## Handoffs
 
@@ -354,7 +354,7 @@ Conventions (from CLAUDE.md, repeated for clarity):
 - 100-char line length.
 - `dart format` on save (CI hard-fails).
 - snake_case filenames; PascalCase classes; camelCase members; private members prefixed `_`.
-- No `print()`; use the `Logger` from `packages/core/`. Never log mood text or `MoodEntry` instances — only ids + numeric fields + failure types.
+- No `print()`; use the `Logger` from `packages/core/`. Never log mood text or `MoodEntry` instances - only ids + numeric fields + failure types.
 - No `!` null-assertion. Use `if-null` operators or explicit null checks.
 - Domain files import zero `package:flutter/*`, `package:firebase_*/*`, or `package:cloud_firestore/*`. CI grep gate enforces.
 - `Result<T, Failure>` from `packages/core/` for all repository signatures. No throwing from domain.
@@ -362,21 +362,21 @@ Conventions (from CLAUDE.md, repeated for clarity):
 **Do not touch:**
 
 - `apps/mobile/lib/features/auth/**`, `apps/mobile/lib/features/onboarding/**`, `apps/mobile/lib/features/mood/data/**`, `apps/mobile/lib/features/mood/domain/entities/**` (frozen).
-- `apps/mobile/lib/features/garden/presentation/controllers/cheer_up_controller.dart` — architect adds the Remote Config gate on the same branch but in a separate commit.
-- `apps/mobile/lib/main.dart`, `apps/mobile/lib/app/router.dart` — architect sign-off required.
-- `firebase/firestore.rules` — architect lands the new collection rules on the same branch.
-- `functions/**` — architect (or `flutter-engineer` with security-reviewer sign-off) handles `analyzePatterns.ts` `NEGATIVE_MOOD_CODES` edit on Day 1; this brief assumes it has already merged.
+- `apps/mobile/lib/features/garden/presentation/controllers/cheer_up_controller.dart` - architect adds the Remote Config gate on the same branch but in a separate commit.
+- `apps/mobile/lib/main.dart`, `apps/mobile/lib/app/router.dart` - architect sign-off required.
+- `firebase/firestore.rules` - architect lands the new collection rules on the same branch.
+- `functions/**` - architect (or `flutter-engineer` with security-reviewer sign-off) handles `analyzePatterns.ts` `NEGATIVE_MOOD_CODES` edit on Day 1; this brief assumes it has already merged.
 
 ### → qa-engineer (Day 3)
 
 Unit tests (write alongside the implementation, same PR):
 
-- `apps/mobile/test/features/pattern_engine/domain/algorithms/mann_kendall_test.dart` — TC-27 (Z = -2.21 to 2 d.p.) + 3 boundary cases: (a) n < 14 → null, (b) flat series → 0, (c) ascending series → positive Z (no Tier).
-- `apps/mobile/test/features/pattern_engine/domain/algorithms/sliding_5_of_7_test.dart` — TC-25 (5 negative days → triggers) + 3 cases: (a) 4 negative + 3 empty days → no trigger, (b) 7 consecutive negatives → triggers, (c) all positive → 0.
-- `apps/mobile/test/features/pattern_engine/domain/algorithms/three_consecutive_test.dart` — TC-26 + 3 cases: (a) S = -0.6 exactly → triggers (boundary), (b) one missing day in the trailing 3 → 0, (c) entries from yesterday + today + day before → counts up to 3.
-- `apps/mobile/test/features/pattern_engine/domain/algorithms/z_score_test.dart` — TC-28 + 3 cases: (a) σ_30 ≈ 0 → null, (b) baseline < 14 days → null, (c) z_day = -2.49 → null trigger but value populated, (d) z_day = -2.51 → Tier.three.
-- `apps/mobile/test/features/pattern_engine/domain/algorithms/cusum_test.dart` — TC-29 + 3 cases: (a) flat baseline series → C_t = 0, (b) one positive spike → C_t resets via the `max(0, ...)` guard, (c) sustained drop accumulates → crosses h.
-- `apps/mobile/test/features/pattern_engine/domain/usecases/run_pattern_engine_test.dart` — TC-30 (week-boundary independence) + 5 cases: (a) tier resolution (multiple algorithms fire → highest wins), (b) empty history → all-null result, (c) entries on the same day aggregate to one `DailyScore`, (d) `dateId` formats correctly across midnight, (e) repository is called with the right userId on save (use a fake `PatternRepository`).
+- `apps/mobile/test/features/pattern_engine/domain/algorithms/mann_kendall_test.dart` - TC-27 (Z = -2.21 to 2 d.p.) + 3 boundary cases: (a) n < 14 → null, (b) flat series → 0, (c) ascending series → positive Z (no Tier).
+- `apps/mobile/test/features/pattern_engine/domain/algorithms/sliding_5_of_7_test.dart` - TC-25 (5 negative days → triggers) + 3 cases: (a) 4 negative + 3 empty days → no trigger, (b) 7 consecutive negatives → triggers, (c) all positive → 0.
+- `apps/mobile/test/features/pattern_engine/domain/algorithms/three_consecutive_test.dart` - TC-26 + 3 cases: (a) S = -0.6 exactly → triggers (boundary), (b) one missing day in the trailing 3 → 0, (c) entries from yesterday + today + day before → counts up to 3.
+- `apps/mobile/test/features/pattern_engine/domain/algorithms/z_score_test.dart` - TC-28 + 3 cases: (a) σ_30 ≈ 0 → null, (b) baseline < 14 days → null, (c) z_day = -2.49 → null trigger but value populated, (d) z_day = -2.51 → Tier.three.
+- `apps/mobile/test/features/pattern_engine/domain/algorithms/cusum_test.dart` - TC-29 + 3 cases: (a) flat baseline series → C_t = 0, (b) one positive spike → C_t resets via the `max(0, ...)` guard, (c) sustained drop accumulates → crosses h.
+- `apps/mobile/test/features/pattern_engine/domain/usecases/run_pattern_engine_test.dart` - TC-30 (week-boundary independence) + 5 cases: (a) tier resolution (multiple algorithms fire → highest wins), (b) empty history → all-null result, (c) entries on the same day aggregate to one `DailyScore`, (d) `dateId` formats correctly across midnight, (e) repository is called with the right userId on save (use a fake `PatternRepository`).
 
 Test conventions: pin time-dependent inputs with `final now = DateTime(2026, 5, 9, 10, 30)`; build entries with a `_entry()` helper at the file top (mirror `apps/mobile/test/features/garden/domain/pattern_detector_test.dart` lines 6–19 for the pattern). Use `expectLater(... closeTo(expected, 0.005))` for floating-point assertions to tolerate < 5e-3 numeric drift.
 
@@ -403,7 +403,7 @@ Audit checklist:
 
 The Pattern Engine landing is complete when:
 
-- [ ] `flutter test apps/mobile/test/features/pattern_engine/` passes — all 25+ algorithm cases + orchestrator cases.
+- [ ] `flutter test apps/mobile/test/features/pattern_engine/` passes - all 25+ algorithm cases + orchestrator cases.
 - [ ] `flutter analyze` and `dart format --set-exit-if-changed` are clean on the branch.
 - [ ] CI domain-purity grep returns nothing under `apps/mobile/lib/features/pattern_engine/domain/`.
 - [ ] Logging a mood writes a `users/{uid}/patterns/{yyyy-MM-dd}` document; the doc contains the 8 allowlisted fields and no others (verify via Firestore emulator).
@@ -415,7 +415,7 @@ The Pattern Engine landing is complete when:
 
 ## Open Questions for orchestrator
 
-1. **Empty days in sliding 5-of-7.** Spec §2.4 algorithm 2 says "5 of last 7 days." A user who logs 4 negative days and 3 empty days within a 7-day window — does the empty day count as not-negative (= 0 contribution) or as missing data (= excluded from denominator)? **Architect default:** empty day = 0 contribution; algorithm reads `count(S_t < 0 in last 7 calendar days)`, NOT `fraction of logged days that were negative`. Rationale: PHQ-9's "more than half the days" is calendar-day-based, not log-frequency-based. Confirm before merge.
-2. **CUSUM C_0 across user's history.** A user with 200 days of history — do we fold from day 1 every time, or carry `C_t` forward in the persisted `PatternResult`? **Architect default:** fold from day 1 every time. CUSUM is small (one float), the history is bounded (Firestore page limit + Drift cache), and the recompute is < 1 ms even at 1000 days. Avoiding persisted state simplifies the data model. Confirm before merge.
-3. **Tier resolution when multiple algorithms fire.** When 3-consecutive (Tier 3) AND Mann-Kendall (Tier 1) both fire on the same day, the result carries `triggeredTier: three`. **But** the persisted `PatternResult` still records the Mann-Kendall Z value (not nulled out). The S5 dispatcher reads `triggeredTier` for the notification choice and the raw fields for the analytics card. Confirmed; this is documented behaviour, not a question — included for the qa-engineer's awareness.
+1. **Empty days in sliding 5-of-7.** Spec §2.4 algorithm 2 says "5 of last 7 days." A user who logs 4 negative days and 3 empty days within a 7-day window - does the empty day count as not-negative (= 0 contribution) or as missing data (= excluded from denominator)? **Architect default:** empty day = 0 contribution; algorithm reads `count(S_t < 0 in last 7 calendar days)`, NOT `fraction of logged days that were negative`. Rationale: PHQ-9's "more than half the days" is calendar-day-based, not log-frequency-based. Confirm before merge.
+2. **CUSUM C_0 across user's history.** A user with 200 days of history - do we fold from day 1 every time, or carry `C_t` forward in the persisted `PatternResult`? **Architect default:** fold from day 1 every time. CUSUM is small (one float), the history is bounded (Firestore page limit + Drift cache), and the recompute is < 1 ms even at 1000 days. Avoiding persisted state simplifies the data model. Confirm before merge.
+3. **Tier resolution when multiple algorithms fire.** When 3-consecutive (Tier 3) AND Mann-Kendall (Tier 1) both fire on the same day, the result carries `triggeredTier: three`. **But** the persisted `PatternResult` still records the Mann-Kendall Z value (not nulled out). The S5 dispatcher reads `triggeredTier` for the notification choice and the raw fields for the analytics card. Confirmed; this is documented behaviour, not a question - included for the qa-engineer's awareness.
 4. **`zScoreToday` epsilon.** Spec §2.4 algorithm 4 doesn't specify the σ ≈ 0 guard. **Architect default:** `σ_epsilon = 1e-9`; below this the function returns null. Worth surfacing in the PR description.

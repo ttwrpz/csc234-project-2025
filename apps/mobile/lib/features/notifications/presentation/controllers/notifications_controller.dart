@@ -31,7 +31,7 @@ class NotificationsToggleState {
   /// Cheer-up reminders enabled? Reflects the most recent successful
   /// write (local mirror or remote echo, whichever is fresher).
   ///
-  /// Re-derived from the three tier flags on every per-tier write —
+  /// Re-derived from the three tier flags on every per-tier write -
   /// `enabled` flips false only when ALL three tier flags are off, so
   /// the legacy `sendCheerUpPush` Cloud Function stops firing only
   /// when the user has opted out of every channel.
@@ -47,7 +47,7 @@ class NotificationsToggleState {
   /// Tier 3 (Hotline 1323 reminder) channel enabled.
   final bool tier3Enabled;
 
-  /// `true` while a write is in flight — used to disable switches and
+  /// `true` while a write is in flight - used to disable switches and
   /// render a small spinner so the user doesn't double-tap.
   final bool isPersisting;
 
@@ -86,7 +86,7 @@ class NotificationsController extends Notifier<NotificationsToggleState> {
     // stay in sync with Firestore (and so a migration write that lands
     // on first read flows back through `_applyRemoteSettings`).
     //
-    // Listen to auth state first (cheap — no Firestore yet). The
+    // Listen to auth state first (cheap - no Firestore yet). The
     // Firestore-backed repo is read lazily inside the auth listener so
     // unauthenticated test fixtures that override
     // `currentUserStreamProvider` to emit `null` never trigger the
@@ -124,7 +124,7 @@ class NotificationsController extends Notifier<NotificationsToggleState> {
   }
 
   /// Handles a user tap on the legacy cheer-up toggle (kept for
-  /// onboarding compatibility — the Settings screen surfaces the three
+  /// onboarding compatibility - the Settings screen surfaces the three
   /// per-tier toggles instead).
   ///
   /// On enable: requests OS permission, registers an FCM token, and
@@ -139,7 +139,7 @@ class NotificationsController extends Notifier<NotificationsToggleState> {
     final uid = ref.read(currentUserStreamProvider).value?.uid;
     final preference = _preference;
     if (uid == null || uid.isEmpty) {
-      // Not signed in — fall back to the local mirror only. The next
+      // Not signed in - fall back to the local mirror only. The next
       // post-sign-in bootstrap will reconcile with Firestore.
       await preference?.setCheerUpEnabled(enabled);
       state = state.copyWith(enabled: enabled, clearError: true);
@@ -177,7 +177,7 @@ class NotificationsController extends Notifier<NotificationsToggleState> {
 
   /// Toggles the Tier 1 (gentle nudge) intervention channel. See
   /// [setTier1Enabled] in [FcmTokenRepository] for the cheer-up shim
-  /// semantics — turning the last enabled tier off also flips the
+  /// semantics - turning the last enabled tier off also flips the
   /// legacy `cheerUpEnabled` flag.
   Future<void> setTier1Enabled(bool enabled) async {
     await _setTier(
@@ -289,7 +289,7 @@ enum _ControllerTier { one, two, three }
 /// Notifier provider for the cheer-up reminders toggle. The underlying
 /// [NotificationsPreferenceDatasource] is read from the synchronous
 /// `notificationsPreferenceDatasourceProvider`, which `requireValue`s
-/// the eager-resolved [SharedPreferences] singleton — so this provider
+/// the eager-resolved [SharedPreferences] singleton - so this provider
 /// works on the first frame without a bootstrap-time override.
 final notificationsControllerProvider =
     NotifierProvider<NotificationsController, NotificationsToggleState>(

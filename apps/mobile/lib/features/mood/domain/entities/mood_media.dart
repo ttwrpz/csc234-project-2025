@@ -9,7 +9,7 @@ part 'mood_media.freezed.dart';
 @freezed
 abstract class MoodMedia with _$MoodMedia {
   const factory MoodMedia({
-    /// Device-side file URI returned by the picker. Treat as ephemeral —
+    /// Device-side file URI returned by the picker. Treat as ephemeral -
     /// callers must upload before the user backgrounds the app for long.
     required String localPath,
     required MoodMediaKind kind,

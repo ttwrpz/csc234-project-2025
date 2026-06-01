@@ -15,7 +15,7 @@ import '../datasources/image_picker_datasource.dart';
 import '../datasources/mood_storage_datasource.dart';
 
 /// Maximum upload size in bytes (25 MB). Matches the Storage rule's
-/// `request.resource.size < 25 * 1024 * 1024` clause exactly — strict less-
+/// `request.resource.size < 25 * 1024 * 1024` clause exactly - strict less-
 /// than. We pre-validate in the client to give the user a fast error instead
 /// of waiting for a 403 from Storage.
 const int kMaxMediaBytes = 25 * 1024 * 1024;
@@ -27,7 +27,7 @@ const List<String> _allowedPrefixes = ['image/', 'video/'];
 /// Concrete [MoodMediaRepository] backed by `image_picker` for selection and
 /// `firebase_storage` for upload.
 ///
-/// ## Known limitation — orphan media
+/// ## Known limitation - orphan media
 /// If [upload] succeeds but the caller's subsequent Firestore write fails,
 /// the uploaded blob remains at `users/{uid}/media/{moodId}/...` with no
 /// pointing entry. A janitor cron sweeps these orphans; until then, the
@@ -123,7 +123,7 @@ class MoodMediaRepositoryImpl implements MoodMediaRepository {
         'users/$userId/media/$moodId/${_uuid.v4()}${ext.isEmpty ? '' : '.$ext'}';
 
     try {
-      // Web cannot back a `dart:io File` from a blob: URL — the
+      // Web cannot back a `dart:io File` from a blob: URL - the
       // `XFile.path` returned by image_picker on web is a blob handle,
       // not a filesystem path. Read the bytes through `XFile` (which
       // handles blob URLs on web and falls back to filesystem reads on
@@ -175,7 +175,7 @@ class MoodMediaRepositoryImpl implements MoodMediaRepository {
     return null;
   }
 
-  /// Filename extension to append to the uuid. Derived from the local path —
+  /// Filename extension to append to the uuid. Derived from the local path -
   /// the picker always returns a path with the source extension on Android,
   /// iOS, and Web. Empty string if the path has no extension.
   String _extensionFor(MoodMedia media) {

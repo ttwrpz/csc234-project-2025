@@ -19,7 +19,7 @@ mixin _$InterventionDispatch {
  String get body;/// Semantic CTA keys for the renderer. Order matches reading order.
 /// Tier 1: `['open_breathing', 'opt_out']`.
 /// Tier 2: `['open_journal', 'opt_out']`.
-/// Tier 3: `['open_crisis', 'opt_out']` — crisis screen carries the
+/// Tier 3: `['open_crisis', 'opt_out']` - crisis screen carries the
 /// Hotline 1323 link.
  List<String> get ctas;/// UUID-ish id for the audit record at
 /// `users/{uid}/interventions/{dispatchId}`. Deterministic on
@@ -234,13 +234,13 @@ class _InterventionDispatch implements InterventionDispatch {
 /// Semantic CTA keys for the renderer. Order matches reading order.
 /// Tier 1: `['open_breathing', 'opt_out']`.
 /// Tier 2: `['open_journal', 'opt_out']`.
-/// Tier 3: `['open_crisis', 'opt_out']` — crisis screen carries the
+/// Tier 3: `['open_crisis', 'opt_out']` - crisis screen carries the
 /// Hotline 1323 link.
  final  List<String> _ctas;
 /// Semantic CTA keys for the renderer. Order matches reading order.
 /// Tier 1: `['open_breathing', 'opt_out']`.
 /// Tier 2: `['open_journal', 'opt_out']`.
-/// Tier 3: `['open_crisis', 'opt_out']` — crisis screen carries the
+/// Tier 3: `['open_crisis', 'opt_out']` - crisis screen carries the
 /// Hotline 1323 link.
 @override List<String> get ctas {
   if (_ctas is EqualUnmodifiableListView) return _ctas;

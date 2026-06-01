@@ -14,7 +14,7 @@ import 'repositories/pattern_repository_impl.dart';
 /// `domain/usecases/run_pattern_engine.dart`; this provider just
 /// exposes a const instance for controllers + screens.
 
-/// Pure-Dart [RunPatternEngineUseCase]. Const instance — safe to
+/// Pure-Dart [RunPatternEngineUseCase]. Const instance - safe to
 /// `overrideWithValue` in tests with a fake.
 final runPatternEngineUseCaseProvider = Provider<RunPatternEngineUseCase>(
   (ref) => const RunPatternEngineUseCase(),
@@ -29,7 +29,7 @@ final patternsFirestoreDatasourceProvider =
     );
 
 /// Firestore-backed [PatternRepository]. Wraps the datasource and maps
-/// Firestore exceptions to `PatternFailure`. Best-effort writes —
+/// Firestore exceptions to `PatternFailure`. Best-effort writes -
 /// failures are logged + swallowed by the post-save controller.
 final patternRepositoryProvider = Provider<PatternRepository>(
   (ref) => PatternRepositoryImpl(

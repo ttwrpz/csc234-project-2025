@@ -10,7 +10,7 @@ import '../../domain/entities/intervention_dispatch.dart';
 import '../widgets/dispatch_safe_defaults.dart';
 import '../widgets/intervention_opt_out_button.dart';
 
-/// Tier 3 surface — crisis resources, anchored on Hotline 1323.
+/// Tier 3 surface - crisis resources, anchored on Hotline 1323.
 ///
 /// Hard rules:
 ///   * Body is rendered verbatim from `dispatch.body` (already includes
@@ -23,7 +23,7 @@ import '../widgets/intervention_opt_out_button.dart';
 ///   * Three resource cards: a directory link, an "expect when you call"
 ///     expansion, and an "other resources" expansion with three child
 ///     hotlines.
-///   * No close button at the top — leaving the screen requires either
+///   * No close button at the top - leaving the screen requires either
 ///     opting out, tapping a resource, or back-gesture + confirmation.
 ///   * Back-gesture intercepted by [PopScope] with an "Are you sure?"
 ///     dialog whose only-pop button is the explicit "Close" choice.

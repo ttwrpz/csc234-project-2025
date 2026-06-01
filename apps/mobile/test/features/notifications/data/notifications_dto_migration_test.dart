@@ -22,7 +22,7 @@ import 'package:moodbloom/features/notifications/domain/notifications_settings.d
 /// repo today.
 void main() {
   group('NotificationsSettingsDto migration helpers', () {
-    test('needsTierMigration — legacy doc (cheerUpEnabled only) → true', () {
+    test('needsTierMigration - legacy doc (cheerUpEnabled only) → true', () {
       final data = <String, dynamic>{
         'cheerUpEnabled': true,
         'tokens': <Object?>[],
@@ -30,7 +30,7 @@ void main() {
       expect(NotificationsSettingsDto.needsTierMigration(data), isTrue);
     });
 
-    test('needsTierMigration — legacy opted-out doc → true', () {
+    test('needsTierMigration - legacy opted-out doc → true', () {
       final data = <String, dynamic>{
         'cheerUpEnabled': false,
         'tokens': <Object?>[],
@@ -38,7 +38,7 @@ void main() {
       expect(NotificationsSettingsDto.needsTierMigration(data), isTrue);
     });
 
-    test('needsTierMigration — already-migrated doc → false', () {
+    test('needsTierMigration - already-migrated doc → false', () {
       final data = <String, dynamic>{
         'cheerUpEnabled': true,
         'tier1Enabled': false,
@@ -50,7 +50,7 @@ void main() {
     });
 
     test(
-      'needsTierMigration — partially-migrated doc (missing tier2) → true',
+      'needsTierMigration - partially-migrated doc (missing tier2) → true',
       () {
         // Defense-in-depth: a crashed-mid-write doc still triggers a
         // repair on the next read.
@@ -65,15 +65,15 @@ void main() {
       },
     );
 
-    test('needsTierMigration — null data (brand-new user, no doc) → false', () {
+    test('needsTierMigration - null data (brand-new user, no doc) → false', () {
       expect(NotificationsSettingsDto.needsTierMigration(null), isFalse);
     });
 
     test(
-      'needsTierMigration — doc without cheerUpEnabled → false (not legacy)',
+      'needsTierMigration - doc without cheerUpEnabled → false (not legacy)',
       () {
         // A doc that lacks even `cheerUpEnabled` is treated as
-        // brand-new — the caller's normal "no doc" path will write a
+        // brand-new - the caller's normal "no doc" path will write a
         // fresh initial() instead.
         final data = <String, dynamic>{'tokens': <Object?>[]};
         expect(NotificationsSettingsDto.needsTierMigration(data), isFalse);
@@ -81,7 +81,7 @@ void main() {
     );
 
     test(
-      'migratedFromLegacy — opted-in user gets all three tier flags true',
+      'migratedFromLegacy - opted-in user gets all three tier flags true',
       () {
         final data = <String, dynamic>{
           'cheerUpEnabled': true,
@@ -97,7 +97,7 @@ void main() {
     );
 
     test(
-      'migratedFromLegacy — opted-out user gets all three tier flags false',
+      'migratedFromLegacy - opted-out user gets all three tier flags false',
       () {
         final data = <String, dynamic>{
           'cheerUpEnabled': false,
@@ -111,7 +111,7 @@ void main() {
       },
     );
 
-    test('migratedFromLegacy — preserves existing tokens verbatim', () {
+    test('migratedFromLegacy - preserves existing tokens verbatim', () {
       final ts = Timestamp.fromDate(DateTime.utc(2026, 5, 1, 12));
       final data = <String, dynamic>{
         'cheerUpEnabled': true,
@@ -126,7 +126,7 @@ void main() {
     });
 
     test(
-      'fromMap — already-migrated doc preserves per-tier values exactly',
+      'fromMap - already-migrated doc preserves per-tier values exactly',
       () {
         final data = <String, dynamic>{
           'cheerUpEnabled': true,
@@ -143,7 +143,7 @@ void main() {
       },
     );
 
-    test('fromMap — missing tier flags default to true (forward-compat)', () {
+    test('fromMap - missing tier flags default to true (forward-compat)', () {
       // If the datasource somehow returns a partially-shaped doc
       // without triggering migration, the read still surfaces a
       // sane default.
@@ -158,7 +158,7 @@ void main() {
     });
 
     test(
-      'toFirestoreMerge — writes all four bool flags + tokens + serverTime',
+      'toFirestoreMerge - writes all four bool flags + tokens + serverTime',
       () {
         final settings = const NotificationsSettings(
           cheerUpEnabled: true,
@@ -174,7 +174,7 @@ void main() {
         expect(payload['tier2Enabled'], isTrue);
         expect(payload['tier3Enabled'], isTrue);
         expect(payload['tokens'], isA<List<Object?>>());
-        // FieldValue.serverTimestamp() — value identity not asserted
+        // FieldValue.serverTimestamp() - value identity not asserted
         // (it's an opaque sentinel) but the key must be present so the
         // Firestore rule's `updatedAt == request.time` guard passes.
         expect(payload.containsKey('updatedAt'), isTrue);

@@ -8,13 +8,13 @@ import '../entities/mood_entry.dart';
 /// Contract for any backend that surfaces AI-derived signals to the app:
 /// per-entry mood classification (`analyzeMoodText`) and pattern insights
 /// over history (`analyzePatterns`). Both call into Cloud Functions via
-/// the same trust boundary — the Cloud Function reads `request.auth.uid`
+/// the same trust boundary - the Cloud Function reads `request.auth.uid`
 /// from the Firebase Auth token. Passing `userId` from the client would
 /// be both redundant and a trust-boundary violation.
 abstract class AIAnalysisRepository {
   /// Returns `false` when the `ai_pattern_analysis_enabled` Remote Config
   /// flag is off. Callers MUST short-circuit `analyzePatterns` when this
-  /// is false — both as defence in depth (the server still runs) and as
+  /// is false - both as defence in depth (the server still runs) and as
   /// the kill-switch hook.
   bool get isEnabled;
 

@@ -8,19 +8,19 @@ import '../entities/intervention_failure.dart';
 /// [InterventionStateRepository] and returns a [CooldownDecision].
 ///
 /// Two windows, in priority order:
-///   * `dailyLimit` — `now - lastTriggeredAt < 24h` (max 1 notification
+///   * `dailyLimit` - `now - lastTriggeredAt < 24h` (max 1 notification
 ///     per 24h).
-///   * `cooldown48h` — `now - lastTriggeredAt < 48h` (but `≥ 24h`).
+///   * `cooldown48h` - `now - lastTriggeredAt < 48h` (but `≥ 24h`).
 ///
-/// The guard is global across tiers — a Tier 1 today blocks a Tier 3
+/// The guard is global across tiers - a Tier 1 today blocks a Tier 3
 /// tomorrow if inside 48h.
 ///
-/// Reads only — never writes. The dispatcher writes the new anchor via
+/// Reads only - never writes. The dispatcher writes the new anchor via
 /// `InterventionStateRepository.writeLastTriggeredAt` AFTER a successful
-/// dispatch, not before — a write-before-dispatch race would block the
+/// dispatch, not before - a write-before-dispatch race would block the
 /// next legitimate dispatch on a network failure.
 ///
-/// Pure-Dart class — no Flutter / Firebase imports.
+/// Pure-Dart class - no Flutter / Firebase imports.
 class CooldownGuard {
   CooldownGuard({
     required InterventionStateRepository stateRepo,
@@ -80,7 +80,7 @@ class CooldownGuard {
     }
     final elapsed = _now().difference(lastTriggeredAt);
     if (elapsed.isNegative) {
-      // Clock skew — the anchor is in the future. Treat as inside the
+      // Clock skew - the anchor is in the future. Treat as inside the
       // 48h window (fail-closed). This is the safest read; the next
       // successful sync will normalise.
       return const Blocked(CooldownBlock.cooldown48h);

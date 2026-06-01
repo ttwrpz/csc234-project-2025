@@ -81,12 +81,7 @@ class MbMoodChip extends StatelessWidget {
           ),
           if (i != null) ...<Widget>[
             const SizedBox(width: 6),
-            MbIntensityDots(
-              value: i,
-              color: color,
-              dotSize: dotSize,
-              gap: 2,
-            ),
+            MbIntensityDots(value: i, color: color, dotSize: dotSize, gap: 2),
           ],
         ],
       ),

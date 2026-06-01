@@ -68,7 +68,7 @@ class SuggestQuoteFunctionsDatasource {
 }
 
 /// Typed exceptions the repository unwraps into [QuoteFailure] variants.
-/// Scoped to the data layer — the domain never sees these. Public so the
+/// Scoped to the data layer - the domain never sees these. Public so the
 /// repository in a sibling file can pattern-match on the sealed hierarchy.
 sealed class SuggestQuoteDatasourceException implements Exception {
   const SuggestQuoteDatasourceException();

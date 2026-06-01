@@ -66,7 +66,7 @@ class DeleteAccountUseCase {
 
     // Server cascade succeeded. Try to delete the local Firebase Auth
     // user too. Per ADR-0009 §"Good" point 5, ANY failure here is
-    // recoverable — the server data is already gone, so an orphaned
+    // recoverable - the server data is already gone, so an orphaned
     // local Auth record is acceptable. Log the transition so the
     // ops audit trail can spot drift between server cascade success
     // and Auth-record cleanup.

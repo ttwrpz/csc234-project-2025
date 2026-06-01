@@ -9,9 +9,9 @@ import 'package:moodbloom/features/pattern_engine/domain/entities/tier.dart';
 /// invariants the screen depends on:
 ///   * The widget pumps without throwing for fully-populated input.
 ///   * Empty input renders a fallback hint (the chart widget's own
-///     fallback — the screen also has a card-level empty state).
+///     fallback - the screen also has a card-level empty state).
 ///
-/// Golden snapshot generation is the qa-engineer's responsibility — the
+/// Golden snapshot generation is the qa-engineer's responsibility - the
 /// handoff brief asks for a golden test of the seeded chart. This file
 /// covers the structural smoke; qa-engineer should add the
 /// `matchesGoldenFile` assertions and check in the baseline image.

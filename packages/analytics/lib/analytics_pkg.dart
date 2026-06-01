@@ -1,4 +1,4 @@
-/// MoodBloom analytics package — pure-Flutter re-exports of the line chart
+/// MoodBloom analytics package - pure-Flutter re-exports of the line chart
 /// widget and its supporting types.
 ///
 /// This package MUST NOT depend on `apps/mobile` (circular layer violation),

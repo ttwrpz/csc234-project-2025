@@ -38,7 +38,7 @@ ThemeData buildDarkTheme() {
     primary: MoodBloomColors.seed,
     // Dark mode: the deep `coralText` disappears against the navy
     // background (~1.7:1 contrast). Use the brighter `coral` (#F4A78C)
-    // instead — passes ≥4.5:1 against the dark surface while staying
+    // instead - passes ≥4.5:1 against the dark surface while staying
     // in the same warm coral hue family.
     error: MoodBloomColors.coral,
   );

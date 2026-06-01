@@ -35,7 +35,7 @@ const GEMINI_TIMEOUT_MS = 5_000;
 /**
  * Sample-size floor below which we skip the Gemini supplementary call
  * entirely. Below 30 entries the model has too little signal to give
- * a meaningful theme — and the sample-size floor would clamp its
+ * a meaningful theme - and the sample-size floor would clamp its
  * confidence to ≤0.5 anyway. Saving the round-trip + the Gemini quota.
  */
 const PATTERNS_GEMINI_SAMPLE_FLOOR = 30;
@@ -216,7 +216,7 @@ export function streakInsight(
 ): PatternInsight | null {
   if (history.length === 0) return null;
 
-  // Bucket by date — does this date have a heavy-negative entry?
+  // Bucket by date - does this date have a heavy-negative entry?
   const heavyByDate = new Map<string, boolean>();
   for (const e of history) {
     const heavy = NEGATIVE_MOOD_CODES.has(e.moodCode) && e.intensity >= 4;
@@ -251,7 +251,7 @@ export function streakInsight(
 
 /**
  * 30-day trend via closed-form least-squares on daily-mean intensity.
- * Days with no entry are excluded (not zeroed) — slope reflects the days
+ * Days with no entry are excluded (not zeroed) - slope reflects the days
  * the user actually logged.
  */
 export function trendInsight(
@@ -349,7 +349,7 @@ export async function handleAnalyzePatterns(
   }
   const uid = request.auth.uid;
 
-  // 2. Schema (.strict — PII fence).
+  // 2. Schema (.strict - PII fence).
   let parsed;
   try {
     parsed = AnalyzePatternsRequestSchema.parse(request.data);
@@ -413,7 +413,7 @@ export async function handleAnalyzePatterns(
     );
   }
 
-  // 4. Statistical compute (always — deterministic happy path).
+  // 4. Statistical compute (always - deterministic happy path).
   const numeric = preparseHistory(parsed.history);
   const insights: PatternInsight[] = [];
 
@@ -434,7 +434,7 @@ export async function handleAnalyzePatterns(
     if (tr) insights.push(tr);
   }
 
-  // 5. Gemini supplementary call. Always non-fatal — any failure
+  // 5. Gemini supplementary call. Always non-fatal - any failure
   // swallows gracefully and the statistical insights ship on their own.
   const statisticalInsightCount = insights.length;
   let geminiSkipped = false;
@@ -463,7 +463,7 @@ export async function handleAnalyzePatterns(
         const sampleSize = parsed.history.length;
         // Sample-size floor is irrelevant here (we only call when ≥30),
         // but Gemini-emitted confidence is capped at PATTERN_GEMINI_MAX_CONFIDENCE
-        // regardless — the model cannot claim "high" certainty on a
+        // regardless - the model cannot claim "high" certainty on a
         // theme it inferred from numeric codes alone.
         const confidence = Math.min(
           validated.confidence,
@@ -478,7 +478,7 @@ export async function handleAnalyzePatterns(
           generatedAt,
         });
       } catch {
-        // Schema validation failed — Gemini returned malformed JSON.
+        // Schema validation failed - Gemini returned malformed JSON.
         geminiSkipped = true;
         geminiSkipReason = 'parse_error';
       }
@@ -499,7 +499,7 @@ export async function handleAnalyzePatterns(
 
   const totalLatencyMs = Date.now() - startMs;
 
-  // 6. Structured log line. ALLOWED fields only — no `history`, no insight
+  // 6. Structured log line. ALLOWED fields only - no `history`, no insight
   // text bodies. The PII canary test asserts this.
   logger.info({
     event: 'analyzePatterns',

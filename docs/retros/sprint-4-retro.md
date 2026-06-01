@@ -1,4 +1,4 @@
-# Sprint 4 Retrospective — Ecosystem Redesign (v1.0)
+# Sprint 4 Retrospective - Ecosystem Redesign (v1.0)
 
 **Sprint window:** May 6 – May 9, 2026 (4 working days)
 **Tag:** `v1.0` (the redesign supersedes the pre-redesign `v1.0` per the release-notes tag-collision notice)
@@ -13,14 +13,14 @@
 
 ## What landed
 
-1. **Mood Score `S_t = v × i/5`** — pure-Dart per-entry scalar in `[-1, +1]`. Joy/Calm/**Okay** = +1; Sadness/Anger/Anxiety = −1. The "Okay" sign flip is documented and accepted as a retroactive change (ADR-0010 §2 trade-off).
-2. **5 plant tiers, all visibly alive** — Flourishing / Thriving / Resting / Weathering / Storm Season. Driven by EWMA `H_t = 0.15·S_day + 0.85·H_{t−1}`, weekly `H_0 = 0`. Storm Season renders rain falling *around* a sheltered garden — plants intact, lanterns brighter.
-3. **4 daily atmosphere states** — calmSunny / brightSunny / lightRain / storm. Driven by `avg_S_today`. Resets at local midnight. Decoupled from plant tier in code and z-order.
+1. **Mood Score `S_t = v × i/5`** - pure-Dart per-entry scalar in `[-1, +1]`. Joy/Calm/**Okay** = +1; Sadness/Anger/Anxiety = −1. The "Okay" sign flip is documented and accepted as a retroactive change (ADR-0010 §2 trade-off).
+2. **5 plant tiers, all visibly alive** - Flourishing / Thriving / Resting / Weathering / Storm Season. Driven by EWMA `H_t = 0.15·S_day + 0.85·H_{t−1}`, weekly `H_0 = 0`. Storm Season renders rain falling *around* a sheltered garden - plants intact, lanterns brighter.
+3. **4 daily atmosphere states** - calmSunny / brightSunny / lightRain / storm. Driven by `avg_S_today`. Resets at local midnight. Decoupled from plant tier in code and z-order.
 4. **5-algorithm Pattern Engine** running client-side as pure-Dart: Mann-Kendall trend test (14-day window, Z < −1.96 → Tier 1), sliding 5-of-7 negative days (→ Tier 2), 3-consecutive S ≤ −0.6 (→ Tier 3), z-score vs personal 30-day baseline (z_day < −2.5 → Tier 3), CUSUM change-point (→ Tier 3).
-5. **Pattern results document** at `users/{uid}/patterns/{date}` — numeric outputs + resolved tier only; no mood text (PII guard).
-6. **Weekly Harvest cycle** — write-once archive to `users/{uid}/weeklyGardens/{weekId}` at the close of every 7-day window; H_0 resets to 0; past weeks browsable in a new History tab.
-7. **Mood-agnostic token economy** — 5 for the day's first log + 1 per additional up to 10/day; missed days lose nothing; verified by a file-level grep test that `award_daily_tokens.dart` references no `MoodType` / `MoodEntry` / `MoodScore` symbol.
-8. **Day/Night theme** — new fourth `ThemeModePreference.followDeviceTime` flips light/dark on local-clock cutoffs (07:00 / 19:00). Backward-compatible storage migration.
+5. **Pattern results document** at `users/{uid}/patterns/{date}` - numeric outputs + resolved tier only; no mood text (PII guard).
+6. **Weekly Harvest cycle** - write-once archive to `users/{uid}/weeklyGardens/{weekId}` at the close of every 7-day window; H_0 resets to 0; past weeks browsable in a new History tab.
+7. **Mood-agnostic token economy** - 5 for the day's first log + 1 per additional up to 10/day; missed days lose nothing; verified by a file-level grep test that `award_daily_tokens.dart` references no `MoodType` / `MoodEntry` / `MoodScore` symbol.
+8. **Day/Night theme** - new fourth `ThemeModePreference.followDeviceTime` flips light/dark on local-clock cutoffs (07:00 / 19:00). Backward-compatible storage migration.
 
 ## What went well
 
@@ -32,10 +32,10 @@
 
 ## What was hard
 
-- **Mann-Kendall quantization** — spec §7.27 prescribes Z = −2.21 ± 0.005 on a steadily-declining 14-day window. The S statistic is integer-valued; the closest reachable values are −2.190 (S=−41) and −2.2445 (S=−42), neither inside the spec's tolerance. Architect amended the tolerance to ±0.05 in ADR-0011 Consequences. The user-facing tier-trigger semantics (Z < −1.96) are unchanged.
+- **Mann-Kendall quantization** - spec §7.27 prescribes Z = −2.21 ± 0.005 on a steadily-declining 14-day window. The S statistic is integer-valued; the closest reachable values are −2.190 (S=−41) and −2.2445 (S=−42), neither inside the spec's tolerance. Architect amended the tolerance to ±0.05 in ADR-0011 Consequences. The user-facing tier-trigger semantics (Z < −1.96) are unchanged.
 - **EWMA α choice was contested.** Spec §2.2 fixes α = 0.15. The sprint floated α = 0.20 for a more responsive canvas; the architect ruled in favour of the spec's α = 0.15 because Smit et al. 2022 derives it from autocorrelation parameters at lag-1 typical of daily mood time series. The bounded daily delta `|ΔH| ≤ 0.15` is what guarantees one bad day cannot crash the canvas.
-- **Bangkok Firestore region restriction** — `sendCheerUpPush` initially deployed as `onDocumentCreated` to `asia-southeast3`. The region does not support Eventarc v2 triggers. Cost 2 hours in the polish round (May 10); resolved by converting to `onCall` and invoking `httpsCallable('sendCheerUpPush')` after writing the audit doc.
-- **Day/night theme storage migration** — the `ThemeModePreference` enum added a fourth value. Existing users on `system` / `light` / `dark` already had a string-encoded preference in `users/{uid}/settings/theme`. Migration is read-side: missing or unknown values default to `system`. Tested by re-running the auth-restore widget tests with synthetic legacy values.
+- **Bangkok Firestore region restriction** - `sendCheerUpPush` initially deployed as `onDocumentCreated` to `asia-southeast3`. The region does not support Eventarc v2 triggers. Cost 2 hours in the polish round (May 10); resolved by converting to `onCall` and invoking `httpsCallable('sendCheerUpPush')` after writing the audit doc.
+- **Day/night theme storage migration** - the `ThemeModePreference` enum added a fourth value. Existing users on `system` / `light` / `dark` already had a string-encoded preference in `users/{uid}/settings/theme`. Migration is read-side: missing or unknown values default to `system`. Tested by re-running the auth-restore widget tests with synthetic legacy values.
 
 ## What the human team caught
 
@@ -68,7 +68,7 @@ The Sprint 5 kickoff inherits five concrete handoffs from this sprint:
 
 ## Lessons carried forward to Sprint 5
 
-- Always write the ADR before the code. ADR-0010 + ADR-0011 paid for themselves the first time an agent asked "should Storm Season use a separate atmosphere or piggy-back on the tier?" — the answer was already written.
+- Always write the ADR before the code. ADR-0010 + ADR-0011 paid for themselves the first time an agent asked "should Storm Season use a separate atmosphere or piggy-back on the tier?" - the answer was already written.
 - File-level grep tests for cross-cutting invariants (mood-agnostic tokens, banned-vocabulary, plants-never-die). The cost is trivial, the protection is structural.
 - Pure-Dart algorithms over CF where latency + PII + testability all argue for client-side. Tier 3 determinism in S5 will follow the same pattern.
 - Budget a user-testing pass between every release-candidate and tag. The May 10 polish round closed ~30 issues that the agent team did not surface on their own.

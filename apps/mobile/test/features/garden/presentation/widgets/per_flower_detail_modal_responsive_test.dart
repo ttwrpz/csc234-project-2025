@@ -47,7 +47,7 @@ Future<void> _pumpHost(WidgetTester tester, Size size) async {
 }
 
 void main() {
-  group('PerFlowerDetailModal — Wave B responsive launcher', () {
+  group('PerFlowerDetailModal - Wave B responsive launcher', () {
     testWidgets('phone viewport (360x800) presents a BottomSheet, no Dialog', (
       tester,
     ) async {
@@ -56,7 +56,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Absence of `Dialog` is the load-bearing proof that the phone
-      // launcher used showModalBottomSheet — `BottomSheet` as a widget
+      // launcher used showModalBottomSheet - `BottomSheet` as a widget
       // type is not always surfaced in the flutter_test tree (modal-
       // bottom-sheet's internal wrapper varies across Material versions).
       expect(
@@ -90,7 +90,7 @@ void main() {
           constrained.constraints.maxWidth,
           480,
           reason:
-              'per-flower modal is narrower than the skin grid — the content '
+              'per-flower modal is narrower than the skin grid - the content '
               'is a single entry summary, not a multi-card grid',
         );
       },

@@ -34,7 +34,7 @@ const bool kEnableWebauthn = true;
 /// The `defaults()` factory mirrors the defaults registered in `main.dart`
 /// before `fetchAndActivate()` completes, and is the value
 /// `featureFlagsProvider` returns when [FeatureFlagSource] throws (e.g.
-/// Remote Config not yet initialised). Keep these two sources in sync —
+/// Remote Config not yet initialised). Keep these two sources in sync -
 /// see CLAUDE.md "Feature flag (rollback plan)".
 @freezed
 abstract class FeatureFlags with _$FeatureFlags {

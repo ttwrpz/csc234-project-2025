@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:firebase_storage/firebase_storage.dart';
 
-/// Thin Firebase Storage wrapper. No domain types here — this is the boundary
+/// Thin Firebase Storage wrapper. No domain types here - this is the boundary
 /// between `firebase_storage` and the rest of the app.
 class MoodStorageDatasource {
   const MoodStorageDatasource(this._storage);

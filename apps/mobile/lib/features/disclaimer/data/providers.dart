@@ -9,7 +9,7 @@ import 'repositories/disclaimer_repository_impl.dart';
 /// Riverpod wiring for the bipolar / medical disclaimer service.
 ///
 /// The repository ack-state lives in `users/{uid}.insightsDisclaimerAcked`
-/// — a single boolean on the user doc, rule-guarded one-way (false → true
+/// - a single boolean on the user doc, rule-guarded one-way (false → true
 /// only). Tests fake either the datasource OR the repo provider via
 /// `overrideWithValue`.
 
@@ -32,7 +32,7 @@ final disclaimerRepositoryProvider = Provider<DisclaimerRepository>(
 
 /// Streams the current user's ack state. Emits `false` when no user is
 /// signed in (the Insights screen is rendered after auth, but this
-/// provider is also consumed by Settings — the false default keeps the
+/// provider is also consumed by Settings - the false default keeps the
 /// "tap to read more" affordance always discoverable).
 final disclaimerAckStreamProvider = StreamProvider<bool>((ref) {
   final user = ref.watch(currentUserStreamProvider).value;

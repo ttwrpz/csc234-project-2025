@@ -41,7 +41,7 @@ class AiAnalysisRepositoryImpl implements AIAnalysisRepository {
       if (payload['ok'] == true) {
         final result = AiSuggestionDto.fromJson(payload).toEntity();
         if (result is Err<AiSuggestion, AiAnalysisFailure>) {
-          // Defensive: log only the failure runtimeType — never the input
+          // Defensive: log only the failure runtimeType - never the input
           // text, never the failure.message (which could echo content).
           _logger.warn(
             'ai analyze parse failed',

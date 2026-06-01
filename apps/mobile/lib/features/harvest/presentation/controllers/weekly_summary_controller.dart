@@ -41,7 +41,7 @@ final harvestPendingProvider = Provider<bool>((ref) {
   final weekEnd = activeWeekStart.add(const Duration(days: 7));
   if (now.isBefore(weekEnd)) return false;
 
-  // Only flag pending if the active week actually has any logs — an
+  // Only flag pending if the active week actually has any logs - an
   // empty week is not "pending" because there's nothing to summarise
   // yet (the archive use case rejects with `noEntries` anyway).
   return entries.any(
@@ -80,7 +80,7 @@ DateTime? activeWeekStartFor({
     return latestArchivedWeekStart.add(const Duration(days: 7));
   }
 
-  // No archive yet — start from the Monday of the earliest entry.
+  // No archive yet - start from the Monday of the earliest entry.
   final earliest = entries
       .map((e) => localMidnight(e.createdAt))
       .reduce((a, b) => a.isBefore(b) ? a : b);
@@ -136,7 +136,7 @@ class HarvestArchiveError extends HarvestArchiveStatus {
 ///
 /// Hand-rolled `Notifier` (not the @riverpod codegen) because the
 /// state shape is a sealed class with a value-carrying `success`
-/// variant — the codegen pipeline doesn't infer that cleanly today,
+/// variant - the codegen pipeline doesn't infer that cleanly today,
 /// and the gain from codegen is small for a 4-state machine.
 class WeeklySummaryController extends Notifier<HarvestArchiveStatus> {
   @override
@@ -196,7 +196,7 @@ class WeeklySummaryController extends Notifier<HarvestArchiveStatus> {
       weekEntries: weekEntries,
       // Per-day health history is reconstructed by the Garden state
       // computation each render, but the archive only needs the ending
-      // tier — we pass an empty list and the use case falls back to
+      // tier - we pass an empty list and the use case falls back to
       // `PlantTier.resting`. Future work: pipe the EWMA history in
       // once the GardenState entity surfaces it.
       dailyHealthHistory: const [],
@@ -238,7 +238,7 @@ class WeeklySummaryController extends Notifier<HarvestArchiveStatus> {
   /// Called by the home screen before pushing a fresh harvest screen so
   /// the previous week's `HarvestArchiveSuccess` doesn't make
   /// [acknowledge] a no-op on the next Continue tap. Running state is
-  /// preserved — we never drop an in-flight archive write.
+  /// preserved - we never drop an in-flight archive write.
   void reset() {
     if (state is HarvestArchiveRunning) return;
     state = const HarvestArchiveIdle();

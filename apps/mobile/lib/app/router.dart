@@ -98,7 +98,7 @@ final onboardingCompleteProvider = FutureProvider<bool>((ref) async {
 /// Each branch's top-level screen wraps itself in a
 /// `PrimaryScrollController` reading the matching controller from this
 /// provider, so the screen's scroll view (`primary: true` by default)
-/// attaches to a controller that's bound to THAT branch — never shared
+/// attaches to a controller that's bound to THAT branch - never shared
 /// with sibling branches. A single shell-wide controller would not work:
 /// `StatefulShellRoute.indexedStack` keeps every branch's widget alive,
 /// so all five scroll views would re-attach to whichever controller was
@@ -173,13 +173,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       if (refresh.value != null && isAuthRoute) return '/home';
 
-      // Privacy Lock gate — whole-app cold-boot scope. Inserts itself
+      // Privacy Lock gate - whole-app cold-boot scope. Inserts itself
       // when (a) the user is signed in, (b) the user has opted into
       // Privacy Lock, and (c) we haven't already unlocked this session.
       //
       // `privacyLockEnabledProvider` is pre-resolved in main.dart via
       // `SeededPrivacyLockEnabledNotifier`, so this read returns a real
-      // bool on the very first redirect pass — no FutureProvider race,
+      // bool on the very first redirect pass - no FutureProvider race,
       // no flash-of-home. The `/privacy/setup` modal route is exempt so
       // toggling ON from Settings doesn't fire the lock mid-setup; the
       // unlock screen itself short-circuits the redirect.
@@ -217,7 +217,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'forgot-password',
         pageBuilder: (c, s) => _noTransition(const ForgotPasswordScreen()),
       ),
-      // Unified Privacy Lock unlock screen — biometric (when available)
+      // Unified Privacy Lock unlock screen - biometric (when available)
       // + PIN fallback. Reachable via the cold-boot redirect above when
       // the user has opted in. `returnTo` is URL-encoded by the redirect
       // so any deep-link destination survives the round-trip.
@@ -251,7 +251,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           // user breathes / journals / reads crisis resources. Named
           // routes are preserved so the InterventionBanner's
           // pushNamed('intervention.breathing', extra: dispatch) keeps
-          // working — only the URL surface changes.
+          // working - only the URL surface changes.
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -375,7 +375,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Patterns. Single screen since v1.5.1 — the former
+          // Patterns. Single screen since v1.5.1 - the former
           // `/analytics/insights` sub-route was folded into the dashboard
           // with the bipolar/medical disclaimer rendered as an inline
           // banner instead of a route-level modal gate.
@@ -432,7 +432,7 @@ class _AppShell extends ConsumerStatefulWidget {
 
   /// Tablets get a tighter content column so cards don't grow to half a
   /// metre wide. ~720 mirrors the prototype's tablet artboard reading
-  /// width — the same value used by `MbBreakpoints.homeWide` so the
+  /// width - the same value used by `MbBreakpoints.homeWide` so the
   /// shell cap and the screen-internal "go wide" cutover coincide.
   static const double _tabletBodyMax = MbBreakpoints.homeWide;
 
@@ -672,7 +672,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
     // Add bottom padding to the body so content isn't hidden under the
     // translucent nav. The nav itself draws its own SafeArea on top of
     // this. The extra 16 dp of breathing room sits between the last
-    // scroll-end card and the nav's translucent edge — without it,
+    // scroll-end card and the nav's translucent edge - without it,
     // primary buttons (e.g. Save) ended up flush against the nav.
     const navBreathingRoom = 16.0;
     final bodyBottomPad = kMbBottomNavHeight + bottomSafe + navBreathingRoom;

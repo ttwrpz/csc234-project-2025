@@ -133,8 +133,11 @@ class SkyHeader extends StatelessWidget {
                 ),
               ),
               // Legacy sun glow on the Thriving baseline only - the
-              // tier painter handles the sun on all other tiers.
-              if (state.plantTier == PlantTier.thriving)
+              // tier painter handles the sun on all other tiers. Light
+              // mode only: in dark mode the tier painter draws the moon,
+              // so this sun glow must not render on top of it.
+              if (state.plantTier == PlantTier.thriving &&
+                  theme.brightness == Brightness.light)
                 Positioned(
                   top: 60,
                   right: 34,

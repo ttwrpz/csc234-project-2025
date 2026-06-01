@@ -6,12 +6,12 @@ part 'intervention_record.freezed.dart';
 part 'intervention_record.g.dart';
 
 /// Persisted audit row for a single dispatch. One doc per dispatch at
-/// `users/{uid}/interventions/{dispatchId}`. Create-once + opt-out toggle —
+/// `users/{uid}/interventions/{dispatchId}`. Create-once + opt-out toggle -
 /// every other field is immutable post-create (see `firestore.rules`).
 ///
 /// The repository's `writeRecord` projects this to / from JSON via Freezed's
 /// `fromJson`. The data-layer impl owns `Timestamp` ↔ ISO-string conversion
-/// at the Firestore boundary — this entity holds `DateTime`.
+/// at the Firestore boundary - this entity holds `DateTime`.
 @freezed
 abstract class InterventionRecord with _$InterventionRecord {
   const factory InterventionRecord({

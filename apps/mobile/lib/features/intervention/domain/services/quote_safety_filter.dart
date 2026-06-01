@@ -8,7 +8,7 @@ import '../entities/quote_failure.dart';
 ///
 /// Contract: [gate] returns `Ok(Quote)` when `text` matches one of the
 /// pre-approved phrase templates after light normalization, or
-/// `Err(FilterReject)` when it does not. Fail-CLOSED — any error → curated
+/// `Err(FilterReject)` when it does not. Fail-CLOSED - any error → curated
 /// fallback at the dispatcher.
 ///
 /// The filter is ONLY exercised on the Tier 1/2 hybrid path. Tier 3

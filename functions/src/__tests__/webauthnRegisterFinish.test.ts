@@ -1,12 +1,12 @@
-// webauthnRegisterFinish — Cloud Function tests (ADR-0014 §"Decision B").
+// webauthnRegisterFinish - Cloud Function tests (ADR-0014 §"Decision B").
 //
 // Coverage:
-//   1. Happy path — valid challenge + provisioning + verified attestation
+//   1. Happy path - valid challenge + provisioning + verified attestation
 //      persists the credential doc with the canonical schema and deletes
 //      the challenge (single-use semantics).
 //   2. Stale challenge → `{ ok: false, code: 'challenge_expired' }`; the
 //      challenge doc is cleaned up best-effort even on the reject path.
-//   3. PII canary — across every logger call, the structured payload
+//   3. PII canary - across every logger call, the structured payload
 //      contains `uid` + `outcome` + `latencyMs` only. The challenge
 //      value, clientDataJSON, attestationObject, and publicKey never
 //      appear in any log line.
@@ -40,12 +40,12 @@ jest.unstable_mockModule('firebase-functions', () => ({
   },
 }));
 
-// defineString stub — surface the same `.value()` accessor the handler
+// defineString stub - surface the same `.value()` accessor the handler
 // touches at runtime. Default values mirror the production constants:
 //   production_origin = 'http://localhost:5173' (so isProvisioned()
 //                       returns true under tests)
 //   rpid              = 'localhost'
-//   staging_origins   = (default — handled by the real module).
+//   staging_origins   = (default - handled by the real module).
 jest.unstable_mockModule('firebase-functions/params', () => ({
   defineString: (name: string, opts?: { default?: string }) => ({
     name,
@@ -96,24 +96,26 @@ interface FakeDocRef {
 function makeDocRef(path: string): FakeDocRef {
   return {
     _path: path,
-    get: async () => {
+    get: () => {
       const data = docStore.get(path);
-      return {
+      return Promise.resolve({
         exists: data !== undefined,
         data: () => (data ? { ...data } : undefined),
-      };
+      });
     },
-    set: async (data, opts) => {
+    set: (data, opts) => {
       if (opts?.merge) {
         const existing = docStore.get(path) ?? {};
         docStore.set(path, { ...existing, ...data });
       } else {
         docStore.set(path, { ...data });
       }
+      return Promise.resolve();
     },
-    delete: async () => {
+    delete: () => {
       deletedPaths.push(path);
       docStore.delete(path);
+      return Promise.resolve();
     },
   };
 }
@@ -127,7 +129,7 @@ const firestoreMock = {
 jest.unstable_mockModule('firebase-admin/firestore', () => ({
   getFirestore: () => firestoreMock,
   FieldValue: {
-    // Just a sentinel — the test asserts equality with the same sentinel
+    // Just a sentinel - the test asserts equality with the same sentinel
     // rather than a real server-timestamp.
     serverTimestamp: () => ({ __serverTimestamp: true }),
   },
@@ -165,7 +167,7 @@ let nextVerifyResult: {
   },
 };
 
-const verifyRegistrationMock = jest.fn(async () => nextVerifyResult);
+const verifyRegistrationMock = jest.fn(() => Promise.resolve(nextVerifyResult));
 
 jest.unstable_mockModule('@simplewebauthn/server', () => ({
   verifyRegistrationResponse: verifyRegistrationMock,
@@ -296,7 +298,7 @@ describe('webauthnRegisterFinish handler', () => {
     );
   });
 
-  test('PII canary — log payload never carries the challenge or response body', async () => {
+  test('PII canary - log payload never carries the challenge or response body', async () => {
     const uid = 'uid-pii-1';
     const challengeId = 'pii-challenge-SECRET';
     const secretClientDataJSON = 'CLIENT-DATA-SECRET-VALUE';

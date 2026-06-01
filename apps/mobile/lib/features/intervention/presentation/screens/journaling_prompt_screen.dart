@@ -13,13 +13,13 @@ import '../controllers/intervention_controller.dart';
 import '../widgets/dispatch_safe_defaults.dart';
 import '../widgets/intervention_opt_out_button.dart';
 
-/// Tier 2 surface — gentle journaling prompt.
+/// Tier 2 surface - gentle journaling prompt.
 ///
 /// Renders the dispatched body, a deterministic rotating prompt question
 /// (chosen by `dispatchId.hashCode % prompts.length` so the same dispatch
 /// shows the same prompt across cold launches), a mood chip strip, and a
 /// multi-line text field. Save invokes [SaveMoodEntryUseCase] with
-/// `intensity: 3` — the journaling-as-therapy flow intentionally skips
+/// `intensity: 3` - the journaling-as-therapy flow intentionally skips
 /// the slider step to keep the surface lightweight; the test asserts
 /// this explicitly so a future refactor that adds a slider here has to
 /// update the contract.
@@ -55,7 +55,7 @@ class _JournalingPromptScreenState
   final TextEditingController _textController = TextEditingController();
 
   /// Default mood is `sad` because Tier 2 fires from the sliding-5-of-7
-  /// negative-day algorithm — the user is already in a heavier stretch.
+  /// negative-day algorithm - the user is already in a heavier stretch.
   /// Letting them pick another mood is a single tap on the chip strip.
   MoodType _selectedMood = MoodType.sad;
 
@@ -194,7 +194,7 @@ class _JournalingPromptScreenState
                           ),
                           const SizedBox(height: 16),
                           // The shared `MbInputField` is single-line by
-                          // contract — the journaling surface needs a
+                          // contract - the journaling surface needs a
                           // taller multi-line input so we render a
                           // `TextField` styled to match the design-system
                           // input shell (mb.card surface, mb.line
