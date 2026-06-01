@@ -6,7 +6,7 @@ On Android, tapping **Continue with Google**, picking an account, and then
 immediately getting a "Google sign-in was cancelled" result - even though the
 user did not cancel.
 
-## Root cause (not a code bug)
+## Root cause
 
 The app code is correct:
 

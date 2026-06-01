@@ -54,5 +54,13 @@
         }
       }
     }
+  },
+  "hosting": {
+    "public": "apps/mobile/build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
   }
 }
