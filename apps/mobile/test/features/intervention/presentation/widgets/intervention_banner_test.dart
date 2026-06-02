@@ -174,27 +174,23 @@ void main() {
     );
 
     testWidgets(
-      'Tier 3 dispatch → banner card paints with errorContainer color',
+      'Tier 3 dispatch → banner card paints with the dark-glass surface',
       (tester) async {
         final controller = _SeededController(
           InterventionPending(_dispatch(Tier.three)),
         );
         await tester.pumpWidget(_makeApp(controller: controller));
         await tester.pump();
-        final ctx = tester.element(find.byType(InterventionBanner));
-        final scheme = Theme.of(ctx).colorScheme;
         final materials = tester
             .widgetList<Material>(find.byType(Material))
             .toList();
-        // The banner card is the Material whose color matches
-        // errorContainer; the surrounding Scaffold uses surface, so a
-        // direct presence-check is sufficient.
+        // The banner was unified to the saved-mood MbAppToast dark-glass
+        // look across all tiers (near-black ARGB 235,20,24,30).
+        const darkGlass = Color.fromARGB(235, 20, 24, 30);
         expect(
-          materials.any((m) => m.color == scheme.errorContainer),
+          materials.any((m) => m.color == darkGlass),
           isTrue,
-          reason:
-              'Tier 3 banner must use colorScheme.errorContainer for '
-              'compassionate prominence.',
+          reason: 'Tier 3 banner must use the dark-glass toast surface.',
         );
       },
     );

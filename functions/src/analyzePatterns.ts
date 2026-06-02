@@ -27,7 +27,10 @@ import {
 } from './types.js';
 
 const PATTERNS_RATE_LIMIT_WINDOW_MS = 30_000;
-const PATTERNS_RATE_LIMIT_MAX = 1;
+// Raised from 1 -> 6 per 30s: the Patterns screen re-requests when the user
+// switches the day-range window (7d/14d/30d) and on retries, and 1/30s was
+// rejecting those legitimate follow-ups. Still well below an abuse rate.
+const PATTERNS_RATE_LIMIT_MAX = 6;
 
 /** Wall-clock cap for the Gemini supplementary call. */
 const GEMINI_TIMEOUT_MS = 5_000;

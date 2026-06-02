@@ -39,7 +39,17 @@ class AiAnalysisRepositoryImpl implements AIAnalysisRepository {
       // The function returns a discriminated union on `ok`. Success path goes
       // through the DTO mapper; error path is structural (no DTO).
       if (payload['ok'] == true) {
-        final result = AiSuggestionDto.fromJson(payload).toEntity();
+        // The cloud_functions callable can decode whole-number JSON fields
+        // as `double` on some platforms; json_serializable casts the int
+        // fields with `as int`, which then throws a _TypeError. Coerce the
+        // numeric int fields to int before parsing so the success path is
+        // robust to that num/int variance.
+        final normalized = Map<String, Object?>.from(payload);
+        for (final key in const ['v', 'latencyMs', 'intensity']) {
+          final value = normalized[key];
+          if (value is num) normalized[key] = value.toInt();
+        }
+        final result = AiSuggestionDto.fromJson(normalized).toEntity();
         if (result is Err<AiSuggestion, AiAnalysisFailure>) {
           // Defensive: log only the failure runtimeType - never the input
           // text, never the failure.message (which could echo content).

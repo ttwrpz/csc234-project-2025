@@ -210,60 +210,55 @@ void main() {
     });
   });
 
-  group('InterventionBanner - Tier 3 visual prominence', () {
-    testWidgets(
-      'Tier 3 banner paints with errorContainer for compassionate prominence',
-      (tester) async {
-        final controller = _SeededController(
-          InterventionPending(_dispatch(Tier.three)),
-        );
-        await _pumpBanner(tester, controller: controller);
+  group('InterventionBanner - unified dark-glass toast', () {
+    // The banner was unified to the saved-mood MbAppToast dark-glass look
+    // (near-black ARGB 235,20,24,30) across all tiers, so the compassionate
+    // register is carried by copy + the disclaimer rather than a red card.
+    const darkGlass = Color.fromARGB(235, 20, 24, 30);
 
-        final ctx = tester.element(find.byType(InterventionBanner));
-        final scheme = Theme.of(ctx).colorScheme;
-        // The banner's Material body uses cardColor = errorContainer for
-        // Tier 3. Asserting via the live theme keeps the test stable
-        // across token re-mappings.
-        final materials = tester
-            .widgetList<Material>(find.byType(Material))
-            .toList();
-        expect(
-          materials.any((m) => m.color == scheme.errorContainer),
-          isTrue,
-          reason:
-              'Tier 3 banner must paint with colorScheme.errorContainer - '
-              'visual affordance complements the semantic label.',
-        );
-      },
-    );
+    testWidgets('Tier 3 banner uses the dark-glass toast surface', (
+      tester,
+    ) async {
+      final controller = _SeededController(
+        InterventionPending(_dispatch(Tier.three)),
+      );
+      await _pumpBanner(tester, controller: controller);
 
-    testWidgets(
-      'Tier 1 banner uses surfaceContainerHighest (compassionate, not alarming)',
-      (tester) async {
-        final controller = _SeededController(
-          InterventionPending(_dispatch(Tier.one)),
-        );
-        await _pumpBanner(tester, controller: controller);
+      final materials = tester
+          .widgetList<Material>(find.byType(Material))
+          .toList();
+      expect(
+        materials.any((m) => m.color == darkGlass),
+        isTrue,
+        reason: 'Tier 3 banner paints with the dark-glass toast surface.',
+      );
+    });
 
-        final ctx = tester.element(find.byType(InterventionBanner));
-        final scheme = Theme.of(ctx).colorScheme;
-        final materials = tester
-            .widgetList<Material>(find.byType(Material))
-            .toList();
-        // Tier 1 must NOT use errorContainer - the spec's compassionate
-        // imperative ("Gentle nudges") demands a quieter visual register.
-        expect(
-          materials.any((m) => m.color == scheme.errorContainer),
-          isFalse,
-          reason: 'Tier 1 banner must NOT use errorContainer (Tier 3 only).',
-        );
-        expect(
-          materials.any((m) => m.color == scheme.surfaceContainerHighest),
-          isTrue,
-          reason: 'Tier 1 banner uses surfaceContainerHighest.',
-        );
-      },
-    );
+    testWidgets('Tier 1 banner uses the same dark-glass surface (no alarm)', (
+      tester,
+    ) async {
+      final controller = _SeededController(
+        InterventionPending(_dispatch(Tier.one)),
+      );
+      await _pumpBanner(tester, controller: controller);
+
+      final ctx = tester.element(find.byType(InterventionBanner));
+      final scheme = Theme.of(ctx).colorScheme;
+      final materials = tester
+          .widgetList<Material>(find.byType(Material))
+          .toList();
+      expect(
+        materials.any((m) => m.color == darkGlass),
+        isTrue,
+        reason: 'Tier 1 banner uses the dark-glass toast surface.',
+      );
+      // Still must NOT use the alarming error colour.
+      expect(
+        materials.any((m) => m.color == scheme.errorContainer),
+        isFalse,
+        reason: 'Banner must not use errorContainer.',
+      );
+    });
   });
 
   group('InterventionBanner - 200% type readability', () {

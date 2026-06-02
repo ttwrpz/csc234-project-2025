@@ -11,7 +11,10 @@
 import { getFirestore } from 'firebase-admin/firestore';
 
 export const RATE_LIMIT_WINDOW_MS = 60_000;
-export const RATE_LIMIT_MAX_PER_WINDOW = 10;
+// Raised from 10 -> 30 per window: real usage (rapid mood-text analyses
+// while typing + retries) was hitting the cap. Still bounds abuse / runaway
+// Gemini spend per user.
+export const RATE_LIMIT_MAX_PER_WINDOW = 30;
 
 /** Result of attempting to consume a token for a uid. */
 export interface RateLimitDecision {

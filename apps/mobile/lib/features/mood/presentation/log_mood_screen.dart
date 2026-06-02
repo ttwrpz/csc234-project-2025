@@ -383,26 +383,27 @@ class _PinnedSaveBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
+    // No SafeArea here: the screen Scaffold already wraps its body in a
+    // SafeArea and the app shell adds bottom-nav clearance, so an inner
+    // SafeArea(top:false) double-counted the bottom inset and left a big
+    // gap under the button.
     return DecoratedBox(
       decoration: BoxDecoration(
         color: mb.bg,
         border: Border(top: BorderSide(color: mb.line)),
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            MoodBloomSpacing.pagePadding,
-            MoodBloomSpacing.sm,
-            MoodBloomSpacing.pagePadding,
-            MoodBloomSpacing.sm,
-          ),
-          child: _SaveButton(
-            hasMood: hasMood,
-            loading: loading,
-            isEditMode: isEditMode,
-            onPressed: canSave ? onSave : null,
-          ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          MoodBloomSpacing.pagePadding,
+          MoodBloomSpacing.sm,
+          MoodBloomSpacing.pagePadding,
+          MoodBloomSpacing.sm,
+        ),
+        child: _SaveButton(
+          hasMood: hasMood,
+          loading: loading,
+          isEditMode: isEditMode,
+          onPressed: canSave ? onSave : null,
         ),
       ),
     );
@@ -626,22 +627,23 @@ class _NoteField extends StatelessWidget {
         const SizedBox(height: MoodBloomSpacing.sm),
         MbCard(
           padding: const EdgeInsets.all(12),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 138),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                MoodTextField(value: text, onChanged: onTextChanged),
-                const SizedBox(height: 6),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    '${text.length}/${MoodTextField.maxChars}',
-                    style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
-                  ),
+          // No forced minHeight: the 4-line field + counter size the card
+          // themselves. The previous 138 dp floor left a visible empty
+          // strip below the character counter.
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              MoodTextField(value: text, onChanged: onTextChanged),
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '${text.length}/${MoodTextField.maxChars}',
+                  style: MbFonts.nunito(fontSize: 11, color: mb.textDim),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],
@@ -674,10 +676,10 @@ class _MediaSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const MbSectionLabel('ATTACH A PHOTO'),
+          const MbSectionLabel('ATTACH A PHOTO (OPTIONAL)'),
           const SizedBox(height: 4),
           Text(
-            'Add a photo to remember the moment - optional.',
+            'Add a photo to remember the moment.',
             style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
           ),
           const SizedBox(height: MoodBloomSpacing.sm),

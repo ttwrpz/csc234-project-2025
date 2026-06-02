@@ -291,9 +291,10 @@ describe('analyzeMoodText handler', () => {
     expect(res).toMatchObject({ ok: true, mood: 'happy' });
   });
 
-  // 4. 11th call in 60s → rate_limited with retryAfterSec ∈ [1, 60].
-  test('4. 11th call → rate_limited with retryAfterSec in [1,60]', async () => {
-    for (let i = 0; i < 10; i++) {
+  // 4. 31st call in 60s → rate_limited with retryAfterSec ∈ [1, 60].
+  //    (Cap raised to 30/window.)
+  test('4. 31st call → rate_limited with retryAfterSec in [1,60]', async () => {
+    for (let i = 0; i < 30; i++) {
       const ok = await handleAnalyzeMoodText(call('u1', validBody('hi')) as never);
       expect((ok as { ok: boolean }).ok).toBe(true);
     }
@@ -320,9 +321,9 @@ describe('analyzeMoodText handler', () => {
     expect(res).toMatchObject({ ok: true });
   });
 
-  // 6. 15 concurrent calls → exactly 10 succeed.
-  test('6. 15 concurrent calls → exactly 10 succeed', async () => {
-    const calls = Array.from({ length: 15 }, () =>
+  // 6. 35 concurrent calls → exactly 30 succeed (cap raised to 30/window).
+  test('6. 35 concurrent calls → exactly 30 succeed', async () => {
+    const calls = Array.from({ length: 35 }, () =>
       handleAnalyzeMoodText(call('u1', validBody('concurrent')) as never),
     );
     const results = await Promise.all(calls);
@@ -331,7 +332,7 @@ describe('analyzeMoodText handler', () => {
       (r) => (r as { ok: boolean; code?: string }).ok === false &&
         (r as { code?: string }).code === 'rate_limited',
     ).length;
-    expect(successes).toBe(10);
+    expect(successes).toBe(30);
     expect(limited).toBe(5);
   });
 

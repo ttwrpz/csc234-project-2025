@@ -296,12 +296,15 @@ describe('analyzePatterns handler', () => {
     expect(res).toMatchObject({ ok: false, code: 'invalid_input' });
   });
 
-  test('3. rate-limit exceeded → second call within 30s returns rate_limited with retryAfterSec', async () => {
+  test('3. rate-limit exceeded → 7th call within 30s returns rate_limited with retryAfterSec', async () => {
     const req = makeRequest('uid-rate', makeRequestData([])) as unknown as Parameters<
       typeof handleAnalyzePatterns
     >[0];
-    const first = await handleAnalyzePatterns(req);
-    expect(first).toMatchObject({ ok: true });
+    // Cap raised to 6/30s: the first 6 calls succeed, the 7th is limited.
+    for (let i = 0; i < 6; i++) {
+      const ok = await handleAnalyzePatterns(req);
+      expect(ok).toMatchObject({ ok: true });
+    }
 
     const second = await handleAnalyzePatterns(req);
     expect(second).toMatchObject({
