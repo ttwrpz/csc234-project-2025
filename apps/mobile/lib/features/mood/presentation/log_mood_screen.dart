@@ -167,7 +167,12 @@ class _LogMoodScreenState extends ConsumerState<LogMoodScreen> {
 
     return Scaffold(
       backgroundColor: mb.bg,
+      // bottom:false - the app shell already pads the body by
+      // (navHeight + bottomSafe + breathingRoom). Applying the bottom
+      // inset here too double-counts it and leaves a big gap under the
+      // pinned Save bar.
       body: SafeArea(
+        bottom: false,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(
@@ -395,9 +400,9 @@ class _PinnedSaveBar extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           MoodBloomSpacing.pagePadding,
-          MoodBloomSpacing.sm,
+          MoodBloomSpacing.md,
           MoodBloomSpacing.pagePadding,
-          MoodBloomSpacing.sm,
+          0,
         ),
         child: _SaveButton(
           hasMood: hasMood,

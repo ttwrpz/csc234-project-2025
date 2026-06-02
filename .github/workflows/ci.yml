@@ -11,7 +11,7 @@
 #   3. functions - TypeScript build + lint + jest for the Cloud Functions
 #      proxy. Skips gracefully until functions/package.json exists (D3.1
 #      lands the analyzeMoodText function per ADR-0003).
-name: CI
+name: Lint Test and Validate on push and pull request
 
 on:
   push:
@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   flutter:
-    name: Flutter - format, analyze, test, domain purity
+    name: Flutter format analyze test and domain purity
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -227,10 +227,10 @@ jobs:
             PCT="n/a"
           fi
           gh pr comment "${{ github.event.pull_request.number }}" \
-            --body "📊 **Coverage:** ${PCT}% (${HIT} / ${TOTAL} lines hit) - _from CI run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})_"
+            --body "**Coverage:** ${PCT}% (${HIT} / ${TOTAL} lines hit) - _from CI run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})_"
 
   firestore-rules:
-    name: Firestore + Storage rules emulator tests
+    name: Firestore and Storage rules emulator tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -274,7 +274,7 @@ jobs:
             "cd firebase/test && pnpm test"
 
   functions:
-    name: Cloud Functions - lint, build, test
+    name: Cloud Functions lint build and test
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

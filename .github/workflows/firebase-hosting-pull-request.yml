@@ -13,7 +13,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cd apps/mobile && flutter build web --release
+
+      - name: Set up Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # Local path packages must be resolved before the app, and codegen
+      # (Freezed / Riverpod / json_serializable) must run because generated
+      # files are not checked in. Mirrors ci.yml.
+      - name: flutter pub get (packages/core)
+        working-directory: packages/core
+        run: flutter pub get
+
+      - name: flutter pub get (packages/design_system)
+        working-directory: packages/design_system
+        run: flutter pub get
+
+      - name: flutter pub get (packages/analytics)
+        working-directory: packages/analytics
+        run: flutter pub get
+
+      - name: flutter pub get (apps/mobile)
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: Run build_runner (apps/mobile)
+        working-directory: apps/mobile
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+
+      - name: Build web (release)
+        working-directory: apps/mobile
+        run: flutter build web --release
+
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

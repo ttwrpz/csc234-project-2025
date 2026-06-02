@@ -721,7 +721,14 @@ class _AppShellState extends ConsumerState<_AppShell> {
     // this. The extra 16 dp of breathing room sits between the last
     // scroll-end card and the nav's translucent edge - without it,
     // primary buttons (e.g. Save) ended up flush against the nav.
-    const navBreathingRoom = 16.0;
+    //
+    // Exception: the Log branch (index 2) pins its own Save bar to the
+    // bottom of the body via an Expanded column. That bar carries its own
+    // top border for separation and is meant to hug the nav, so the 16 dp
+    // breathing room reads as a dead gap under the button there. Zero it
+    // for that branch only; every scrolling branch keeps the breathing room.
+    final isPinnedBarBranch = _activeNavIndex(context) == 2;
+    final navBreathingRoom = isPinnedBarBranch ? 0.0 : 16.0;
     final bodyBottomPad = kMbBottomNavHeight + bottomSafe + navBreathingRoom;
 
     return Scaffold(

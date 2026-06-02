@@ -109,7 +109,3 @@ Feature flag, revert, hotfix, or runbook reference.
 
 - [ ] N/A - no codegen outputs touched
 - [ ] Codegen ran; generated files committed verbatim
-
----
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
