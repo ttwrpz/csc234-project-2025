@@ -20,6 +20,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
 
+  // Owned by the State and disposed below; creating them inline in build()
+  // leaked a recognizer on every keystroke rebuild and left the taps flaky.
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +41,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     _confirmController.addListener(
       () => controller.setConfirmPassword(_confirmController.text),
     );
+    _termsRecognizer = TapGestureRecognizer()
+      ..onTap = () => context.push('/legal/terms');
+    _privacyRecognizer = TapGestureRecognizer()
+      ..onTap = () => context.push('/legal/privacy-policy');
   }
 
   @override
@@ -44,6 +53,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
     super.dispose();
   }
 
@@ -181,8 +192,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                 fontWeight: FontWeight.w600,
                                 decoration: TextDecoration.underline,
                               ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () => context.push('/legal/terms'),
+                              recognizer: _termsRecognizer,
                             ),
                             const TextSpan(text: ' and '),
                             TextSpan(
@@ -193,9 +203,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                 fontWeight: FontWeight.w600,
                                 decoration: TextDecoration.underline,
                               ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () =>
-                                    context.push('/legal/privacy-policy'),
+                              recognizer: _privacyRecognizer,
                             ),
                             const TextSpan(text: '.'),
                           ],

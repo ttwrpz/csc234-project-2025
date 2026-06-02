@@ -247,7 +247,8 @@ class _CrisisResourcesScreenState extends ConsumerState<CrisisResourcesScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Center(
+                  SizedBox(
+                    width: double.infinity,
                     child: InterventionOptOutButton(
                       label: "I'm okay for now",
                       onTapped: () {

@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../auth/data/providers.dart';
+import '../../../disclaimer/domain/disclaimer_copy.dart';
 import '../../../mood/data/providers.dart' show saveMoodEntryUseCaseProvider;
 import '../../../mood/domain/entities/mood_draft.dart';
 import '../../../mood/domain/entities/mood_type.dart';
+import '../../../mood/presentation/widgets/intensity_slider.dart';
 import '../../domain/entities/intervention_dispatch.dart';
 import '../controllers/intervention_controller.dart';
 import '../widgets/dispatch_safe_defaults.dart';
@@ -15,14 +17,13 @@ import '../widgets/intervention_opt_out_button.dart';
 
 /// Tier 2 surface - gentle journaling prompt.
 ///
-/// Renders the dispatched body, a deterministic rotating prompt question
-/// (chosen by `dispatchId.hashCode % prompts.length` so the same dispatch
-/// shows the same prompt across cold launches), a mood chip strip, and a
-/// multi-line text field. Save invokes [SaveMoodEntryUseCase] with
-/// `intensity: 3` - the journaling-as-therapy flow intentionally skips
-/// the slider step to keep the surface lightweight; the test asserts
-/// this explicitly so a future refactor that adds a slider here has to
-/// update the contract.
+/// Renders the dispatched message, a deterministic rotating prompt
+/// question (chosen by `dispatchId.hashCode % prompts.length` so the same
+/// dispatch shows the same prompt across cold launches), a mood chip
+/// strip, an intensity slider (1..5, defaults to 3), and a multi-line text
+/// field. Save invokes [SaveMoodEntryUseCase] with the selected mood +
+/// intensity. The medical disclaimer is split off the message and shown as
+/// a small footnote beneath the text field.
 ///
 /// CTA layout:
 ///   - "Save"        → primary; persists then `complete()` + pop.
@@ -59,6 +60,10 @@ class _JournalingPromptScreenState
   /// Letting them pick another mood is a single tap on the chip strip.
   MoodType _selectedMood = MoodType.sad;
 
+  /// Intensity 1..5. Defaults to the neutral middle; the journaling entry
+  /// is a real mood log, so the user can set how strong it felt.
+  int _intensity = 3;
+
   bool _isSaving = false;
 
   @override
@@ -92,9 +97,7 @@ class _JournalingPromptScreenState
     final useCase = ref.read(saveMoodEntryUseCaseProvider);
     final draft = MoodDraft(
       mood: _selectedMood,
-      // Intensity 3 is the neutral default; the journaling flow skips the
-      // slider step on purpose (engineer-brief contract).
-      intensity: 3,
+      intensity: _intensity,
       text: _textController.text,
     );
     final result = await useCase(userId: uid, draft: draft);
@@ -125,6 +128,16 @@ class _JournalingPromptScreenState
     final theme = Theme.of(context);
     final mb = theme.extension<MbColors>();
     final textColor = mb?.text ?? theme.colorScheme.onSurface;
+    // Body is composed as "<message>\n\n<disclaimer footer>". Split so the
+    // message reads on its own and the disclaimer drops to a small footnote
+    // under the text field (kept for compliance, no longer at the top).
+    final footerIdx = _bodyText.indexOf(DisclaimerCopy.notificationFooter);
+    final messageText = footerIdx >= 0
+        ? _bodyText.substring(0, footerIdx).trim()
+        : _bodyText;
+    final disclaimer = footerIdx >= 0
+        ? DisclaimerCopy.notificationFooter
+        : null;
     return Scaffold(
       backgroundColor: mb?.bg,
       resizeToAvoidBottomInset: true,
@@ -162,7 +175,7 @@ class _JournalingPromptScreenState
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            _bodyText,
+                            messageText,
                             style: theme.textTheme.bodyLarge?.copyWith(
                               color: textColor,
                             ),
@@ -191,6 +204,21 @@ class _JournalingPromptScreenState
                                   },
                                 ),
                             ],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'How strong did it feel?',
+                            style: MbFonts.nunito(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          IntensitySlider(
+                            intensity: _intensity,
+                            mood: _selectedMood,
+                            onChanged: (v) => setState(() => _intensity = v),
                           ),
                           const SizedBox(height: 16),
                           // The shared `MbInputField` is single-line by
@@ -241,6 +269,20 @@ class _JournalingPromptScreenState
                               ),
                             ),
                           ),
+                          if (disclaimer != null) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              disclaimer,
+                              style: MbFonts.nunito(
+                                fontSize: 11,
+                                height: 1.4,
+                                fontStyle: FontStyle.italic,
+                                color:
+                                    mb?.textDim ??
+                                    theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

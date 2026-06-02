@@ -152,15 +152,18 @@ class InterventionBanner extends ConsumerWidget {
                           ),
                         ],
                         const SizedBox(height: MoodBloomSpacing.md),
+                        // Equal-width action buttons - each fills half the
+                        // row so "I'm okay" and "Open" read as a matched pair
+                        // rather than two differently-sized chips.
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            const InterventionOptOutButton(),
+                            const Expanded(child: InterventionOptOutButton()),
                             const SizedBox(width: 8),
-                            MbPrimaryButton(
-                              label: 'Open',
-                              fullWidth: false,
-                              onPressed: openTier,
+                            Expanded(
+                              child: MbPrimaryButton(
+                                label: 'Open',
+                                onPressed: openTier,
+                              ),
                             ),
                           ],
                         ),

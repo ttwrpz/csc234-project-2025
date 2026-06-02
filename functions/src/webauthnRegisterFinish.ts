@@ -39,7 +39,7 @@ import {
   WEBAUTHN_STAGING_ORIGINS,
   isProvisioned,
   resolveExpectedOrigins,
-  resolveExpectedRpId,
+  resolveExpectedRpIds,
 } from './webauthnConstants.js';
 
 export interface WebauthnRegisterFinishResponse {
@@ -87,8 +87,8 @@ export async function handleWebauthnRegisterFinish(
     return { ok: false, code: 'webauthn_not_provisioned' };
   }
 
-  const rpId = resolveExpectedRpId();
-  if (rpId === null) {
+  const rpIds = resolveExpectedRpIds();
+  if (rpIds.length === 0) {
     return { ok: false, code: 'webauthn_not_provisioned' };
   }
 
@@ -140,7 +140,7 @@ export async function handleWebauthnRegisterFinish(
       response: attestation as unknown as Parameters<typeof verifyRegistrationResponse>[0]['response'],
       expectedChallenge,
       expectedOrigin: resolveExpectedOrigins(),
-      expectedRPID: rpId,
+      expectedRPID: rpIds,
       requireUserVerification: false,
     });
   } catch (e) {

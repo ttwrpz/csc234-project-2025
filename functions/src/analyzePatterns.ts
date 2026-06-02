@@ -37,11 +37,15 @@ const GEMINI_TIMEOUT_MS = 5_000;
 
 /**
  * Sample-size floor below which we skip the Gemini supplementary call
- * entirely. Below 30 entries the model has too little signal to give
- * a meaningful theme - and the sample-size floor would clamp its
- * confidence to ≤0.5 anyway. Saving the round-trip + the Gemini quota.
+ * entirely. The history is clipped to the selected day range (7/14/30d)
+ * before this check, and the prompt now returns a gentle descriptive
+ * reflection even for small/mixed windows (instead of bailing to "no clear
+ * theme"), so the floor only needs to guarantee there is *something* to
+ * reflect on. 3 is that minimum; below it we skip the round-trip, and the
+ * sample-size floor (PATTERN_SAMPLE_FLOOR) caps confidence to ≤0.5 for
+ * anything under 10 samples anyway.
  */
-const PATTERNS_GEMINI_SAMPLE_FLOOR = 30;
+const PATTERNS_GEMINI_SAMPLE_FLOOR = 3;
 
 /** Mood codes that are NOT positive. Mirrors `MoodType.category` on
  *  Dart. `okay` is classified as positive (sign +1), so it is excluded
@@ -416,8 +420,26 @@ export async function handleAnalyzePatterns(
     );
   }
 
-  // 4. Statistical compute (always - deterministic happy path).
-  const numeric = preparseHistory(parsed.history);
+  // 4. Clip the history to the selected day range, THEN compute, so every
+  // insight reflects the windowDays the user picked on the chip (7/14/30)
+  // instead of the whole account. Anchored on the latest ENTRY date (not
+  // the server clock) - keeps the suite deterministic and gives an inactive
+  // user their most recent window. Entry dates are local-day ISO strings,
+  // so the lexical `>=` compare is a date compare.
+  const latestEntryDate = parsed.history.reduce<string>(
+    (acc, e) => (e.date > acc ? e.date : acc),
+    '',
+  );
+  let windowedHistory = parsed.history;
+  if (latestEntryDate !== '') {
+    const cutoff = new Date(`${latestEntryDate}T00:00:00Z`);
+    cutoff.setUTCDate(cutoff.getUTCDate() - (parsed.windowDays - 1));
+    const cutoffIso = cutoff.toISOString().slice(0, 10);
+    windowedHistory = parsed.history.filter((e) => e.date >= cutoffIso);
+  }
+
+  // 4b. Statistical compute (always - deterministic happy path).
+  const numeric = preparseHistory(windowedHistory);
   const insights: PatternInsight[] = [];
 
   const wkd = weekdayInsight(numeric, generatedAt);
@@ -447,8 +469,14 @@ export async function handleAnalyzePatterns(
     | 'parse_error'
     | 'gemini_unavailable'
     | null = null;
+  // PII-safe failure class for the skip path: the Error constructor name
+  // only (e.g. 'SyntaxError' = empty/truncated/malformed model output;
+  // 'ZodError' = output parsed but failed the theme schema). Never the
+  // error message - JSON.parse messages can echo a fragment of the model
+  // output. Lets us tell *why* a parse_error happened from the logs alone.
+  let geminiErrorName: string | null = null;
 
-  if (parsed.history.length < PATTERNS_GEMINI_SAMPLE_FLOOR) {
+  if (windowedHistory.length < PATTERNS_GEMINI_SAMPLE_FLOOR) {
     geminiSkipped = true;
     geminiSkipReason = 'sample_too_small';
   } else {
@@ -456,21 +484,22 @@ export async function handleAnalyzePatterns(
     const timer = setTimeout(() => ac.abort(), GEMINI_TIMEOUT_MS);
     try {
       const gem = await analyzeForPatterns(
-        parsed.history,
+        windowedHistory,
         parsed.windowDays,
         ac.signal,
       );
       clearTimeout(timer);
       try {
         const validated = GeminiThemeResponseSchema.parse(gem.raw);
-        const sampleSize = parsed.history.length;
-        // Sample-size floor is irrelevant here (we only call when ≥30),
-        // but Gemini-emitted confidence is capped at PATTERN_GEMINI_MAX_CONFIDENCE
-        // regardless - the model cannot claim "high" certainty on a
-        // theme it inferred from numeric codes alone.
-        const confidence = Math.min(
-          validated.confidence,
-          PATTERN_GEMINI_MAX_CONFIDENCE,
+        const sampleSize = windowedHistory.length;
+        // Cap Gemini's confidence at PATTERN_GEMINI_MAX_CONFIDENCE (it can't
+        // claim "high" certainty from numeric codes alone), THEN apply the
+        // sample-size floor: a narrow day range can now feed as few as
+        // PATTERNS_GEMINI_SAMPLE_FLOOR entries, and a small sample must not
+        // present as high confidence.
+        const confidence = applySampleFloor(
+          Math.min(validated.confidence, PATTERN_GEMINI_MAX_CONFIDENCE),
+          sampleSize,
         );
         insights.push({
           id: 'gemini',
@@ -480,14 +509,16 @@ export async function handleAnalyzePatterns(
           sampleSize,
           generatedAt,
         });
-      } catch {
+      } catch (e) {
         // Schema validation failed - Gemini returned malformed JSON.
         geminiSkipped = true;
         geminiSkipReason = 'parse_error';
+        geminiErrorName = e instanceof Error ? e.name : 'unknown';
       }
     } catch (e) {
       clearTimeout(timer);
       geminiSkipped = true;
+      geminiErrorName = e instanceof Error ? e.name : 'unknown';
       const aborted = ac.signal.aborted;
       const isSyntax = e instanceof SyntaxError;
       if (isSyntax) {
@@ -511,10 +542,12 @@ export async function handleAnalyzePatterns(
     outcome: 'success',
     windowDays: parsed.windowDays,
     historyLen: parsed.history.length,
+    windowedLen: windowedHistory.length,
     insightCount: insights.length,
     statisticalInsightCount,
     geminiSkipped,
     geminiSkipReason,
+    geminiErrorName,
     latencyTotalMs: totalLatencyMs,
     rateLimit: {
       remaining: rateLimit.remaining,

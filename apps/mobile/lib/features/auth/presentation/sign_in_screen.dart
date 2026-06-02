@@ -28,6 +28,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   /// doesn't go through the email/Google submit path.
   bool _webauthnBusy = false;
 
+  /// Legal-link tap recognizers. Owned by the State and disposed in
+  /// [dispose] - creating them inline in `build()` leaked a recognizer on
+  /// every rebuild (and this screen rebuilds on every keystroke via the
+  /// email/password listeners), which left the Terms / Privacy taps
+  /// unreliable. Stable instances fix both the leak and the dead taps.
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
+
   @override
   void initState() {
     super.initState();
@@ -38,12 +46,20 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     _passwordController.addListener(
       () => controller.setPassword(_passwordController.text),
     );
+    // onTap reads `context` lazily at tap time (when the State is mounted),
+    // so capturing it here is safe.
+    _termsRecognizer = TapGestureRecognizer()
+      ..onTap = () => context.push('/legal/terms');
+    _privacyRecognizer = TapGestureRecognizer()
+      ..onTap = () => context.push('/legal/privacy-policy');
   }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
     super.dispose();
   }
 
@@ -248,8 +264,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                 fontWeight: FontWeight.w600,
                                 decoration: TextDecoration.underline,
                               ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () => context.push('/legal/terms'),
+                              recognizer: _termsRecognizer,
                             ),
                             const TextSpan(text: ' and '),
                             TextSpan(
@@ -260,9 +275,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                 fontWeight: FontWeight.w600,
                                 decoration: TextDecoration.underline,
                               ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () =>
-                                    context.push('/legal/privacy-policy'),
+                              recognizer: _privacyRecognizer,
                             ),
                             const TextSpan(text: '.'),
                           ],

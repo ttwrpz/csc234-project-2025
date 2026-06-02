@@ -38,7 +38,7 @@ import {
   WEBAUTHN_RPID,
   WEBAUTHN_STAGING_ORIGINS,
   isProvisioned,
-  resolveExpectedRpId,
+  resolveRpIdForOrigin,
 } from './webauthnConstants.js';
 
 const RATE_LIMIT_COLLECTION = 'rateLimits.webauthn';
@@ -117,7 +117,16 @@ export async function handleWebauthnRegisterStart(
     };
   }
 
-  const rpId = resolveExpectedRpId();
+  // The RPID must match the host the ceremony runs on (localhost vs the
+  // hosted origin), so derive it from the caller's browser Origin rather
+  // than a single static value. The finish leg verifies against the full
+  // set of valid RPIDs (resolveExpectedRpIds), so this just picks which
+  // one this credential gets bound to.
+  const callerOrigin =
+    typeof request.rawRequest?.headers?.origin === 'string'
+      ? request.rawRequest.headers.origin
+      : undefined;
+  const rpId = resolveRpIdForOrigin(callerOrigin);
   if (rpId === null) {
     // isProvisioned() above guarantees this can't happen in practice,
     // but the null-check satisfies the type system and provides

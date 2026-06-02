@@ -37,7 +37,7 @@ import {
   WEBAUTHN_RPID,
   WEBAUTHN_STAGING_ORIGINS,
   isProvisioned,
-  resolveExpectedRpId,
+  resolveRpIdForOrigin,
 } from './webauthnConstants.js';
 
 const RATE_LIMIT_COLLECTION = 'rateLimits.webauthn';
@@ -72,7 +72,14 @@ export async function handleWebauthnAssertionStart(
     });
     return { ok: false, code: 'webauthn_not_provisioned' };
   }
-  const rpId = resolveExpectedRpId();
+  // Derive the RPID from the caller's Origin so the challenge is bound to
+  // the host the ceremony actually runs on (localhost vs the hosted
+  // origin). Finish verifies against the full RPID set.
+  const callerOrigin =
+    typeof request.rawRequest?.headers?.origin === 'string'
+      ? request.rawRequest.headers.origin
+      : undefined;
+  const rpId = resolveRpIdForOrigin(callerOrigin);
   if (rpId === null) {
     return { ok: false, code: 'webauthn_not_provisioned' };
   }

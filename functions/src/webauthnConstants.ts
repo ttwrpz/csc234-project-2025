@@ -70,9 +70,11 @@ export function resolveExpectedOrigins(): string[] {
 }
 
 /**
- * Resolve the RPID. Returns `null` when unset - callers should treat
- * `null` as "not provisioned" and short-circuit before issuing a
- * challenge.
+ * Resolve the statically-configured RPID. Returns `null` when unset.
+ * This is the fallback used when the caller's origin can't be matched to
+ * the allow-list (e.g. a non-browser caller with no `Origin` header).
+ * Prefer `resolveRpIdForOrigin` on the start legs and
+ * `resolveExpectedRpIds` on the finish legs.
  */
 export function resolveExpectedRpId(): string | null {
   const v = WEBAUTHN_RPID.value().trim();
@@ -80,27 +82,71 @@ export function resolveExpectedRpId(): string | null {
 }
 
 /**
- * True when at least one valid origin (production OR a non-empty staging
- * list) is configured AND a non-empty RPID exists. The CFs short-circuit
- * with `webauthn_not_provisioned` when this is false.
+ * The RPID for an origin is its host (no scheme, no port), e.g.
+ * `http://localhost:5173` -> `localhost`. Per the WebAuthn spec the RPID
+ * must equal, or be a registrable suffix of, the page's host; the host is
+ * the most specific (safest) choice. Returns `null` for a bad origin.
+ */
+function originToRpId(origin: string): string | null {
+  try {
+    const host = new URL(origin).hostname;
+    return host.length > 0 ? host : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Pick the RPID for THIS ceremony from the caller's browser `Origin`. A
+ * credential is bound to one RPID and the browser refuses a ceremony whose
+ * RPID isn't the page's host, so a single static RPID can't serve both
+ * localhost and the hosted origin - it must track the running origin.
+ * Only allow-listed origins yield a derived RPID (others fall back to the
+ * static `WEBAUTHN_RPID`), and finish still pins origin + rpIdHash, so a
+ * mismatched start just fails closed.
+ */
+export function resolveRpIdForOrigin(
+  callerOrigin: string | undefined,
+): string | null {
+  if (callerOrigin && resolveExpectedOrigins().includes(callerOrigin)) {
+    const host = originToRpId(callerOrigin);
+    if (host !== null) return host;
+  }
+  return resolveExpectedRpId();
+}
+
+/**
+ * Every RPID a verification may accept: the host of each allow-listed
+ * origin plus the static `WEBAUTHN_RPID`, deduped. Passed as `expectedRPID`
+ * to `verify*Response` so a credential registered on localhost OR the
+ * hosted origin verifies on its own environment. Empty array means not
+ * provisioned.
+ */
+export function resolveExpectedRpIds(): string[] {
+  const ids = new Set<string>();
+  for (const origin of resolveExpectedOrigins()) {
+    const host = originToRpId(origin);
+    if (host !== null) ids.add(host);
+  }
+  const explicit = resolveExpectedRpId();
+  if (explicit !== null) ids.add(explicit);
+  return [...ids];
+}
+
+/**
+ * True when at least one RPID can be resolved - i.e. at least one valid
+ * origin (production OR a non-empty staging list) is configured, OR a
+ * static `WEBAUTHN_RPID` is set. The CFs short-circuit with
+ * `webauthn_not_provisioned` when this is false.
  *
- * Why staging origins now count: a dev or staging deploy with a
- * configured staging allow-list is a legitimate, fully-verifiable
- * environment - the ceremony's `expectedOrigin` check still pins each
- * assertion to one of those origins, so the security boundary is
- * unchanged. Previously the gate refused staging-only setups, which made
- * WebAuthn impossible to exercise before a production origin existed.
- * The dark-flag check still happens client-side via `kEnableWebauthn`.
+ * Why staging origins count: a dev or staging deploy with a configured
+ * staging allow-list is a legitimate, fully-verifiable environment - the
+ * ceremony's `expectedOrigin` check still pins each assertion to one of
+ * those origins, so the security boundary is unchanged. Previously the
+ * gate refused staging-only setups, which made WebAuthn impossible to
+ * exercise before a production origin existed. The dark-flag check still
+ * happens client-side via `kEnableWebauthn`.
  */
 export function isProvisioned(): boolean {
-  const productionConfigured =
-    WEBAUTHN_PRODUCTION_ORIGIN.value().trim().length > 0;
-  const stagingConfigured = WEBAUTHN_STAGING_ORIGINS.value()
-    .split(',')
-    .map((s) => s.trim())
-    .some((s) => s.length > 0);
-  return (
-    (productionConfigured || stagingConfigured) &&
-    resolveExpectedRpId() !== null
-  );
+  return resolveExpectedRpIds().length > 0;
 }

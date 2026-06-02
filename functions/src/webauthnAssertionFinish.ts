@@ -45,7 +45,7 @@ import {
   WEBAUTHN_STAGING_ORIGINS,
   isProvisioned,
   resolveExpectedOrigins,
-  resolveExpectedRpId,
+  resolveExpectedRpIds,
 } from './webauthnConstants.js';
 
 // Rate-limit ladder mirrors the PIN side
@@ -99,8 +99,8 @@ export async function handleWebauthnAssertionFinish(
     });
     return { ok: false, code: 'webauthn_not_provisioned' };
   }
-  const rpId = resolveExpectedRpId();
-  if (rpId === null) {
+  const rpIds = resolveExpectedRpIds();
+  if (rpIds.length === 0) {
     return { ok: false, code: 'webauthn_not_provisioned' };
   }
 
@@ -205,7 +205,7 @@ export async function handleWebauthnAssertionFinish(
       response: assertion as unknown as Parameters<typeof verifyAuthenticationResponse>[0]['response'],
       expectedChallenge,
       expectedOrigin: resolveExpectedOrigins(),
-      expectedRPID: rpId,
+      expectedRPID: rpIds,
       credential: {
         id: credentialId,
         publicKey: publicKeyBytes,

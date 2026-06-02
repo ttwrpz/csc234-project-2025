@@ -340,11 +340,9 @@ class _GardenSection extends StatelessWidget {
           style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
         ),
         trailing: Icon(Icons.chevron_right, color: mb.textDim, size: 22),
-        // The /garden/skins route lands in Phase 12. Until then the
-        // navigation no-ops cleanly via go_router's not-found gate. We
-        // wire the tap unconditionally so the affordance reads "live"
-        // in the redesign sprint.
-        onTap: () => context.go('/garden/skins'),
+        // push (not go) so the Skin Shop lands on top of the nav stack and
+        // a system back returns here instead of exiting the app.
+        onTap: () => context.push('/garden/skins'),
       ),
     );
   }

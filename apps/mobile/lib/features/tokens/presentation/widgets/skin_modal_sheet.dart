@@ -16,8 +16,9 @@ class SkinModalSheet {
   const SkinModalSheet._();
 
   /// Navigates to `/garden/skins`. Async signature is preserved for
-  /// compatibility with the old `showModalBottomSheet` call.
+  /// compatibility with the old `showModalBottomSheet` call. Uses push so
+  /// a system back pops the shop instead of exiting the app.
   static Future<void> show(BuildContext context) async {
-    context.go('/garden/skins');
+    context.push('/garden/skins');
   }
 }

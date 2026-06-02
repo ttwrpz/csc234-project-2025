@@ -103,7 +103,7 @@ class _GreenTokenPill extends StatelessWidget {
           color: bg,
           borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
           child: InkWell(
-            onTap: () => context.go('/garden/skins'),
+            onTap: () => context.push('/garden/skins'),
             borderRadius: BorderRadius.circular(MoodBloomSpacing.radiusFull),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

@@ -126,6 +126,7 @@ class _InsightsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mb = Theme.of(context).extension<MbColors>()!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
         Container(
@@ -173,10 +174,16 @@ class _InsightsHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: const Color(0xFFE8A23B).withValues(alpha: 0.16),
+            // Lift the wash + border in dark mode so the pill reads against
+            // navy instead of disappearing into it.
+            color: const Color(
+              0xFFE8A23B,
+            ).withValues(alpha: isDark ? 0.26 : 0.16),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: const Color(0xFFE8A23B).withValues(alpha: 0.5),
+              color: const Color(
+                0xFFE8A23B,
+              ).withValues(alpha: isDark ? 0.7 : 0.5),
             ),
           ),
           child: Text(
@@ -184,7 +191,9 @@ class _InsightsHeader extends StatelessWidget {
             style: MbFonts.nunito(
               fontSize: 10,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF8A5A1F),
+              // Dark brown reads on the light wash but vanishes on navy;
+              // switch to a bright amber in dark mode for WCAG contrast.
+              color: isDark ? const Color(0xFFF2C078) : const Color(0xFF8A5A1F),
               letterSpacing: 0.5,
             ),
           ),

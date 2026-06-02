@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -130,7 +131,10 @@ Widget _makeApp({
         SaveMoodEntryUseCase(repository: moodRepo),
       ),
     ],
-    child: MaterialApp.router(routerConfig: router),
+    // The screen now hosts an IntensitySlider, which reads the MbColors +
+    // MbMoodPalette theme extensions; supply the real app theme so the
+    // widget builds as it does in production.
+    child: MaterialApp.router(routerConfig: router, theme: buildLightTheme()),
   );
 }
 
@@ -219,8 +223,8 @@ void main() {
           repo.saved.first.intensity,
           3,
           reason:
-              'The journaling flow skips the slider step on purpose - '
-              'intensity defaults to 3 (neutral).',
+              'The intensity slider defaults to 3 (neutral); this test does '
+              'not move it, so the saved entry keeps the default.',
         );
         expect(repo.saved.first.mood, MoodType.sad);
         expect(controller.completeCalls, 1);

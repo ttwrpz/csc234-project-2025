@@ -163,7 +163,12 @@ export async function analyze(
       systemInstruction: SYSTEM_PROMPT,
       temperature: 0.2,
       topP: 0.9,
-      maxOutputTokens: 200,
+      // gemini-2.5-flash "thinking" is charged against maxOutputTokens; a
+      // 200-token cap let it think away the whole budget and emit no content
+      // (finishReason=MAX_TOKENS), which surfaced as a constant parse_error.
+      // Disable thinking for this structured classifier and widen the cap.
+      maxOutputTokens: 512,
+      thinkingConfig: { thinkingBudget: 0 },
       responseMimeType: 'application/json',
       responseSchema: RESPONSE_SCHEMA,
       abortSignal: signal,
@@ -262,14 +267,26 @@ RULES
    instead of "You should" / "You must".
 5. Refer to themes and rhythms ("evenings have felt heavier this week"),
    never to specific calendar dates from the input.
-6. If the entries do not show a clear theme, return
-   {"insightText":"Your entries show no clear theme yet.","confidence":0.2}.
+6. ALWAYS offer one gentle, present-tense reflection of what the entries
+   actually show - the prevailing feeling, or the mix ("a blend of calm
+   with a couple of heavier days"). Describe what is there; do NOT invent a
+   trend, cause, or pattern the numbers don't support. When the entries are
+   few or evenly mixed, keep it soft and low-confidence (<= 0.35) rather
+   than declaring there is nothing. Only return
+   {"insightText":"Your entries show no clear theme yet.","confidence":0.2}
+   when there are fewer than 3 entries.
 7. English only - UI localises.
 
-ONE-SHOT EXAMPLE
+ONE-SHOT EXAMPLES
 Input:  [{"date":"2026-04-01","moodCode":"happy","intensity":4}, ...]
 Output: {"insightText":"Recent mornings have felt lighter than evenings.",
-         "confidence":0.62}`;
+         "confidence":0.62}
+Input (a short, mixed week):
+        [{"date":"2026-05-01","moodCode":"calm","intensity":3},
+         {"date":"2026-05-03","moodCode":"sad","intensity":4},
+         {"date":"2026-05-06","moodCode":"happy","intensity":3}]
+Output: {"insightText":"This past week has held a gentle mix of calm with a couple of heavier moments.",
+         "confidence":0.3}`;
 
 /**
  * Response schema for [analyzeForPatterns]. Tighter than the mood
@@ -315,7 +332,10 @@ export async function analyzeForPatterns(
       systemInstruction: PATTERNS_SYSTEM_PROMPT,
       temperature: 0.2,
       topP: 0.9,
-      maxOutputTokens: 200,
+      // See analyze() above: disable thinking + widen the cap so the JSON
+      // fits. Direct fix for the parse_error on every analyzePatterns call.
+      maxOutputTokens: 512,
+      thinkingConfig: { thinkingBudget: 0 },
       responseMimeType: 'application/json',
       responseSchema: PATTERNS_RESPONSE_SCHEMA,
       abortSignal: signal,

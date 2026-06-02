@@ -38,7 +38,7 @@ import {
   WEBAUTHN_RPID,
   WEBAUTHN_STAGING_ORIGINS,
   isProvisioned,
-  resolveExpectedRpId,
+  resolveRpIdForOrigin,
 } from './webauthnConstants.js';
 
 // Shared IP-keyed rate-limit bucket for the unauthenticated login
@@ -85,7 +85,13 @@ export async function handleWebauthnLoginStart(
     });
     return { ok: false, code: 'webauthn_not_provisioned' };
   }
-  const rpId = resolveExpectedRpId();
+  // Derive the RPID from the caller's Origin so the discoverable-
+  // credential challenge is bound to the host the ceremony runs on.
+  const callerOrigin =
+    typeof request.rawRequest?.headers?.origin === 'string'
+      ? request.rawRequest.headers.origin
+      : undefined;
+  const rpId = resolveRpIdForOrigin(callerOrigin);
   if (rpId === null) {
     return { ok: false, code: 'webauthn_not_provisioned' };
   }
