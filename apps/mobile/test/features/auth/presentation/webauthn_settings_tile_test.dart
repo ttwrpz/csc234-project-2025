@@ -179,15 +179,11 @@ void main() {
         // 2. Confirm → the ConfirmIdentitySheet opens.
         await tester.tap(find.widgetWithText(FilledButton, 'Remove'));
         await tester.pumpAndSettle();
-        expect(find.text('Use security key'), findsOneWidget);
+        expect(find.text('Security key'), findsOneWidget);
 
         // 3. Re-auth via the security key (fake repo.verify → Ok). The
-        // factor buttons sit below the keypad in a scroll view, so scroll
-        // the target in before tapping.
-        final keyBtn = find.text('Use security key');
-        await tester.ensureVisible(keyBtn);
-        await tester.pumpAndSettle();
-        await tester.tap(keyBtn);
+        // factor options sit above the keypad, so no scrolling needed.
+        await tester.tap(find.text('Security key'));
         await tester.pumpAndSettle();
 
         expect(repo.removeCalls, ['u-1']);

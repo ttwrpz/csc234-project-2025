@@ -265,37 +265,58 @@ class _ConfirmIdentitySheetState extends ConsumerState<ConfirmIdentitySheet> {
                       }),
               )
             else ...[
+              // Alternative factors first - compact and always visible, so
+              // they're never buried below the (tall) keypad in the scroll
+              // view.
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
+                children: [
+                  if (canBiometric)
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : _onBiometric,
+                      icon: const Icon(Icons.fingerprint, size: 18),
+                      label: const Text('Biometric'),
+                    ),
+                  if (canSecurityKey)
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : _onSecurityKey,
+                      icon: const Icon(Icons.key, size: 18),
+                      label: const Text('Security key'),
+                    ),
+                  OutlinedButton.icon(
+                    onPressed: _busy
+                        ? null
+                        : () => setState(() {
+                            _passwordMode = true;
+                            _errorText = null;
+                          }),
+                    icon: const Icon(Icons.password, size: 18),
+                    label: const Text('Password'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Or enter your PIN',
+                textAlign: TextAlign.center,
+                style: MbFonts.nunito(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: mb.textDim,
+                ),
+              ),
+              const SizedBox(height: 8),
               PinKeypad(
                 controller: _pinController,
                 enabled: !_busy,
                 onComplete: _onPin,
                 errorText: _errorText,
-                // Shares a scroll view with the factor buttons below; don't
-                // autofocus or the scroll-to-focus hides them.
+                // Keep the alternative factors above pinned in view - an
+                // autofocus would scroll to the keypad and push them off the
+                // top.
                 autofocusKeyboard: false,
-              ),
-              const SizedBox(height: 8),
-              if (canBiometric)
-                TextButton.icon(
-                  onPressed: _busy ? null : _onBiometric,
-                  icon: const Icon(Icons.fingerprint),
-                  label: const Text('Use biometric'),
-                ),
-              if (canSecurityKey)
-                TextButton.icon(
-                  onPressed: _busy ? null : _onSecurityKey,
-                  icon: const Icon(Icons.key),
-                  label: const Text('Use security key'),
-                ),
-              TextButton.icon(
-                onPressed: _busy
-                    ? null
-                    : () => setState(() {
-                        _passwordMode = true;
-                        _errorText = null;
-                      }),
-                icon: const Icon(Icons.password),
-                label: const Text('Use password instead'),
               ),
             ],
           ],
