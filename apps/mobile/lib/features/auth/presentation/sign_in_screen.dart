@@ -7,6 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/feature_flags.dart' show kEnableWebauthn;
+import '../../legal/presentation/legal_document_screen.dart'
+    show showLegalDocument;
+import '../../legal/presentation/privacy_policy_screen.dart';
+import '../../legal/presentation/terms_of_service_screen.dart';
 import '../data/providers.dart' show signInWithWebauthnUseCaseProvider;
 import 'controllers/sign_in_controller.dart';
 import 'controllers/sign_in_state.dart' show SignInSubmitMethod;
@@ -46,12 +50,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     _passwordController.addListener(
       () => controller.setPassword(_passwordController.text),
     );
-    // onTap reads `context` lazily at tap time (when the State is mounted),
-    // so capturing it here is safe.
+    // Present the legal docs as an overlay rather than pushing the
+    // `/legal/*` route - on the unauthenticated sign-in screen a route push
+    // can be intercepted by the auth redirect. The overlay is
+    // router-independent and works the same on desktop and mobile.
     _termsRecognizer = TapGestureRecognizer()
-      ..onTap = () => context.push('/legal/terms');
+      ..onTap = () => showLegalDocument(context, TermsOfServiceScreen.document);
     _privacyRecognizer = TapGestureRecognizer()
-      ..onTap = () => context.push('/legal/privacy-policy');
+      ..onTap = () => showLegalDocument(context, PrivacyPolicyScreen.document);
   }
 
   @override

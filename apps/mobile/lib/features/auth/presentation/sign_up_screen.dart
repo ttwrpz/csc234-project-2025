@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../legal/presentation/legal_document_screen.dart'
+    show showLegalDocument;
+import '../../legal/presentation/privacy_policy_screen.dart';
+import '../../legal/presentation/terms_of_service_screen.dart';
 import 'controllers/sign_up_controller.dart';
 import 'widgets/google_sign_in_button.dart';
 
@@ -41,10 +45,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     _confirmController.addListener(
       () => controller.setConfirmPassword(_confirmController.text),
     );
+    // Overlay, not a route push - see sign_in_screen.dart for why
+    // (router redirect can swallow `/legal/*` on the unauthed screen).
     _termsRecognizer = TapGestureRecognizer()
-      ..onTap = () => context.push('/legal/terms');
+      ..onTap = () => showLegalDocument(context, TermsOfServiceScreen.document);
     _privacyRecognizer = TapGestureRecognizer()
-      ..onTap = () => context.push('/legal/privacy-policy');
+      ..onTap = () => showLegalDocument(context, PrivacyPolicyScreen.document);
   }
 
   @override
