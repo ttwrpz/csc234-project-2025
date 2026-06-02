@@ -20,6 +20,7 @@ import '../domain/usecases/delete_account.dart';
 import '../domain/usecases/register_webauthn.dart';
 import '../domain/usecases/register_with_email.dart';
 import '../domain/usecases/remove_pin.dart';
+import '../domain/usecases/remove_webauthn.dart';
 import '../domain/usecases/set_biometric_opt_in.dart';
 import '../domain/usecases/setup_pin.dart';
 import '../domain/usecases/send_password_reset_email.dart';
@@ -357,6 +358,10 @@ final registerWebauthnUseCaseProvider = Provider<RegisterWebauthnUseCase>(
 
 final verifyWebauthnUseCaseProvider = Provider<VerifyWebauthnUseCase>(
   (ref) => VerifyWebauthnUseCase(ref.watch(webauthnRepositoryProvider)),
+);
+
+final removeWebauthnUseCaseProvider = Provider<RemoveWebauthnUseCase>(
+  (ref) => RemoveWebauthnUseCase(ref.watch(webauthnRepositoryProvider)),
 );
 
 /// Cold-boot security-key sign-in. Composes the WebAuthn ceremony repo

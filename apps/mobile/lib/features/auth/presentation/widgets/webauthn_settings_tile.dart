@@ -9,10 +9,12 @@ import '../../data/providers.dart'
     show
         currentUserStreamProvider,
         registerWebauthnUseCaseProvider,
+        removeWebauthnUseCaseProvider,
         webauthnAvailableProvider,
         webauthnCredentialProvider;
 import '../../domain/entities/webauthn_credential.dart';
 import '../../domain/entities/webauthn_register_failure.dart';
+import 'confirm_identity_sheet.dart';
 
 /// Settings → Privacy tile for WebAuthn / security keys (ADR-0014).
 ///
@@ -29,8 +31,9 @@ import '../../domain/entities/webauthn_register_failure.dart';
 ///   `/privacy/setup`, userCanceled is silent, anything else surfaces a
 ///   compact error snackbar).
 /// * **Flag on, web, credential registered** → shows the credential's
-///   creation date; "Remove security key" affordance is deferred to
-///   v1.5.1.
+///   creation date + a "Remove" affordance. Removal runs a destructive
+///   confirm → step-up re-auth ([ConfirmIdentitySheet]) → the authenticated
+///   `webauthnRemoveCredential` Cloud Function.
 class WebauthnSettingsTile extends ConsumerStatefulWidget {
   const WebauthnSettingsTile({super.key});
 
@@ -84,7 +87,8 @@ class _WebauthnSettingsTileState extends ConsumerState<WebauthnSettingsTile> {
           : _RegisteredTile(
               mb: mb,
               credential: credential,
-              onRemove: _onRemovePlaceholder,
+              busy: _busy,
+              onRemove: _onRemove,
             ),
       loading: () => _LoadingTile(mb: mb),
       error: (_, _) => _ErrorTile(mb: mb),
@@ -145,20 +149,65 @@ class _WebauthnSettingsTileState extends ConsumerState<WebauthnSettingsTile> {
     messenger.showSnackBar(SnackBar(content: Text(failure.message)));
   }
 
-  void _onRemovePlaceholder() {
-    // Remove is deferred to v1.5.1 - the assertion ceremony is required
-    // before we can safely retire a credential (we have to confirm the
-    // user owns the key they're trying to remove, and the CF surface
-    // for that lands with the assertion path). For v1.5 the user can
-    // remove via account deletion (the wipeUserData cascade drains the
-    // `webauthn/` subcollection).
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Remove-credential lands in v1.5.1. For now, '
-          'account deletion drops the registered key.',
+  /// Remove the registered credential. Gated by a step-up re-auth: a
+  /// destructive-confirm dialog, then [ConfirmIdentitySheet] (PIN /
+  /// biometric / security key / password), then the authenticated
+  /// `webauthnRemoveCredential` Cloud Function. The Firestore stream
+  /// catches up to `null` shortly after success, flipping the tile back
+  /// to its "Set up a security key" state.
+  Future<void> _onRemove() async {
+    if (_busy) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final user = ref.read(currentUserStreamProvider).value;
+    if (user == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Sign in before removing a key.')),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remove security key?'),
+        content: const Text(
+          'Your PIN and biometric will still protect your journal. You can '
+          'register a key again anytime.',
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Keep'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
       ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    // Step-up re-auth before the destructive action.
+    final reauthed = await showConfirmIdentitySheet(
+      context,
+      subtitle: 'Confirm your identity to remove this security key.',
+    );
+    if (!reauthed || !mounted) return;
+
+    setState(() => _busy = true);
+    final result = await ref.read(removeWebauthnUseCaseProvider)(
+      userId: user.uid,
+    );
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    result.fold(
+      ok: (_) => messenger.showSnackBar(
+        const SnackBar(content: Text('Security key removed.')),
+      ),
+      err: (failure) =>
+          messenger.showSnackBar(SnackBar(content: Text(failure.message))),
     );
   }
 }
@@ -244,11 +293,13 @@ class _RegisteredTile extends StatelessWidget {
   const _RegisteredTile({
     required this.mb,
     required this.credential,
+    required this.busy,
     required this.onRemove,
   });
 
   final MbColors mb;
   final WebauthnCredential credential;
+  final bool busy;
   final VoidCallback onRemove;
 
   @override
@@ -275,8 +326,19 @@ class _RegisteredTile extends StatelessWidget {
         subtitle,
         style: MbFonts.nunito(fontSize: 12, color: mb.textDim),
       ),
-      trailing: Icon(Icons.chevron_right, color: mb.textDim),
-      onTap: onRemove,
+      // Explicit, single-purpose Remove affordance - a whole-tile tap
+      // was ambiguous for a destructive action.
+      trailing: busy
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : TextButton(
+              onPressed: onRemove,
+              style: TextButton.styleFrom(foregroundColor: mb.destructiveText),
+              child: const Text('Remove'),
+            ),
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:core/core.dart';
 
 import '../entities/webauthn_credential.dart';
 import '../entities/webauthn_register_failure.dart';
+import '../entities/webauthn_remove_failure.dart';
 import '../entities/webauthn_verify_failure.dart';
 
 /// Contract for the storage + verification of the WebAuthn fallback
@@ -80,4 +81,16 @@ abstract class WebauthnRepository {
   ///   - the PIN verify screen (renders the "Use security key" button
   ///     when non-null).
   Stream<WebauthnCredential?> watchCredential({required String uid});
+
+  /// Retire the registered credential(s) for [uid] via the authenticated
+  /// `webauthnRemoveCredential` Cloud Function (the credential doc is
+  /// admin-SDK owned, so the client cannot delete it directly).
+  ///
+  /// Callers MUST gate this behind a step-up re-auth - removing a key
+  /// drops a fallback factor, so the caller confirms identity first. The
+  /// call is idempotent: removing when none exist succeeds. The Firestore
+  /// `watchCredential` stream catches up to `null` shortly after success.
+  Future<Result<void, WebauthnRemoveFailure>> removeCredential({
+    required String uid,
+  });
 }

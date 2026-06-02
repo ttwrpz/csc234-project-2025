@@ -72,4 +72,14 @@ class WebauthnFunctionsDatasource {
     });
     return Map<String, Object?>.from(result.data as Map);
   }
+
+  /// Retire the user's registered credential(s). Authenticated callable;
+  /// returns `{ ok: true, removed: <count> }`. Idempotent - removing when
+  /// none exist returns `removed: 0`.
+  Future<Map<String, Object?>> removeCredential() async {
+    final result = await _functions
+        .httpsCallable('webauthnRemoveCredential')
+        .call({'v': 1});
+    return Map<String, Object?>.from(result.data as Map);
+  }
 }

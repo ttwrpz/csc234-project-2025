@@ -3,6 +3,7 @@ import 'package:core/core.dart';
 
 import '../domain/entities/webauthn_credential.dart';
 import '../domain/entities/webauthn_register_failure.dart';
+import '../domain/entities/webauthn_remove_failure.dart';
 import '../domain/entities/webauthn_verify_failure.dart';
 import '../domain/repositories/webauthn_repository.dart';
 import 'datasources/webauthn_browser_datasource.dart';
@@ -258,6 +259,27 @@ class WebauthnRepositoryImpl implements WebauthnRepository {
   @override
   Stream<WebauthnCredential?> watchCredential({required String uid}) =>
       _firestore.watch(userId: uid);
+
+  @override
+  Future<Result<void, WebauthnRemoveFailure>> removeCredential({
+    required String uid,
+  }) async {
+    final Map<String, Object?> resp;
+    try {
+      resp = await _functions.removeCredential();
+    } on FirebaseFunctionsException catch (e) {
+      _logger.warn('webauthnRemoveCredential failed: ${e.code}');
+      return const Err(WebauthnRemoveFailure.network());
+    } catch (e) {
+      _logger.error('webauthnRemoveCredential unexpected', error: e);
+      return Err(WebauthnRemoveFailure.unknown(e.runtimeType));
+    }
+    if (resp['ok'] != true) {
+      _logger.warn('webauthnRemoveCredential not-ok: ${resp['code']}');
+      return const Err(WebauthnRemoveFailure.network());
+    }
+    return const Ok(null);
+  }
 
   // ─────────────────────────────────────────────────────────────────────
   // Wire-code → domain-failure mapping.

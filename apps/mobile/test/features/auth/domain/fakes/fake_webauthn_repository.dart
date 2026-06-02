@@ -1,6 +1,7 @@
 import 'package:core/core.dart';
 import 'package:moodbloom/features/auth/domain/entities/webauthn_credential.dart';
 import 'package:moodbloom/features/auth/domain/entities/webauthn_register_failure.dart';
+import 'package:moodbloom/features/auth/domain/entities/webauthn_remove_failure.dart';
 import 'package:moodbloom/features/auth/domain/entities/webauthn_verify_failure.dart';
 import 'package:moodbloom/features/auth/domain/repositories/webauthn_repository.dart';
 
@@ -21,10 +22,12 @@ class FakeWebauthnRepository implements WebauthnRepository {
   Result<WebauthnCredential, WebauthnRegisterFailure>? _registerResult;
   Result<void, WebauthnVerifyFailure>? _verifyResult;
   Result<String, WebauthnVerifyFailure>? _loginResult;
+  Result<void, WebauthnRemoveFailure>? _removeResult;
   final WebauthnCredential? _initialCredential;
 
   final List<String> registerCalls = [];
   final List<String> verifyCalls = [];
+  final List<String> removeCalls = [];
   int loginCalls = 0;
 
   set registerResult(
@@ -36,6 +39,9 @@ class FakeWebauthnRepository implements WebauthnRepository {
 
   set loginResult(Result<String, WebauthnVerifyFailure>? value) =>
       _loginResult = value;
+
+  set removeResult(Result<void, WebauthnRemoveFailure>? value) =>
+      _removeResult = value;
 
   @override
   Future<Result<WebauthnCredential, WebauthnRegisterFailure>> register({
@@ -64,6 +70,14 @@ class FakeWebauthnRepository implements WebauthnRepository {
   @override
   Stream<WebauthnCredential?> watchCredential({required String uid}) =>
       Stream<WebauthnCredential?>.value(_initialCredential);
+
+  @override
+  Future<Result<void, WebauthnRemoveFailure>> removeCredential({
+    required String uid,
+  }) async {
+    removeCalls.add(uid);
+    return _removeResult ?? const Ok<void, WebauthnRemoveFailure>(null);
+  }
 
   DateTime _now() => DateTime.utc(2026, 5, 15);
 }

@@ -26,5 +26,6 @@ export { webauthnLoginFinish } from './webauthnLoginFinish.js';
 export { webauthnLoginStart } from './webauthnLoginStart.js';
 export { webauthnRegisterFinish } from './webauthnRegisterFinish.js';
 export { webauthnRegisterStart } from './webauthnRegisterStart.js';
+export { webauthnRemoveCredential } from './webauthnRemoveCredential.js';
 export { wipeUserData } from './wipeUserData.js';
 export { wipeWeeklyGarden } from './wipeWeeklyGarden.js';

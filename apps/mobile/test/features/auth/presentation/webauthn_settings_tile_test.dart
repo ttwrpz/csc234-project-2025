@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moodbloom/features/auth/data/providers.dart';
 import 'package:moodbloom/features/auth/domain/entities/app_user.dart';
+import 'package:moodbloom/features/auth/domain/entities/biometric_capability.dart';
 import 'package:moodbloom/features/auth/domain/entities/webauthn_credential.dart';
 import 'package:moodbloom/features/auth/domain/entities/webauthn_register_failure.dart';
 import 'package:moodbloom/features/auth/presentation/widgets/webauthn_settings_tile.dart';
@@ -53,6 +54,16 @@ Future<void> _pump(
         webauthnRepositoryProvider.overrideWithValue(repo),
         currentUserStreamProvider.overrideWith(
           (_) => Stream<AppUser?>.value(user),
+        ),
+        // The remove flow opens ConfirmIdentitySheet, which reads biometric
+        // capability; pin it to unavailable so the test never touches a
+        // platform channel and the security-key factor is the live path.
+        biometricCapabilityProvider.overrideWith(
+          (_) async => const BiometricCapability(
+            isAvailable: false,
+            hasEnrolledBiometrics: false,
+            userOptedIn: false,
+          ),
         ),
       ],
       child: MaterialApp.router(theme: buildLightTheme(), routerConfig: router),
@@ -148,5 +159,55 @@ void main() {
         expect(find.textContaining('May 15'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'Remove → confirm → re-auth (security key) invokes removeCredential + snackbar',
+      (tester) async {
+        final repo = FakeWebauthnRepository(
+          credential: WebauthnCredential(
+            credentialId: 'cred-1',
+            createdAt: DateTime.utc(2026, 5, 15),
+          ),
+        );
+        await _pump(tester, repo: repo);
+
+        // 1. Tap the tile's Remove button → destructive-confirm dialog.
+        await tester.tap(find.widgetWithText(TextButton, 'Remove'));
+        await tester.pumpAndSettle();
+        expect(find.text('Remove security key?'), findsOneWidget);
+
+        // 2. Confirm → the ConfirmIdentitySheet opens.
+        await tester.tap(find.widgetWithText(FilledButton, 'Remove'));
+        await tester.pumpAndSettle();
+        expect(find.text('Use security key'), findsOneWidget);
+
+        // 3. Re-auth via the security key (fake repo.verify → Ok).
+        await tester.tap(find.text('Use security key'));
+        await tester.pumpAndSettle();
+
+        expect(repo.removeCalls, ['u-1']);
+        expect(find.text('Security key removed.'), findsOneWidget);
+      },
+    );
+
+    testWidgets('Remove → Keep cancels without calling removeCredential', (
+      tester,
+    ) async {
+      final repo = FakeWebauthnRepository(
+        credential: WebauthnCredential(
+          credentialId: 'cred-1',
+          createdAt: DateTime.utc(2026, 5, 15),
+        ),
+      );
+      await _pump(tester, repo: repo);
+
+      await tester.tap(find.widgetWithText(TextButton, 'Remove'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Keep'));
+      await tester.pumpAndSettle();
+
+      expect(repo.removeCalls, isEmpty);
+      expect(find.text('Security key registered'), findsOneWidget);
+    });
   });
 }
