@@ -885,16 +885,6 @@ class _DebugCluster extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ListTile(
-            leading: Icon(Icons.build_outlined),
-            title: Text('Debug tools'),
-            subtitle: Text(
-              'Dev-build only - force states, cycle tiers, test crashes. '
-              'Never shipped to release.',
-            ),
-            contentPadding: EdgeInsets.symmetric(horizontal: 16),
-          ),
-          const Divider(height: 1),
           SwitchListTile(
             secondary: const Icon(Icons.wifi_off_outlined),
             title: const Text('Force offline'),

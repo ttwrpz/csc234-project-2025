@@ -232,8 +232,9 @@ class _CrisisResourcesScreenState extends ConsumerState<CrisisResourcesScreen> {
                         ListTile(
                           leading: const Icon(Icons.language),
                           title: const Text('iCare Foundation'),
-                          subtitle: const Text('icare.in.th'),
-                          onTap: () => _openLink('https://www.icare.in.th'),
+                          subtitle: const Text('icarethailand.com'),
+                          onTap: () =>
+                              _openLink('https://icarethailand.com/th'),
                         ),
                         ListTile(
                           leading: const Icon(Icons.local_hospital_outlined),

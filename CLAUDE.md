@@ -382,8 +382,9 @@ cd apps/mobile && flutter test integration_test/ -d chrome
 # Generate Freezed / Riverpod / JSON code
 cd apps/mobile && flutter pub run build_runner build --delete-conflicting-outputs
 
-# Deploy Cloud Functions (staging)
-cd functions && npm run deploy:staging
+# Deploy Cloud Functions (builds then `firebase deploy --only functions`
+# against the default project - there is no separate staging project).
+cd functions && pnpm run deploy
 ```
 
 ## When in doubt

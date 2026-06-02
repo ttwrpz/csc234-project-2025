@@ -39,9 +39,7 @@ class MbGhostButton extends StatelessWidget {
     // text - that reads as an active "Delete" affordance. Fall back to the
     // neutral line + dimmed text so the disabled state is unmistakable in
     // both light and dark mode.
-    final fg = danger
-        ? (disabled ? mb.textDim : mb.destructiveText)
-        : mb.text;
+    final fg = danger ? (disabled ? mb.textDim : mb.destructiveText) : mb.text;
     final borderColor = danger && !disabled
         ? theme.colorScheme.error.withValues(alpha: 0.55)
         : mb.line;
