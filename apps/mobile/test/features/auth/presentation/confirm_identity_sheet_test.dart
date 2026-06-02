@@ -102,7 +102,12 @@ void main() {
       );
 
       expect(find.text("Confirm it's you"), findsOneWidget);
-      await tester.tap(find.text('Use security key'));
+      // The factor buttons sit below the keypad in a scroll view; scroll
+      // the target into view before tapping (a real user scrolls too).
+      final keyBtn = find.text('Use security key');
+      await tester.ensureVisible(keyBtn);
+      await tester.pumpAndSettle();
+      await tester.tap(keyBtn);
       await tester.pumpAndSettle();
 
       expect(host.result, isTrue);
@@ -134,10 +139,16 @@ void main() {
         auth: FakeAuthRepository(reauthenticateResult: const Ok(null)),
       );
 
-      await tester.tap(find.text('Use password instead'));
+      final pwOption = find.text('Use password instead');
+      await tester.ensureVisible(pwOption);
+      await tester.pumpAndSettle();
+      await tester.tap(pwOption);
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'hunter2');
-      await tester.tap(find.widgetWithText(FilledButton, 'Confirm'));
+      final confirm = find.widgetWithText(FilledButton, 'Confirm');
+      await tester.ensureVisible(confirm);
+      await tester.pumpAndSettle();
+      await tester.tap(confirm);
       await tester.pumpAndSettle();
 
       expect(host.result, isTrue);

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../domain/entities/pin.dart';
 
@@ -22,6 +23,7 @@ class PinKeypad extends StatefulWidget {
     this.enabled = true,
     this.controller,
     this.errorText,
+    this.autofocusKeyboard = true,
   });
 
   /// Fired once the user has typed [Pin.length] digits. The string is
@@ -43,6 +45,13 @@ class PinKeypad extends StatefulWidget {
   /// "wrong PIN" / "too many tries" copy. Pass null when there is no
   /// error to render.
   final String? errorText;
+
+  /// Grab keyboard focus on mount so a physical keyboard can drive entry
+  /// immediately. Defaults true (the PIN screens). Hosts where the keypad
+  /// shares a scroll view with other controls (the confirm / verify
+  /// sheets) pass false so autofocus-scroll doesn't push those controls
+  /// below the fold.
+  final bool autofocusKeyboard;
 
   @override
   State<PinKeypad> createState() => _PinKeypadState();
@@ -66,6 +75,12 @@ class _PinKeypadState extends State<PinKeypad>
   final StringBuffer _buffer = StringBuffer();
   late final AnimationController _shakeController;
 
+  /// Holds keyboard focus so a physical keyboard (desktop / web) can drive
+  /// PIN entry without a tap. Digit keys (top row + numpad) append; Backspace
+  /// / Delete remove. The on-screen keypad buttons set `canRequestFocus:
+  /// false` so a tap never steals this focus mid-entry.
+  final FocusNode _keyboardFocus = FocusNode(debugLabel: 'PinKeypad');
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +90,60 @@ class _PinKeypadState extends State<PinKeypad>
       duration: const Duration(milliseconds: 440),
     );
   }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (!widget.enabled) return KeyEventResult.ignored;
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.backspace ||
+        key == LogicalKeyboardKey.delete) {
+      _onBackspace();
+      return KeyEventResult.handled;
+    }
+    final digit = _digitFromEvent(event);
+    if (digit != null) {
+      _onDigit(digit);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  /// Resolves a 0-9 digit from a key event. Prefers `character` (the
+  /// number row), then falls back to the logical key so the number row and
+  /// numpad both work even when `character` is absent.
+  int? _digitFromEvent(KeyEvent event) {
+    final ch = event.character;
+    if (ch != null && ch.length == 1) {
+      final code = ch.codeUnitAt(0);
+      if (code >= 0x30 && code <= 0x39) return code - 0x30;
+    }
+    return _digitKeys[event.logicalKey];
+  }
+
+  // Not const: LogicalKeyboardKey overrides ==/hashCode, which Dart forbids
+  // as a const-map key. Covers both the number row and the numeric keypad.
+  static final Map<LogicalKeyboardKey, int> _digitKeys = {
+    LogicalKeyboardKey.digit0: 0,
+    LogicalKeyboardKey.digit1: 1,
+    LogicalKeyboardKey.digit2: 2,
+    LogicalKeyboardKey.digit3: 3,
+    LogicalKeyboardKey.digit4: 4,
+    LogicalKeyboardKey.digit5: 5,
+    LogicalKeyboardKey.digit6: 6,
+    LogicalKeyboardKey.digit7: 7,
+    LogicalKeyboardKey.digit8: 8,
+    LogicalKeyboardKey.digit9: 9,
+    LogicalKeyboardKey.numpad0: 0,
+    LogicalKeyboardKey.numpad1: 1,
+    LogicalKeyboardKey.numpad2: 2,
+    LogicalKeyboardKey.numpad3: 3,
+    LogicalKeyboardKey.numpad4: 4,
+    LogicalKeyboardKey.numpad5: 5,
+    LogicalKeyboardKey.numpad6: 6,
+    LogicalKeyboardKey.numpad7: 7,
+    LogicalKeyboardKey.numpad8: 8,
+    LogicalKeyboardKey.numpad9: 9,
+  };
 
   @override
   void didUpdateWidget(covariant PinKeypad oldWidget) {
@@ -95,6 +164,7 @@ class _PinKeypadState extends State<PinKeypad>
   void dispose() {
     widget.controller?._detach();
     _shakeController.dispose();
+    _keyboardFocus.dispose();
     super.dispose();
   }
 
@@ -127,53 +197,58 @@ class _PinKeypadState extends State<PinKeypad>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mb = theme.extension<MbColors>()!;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AnimatedBuilder(
-          animation: _shakeController,
-          builder: (context, child) {
-            final t = _shakeController.value;
-            // Damped horizontal oscillation: a few quick swings that decay
-            // to rest. Zero offset when idle so layout is untouched.
-            final dx = t == 0 ? 0.0 : math.sin(t * math.pi * 4) * 9 * (1 - t);
-            return Transform.translate(offset: Offset(dx, 0), child: child);
-          },
-          child: _Dots(length: Pin.length, filled: _buffer.length, mb: mb),
-        ),
-        const SizedBox(height: 12),
-        // Fixed-height error slot: reserving the space means the dots +
-        // keypad never jump when an error appears/changes (e.g. the PIN
-        // setup "Confirm your PIN" / "PINs do not match" transitions).
-        SizedBox(
-          height: 34,
-          child: Center(
-            child: widget.errorText == null
-                ? const SizedBox.shrink()
-                : Text(
-                    widget.errorText!,
-                    style: MbFonts.nunito(
-                      fontSize: 13,
-                      // Theme-aware destructive-text token - `coralText`
-                      // is the design-system "destructive text on cream"
-                      // token and is not dark-safe, so prefer the
-                      // MbColors extension when present.
-                      color:
-                          theme.extension<MbColors>()?.destructiveText ??
-                          theme.colorScheme.error,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+    return Focus(
+      focusNode: _keyboardFocus,
+      autofocus: widget.autofocusKeyboard,
+      onKeyEvent: _handleKeyEvent,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedBuilder(
+            animation: _shakeController,
+            builder: (context, child) {
+              final t = _shakeController.value;
+              // Damped horizontal oscillation: a few quick swings that decay
+              // to rest. Zero offset when idle so layout is untouched.
+              final dx = t == 0 ? 0.0 : math.sin(t * math.pi * 4) * 9 * (1 - t);
+              return Transform.translate(offset: Offset(dx, 0), child: child);
+            },
+            child: _Dots(length: Pin.length, filled: _buffer.length, mb: mb),
           ),
-        ),
-        const SizedBox(height: 8),
-        _Keys(
-          enabled: widget.enabled,
-          onDigit: _onDigit,
-          onBackspace: _onBackspace,
-        ),
-      ],
+          const SizedBox(height: 12),
+          // Fixed-height error slot: reserving the space means the dots +
+          // keypad never jump when an error appears/changes (e.g. the PIN
+          // setup "Confirm your PIN" / "PINs do not match" transitions).
+          SizedBox(
+            height: 34,
+            child: Center(
+              child: widget.errorText == null
+                  ? const SizedBox.shrink()
+                  : Text(
+                      widget.errorText!,
+                      style: MbFonts.nunito(
+                        fontSize: 13,
+                        // Theme-aware destructive-text token - `coralText`
+                        // is the design-system "destructive text on cream"
+                        // token and is not dark-safe, so prefer the
+                        // MbColors extension when present.
+                        color:
+                            theme.extension<MbColors>()?.destructiveText ??
+                            theme.colorScheme.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _Keys(
+            enabled: widget.enabled,
+            onDigit: _onDigit,
+            onBackspace: _onBackspace,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -353,6 +428,9 @@ class _KeypadButton extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: enabled ? onPressed : null,
+              // Don't grab focus on tap - the PinKeypad's keyboard Focus
+              // must keep it so physical-key entry keeps working after a tap.
+              canRequestFocus: false,
               customBorder: const CircleBorder(),
               splashColor: tint.withValues(alpha: 0.35),
               highlightColor: tint.withValues(alpha: 0.18),

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers.dart';
 import '../../domain/auth_credentials.dart';
 import '../../domain/entities/biometric_capability.dart';
+import 'adaptive_modal.dart';
 import 'pin_keypad.dart';
 
 /// Step-up re-authentication modal. Confirms the user's identity with ANY
@@ -28,18 +29,16 @@ Future<bool> showConfirmIdentitySheet(
   String title = "Confirm it's you",
   String subtitle = 'A quick identity check keeps this account safe.',
 }) async {
-  final mb = Theme.of(context).extension<MbColors>()!;
-  final result = await showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: mb.bg,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(MoodBloomSpacing.radiusCardLg),
-      ),
+  // Drag handle only makes sense in the bottom-sheet (phone) presentation;
+  // the dialog (tablet/desktop) has its own framing.
+  final showHandle = !isWideViewport(context);
+  final result = await showAdaptiveModal<bool>(
+    context,
+    child: ConfirmIdentitySheet(
+      title: title,
+      subtitle: subtitle,
+      showHandle: showHandle,
     ),
-    builder: (_) => ConfirmIdentitySheet(title: title, subtitle: subtitle),
   );
   return result ?? false;
 }
@@ -49,10 +48,14 @@ class ConfirmIdentitySheet extends ConsumerStatefulWidget {
     super.key,
     required this.title,
     required this.subtitle,
+    this.showHandle = true,
   });
 
   final String title;
   final String subtitle;
+
+  /// Draws the bottom-sheet drag handle. False in dialog (wide) mode.
+  final bool showHandle;
 
   @override
   ConsumerState<ConfirmIdentitySheet> createState() =>
@@ -202,17 +205,19 @@ class _ConfirmIdentitySheetState extends ConsumerState<ConfirmIdentitySheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: mb.line,
-                  borderRadius: BorderRadius.circular(2),
+            if (widget.showHandle) ...[
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: mb.line,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
+            ],
             Row(
               children: [
                 Expanded(
@@ -265,6 +270,9 @@ class _ConfirmIdentitySheetState extends ConsumerState<ConfirmIdentitySheet> {
                 enabled: !_busy,
                 onComplete: _onPin,
                 errorText: _errorText,
+                // Shares a scroll view with the factor buttons below; don't
+                // autofocus or the scroll-to-focus hides them.
+                autofocusKeyboard: false,
               ),
               const SizedBox(height: 8),
               if (canBiometric)

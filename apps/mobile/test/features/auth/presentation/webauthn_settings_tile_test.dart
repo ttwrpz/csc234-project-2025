@@ -181,8 +181,13 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Use security key'), findsOneWidget);
 
-        // 3. Re-auth via the security key (fake repo.verify → Ok).
-        await tester.tap(find.text('Use security key'));
+        // 3. Re-auth via the security key (fake repo.verify → Ok). The
+        // factor buttons sit below the keypad in a scroll view, so scroll
+        // the target in before tapping.
+        final keyBtn = find.text('Use security key');
+        await tester.ensureVisible(keyBtn);
+        await tester.pumpAndSettle();
+        await tester.tap(keyBtn);
         await tester.pumpAndSettle();
 
         expect(repo.removeCalls, ['u-1']);

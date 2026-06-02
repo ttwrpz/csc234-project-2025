@@ -151,13 +151,17 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
+                  // Scrollable so a short tablet/desktop window (or large
+                  // dynamic type) never overflows the fixed-height keypad.
                   Expanded(
                     child: Center(
-                      child: PinKeypad(
-                        controller: _keypadController,
-                        enabled: !_busy,
-                        onComplete: _onPinEntered,
-                        errorText: _error,
+                      child: SingleChildScrollView(
+                        child: PinKeypad(
+                          controller: _keypadController,
+                          enabled: !_busy,
+                          onComplete: _onPinEntered,
+                          errorText: _error,
+                        ),
                       ),
                     ),
                   ),
