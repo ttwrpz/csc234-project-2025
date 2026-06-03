@@ -313,10 +313,11 @@ class _ConfirmIdentitySheetState extends ConsumerState<ConfirmIdentitySheet> {
                 enabled: !_busy,
                 onComplete: _onPin,
                 errorText: _errorText,
-                // Keep the alternative factors above pinned in view - an
-                // autofocus would scroll to the keypad and push them off the
-                // top.
-                autofocusKeyboard: false,
+                // Autofocus so a physical keyboard can type the PIN, same as
+                // the Privacy Lock screen. The factor options above stay put
+                // (a plain Focus doesn't scroll its scrollable - only text
+                // fields do).
+                autofocusKeyboard: true,
               ),
             ],
           ],

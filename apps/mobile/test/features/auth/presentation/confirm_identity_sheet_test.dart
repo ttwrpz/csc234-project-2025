@@ -8,6 +8,7 @@
 import 'package:core/core.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moodbloom/features/auth/data/providers.dart';
@@ -140,6 +141,34 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'hunter2');
       await tester.tap(find.widgetWithText(FilledButton, 'Confirm'));
+      await tester.pumpAndSettle();
+
+      expect(host.result, isTrue);
+    });
+
+    testWidgets('physical keyboard types the PIN and pops true', (
+      tester,
+    ) async {
+      final host = await _pump(
+        tester,
+        webauthn: FakeWebauthnRepository(),
+        pin: FakePinRepository(correctPin: '123456'),
+        auth: FakeAuthRepository(),
+      );
+
+      // No tap on the keypad - the keypad autofocuses, so keys flow straight
+      // in (like the Privacy Lock screen).
+      for (final k in const [
+        LogicalKeyboardKey.digit1,
+        LogicalKeyboardKey.digit2,
+        LogicalKeyboardKey.digit3,
+        LogicalKeyboardKey.digit4,
+        LogicalKeyboardKey.digit5,
+        LogicalKeyboardKey.digit6,
+      ]) {
+        await tester.sendKeyEvent(k);
+        await tester.pump();
+      }
       await tester.pumpAndSettle();
 
       expect(host.result, isTrue);

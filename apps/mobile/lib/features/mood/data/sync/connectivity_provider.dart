@@ -48,7 +48,26 @@ final connectivityStreamProvider = Provider<Stream<bool>>((ref) {
 
 Stream<bool> _onlineStream() {
   final connectivity = Connectivity();
-  return connectivity.onConnectivityChanged.map(isOnlineFromResults).distinct();
+  final live = connectivity.onConnectivityChanged.map(isOnlineFromResults);
+  return _seedInitial(connectivity, live).distinct();
+}
+
+/// `connectivity_plus`'s `onConnectivityChanged` does NOT replay the current
+/// state on listen - it only fires on a *change*. A device that's already
+/// online at launch (the common case) therefore never gets an emission, so
+/// any consumer that defaults to "offline until told otherwise" (the
+/// `MoodSyncManager`, whose drain is gated on `_isOnline`) stalls forever
+/// and never uploads. Seed the current state once up front, then forward
+/// live changes. If the one-shot check fails, assume online so the sync
+/// drain can at least attempt - a genuine offline state then surfaces as a
+/// failed write + backoff rather than a silent never-drain.
+Stream<bool> _seedInitial(Connectivity connectivity, Stream<bool> live) async* {
+  try {
+    yield isOnlineFromResults(await connectivity.checkConnectivity());
+  } catch (_) {
+    yield true;
+  }
+  yield* live;
 }
 
 /// Synchronous-current-value snapshot for one-shot gating logic.

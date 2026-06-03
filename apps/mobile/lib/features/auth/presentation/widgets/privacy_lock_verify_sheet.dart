@@ -144,8 +144,9 @@ class _PrivacyLockVerifySheetState
             enabled: !_busy,
             onComplete: _onPinComplete,
             errorText: _error,
-            // Shares a scroll view with the Cancel button below.
-            autofocusKeyboard: false,
+            // Autofocus so a physical keyboard can type the PIN (the Cancel
+            // button below stays put - a plain Focus doesn't scroll).
+            autofocusKeyboard: true,
           ),
           const SizedBox(height: 8),
           TextButton(
