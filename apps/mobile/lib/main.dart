@@ -13,6 +13,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/bootstrap.dart';
+import 'app/providers.dart' show sharedPreferencesProvider;
 import 'features/auth/data/datasources/biometric_datasource.dart';
 import 'features/auth/data/datasources/biometric_preference_datasource.dart';
 import 'features/auth/data/datasources/privacy_lock_preference_datasource.dart';
@@ -238,6 +239,17 @@ Future<void> main() async {
             privacyLockEnabledProvider.overrideWith(
               () => SeededPrivacyLockEnabledNotifier(privacyLockEnabled),
             ),
+            // Seed the already-resolved SharedPreferences so the very first
+            // read of `sharedPreferencesProvider` returns synchronously.
+            // `moodSyncManagerProvider` throws when `.value` is null, and on
+            // mobile cold-boot the router's auth listener is the FIRST reader
+            // of both providers - without this seed that read throws, the
+            // sync manager is never bootstrapped (no listener, no drain), and
+            // queued mood writes never reach Firestore ("never synced").
+            // Returns `prefs` synchronously (NOT `async`) so the override is
+            // AsyncData immediately - an async callback would resolve on a
+            // microtask and `.value` would still be null on the first read.
+            sharedPreferencesProvider.overrideWith((ref) => prefs),
           ],
           child: const MoodBloomApp(),
         ),
