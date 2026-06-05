@@ -383,7 +383,13 @@ jobs:
             echo "Error: found a hardcoded API key."
             SECRETS_FOUND=1
           fi
-          if grep -rn "password.*=.*['\"][^'\"]\{8,\}" apps/mobile/lib packages --include="*.dart" 2>/dev/null; then
+          # Anchored: the quoted value must directly follow the assignment,
+          # else lines with several assignments false-positive (the generated
+          # Freezed constructors match `password = ''` and then run on into
+          # `this.submittingWith = SignInSubmitMethod...`). Generated files
+          # are excluded outright - they are derived from sources that this
+          # same scan already covers.
+          if grep -rn "password['\"]\?\s*[:=]\s*['\"][^'\"]\{8,\}" apps/mobile/lib packages --include="*.dart" --exclude="*.g.dart" --exclude="*.freezed.dart" 2>/dev/null; then
             echo "Error: found a hardcoded password."
             SECRETS_FOUND=1
           fi
