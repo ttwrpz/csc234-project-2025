@@ -1,48 +1,87 @@
-# MoodBloom CI
+# MoodBloom CI/CD
 #
-# Three jobs run on every push to main and every pull request:
+# Job graph (template-aligned with the Mangrove HeatShield pipeline, adapted
+# to this repo's layout - the Flutter app lives in apps/mobile, shared Dart
+# packages in packages/*, and Cloud Functions use pnpm, not npm):
 #
-#   1. flutter - format + analyze + test for apps/mobile and every package,
-#      plus codegen (build_runner) and the domain-purity grep that enforces
-#      "domain/ has zero Flutter/Firebase imports" from CLAUDE.md.
-#   2. firestore-rules - boots the Firestore + Storage emulators and runs
-#      the rules-unit-testing suite under firebase/test/ (15 cases for
-#      WBS 2.3 - per-user RBAC, 24h immutability, field-level validation).
-#   3. functions - TypeScript build + lint + jest for the Cloud Functions
-#      proxy. Skips gracefully until functions/package.json exists (D3.1
-#      lands the analyzeMoodText function per ADR-0003).
-name: Lint Test and Validate on push and pull request
+#   functions-build ─ independent          (TS lint + build + jest)
+#   firestore-rules ─ independent          (rules emulator suite - repo-specific, kept)
+#   quality ──┬─ test ──┬─ build-android   (APK artifact)
+#             │         └─ build-web       (web bundle artifact)
+#             └─ accessibility             (Semantics + secret scan + dep health)
+#
+# Repo-specific steps preserved from the previous pipeline (do not drop):
+#   - Domain purity grep (CLAUDE.md hard rule, graded) - in `quality`
+#   - Firestore + Storage rules emulator tests - own job
+#   - PR coverage comment - in `test`
+name: MoodBloom CI/CD
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
+    branches: [main, develop]
 
-# Cancel in-progress runs for the same ref when a new commit lands.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-jobs:
-  flutter:
-    name: Flutter format analyze test and domain purity
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+env:
+  FLUTTER_VERSION: "3.44.0"
+  JAVA_VERSION: "17"
 
+jobs:
+  # Job 0: Cloud Functions TypeScript build (pnpm - see functions/package.json#packageManager)
+  functions-build:
+    name: "Functions TypeScript Build"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: functions
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Set up Flutter (stable)
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          package_json_file: functions/package.json
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: functions/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build TypeScript
+        run: pnpm build
+
+      - name: Run tests
+        run: pnpm test
+
+  # Job 1: Code quality (format, analyze, domain purity)
+  quality:
+    name: "Code Quality"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
-
-      - name: Print tool versions
-        run: |
-          flutter --version
-          dart --version
 
       - name: Cache pub packages
         uses: actions/cache@v5
@@ -53,138 +92,45 @@ jobs:
             packages/core/.dart_tool
             packages/design_system/.dart_tool
             packages/analytics/.dart_tool
-          key: pub-${{ runner.os }}-${{ hashFiles('apps/mobile/pubspec.lock', 'packages/core/pubspec.lock', 'packages/design_system/pubspec.lock', 'packages/analytics/pubspec.lock') }}
+          key: pub-${{ runner.os }}-${{ hashFiles('apps/mobile/pubspec.lock', 'packages/*/pubspec.lock') }}
           restore-keys: |
             pub-${{ runner.os }}-
 
-      # ------------------------------------------------------------------
-      # Resolve dependencies for every package. design_system / analytics
-      # have no tests yet but the app depends on them so they need pub get.
-      # ------------------------------------------------------------------
-      - name: flutter pub get (packages/core)
-        working-directory: packages/core
-        run: flutter pub get
-
-      - name: flutter pub get (packages/design_system)
-        working-directory: packages/design_system
-        run: flutter pub get
-
-      - name: flutter pub get (packages/analytics)
-        working-directory: packages/analytics
-        run: flutter pub get
-
-      - name: flutter pub get (apps/mobile)
-        working-directory: apps/mobile
-        run: flutter pub get
-
-      # ------------------------------------------------------------------
-      # Codegen: Freezed / Riverpod / json_serializable. Required before
-      # format/analyze because generated files are not checked in.
-      # ------------------------------------------------------------------
-      - name: Run build_runner (apps/mobile)
-        working-directory: apps/mobile
-        run: flutter pub run build_runner build --delete-conflicting-outputs
-
-      # ------------------------------------------------------------------
-      # dart format --set-exit-if-changed in every package + the app.
-      # ------------------------------------------------------------------
-      - name: dart format (apps/mobile)
-        working-directory: apps/mobile
-        run: dart format --set-exit-if-changed .
-
-      - name: dart format (packages/core)
-        working-directory: packages/core
-        run: dart format --set-exit-if-changed .
-
-      - name: dart format (packages/design_system)
-        working-directory: packages/design_system
-        run: dart format --set-exit-if-changed .
-
-      - name: dart format (packages/analytics)
-        working-directory: packages/analytics
-        run: dart format --set-exit-if-changed .
-
-      # ------------------------------------------------------------------
-      # flutter analyze in every package + the app.
-      # ------------------------------------------------------------------
-      - name: flutter analyze (apps/mobile)
-        working-directory: apps/mobile
-        run: flutter analyze
-
-      - name: flutter analyze (packages/core)
-        working-directory: packages/core
-        run: flutter analyze
-
-      - name: flutter analyze (packages/design_system)
-        working-directory: packages/design_system
-        run: flutter analyze
-
-      - name: flutter analyze (packages/analytics)
-        working-directory: packages/analytics
-        run: flutter analyze
-
-      # ------------------------------------------------------------------
-      # Tests. Only apps/mobile and packages/core have tests today.
-      #
-      # Goldens (`@Tags(['golden'])`) are run as a separate step so font
-      # rendering or pixel diffs are surfaced distinctly from logic
-      # failures. Baselines are committed and only updated via local
-      # `flutter test --update-goldens --tags=golden` on Linux. Off-Linux
-      # contributors should not run the golden step locally - sub-pixel
-      # differences make the diffs noisy.
-      # ------------------------------------------------------------------
-      - name: flutter test (apps/mobile)
-        working-directory: apps/mobile
-        run: flutter test --coverage
-
-      - name: flutter test --tags=golden (apps/mobile)
-        working-directory: apps/mobile
-        # Goldens were trimmed during the v1.5 polish wave (no
-        # @Tags(['golden']) suites remain today). flutter test exits
-        # 79 when no tests match the tag selector - treat that as a
-        # pass so the step survives until goldens are restored.
+      - name: Install dependencies
         run: |
-          set +e
-          flutter test --tags=golden
-          rc=$?
-          if [ $rc -eq 79 ]; then
-            echo "No golden-tagged tests in the suite - skipping."
-            exit 0
-          fi
-          exit $rc
+          for dir in packages/core packages/design_system packages/analytics apps/mobile; do
+            (cd "$dir" && flutter pub get)
+          done
 
-      - name: flutter test (packages/core)
-        working-directory: packages/core
-        run: flutter test
+      - name: Run code generation
+        working-directory: apps/mobile
+        run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: flutter test (packages/design_system)
-        working-directory: packages/design_system
-        run: flutter test
+      - name: Check formatting
+        run: |
+          for dir in apps/mobile packages/core packages/design_system packages/analytics; do
+            echo "dart format: $dir"
+            (cd "$dir" && dart format --set-exit-if-changed .)
+          done
 
-      # ------------------------------------------------------------------
+      - name: Run analyzer
+        run: |
+          for dir in apps/mobile packages/core packages/design_system packages/analytics; do
+            echo "flutter analyze: $dir"
+            (cd "$dir" && flutter analyze --fatal-warnings)
+          done
+
       # Domain purity: the domain/ folder of every feature must NOT import
-      # Flutter, Firebase, or Cloud Firestore. This is the hard rule from
-      # CLAUDE.md and is graded in the Enterprise Term Assignment.
+      # Flutter, Firebase, or Cloud Firestore (CLAUDE.md hard rule, graded
+      # in the Enterprise Term Assignment).
       #
       # Sanctioned exception (ADR-0010 §"Compliance Check"):
-      #   `apps/mobile/lib/features/settings/domain/services/day_night_strategy.dart`
-      # imports `package:flutter/material.dart` for the `ThemeMode` enum.
-      # `ThemeMode` has no Flutter behaviour - three named constants -
-      # and re-creating a `MoodBloomThemeMode` mirror only to map back at
-      # every call site would be ceremony with no testability benefit.
-      # The file's own header documents the carve-out; the CI grep
-      # excludes the filename to align with the architectural decision.
-      # ------------------------------------------------------------------
+      #   apps/mobile/lib/features/settings/domain/services/day_night_strategy.dart
+      # imports package:flutter/material.dart for the ThemeMode enum only.
       - name: Domain purity check
         run: |
           set -euo pipefail
           echo "Scanning apps/mobile/lib/features/*/domain/ for forbidden imports..."
-          # Two-stage filter: grep collects all forbidden imports, then a
-          # post-filter strips the sanctioned exception line. Pipe pattern
-          # is more portable than `grep --exclude` across grep variants.
-          # `|| true` keeps the pipeline alive when grep finds nothing
-          # (default exit 1) so the variable assignment doesn't trip
-          # `set -e`.
           forbidden=$(grep -rEn --include="*.dart" "import 'package:(flutter|firebase_|cloud_firestore)" apps/mobile/lib/features/*/domain/ 2>/dev/null | grep -v "settings/domain/services/day_night_strategy.dart" || true)
           if [ -n "$forbidden" ]; then
             echo "$forbidden"
@@ -193,20 +139,108 @@ jobs:
           fi
           echo "Domain purity: OK"
 
-      # ------------------------------------------------------------------
-      # gh CLI: smoke + PR coverage comment (S5 carry-over). The smoke
-      # step verifies gh is available + authenticated. The comment step
-      # posts a one-line coverage summary on PRs; continue-on-error keeps
-      # CI green if gh hits a transient error or runs from a fork without
-      # write access.
-      # ------------------------------------------------------------------
-      - name: gh CLI smoke check
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh --version
-          gh auth status
+  # Job 2: Unit and widget tests
+  test:
+    name: "Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: quality
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
 
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Cache pub packages
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.pub-cache
+            apps/mobile/.dart_tool
+            packages/core/.dart_tool
+            packages/design_system/.dart_tool
+            packages/analytics/.dart_tool
+          key: pub-${{ runner.os }}-${{ hashFiles('apps/mobile/pubspec.lock', 'packages/*/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          for dir in packages/core packages/design_system packages/analytics apps/mobile; do
+            (cd "$dir" && flutter pub get)
+          done
+
+      - name: Run code generation
+        working-directory: apps/mobile
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run unit and widget tests with coverage (apps/mobile)
+        working-directory: apps/mobile
+        run: flutter test --coverage --reporter expanded
+
+      - name: Run package tests
+        run: |
+          (cd packages/core && flutter test)
+          (cd packages/design_system && flutter test)
+
+      # Two thresholds, both reported, neither hard-failing the build:
+      #   - overall (excluding generated *.g.dart / *.freezed.dart): 60% target
+      #   - domain/ layer only: 80% target (CLAUDE.md quality gate R5-1)
+      - name: Check coverage threshold
+        working-directory: apps/mobile
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            read HIT TOTAL DHIT DTOTAL <<<$(awk '
+              /^SF:/ {
+                skip=($0 ~ /\.(g|freezed)\.dart$/)
+                # index() instead of a regex: separator-agnostic (works on
+                # lcov files generated on Windows) and immune to the
+                # YAML->shell->awk backslash-escaping pitfalls.
+                domain=(!skip && (index($0, "/domain/") > 0 || index($0, "\\domain\\") > 0))
+              }
+              !skip && /^DA:/ {
+                t++
+                split($0, a, ",")
+                if (a[2] != "0") h++
+                if (domain) { dt++; if (a[2] != "0") dh++ }
+              }
+              END { printf "%d %d %d %d", h, t, dh, dt }' coverage/lcov.info)
+            if [ "$TOTAL" -gt 0 ]; then
+              COVERAGE=$(( HIT * 100 / TOTAL ))
+              echo "Overall coverage (excluding generated files): ${COVERAGE}% ($HIT/$TOTAL)"
+              if [ "$COVERAGE" -lt 60 ]; then
+                echo "Warning: coverage ${COVERAGE}% is below the 60% target (non-blocking)."
+              else
+                echo "Coverage ${COVERAGE}% meets the 60% target."
+              fi
+            fi
+            if [ "$DTOTAL" -gt 0 ]; then
+              DCOVERAGE=$(( DHIT * 100 / DTOTAL ))
+              echo "Domain-layer coverage: ${DCOVERAGE}% ($DHIT/$DTOTAL)"
+              if [ "$DCOVERAGE" -lt 80 ]; then
+                echo "Warning: domain coverage ${DCOVERAGE}% is below the 80% gate (CLAUDE.md R5-1)."
+              else
+                echo "Domain coverage ${DCOVERAGE}% meets the 80% gate."
+              fi
+            fi
+          else
+            echo "Warning: no coverage data found."
+          fi
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: apps/mobile/coverage/
+          retention-days: 7
+
+      # S5 carry-over: one-line coverage summary on PRs. continue-on-error
+      # keeps CI green on transient gh errors or fork PRs without write access.
       - name: Post coverage comment on PR
         if: github.event_name == 'pull_request'
         working-directory: apps/mobile
@@ -229,34 +263,169 @@ jobs:
           gh pr comment "${{ github.event.pull_request.number }}" \
             --body "**Coverage:** ${PCT}% (${HIT} / ${TOTAL} lines hit) - _from CI run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})_"
 
-  firestore-rules:
-    name: Firestore and Storage rules emulator tests
+  # Job 3: Build Android APK
+  build-android:
+    name: "Build Android"
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
+    timeout-minutes: 30
+    needs: test
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Set up pnpm
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: Run code generation
+        working-directory: apps/mobile
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build APK (release)
+        working-directory: apps/mobile
+        run: flutter build apk --release --no-tree-shake-icons
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: moodbloom-apk
+          path: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
+  # Job 4: Build web
+  build-web:
+    name: "Build Web"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: Run code generation
+        working-directory: apps/mobile
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build web (release)
+        working-directory: apps/mobile
+        run: flutter build web --release
+
+      - name: Upload web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: moodbloom-web
+          path: apps/mobile/build/web/
+          retention-days: 14
+
+  # Job 5: Accessibility and security checks
+  accessibility:
+    name: "Accessibility and Security"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: quality
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: Check for Semantics labels
+        run: |
+          echo "Checking Semantics widget usage..."
+          SCREEN_FILES=$(find apps/mobile/lib/features -name "*_screen.dart" | wc -l)
+          SEMANTICS_COUNT=$(grep -r "Semantics\|semanticsLabel\|Semantics.fromProperties" apps/mobile/lib/features --include="*.dart" -l | wc -l)
+          echo "Screen files: $SCREEN_FILES"
+          echo "Files with Semantics: $SEMANTICS_COUNT"
+          if [ "$SEMANTICS_COUNT" -lt "$((SCREEN_FILES / 2))" ]; then
+            echo "Warning: less than 50% of screens have Semantics labels."
+          else
+            echo "Semantics coverage is acceptable."
+          fi
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Scanning for hardcoded secrets..."
+          SECRETS_FOUND=0
+          # firebase_options.dart is excluded: it holds Firebase client
+          # identifiers generated by flutterfire configure, which are public
+          # by design and required at build time.
+          if grep -rn "apiKey.*=.*['\"]AIza" apps/mobile/lib packages --include="*.dart" --exclude="firebase_options.dart" 2>/dev/null; then
+            echo "Error: found a hardcoded API key."
+            SECRETS_FOUND=1
+          fi
+          if grep -rn "password.*=.*['\"][^'\"]\{8,\}" apps/mobile/lib packages --include="*.dart" 2>/dev/null; then
+            echo "Error: found a hardcoded password."
+            SECRETS_FOUND=1
+          fi
+          if [ "$SECRETS_FOUND" -eq 0 ]; then
+            echo "No hardcoded secrets found."
+          else
+            exit 1
+          fi
+
+      - name: Check pubspec for known vulnerable packages
+        working-directory: apps/mobile
+        run: |
+          echo "Checking dependency health..."
+          flutter pub outdated || true
+
+  # Job 6 (repo-specific, retained): Firestore + Storage rules under the emulator.
+  # 15 cases for WBS 2.3 - per-user RBAC, 24h immutability, field-level validation.
+  firestore-rules:
+    name: "Firestore Rules (Emulator)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
         uses: pnpm/action-setup@v5
         with:
-          # Version is read from `firebase/test/package.json#packageManager`
-          # (pnpm@10.18.0 - kept in sync with `functions/package.json`).
           package_json_file: firebase/test/package.json
           run_install: false
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: "pnpm"
           cache-dependency-path: firebase/test/pnpm-lock.yaml
 
-      - name: Set up Java 21 (required by firebase-tools)
+      - name: Setup Java 21 (required by firebase-tools)
         uses: actions/setup-java@v5
         with:
-          distribution: "temurin"
+          distribution: temurin
           java-version: "21"
 
       - name: Install firebase-tools
@@ -272,42 +441,3 @@ jobs:
             --only firestore,storage,auth \
             --project moodbloom-rules-test \
             "cd firebase/test && pnpm test"
-
-  functions:
-    name: Cloud Functions lint build and test
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v5
-        with:
-          # Version is read from `functions/package.json#packageManager`.
-          package_json_file: functions/package.json
-          run_install: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: "22"
-          cache: "pnpm"
-          cache-dependency-path: functions/pnpm-lock.yaml
-
-      - name: Install dependencies
-        working-directory: functions
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        working-directory: functions
-        run: pnpm lint
-
-      - name: Type-check / build
-        working-directory: functions
-        run: pnpm build
-
-      - name: Test
-        working-directory: functions
-        run: pnpm test
