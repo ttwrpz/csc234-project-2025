@@ -115,6 +115,29 @@ void main() {
       final failure = (result as Err<AiSuggestion, AiAnalysisFailure>).failure;
       expect(failure.runtimeType.toString(), contains('ParseError'));
     });
+
+    test(
+      'Android-shaped payload (nested alternative as Map<Object?, Object?>) '
+      '→ Ok, not _TypeError',
+      () async {
+        // Regression for the mobile-only "Couldn't analyze" bug (2026-06-05):
+        // Android's platform channel decodes nested JSON objects as
+        // Map<Object?, Object?>; the generated fromJson casts `alternative`
+        // with `as Map<String, dynamic>` and threw _TypeError before the
+        // repository re-keyed the nested map.
+        final payload = Map<String, dynamic>.from(successPayload(mood: 'sad'));
+        payload['alternative'] = <Object?, Object?>{
+          'mood': 'anxious',
+          'confidence': 0.4,
+        };
+        ds.nextResponse = payload;
+        final result = await repo.analyzeMoodText(text: 'long enough text');
+        expect(result, isA<Ok<AiSuggestion, AiAnalysisFailure>>());
+        final entity = (result as Ok<AiSuggestion, AiAnalysisFailure>).value;
+        expect(entity.mood, MoodType.sad);
+        expect(entity.alternative?.mood, MoodType.anxious);
+      },
+    );
   });
 
   group('AiAnalysisRepositoryImpl - server error envelopes', () {

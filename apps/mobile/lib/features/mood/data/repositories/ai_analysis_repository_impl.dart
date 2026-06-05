@@ -49,6 +49,16 @@ class AiAnalysisRepositoryImpl implements AIAnalysisRepository {
           final value = normalized[key];
           if (value is num) normalized[key] = value.toInt();
         }
+        // Same platform variance one level down: Android's platform channel
+        // decodes NESTED objects as Map<Object?, Object?>, and the generated
+        // fromJson casts `alternative` with `as Map<String, dynamic>`, which
+        // throws a _TypeError on native whenever the server includes an
+        // alternative suggestion (web's JS interop yields string-keyed maps,
+        // so it only bit Android). Re-key it like the top-level copy above.
+        final alternative = normalized['alternative'];
+        if (alternative is Map) {
+          normalized['alternative'] = Map<String, Object?>.from(alternative);
+        }
         final result = AiSuggestionDto.fromJson(normalized).toEntity();
         if (result is Err<AiSuggestion, AiAnalysisFailure>) {
           // Defensive: log only the failure runtimeType - never the input
